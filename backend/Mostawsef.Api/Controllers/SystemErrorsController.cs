@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Mostawsef.Api.Extensions;
+using Mostawsef.Application.Common;
 using Mostawsef.Application.Modules.Logs;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.Logs;
@@ -14,8 +15,12 @@ namespace Mostawsef.Api.Controllers;
 public class SystemErrorsController(ISystemErrorService errors) : ControllerBase
 {
     [HttpGet]
-    public Task<PagedResult<SystemErrorListItemDto>> List([FromQuery] PageQuery query, CancellationToken cancellationToken) =>
-        errors.GetPageAsync(query, cancellationToken);
+    [ProducesResponseType<CursorPage<SystemErrorListItemDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> List([FromQuery] CursorQuery query, CancellationToken cancellationToken) =>
+        PageRequest.TryCreate(query, out var request)
+            ? Ok(await errors.GetPageAsync(request, cancellationToken))
+            : ValidationProblem(PageRequest.InvalidMessage);
 
     [HttpGet("stats")]
     public Task<SystemErrorStatsDto> Stats(CancellationToken cancellationToken) => errors.GetStatsAsync(cancellationToken);
@@ -40,11 +45,6 @@ public class SystemErrorsController(ISystemErrorService errors) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Report(ReportClientErrorRequest request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.Message))
-        {
-            return ValidationProblem("Message is required.");
-        }
-
         await errors.ReportClientErrorAsync(request, cancellationToken);
         return Accepted();
     }

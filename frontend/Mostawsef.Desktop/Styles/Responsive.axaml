@@ -12,8 +12,7 @@
       .hide-wide      hidden below 1600         .show-wide      visible only below 1600
       .stack-compact  horizontal StackPanel becomes vertical below 900
 
-    Layout helpers (code): ResponsiveGrid (auto columns), ListDetailsView (stacks < 900),
-    AppShell (sidebar collapses below AutoCompactWidth).
+    Layout helpers (code): ResponsiveGrid (auto columns), AppShell (sidebar collapses below AutoCompactWidth).
 -->
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"

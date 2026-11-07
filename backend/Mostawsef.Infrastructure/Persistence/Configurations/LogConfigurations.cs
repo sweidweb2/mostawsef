@@ -21,10 +21,12 @@ public class ActivityLogConfiguration : IEntityTypeConfiguration<ActivityLog>
         builder.Property(l => l.IpAddress).HasMaxLength(ActivityLog.IpAddressMaxLength);
         builder.Property(l => l.UserAgent).HasMaxLength(ActivityLog.UserAgentMaxLength);
         builder.Property(l => l.Details).HasMaxLength(ActivityLog.DetailsMaxLength);
+        builder.Property(l => l.SearchText).HasMaxLength(ActivityLog.SearchTextMaxLength).IsRequired();
 
-        builder.HasIndex(l => l.OccurredAt);
-        builder.HasIndex(l => l.Action);
+        builder.HasIndex(l => new { l.OccurredAt, l.Id });
+        builder.HasIndex(l => new { l.Action, l.OccurredAt });
         builder.HasIndex(l => l.UserId);
+        builder.HasIndex(l => l.SearchText).HasMethod("gin").HasOperators("gin_trgm_ops");
     }
 }
 
@@ -47,8 +49,9 @@ public class SystemErrorConfiguration : IEntityTypeConfiguration<SystemError>
         builder.Property(e => e.TraceId).HasMaxLength(SystemError.TraceIdMaxLength);
         builder.Property(e => e.IpAddress).HasMaxLength(SystemError.IpAddressMaxLength);
         builder.Property(e => e.Details).HasMaxLength(SystemError.DetailsMaxLength);
+        builder.Property(e => e.SearchText).HasMaxLength(SystemError.SearchTextMaxLength).IsRequired();
 
-        builder.HasIndex(e => e.OccurredAt);
-        builder.HasIndex(e => e.Level);
+        builder.HasIndex(e => new { e.OccurredAt, e.Id });
+        builder.HasIndex(e => e.SearchText).HasMethod("gin").HasOperators("gin_trgm_ops");
     }
 }

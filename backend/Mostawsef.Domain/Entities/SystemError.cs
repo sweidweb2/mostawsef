@@ -4,7 +4,7 @@ using Mostawsef.Domain.Enums;
 namespace Mostawsef.Domain.Entities;
 
 /// <summary>An unexpected failure in the API or the desktop app. Append-only.</summary>
-public class SystemError
+public class SystemError : IChronological
 {
     public const int SourceMaxLength = 50;
     public const int MessageMaxLength = 2000;
@@ -16,6 +16,8 @@ public class SystemError
     public const int TraceIdMaxLength = 100;
     public const int IpAddressMaxLength = 45;
     public const int DetailsMaxLength = 8000;
+    public const int SearchTextMaxLength =
+        MessageMaxLength + SourceMaxLength + ExceptionTypeMaxLength + RequestPathMaxLength + UsernameMaxLength + 4;
 
     private SystemError()
     {
@@ -49,6 +51,7 @@ public class SystemError
         TraceId = Text.Truncate(traceId, TraceIdMaxLength);
         IpAddress = Text.Truncate(ipAddress, IpAddressMaxLength);
         Details = Text.Truncate(details, DetailsMaxLength);
+        SearchText = Text.SearchKey(Message, Source, ExceptionType, RequestPath, Username);
     }
 
     public Guid Id { get; private set; } = Guid.NewGuid();
@@ -82,4 +85,7 @@ public class SystemError
 
     /// <summary>Extra context as JSON (app version, OS, screen...).</summary>
     public string? Details { get; private set; }
+
+    /// <summary>Message, source, exception type, request path and username, lowercased (Text.SearchKey). What the list search matches.</summary>
+    public string SearchText { get; private set; } = string.Empty;
 }

@@ -1,8 +1,9 @@
-using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using Mostawsef.Application.Interfaces;
 using Mostawsef.Contracts.Auth;
 using Mostawsef.Infrastructure.Services.Auth;
 
@@ -18,23 +19,19 @@ public static class AuthPolicies
 
 public static class AuthExtensions
 {
-    public static JwtOptions GetJwtOptions(this IConfiguration configuration)
+    /// <summary>Binds and validates JwtOptions ("Jwt" section; a bad Jwt:Key stops startup), then adds JWT bearer auth, policies and rate limits.</summary>
+    public static IServiceCollection AddJwtAuth(this IServiceCollection services)
     {
-        var options = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
-        if (options.Key.Length < 32)
-        {
-            throw new InvalidOperationException("Jwt:Key must be configured and at least 32 characters long.");
-        }
+        services.AddOptions<JwtOptions>()
+            .BindConfiguration(JwtOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
-        return options;
-    }
-
-    public static IServiceCollection AddJwtAuth(this IServiceCollection services, JwtOptions jwt)
-    {
-        services
-            .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(options =>
+        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
+        services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+            .Configure<IOptions<JwtOptions>>((options, jwtOptions) =>
             {
+                var jwt = jwtOptions.Value;
                 options.MapInboundClaims = false;
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
@@ -43,12 +40,13 @@ public static class AuthExtensions
                     ValidateAudience = true,
                     ValidAudience = jwt.Audience,
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key)),
+                    IssuerSigningKey = jwt.CreateSigningKey(),
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.FromMinutes(1),
                     NameClaimType = JwtRegisteredClaimNames.UniqueName,
                     RoleClaimType = JwtClaims.Role,
                 };
+                options.Events = new JwtBearerEvents { OnTokenValidated = RejectStaleUserAsync };
             });
 
         services.AddAuthorizationBuilder()
@@ -74,5 +72,21 @@ public static class AuthExtensions
         });
 
         return services;
+    }
+
+    /// <summary>A valid token stops working as soon as its user is deactivated, deleted or given another role.</summary>
+    private static async Task RejectStaleUserAsync(TokenValidatedContext context)
+    {
+        var principal = context.Principal;
+        var users = context.HttpContext.RequestServices.GetRequiredService<IUserRepository>();
+
+        var user = Guid.TryParse(principal?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value, out var userId)
+            ? await users.GetByIdAsync(userId, context.HttpContext.RequestAborted)
+            : null;
+
+        if (user is not { IsActive: true } || user.Role.ToString() != principal?.FindFirst(JwtClaims.Role)?.Value)
+        {
+            context.Fail("The user is no longer active or their role changed.");
+        }
     }
 }

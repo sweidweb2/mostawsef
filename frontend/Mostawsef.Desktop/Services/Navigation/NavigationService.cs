@@ -35,6 +35,9 @@ public partial class NavigationService : ObservableObject
     [ObservableProperty]
     public partial ViewModelBase? CurrentPage { get; private set; }
 
+    partial void OnCurrentPageChanged(ViewModelBase? oldValue, ViewModelBase? newValue) =>
+        (oldValue as PortalShellViewModel)?.Close();
+
     /// <summary>Opens the page if the current user may see it; otherwise falls back to the login screen.</summary>
     public bool NavigateTo<TViewModel>() where TViewModel : ViewModelBase
     {

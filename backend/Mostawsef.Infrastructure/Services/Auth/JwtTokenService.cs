@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using System.Text;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Mostawsef.Application.Interfaces;
@@ -7,21 +7,22 @@ using Mostawsef.Domain.Entities;
 
 namespace Mostawsef.Infrastructure.Services.Auth;
 
-public class JwtTokenService(JwtOptions options) : ITokenService
+public class JwtTokenService(IOptions<JwtOptions> jwtOptions) : ITokenService
 {
     private readonly JsonWebTokenHandler _handler = new();
+    private readonly JwtOptions _options = jwtOptions.Value;
+    private readonly SymmetricSecurityKey _signingKey = jwtOptions.Value.CreateSigningKey();
 
     public AccessToken CreateAccessToken(User user)
     {
-        var expiresAt = DateTime.UtcNow.AddMinutes(options.ExpiryMinutes);
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.Key));
+        var expiresAt = DateTime.UtcNow.AddMinutes(_options.ExpiryMinutes);
 
         var token = _handler.CreateToken(new SecurityTokenDescriptor
         {
-            Issuer = options.Issuer,
-            Audience = options.Audience,
+            Issuer = _options.Issuer,
+            Audience = _options.Audience,
             Expires = expiresAt,
-            SigningCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256),
+            SigningCredentials = new SigningCredentials(_signingKey, SecurityAlgorithms.HmacSha256),
             Subject = new ClaimsIdentity(
             [
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),

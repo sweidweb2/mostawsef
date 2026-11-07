@@ -33,14 +33,20 @@
             </ui:ResponsiveGrid>
 
             <!-- Table -->
-            <ui:DataTable Height="560" IsLoading="{Binding IsLoading}" IsEmpty="{Binding IsEmpty}">
+            <ui:DataTable Height="560"
+                          IsLoading="{Binding IsLoading}"
+                          IsEmpty="{Binding IsEmpty}"
+                          HasError="{Binding HasLoadError}"
+                          ErrorTitle="{l:TrKey LoadErrorTitleKey}"
+                          ErrorDescription="{l:TrKey LoadErrorDescriptionKey}"
+                          RetryCommand="{Binding RefreshCommand}">
                 <ui:DataTable.Toolbar>
                     <Grid ColumnDefinitions="*,Auto">
                         <ui:SearchBox MaxWidth="360"
                                       HorizontalAlignment="Left"
                                       Text="{Binding Search}"
                                       SearchCommand="{Binding SearchCommand}" />
-                        <TextBlock Grid.Column="1" Classes="caption muted" Text="{Binding TotalLabel}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Classes="caption muted" Text="{l:Tr Logs.Records, Arg=TotalCount}" VerticalAlignment="Center" />
                     </Grid>
                 </ui:DataTable.Toolbar>
 
@@ -58,7 +64,7 @@
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate x:DataType="logs:SystemErrorListItemDto">
                                     <ui:Badge Margin="12,0"
-                                              Text="{Binding Level, Converter={x:Static conv:ValueConverters.ErrorLevelLabel}}"
+                                              Text="{l:TrKey Level, Prefix=ErrorLevel.}"
                                               Kind="{Binding Level, Converter={x:Static conv:ValueConverters.ErrorLevelToBadgeKind}}" />
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
@@ -110,7 +116,7 @@
                 </DataGrid>
 
                 <ui:DataTable.Footer>
-                    <ui:Pagination CurrentPage="{Binding CurrentPage}" PageCount="{Binding PageCount}" />
+                    <ui:Pagination CurrentPage="{Binding CurrentPage}" PageCount="{Binding PageCount}" IsEnabled="{Binding !IsLoading}" />
                 </ui:DataTable.Footer>
             </ui:DataTable>
         </StackPanel>

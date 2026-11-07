@@ -369,40 +369,6 @@
         </Setter>
     </ControlTheme>
 
-    <!-- ListDetailsView -->
-    <ControlTheme x:Key="{x:Type ui:ListDetailsView}" TargetType="ui:ListDetailsView">
-        <Setter Property="Template">
-            <ControlTemplate>
-                <Grid Name="PART_Grid" ColumnDefinitions="Auto,*">
-                    <Border Name="PART_List"
-                            Width="{TemplateBinding ListWidth}"
-                            BorderBrush="{DynamicResource BrushBorder}"
-                            BorderThickness="0,0,1,0">
-                        <ContentPresenter Content="{TemplateBinding List}" />
-                    </Border>
-                    <ContentPresenter Name="PART_Details" Grid.Column="1" Content="{TemplateBinding Details}" />
-                </Grid>
-            </ControlTemplate>
-        </Setter>
-
-        <Style Selector="^:stacked /template/ Border#PART_List">
-            <Setter Property="Width" Value="NaN" />
-            <Setter Property="Grid.ColumnSpan" Value="2" />
-            <Setter Property="BorderThickness" Value="0" />
-        </Style>
-        <Style Selector="^:stacked /template/ ContentPresenter#PART_Details">
-            <Setter Property="Grid.Column" Value="0" />
-            <Setter Property="Grid.ColumnSpan" Value="2" />
-            <Setter Property="IsVisible" Value="False" />
-        </Style>
-        <Style Selector="^:stacked:details-open /template/ Border#PART_List">
-            <Setter Property="IsVisible" Value="False" />
-        </Style>
-        <Style Selector="^:stacked:details-open /template/ ContentPresenter#PART_Details">
-            <Setter Property="IsVisible" Value="True" />
-        </Style>
-    </ControlTheme>
-
     <!-- Divider -->
     <ControlTheme x:Key="{x:Type ui:Divider}" TargetType="ui:Divider">
         <Setter Property="Margin" Value="0,12" />

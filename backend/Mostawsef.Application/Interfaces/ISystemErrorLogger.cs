@@ -16,6 +16,9 @@ public record SystemErrorEntry(ErrorLevel Level, string Source, string Message)
     public string? Username { get; init; }
 
     public object? Details { get; init; }
+
+    /// <summary>False for errors reported by another app (the request is only the report itself).</summary>
+    public bool IncludeRequestInfo { get; init; } = true;
 }
 
 /// <summary>

@@ -7,22 +7,29 @@ alwaysApply: false
 # Shared Components
 
 Catalog and status of every component: `Docs/shared-components.md`. Preview them in the gallery
-(`Views/Dev/GalleryView.axaml`, currently the MainWindow content).
+(`Views/Dev/GalleryView.axaml`, opened from the login screen in Debug builds).
 
 ## Reuse first
 Before writing UI, use what exists (`xmlns:ui="using:Mostawsef.Desktop.Components"`):
-- Layout: `AppShell`, `NavMenu`/`NavMenuItem`, `TopBar`, `PageHeader`, `Card`, `Section`, `ListDetailsView`, `Divider`, `ResponsiveGrid`
-- Forms: `FormField`, `FormSection`, `ValidationSummary`, `SearchBox`, `PasswordField`, `DateRangePicker`, `FileUpload`, `ImagePicker`
-- Buttons: `IconButton`, `ButtonGroup` (+ styled built-in `Button`, `SplitButton`, `DropDownButton`)
-- Data: `DataTable` (wraps `DataGrid`), `Pagination`, `Badge`, `Avatar`, `Scheduler`
-- Feedback/overlays: `Spinner`, `LoadingOverlay`, `EmptyState`, `Modal`, `ConfirmDialog`, `DialogHost`
-- Navigation: `Breadcrumb`, `Stepper`, `Wizard`
-- Clinic (display-only): `PatientCard`, `PatientHeader`, `PrintPreview`
+- Layout: `AppShell`, `NavMenu`/`NavMenuItem`, `TopBar`, `BrandMark`, `PreferencesBar`, `PageHeader`, `Card`, `Section`, `Divider`, `ResponsiveGrid`, `PageHost`
+- Forms: `FormField`, `SearchBox`, `PasswordField` (form grids: `ResponsiveGrid MaxColumns="2"` of `FormField`s)
+- Buttons: `IconButton` (+ styled built-in `Button`, `SplitButton`, `DropDownButton`)
+- Data: `DataTable` (wraps `DataGrid`), `Pagination`, `Badge`, `Avatar`, `StatCard`, `DetailsView`/`DetailsItem`
+- Feedback/overlays: `Spinner`, `LoadingOverlay`, `EmptyState`, `ErrorState`, `Toast` (via `ToastService`), `Modal`, `ConfirmDialog`, `DialogHost`
 - Built-in controls (TextBox, ComboBox, AutoCompleteBox, CalendarDatePicker, TabControl, ...) are already themed: use them directly.
 
 ## Deferred components
-DetailsView, StatCard, Chart, Timeline, Alert, Skeleton, ErrorState, Drawer, AppointmentCard, PrescriptionItem,
-InvoiceSummary, VitalsDisplay are **not built**. Create one only when a screen needs it.
+Chart, Timeline, Alert, Skeleton, Drawer, AppointmentCard, PrescriptionItem,
+InvoiceSummary, VitalsDisplay are **not built**. Create one only when a screen needs it, and delete
+components that no screen uses. Scheduler, Wizard/Stepper, Breadcrumb, ButtonGroup, ListDetailsView,
+FormSection, ValidationSummary, DateRangePicker, FileUpload/ImagePicker, PatientCard/PatientHeader and
+PrintPreview were removed while unused: restore from git history (commit `983d1b9`) when a screen needs one.
+Pages that load data implement `ILoadablePage`: the shell keeps each opened page (and `PageHost` its view), calls
+`ActivateAsync` when it is shown and `Deactivate` when the user leaves, which cancels its API calls. Pass a
+cancellation token to every API read a page makes (`PagedListViewModel.ReadAsync` for one-off reads such as details).
+List pages derive from `ViewModels/Shell/PagedListViewModel`; a failed load shows the `DataTable` error state
+(bind `HasError`, `ErrorTitle`/`ErrorDescription` via `{l:TrKey LoadError...Key}` and `RetryCommand="{Binding RefreshCommand}"`).
+Use toasts for failed actions (save, delete), the error state for content that could not load.
 
 ## Creating a component
 1. Class in `Components/<Category>/<Name>.cs`, namespace `Mostawsef.Desktop.Components`.
@@ -31,6 +38,6 @@ InvoiceSummary, VitalsDisplay are **not built**. Create one only when a screen n
    A subclass of a templated control needs its own ControlTheme or `StyleKeyOverride`.
 3. Use only tokens, `{l:Tr ...}` for built-in text, `TemplateBinding` in templates. Mirror-safe (RTL) layout.
 4. Visuals created in C# have no TemplatedParent: style them by class in `Components/ComponentStyles.axaml`.
-5. Global styles beat ControlTheme styles: for state that must override a global button style, toggle a class (see `Button.secondary.active`).
+5. Global styles beat ControlTheme styles: for state that must override a global button style, toggle a class on the button and style that class globally.
 6. Clinic components stay display-only (plain text/enum properties), no business logic or Contracts DTOs.
 7. Add a demo to the gallery and update `Docs/shared-components.md`.

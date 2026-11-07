@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Mostawsef.Api.Extensions;
+using Mostawsef.Application.Common;
 using Mostawsef.Application.Modules.Logs;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.Logs;
@@ -13,8 +14,12 @@ namespace Mostawsef.Api.Controllers;
 public class ActivityLogsController(IActivityLogService logs) : ControllerBase
 {
     [HttpGet]
-    public Task<PagedResult<ActivityLogListItemDto>> List([FromQuery] PageQuery query, CancellationToken cancellationToken) =>
-        logs.GetPageAsync(query, cancellationToken);
+    [ProducesResponseType<CursorPage<ActivityLogListItemDto>>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> List([FromQuery] CursorQuery query, CancellationToken cancellationToken) =>
+        PageRequest.TryCreate(query, out var request)
+            ? Ok(await logs.GetPageAsync(request, cancellationToken))
+            : ValidationProblem(PageRequest.InvalidMessage);
 
     [HttpGet("stats")]
     public Task<ActivityLogStatsDto> Stats(CancellationToken cancellationToken) => logs.GetStatsAsync(cancellationToken);

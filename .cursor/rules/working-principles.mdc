@@ -1,0 +1,47 @@
+---
+description: How to work in this repo - simplicity, reuse, dependencies, layering, when to ask first
+alwaysApply: true
+---
+
+# Working Principles
+
+## Simplicity
+- Build the simplest thing that works for the current request. No speculative features, options, extension points or
+  "for later" code. Abstractions (interfaces, base classes, generics) only when there are two real users or a test needs the seam.
+- Do not create files you do not need: no new docs/READMEs unless asked, no empty folders, no one-line wrapper classes,
+  no new projects. Prefer adding to the existing file for that feature.
+- Delete what becomes unused in the same change (code, components, resource keys, packages). Git history keeps it.
+- Keep changes scoped to the request; mention unrelated issues you notice instead of fixing them silently.
+
+## Reuse existing patterns
+- Before writing something new, find the closest existing example and copy its shape:
+  - endpoint: `ActivityLogsController` + `ActivityLogService` + repository + Contracts DTOs + integration tests
+  - list page: `PagedListViewModel` subclass + `DataTable` view + `AppRoutes` entry + desktop tests
+  - UI: components from `Docs/shared-components.md` before writing new XAML
+- One way per concern: `ApiClient` for HTTP, `IActivityLogger` for activity, `ISystemErrorLogger`/`ErrorReporter` for errors,
+  `DialogService`/`ToastService` for feedback, DataAnnotations + service results for validation. Do not add a second mechanism.
+
+## Dependencies
+- No new NuGet package, project or external tool without asking the user first (say what it replaces and why the
+  existing stack cannot do it). Packages go in the lowest layer that needs them; EF Core/Npgsql only in Infrastructure.
+- Keep the SQLite fallback possible (see `project-architecture.mdc`).
+
+## Layers are never bypassed
+- Controller -> Application service -> repository interface -> Infrastructure. Controllers never touch `AppDbContext` or
+  repositories (only exception: `HealthController`'s connectivity check); Application never references EF Core; Domain references nothing.
+- Desktop -> `Services/Api` -> HTTP -> API. The desktop never references backend projects, the database or Infrastructure.
+- Views -> view models -> services. Views hold no logic beyond view-only code-behind; view models never create views or windows directly
+  (use `NavigationService`, `DialogService`).
+- Do not "temporarily" break a rule to make something work; if a rule blocks the task, stop and ask.
+
+## Ask before
+- Changing architecture: layers, project structure, dependency direction, auth model, navigation/shell design,
+  database provider or schema conventions, the logging engines.
+- Adding business modules or business logic the user did not request.
+- Renaming/moving many files, changing public API routes or Contracts that the other side already uses.
+- Anything destructive: dropping data, rewriting migrations that already exist, deleting docs.
+
+## Definition of done
+- Builds with no new warnings; tests added per `testing.mdc` and passing (`./scripts/test.ps1`).
+- New user-visible strings in both `Strings.resx` and `Strings.ar.resx`; layout checked in Arabic (RTL) and Dark theme when it changes.
+- Docs/rules updated in the same change when a pattern, component or command changes.

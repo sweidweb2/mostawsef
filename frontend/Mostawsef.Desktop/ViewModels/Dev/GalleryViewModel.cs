@@ -28,16 +28,6 @@ public partial class GalleryViewModel : ViewModelBase
         _toasts = toasts;
         _navigation = navigation;
         _localization = localization;
-
-        var today = DateTime.Today;
-        Appointments =
-        [
-            new SchedulerItem { Start = today.AddHours(9), End = today.AddHours(9.5), Title = "أحمد علي", Subtitle = "كشف", Kind = BadgeKind.Primary },
-            new SchedulerItem { Start = today.AddHours(9.25), End = today.AddHours(10), Title = "Sara Mahmoud", Subtitle = "Follow-up", Kind = BadgeKind.Success },
-            new SchedulerItem { Start = today.AddHours(11), End = today.AddHours(12), Title = "محمد حسن", Subtitle = "استشارة", Kind = BadgeKind.Warning },
-            new SchedulerItem { Start = today.AddDays(1).AddHours(13), End = today.AddDays(1).AddHours(14), Title = "Omar Khaled", Subtitle = "Lab review", Kind = BadgeKind.Info },
-            new SchedulerItem { Start = today.AddDays(2).AddHours(10), End = today.AddDays(2).AddHours(10.5), Title = "منى يوسف", Subtitle = "ملغي", Kind = BadgeKind.Danger },
-        ];
     }
 
     [ObservableProperty]
@@ -51,30 +41,18 @@ public partial class GalleryViewModel : ViewModelBase
     public partial bool IsTableEmpty { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(VisiblePatients))]
+    public partial bool IsTableError { get; set; }
+
+    [ObservableProperty]
     public partial bool IsOverlayLoading { get; set; } = true;
 
     [ObservableProperty]
     public partial int CurrentPage { get; set; } = 1;
 
-    [ObservableProperty]
-    public partial int StepIndex { get; set; } = 1;
-
-    [ObservableProperty]
-    public partial bool IsDetailsOpen { get; set; }
-
-    [ObservableProperty]
-    public partial DateTime? RangeFrom { get; set; } = DateTime.Today;
-
-    [ObservableProperty]
-    public partial DateTime? RangeTo { get; set; } = DateTime.Today.AddDays(7);
-
-    public IReadOnlyList<string> Steps { get; } = ["Patient", "Visit", "Payment"];
-
     public IReadOnlyList<string> Drugs { get; } = ["Paracetamol", "Amoxicillin", "Ibuprofen", "Omeprazole", "Metformin", "باراسيتامول"];
 
     public IReadOnlyList<string> Genders { get; } = ["ذكر / Male", "أنثى / Female"];
-
-    public ObservableCollection<string> ValidationErrors { get; } = ["Patient name is required.", "Phone number must be 11 digits."];
 
     public ObservableCollection<PatientRow> Patients { get; } =
     [
@@ -85,9 +63,7 @@ public partial class GalleryViewModel : ViewModelBase
         new("P-1005", "منى يوسف", 61, "01009876543", "Unpaid", BadgeKind.Danger),
     ];
 
-    public IEnumerable<PatientRow> VisiblePatients => IsTableEmpty ? [] : Patients;
-
-    public ObservableCollection<SchedulerItem> Appointments { get; }
+    public IEnumerable<PatientRow> VisiblePatients => IsTableEmpty || IsTableError ? [] : Patients;
 
     [RelayCommand]
     private void Back() => _navigation.NavigateToHome();
@@ -99,10 +75,10 @@ public partial class GalleryViewModel : ViewModelBase
     private void ToggleTableEmpty() => IsTableEmpty = !IsTableEmpty;
 
     [RelayCommand]
-    private void ToggleOverlay() => IsOverlayLoading = !IsOverlayLoading;
+    private void ToggleTableError() => IsTableError = !IsTableError;
 
     [RelayCommand]
-    private void ToggleDetails() => IsDetailsOpen = !IsDetailsOpen;
+    private void ToggleOverlay() => IsOverlayLoading = !IsOverlayLoading;
 
     [RelayCommand]
     private void ShowToast(string? kind)
@@ -133,10 +109,4 @@ public partial class GalleryViewModel : ViewModelBase
 
         _toasts.Show(confirmed ? "Deleted" : "Cancelled", kind: confirmed ? ToastKind.Success : ToastKind.Info);
     }
-
-    [RelayCommand]
-    private void Print() => _toasts.Show("Printing is not implemented yet.", kind: ToastKind.Warning);
-
-    [RelayCommand]
-    private void FinishWizard() => _toasts.Success("Wizard finished");
 }

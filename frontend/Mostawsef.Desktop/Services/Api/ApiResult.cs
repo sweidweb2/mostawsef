@@ -13,6 +13,9 @@ public enum ApiError
     TooManyRequests,
     BadRequest,
     NotFound,
+
+    /// <summary>409: the request clashes with existing data (e.g. a duplicate unique value).</summary>
+    Conflict,
     Server,
 }
 

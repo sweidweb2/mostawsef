@@ -20,11 +20,6 @@ public class AuthController(IAuthService auth) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login(LoginRequest request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrEmpty(request.Password))
-        {
-            return ValidationProblem("Username and password are required.");
-        }
-
         var result = await auth.LoginAsync(request, cancellationToken);
         return result is null
             ? Problem(statusCode: StatusCodes.Status401Unauthorized, title: "Invalid username or password.")
@@ -46,7 +41,7 @@ public class AuthController(IAuthService auth) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Me(CancellationToken cancellationToken)
     {
-        if (!Guid.TryParse(User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value, out var userId))
+        if (CurrentUserId() is not { } userId)
         {
             return Unauthorized();
         }
@@ -54,4 +49,23 @@ public class AuthController(IAuthService auth) : ControllerBase
         var user = await auth.GetUserAsync(userId, cancellationToken);
         return user is null ? Unauthorized() : Ok(user);
     }
+
+    [HttpPost("change-password")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ChangePassword(ChangePasswordRequest request, CancellationToken cancellationToken)
+    {
+        if (CurrentUserId() is not { } userId)
+        {
+            return Unauthorized();
+        }
+
+        await auth.ChangePasswordAsync(userId, request, cancellationToken);
+        return NoContent();
+    }
+
+    private Guid? CurrentUserId() =>
+        Guid.TryParse(User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value, out var userId) ? userId : null;
 }

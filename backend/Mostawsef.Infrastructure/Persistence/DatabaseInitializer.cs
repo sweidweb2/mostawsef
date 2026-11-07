@@ -8,10 +8,13 @@ using Mostawsef.Infrastructure.Persistence.Context;
 
 namespace Mostawsef.Infrastructure.Persistence;
 
-/// <summary>Bound from "Seed:Users". Users are created only if their username does not exist yet.</summary>
+/// <summary>Bound from "Seed:Users". Users are created only if their username was never used (deleted users count).</summary>
 public class SeedUser
 {
     public string Username { get; set; } = string.Empty;
+
+    /// <summary>Defaults to the username.</summary>
+    public string? FullName { get; set; }
 
     public string Password { get; set; } = string.Empty;
 
@@ -41,12 +44,13 @@ public static class DatabaseInitializer
             }
 
             var username = User.NormalizeUsername(seed.Username);
-            if (await db.Users.AnyAsync(u => u.Username == username, cancellationToken))
+            if (await db.Users.IgnoreQueryFilters().AnyAsync(u => u.Username == username, cancellationToken))
             {
                 continue;
             }
 
-            db.Users.Add(new User(username, hasher.Hash(seed.Password), seed.Role));
+            var fullName = string.IsNullOrWhiteSpace(seed.FullName) ? username : seed.FullName;
+            db.Users.Add(new User(username, fullName, hasher.Hash(seed.Password), seed.Role));
             logger.LogInformation("Seeded user {Username} with role {Role}", username, seed.Role);
         }
 

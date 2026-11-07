@@ -30,7 +30,7 @@ public class TrExtension(string key) : MarkupExtension
     public static BindingBase CreateBinding(string key)
     {
         var localization = App.Localization;
-        return new ReflectionBinding(nameof(LocalizationService.Version))
+        return new CompiledBinding(Translation.VersionPath)
         {
             Source = localization,
             Mode = BindingMode.OneWay,
@@ -52,19 +52,29 @@ public class TrExtension(string key) : MarkupExtension
 /// <summary>
 /// Translates the resource key held by a DataContext property, so view models expose keys
 /// and never listen for language changes. Usage: Text="{l:TrKey ErrorKey}".
+/// With Prefix, the property holds a code: Text="{l:TrKey Action, Prefix=Action.}" translates "Action.&lt;code&gt;"
+/// and shows the code itself when no translation exists.
 /// </summary>
 public class TrKeyExtension(string path) : MarkupExtension
 {
     public string Path { get; set; } = path;
 
+    public string? Prefix { get; set; }
+
     public override object ProvideValue(IServiceProvider serviceProvider) =>
         App.Services is null
             ? Path
-            : Translation.Bind(new ReflectionBinding(Path), new Translation.KeyConverter(App.Localization), parameter: null);
+            : Translation.Bind(new ReflectionBinding(Path), new Translation.KeyConverter(App.Localization), Prefix);
 }
 
 internal static class Translation
 {
+    /// <summary>
+    /// LocalizationService.Version as a compiled path, built once: on a language switch every translated text
+    /// re-reads it, so it must not go through reflection.
+    /// </summary>
+    public static readonly CompiledBindingPath VersionPath = CompiledBinding.Create<LocalizationService, int>(l => l.Version).Path!;
+
     /// <summary>Combines a DataContext binding with LocalizationService.Version so the text refreshes on language changes.</summary>
     public static MultiBinding Bind(BindingBase value, Converter converter, string? parameter) =>
         new()
@@ -72,7 +82,7 @@ internal static class Translation
             Bindings =
             {
                 value,
-                new ReflectionBinding(nameof(LocalizationService.Version)) { Source = converter.Localization },
+                new CompiledBinding(VersionPath) { Source = converter.Localization },
             },
             Mode = BindingMode.OneWay,
             Converter = converter,
@@ -88,8 +98,23 @@ internal static class Translation
 
     public sealed class KeyConverter(LocalizationService localization) : Converter(localization)
     {
-        public override object? Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture) =>
-            values.Count > 0 && values[0] is string { Length: > 0 } key ? Localization.Get(key) : null;
+        /// <summary>parameter = optional prefix; with a prefix, missing translations fall back to the raw value.</summary>
+        public override object? Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture)
+        {
+            if (values.Count == 0 || values[0] is not string { Length: > 0 } value)
+            {
+                return null;
+            }
+
+            if (parameter is not string { Length: > 0 } prefix)
+            {
+                return Localization.Get(value);
+            }
+
+            var key = prefix + value;
+            var text = Localization.Get(key);
+            return text == key ? value : text;
+        }
     }
 
     public sealed class FormatConverter(LocalizationService localization) : Converter(localization)

@@ -1,40 +1,30 @@
+using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Mostawsef.Contracts.Auth;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.Logs;
 using Mostawsef.Desktop.Components;
 using Mostawsef.Desktop.Services.Api;
 using Mostawsef.Desktop.Services.Local;
-using Mostawsef.Desktop.Services.Navigation;
 using Mostawsef.Desktop.Services.Ui;
 using Mostawsef.Desktop.ViewModels.Shell;
 
 namespace Mostawsef.Desktop.ViewModels.Super;
 
-[RequiresRole(Roles.Super)]
-public partial class ActivityLogsViewModel : PagedListViewModel<ActivityLogListItemDto>
+/// <summary>Super portal: activity log with stats, paging, search, details modal and delete. Access via AppRoutes.</summary>
+public partial class ActivityLogsViewModel(LogsApi logs, IDialogService dialogs, IToastService toasts, LocalizationService localization)
+    : PagedListViewModel<ActivityLogListItemDto>(toasts, localization)
 {
-    private readonly LogsApi _logs;
-    private readonly IDialogService _dialogs;
-
-    public ActivityLogsViewModel(LogsApi logs, IDialogService dialogs, IToastService toasts)
-        : base(toasts)
-    {
-        _logs = logs;
-        _dialogs = dialogs;
-    }
-
     [ObservableProperty]
     public partial ActivityLogStatsDto? Stats { get; private set; }
 
-    protected override Task<ApiResult<PagedResult<ActivityLogListItemDto>>> FetchPageAsync(int page, int pageSize, string? search) =>
-        _logs.GetActivityLogsAsync(page, pageSize, search);
+    protected override Task<ApiResult<CursorPage<ActivityLogListItemDto>>> FetchPageAsync(CursorQuery query, CancellationToken cancellationToken) =>
+        logs.GetActivityLogsAsync(query, cancellationToken);
 
-    protected override async Task LoadExtrasAsync()
+    protected override async Task LoadExtrasAsync(CancellationToken cancellationToken)
     {
-        var stats = await _logs.GetActivityStatsAsync();
+        var stats = await logs.GetActivityStatsAsync(cancellationToken);
         if (stats.IsSuccess)
         {
             Stats = stats.Value;
@@ -49,44 +39,43 @@ public partial class ActivityLogsViewModel : PagedListViewModel<ActivityLogListI
             return;
         }
 
-        var result = await _logs.GetActivityLogAsync(item.Id);
+        var result = await ReadAsync(cancellationToken => logs.GetActivityLogAsync(item.Id, cancellationToken));
+        if (result is null)
+        {
+            return;
+        }
+
         if (!result.IsSuccess)
         {
             ShowError(result.Error);
             return;
         }
 
-        var modal = new Modal
+        await dialogs.ShowAsync(new Modal
         {
-            Title = LocalizationService.Instance.Get("Logs.ActivityDetails"),
+            Title = Localization.Get("Logs.ActivityDetails"),
             Content = new ActivityLogDetailsViewModel(result.Value!),
             MaxWidth = 720,
-        };
-        await _dialogs.ShowAsync(modal);
+        });
     }
 
     [RelayCommand]
     private async Task DeleteAsync(ActivityLogListItemDto? item)
     {
-        if (item is null)
+        if (item is null
+            || !await dialogs.ConfirmAsync(Localization.Get("Logs.DeleteActivityConfirm"), confirmText: Localization.Get("Common.Delete"), isDanger: true))
         {
             return;
         }
 
-        var loc = LocalizationService.Instance;
-        if (!await _dialogs.ConfirmAsync(loc.Get("Logs.DeleteActivityConfirm"), confirmText: loc.Get("Common.Delete"), isDanger: true))
-        {
-            return;
-        }
-
-        var result = await _logs.DeleteActivityLogAsync(item.Id);
+        var result = await logs.DeleteActivityLogAsync(item.Id);
         if (!result.IsSuccess)
         {
             ShowError(result.Error);
             return;
         }
 
-        Toasts.Success(loc.Get("Logs.Deleted"));
-        await LoadAsync(resetPage: false);
+        Toasts.Success(Localization.Get("Logs.Deleted"));
+        await ReloadAsync();
     }
 }

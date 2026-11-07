@@ -1,8 +1,10 @@
+using Microsoft.AspNetCore.Mvc;
 using Mostawsef.Api.Extensions;
 using Mostawsef.Api.Middleware;
 using Mostawsef.Api.Services;
 using Mostawsef.Application;
 using Mostawsef.Application.Interfaces;
+using Mostawsef.Contracts.Common;
 using Mostawsef.Infrastructure;
 using Mostawsef.Infrastructure.Persistence;
 
@@ -10,15 +12,22 @@ var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? throw new InvalidOperationException("Connection string 'Default' is not configured.");
-var jwtOptions = builder.Configuration.GetJwtOptions();
 
 builder.Services.AddControllers();
+builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>
+{
+    // Automatic 400s from [ApiController] model validation: their "errors" values are ErrorCodes (attribute ErrorMessage).
+    if (context.ProblemDetails is ValidationProblemDetails)
+    {
+        context.ProblemDetails.Extensions.TryAdd(ProblemFields.Code, ErrorCodes.Validation);
+    }
+});
 builder.Services.AddOpenApi();
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+builder.Services.AddSingleton<ICurrentUser, CurrentUser>();
 builder.Services.AddApplication();
-builder.Services.AddInfrastructure(connectionString, jwtOptions);
-builder.Services.AddJwtAuth(jwtOptions);
+builder.Services.AddInfrastructure(connectionString);
+builder.Services.AddJwtAuth();
 
 var app = builder.Build();
 

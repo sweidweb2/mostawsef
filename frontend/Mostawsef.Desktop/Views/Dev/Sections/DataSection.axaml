@@ -14,9 +14,14 @@
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button Classes="secondary sm" Content="Toggle loading" Command="{Binding ToggleTableLoadingCommand}" />
                         <Button Classes="secondary sm" Content="Toggle empty" Command="{Binding ToggleTableEmptyCommand}" />
+                        <Button Classes="secondary sm" Content="Toggle error" Command="{Binding ToggleTableErrorCommand}" />
                     </StackPanel>
                 </ui:Section.Actions>
-                <ui:DataTable Height="380" IsLoading="{Binding IsTableLoading}" IsEmpty="{Binding IsTableEmpty}">
+                <ui:DataTable Height="380"
+                              IsLoading="{Binding IsTableLoading}"
+                              IsEmpty="{Binding IsTableEmpty}"
+                              HasError="{Binding IsTableError}"
+                              RetryCommand="{Binding ToggleTableErrorCommand}">
                     <ui:DataTable.Toolbar>
                         <Grid ColumnDefinitions="*,Auto">
                             <ui:SearchBox MaxWidth="320" HorizontalAlignment="Left" />
@@ -49,6 +54,26 @@
                 </ui:DataTable>
             </ui:Section>
 
+            <ui:Section Title="StatCard">
+                <ui:ResponsiveGrid MinColumnWidth="220">
+                    <ui:StatCard Title="Patients" Value="1,284" Caption="+12 this week" Icon="{StaticResource IconUsers}" Kind="Primary" />
+                    <ui:StatCard Title="Appointments today" Value="36" Icon="{StaticResource IconCalendar}" Kind="Info" />
+                    <ui:StatCard Title="Paid invoices" Value="92%" Icon="{StaticResource IconSuccess}" Kind="Success" />
+                    <ui:StatCard Title="Critical errors" Value="2" Icon="{StaticResource IconWarning}" Kind="Danger" />
+                </ui:ResponsiveGrid>
+            </ui:Section>
+
+            <ui:Section Title="DetailsView">
+                <ui:Card>
+                    <ui:DetailsView>
+                        <ui:DetailsItem Label="File No." Value="P-1001" />
+                        <ui:DetailsItem Label="Name" Value="أحمد علي" />
+                        <ui:DetailsItem Label="Notes" Value="" />
+                        <ui:DetailsItem Label="Details" Value="{}{ &quot;allergies&quot;: [&quot;Penicillin&quot;] }" IsCode="True" />
+                    </ui:DetailsView>
+                </ui:Card>
+            </ui:Section>
+
             <ui:Section Title="Badge + Avatar">
                 <ui:Card>
                     <StackPanel Spacing="16">
@@ -67,10 +92,6 @@
                         </StackPanel>
                     </StackPanel>
                 </ui:Card>
-            </ui:Section>
-
-            <ui:Section Title="Calendar / Scheduler">
-                <ui:Scheduler Height="560" Items="{Binding Appointments}" StartHour="8" EndHour="18" />
             </ui:Section>
         </StackPanel>
     </ScrollViewer>

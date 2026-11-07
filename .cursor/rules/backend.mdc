@@ -12,13 +12,16 @@ alwaysApply: false
   Maps between Domain entities and `Mostawsef.Contracts` DTOs.
 - **Infrastructure**: `AppDbContext`, `IEntityTypeConfiguration<T>` classes in `Persistence/Configurations/`,
   repository implementations, external services. Registered through `AddInfrastructure(connectionString)`.
-- **Api**: thin controllers (`api/[controller]`) that call Application services; no data access in controllers.
-- **Contracts** (`shared/`): request/response DTOs only (records), no logic, no references.
+- **Api**: thin controllers (`api/[controller]` or kebab-case `api/activity-logs`) that call Application services; no data
+  access in controllers (except the `HealthController` database ping).
+- **Contracts** (`shared/`): request/response DTOs (records). Allowed: DataAnnotations on request records and trivial
+  computed helpers (e.g. `PageQuery.SafePageSize`). No business logic, no project or package references.
 
 ## Database
 - Configure entities with Fluent API configuration classes (auto-applied by `ApplyConfigurationsFromAssembly`), not attributes.
-- Migrations live in Infrastructure; startup project is Api:
-  `dotnet ef migrations add <Name> --project backend/Mostawsef.Infrastructure --startup-project backend/Mostawsef.Api`
+- Migrations live in `Infrastructure/Persistence/Migrations`; startup project is Api. The API applies pending migrations and
+  seeds users (`Seed:Users`) on startup through `DatabaseInitializer`:
+  `dotnet ef migrations add <Name> --project backend/Mostawsef.Infrastructure --startup-project backend/Mostawsef.Api --output-dir Persistence/Migrations`
 - Connection string key: `ConnectionStrings:Default` (dev value in `appsettings.Development.json`, Docker PostgreSQL).
 - Portability (SQLite fallback): no PostgreSQL-only types/functions or raw SQL; money as integer minor units.
 
@@ -29,7 +32,25 @@ alwaysApply: false
 - Role names come from `Mostawsef.Contracts.Auth.Roles` / `Domain.Enums.UserRole`.
 - Secrets (`Jwt:Key`) are never committed for production; dev values live in `appsettings.Development.json` only.
 
+## Activity logs and system errors (see `Docs/logging.md`)
+- Every main action in an Application service ends with `IActivityLogger.LogAsync(new ActivityEntry(...))`.
+  Add its code to `ActivityActions` and an `Action.<code>` label to both desktop resx files.
+- Unhandled exceptions are recorded automatically by `ExceptionHandlingMiddleware`: do not catch-and-swallow.
+  If you catch and handle an exception, record it with `ISystemErrorLogger.LogAsync(ex, ...)`.
+- Never log passwords, tokens or sensitive medical content in `Details`.
+
+## Validation
+- **Shape** (required, length, range) = DataAnnotations on the request record in Contracts
+  (`[Required] string Username`). `[ApiController]` answers 400 `ValidationProblem` automatically; `[Required]` also rejects
+  empty/whitespace strings. Do not repeat these checks by hand in controllers.
+- **Business rules** (exists, unique, allowed state) = Application service. It returns null/false/a result the controller maps:
+  missing -> 404, duplicate or wrong state -> 409, rule broken -> 400 via `ValidationProblem`/`Problem`. Never throw for expected outcomes.
+- **Invariants** (always true for the entity) = Domain constructor/methods (e.g. `User.NormalizeUsername`), plus database
+  constraints (unique index, max length, required) in the Fluent configuration.
+- Clamp, don't reject, harmless paging input (`PageQuery.SafePageSize`).
+- No validation library (FluentValidation etc.) unless the user asks for one.
+
 ## Conventions
 - Async all the way with `CancellationToken` on I/O methods.
-- Validate input at the API boundary; return proper status codes (400/404/409), never leak exceptions.
+- Return proper status codes (400/401/403/404/409, 202/204 for no body); never leak exception details (the middleware returns a generic 500).
 - Keep `GET /api/health` working: the desktop app relies on it.

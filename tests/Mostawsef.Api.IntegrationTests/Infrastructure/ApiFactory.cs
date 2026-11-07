@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Mostawsef.Infrastructure.Persistence.Context;
 using Testcontainers.PostgreSql;
 
 namespace Mostawsef.Api.IntegrationTests.Infrastructure;
@@ -39,10 +41,16 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         }
     }
 
+    public SqlRecorder Sql { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");
-        builder.ConfigureTestServices(services => services.AddSingleton<IStartupFilter, ThrowingEndpointFilter>());
+        builder.ConfigureTestServices(services =>
+        {
+            services.AddSingleton<IStartupFilter, ThrowingEndpointFilter>();
+            services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(Sql));
+        });
     }
 
     public override async ValueTask DisposeAsync()

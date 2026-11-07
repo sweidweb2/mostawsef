@@ -54,11 +54,24 @@ public class LoginTests(ApiFactory factory)
     [InlineData("", "")]
     [InlineData("admin@test.local", "")]
     [InlineData("   ", "password")]
+    [InlineData("admin@test.local", "   ")]
     public async Task Missing_fields_return_400(string username, string password)
     {
         var response = await _client.LoginAsync(username, password);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Missing_password_returns_a_validation_problem_naming_the_field()
+    {
+        var response = await _client.LoginAsync(TestUsers.Admin.Username, "");
+        var body = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var fields = body.RootElement.GetProperty("errors").EnumerateObject().Select(e => e.Name);
+        Assert.Contains(fields, f => f.Equals("Password", StringComparison.OrdinalIgnoreCase));
+        Assert.DoesNotContain(fields, f => f.Equals("Username", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

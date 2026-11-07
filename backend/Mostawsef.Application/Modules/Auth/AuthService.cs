@@ -1,6 +1,7 @@
 using Mostawsef.Application.Common;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Contracts.Auth;
+using Mostawsef.Contracts.Common;
 using Mostawsef.Domain.Entities;
 
 namespace Mostawsef.Application.Modules.Auth;
@@ -14,6 +15,9 @@ public interface IAuthService
 
     /// <summary>Records the sign-out of the current user (tokens are stateless, the client discards it).</summary>
     Task SignOutAsync(CancellationToken cancellationToken);
+
+    /// <summary>Throws AppException: 400 wrong_password on CurrentPassword, 404 if the user no longer exists.</summary>
+    Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request, CancellationToken cancellationToken);
 }
 
 public class AuthService(
@@ -46,10 +50,10 @@ public class AuthService(
         if (check == PasswordCheck.SuccessRehashNeeded)
         {
             user.ChangePasswordHash(passwordHasher.Hash(request.Password));
+            await users.SaveChangesAsync(cancellationToken);
         }
 
-        user.RecordLogin();
-        await users.SaveChangesAsync(cancellationToken);
+        await users.RecordLoginAsync(user.Id, DateTime.UtcNow, cancellationToken);
 
         await activity.LogAsync(
             new ActivityEntry(ActivityActions.SignedIn, ActivityModules.Auth, "Signed in")
@@ -73,6 +77,26 @@ public class AuthService(
     public Task SignOutAsync(CancellationToken cancellationToken) =>
         activity.LogAsync(new ActivityEntry(ActivityActions.SignedOut, ActivityModules.Auth, "Signed out"), cancellationToken);
 
+    public async Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request, CancellationToken cancellationToken)
+    {
+        var user = await users.GetByIdAsync(userId, cancellationToken) ?? throw AppException.NotFound();
+        if (passwordHasher.Verify(user.PasswordHash, request.CurrentPassword) == PasswordCheck.Failed)
+        {
+            throw AppException.Validation(nameof(ChangePasswordRequest.CurrentPassword), ErrorCodes.WrongPassword);
+        }
+
+        user.ChangePasswordHash(passwordHasher.Hash(request.NewPassword));
+        await users.SaveChangesAsync(cancellationToken);
+
+        await activity.LogAsync(
+            new ActivityEntry(ActivityActions.PasswordChanged, ActivityModules.Auth, "Changed own password")
+            {
+                EntityType = nameof(User),
+                EntityId = user.Id.ToString(),
+            },
+            cancellationToken);
+    }
+
     private Task LogFailedSignInAsync(string attemptedUsername, CancellationToken cancellationToken) =>
         activity.LogAsync(
             new ActivityEntry(ActivityActions.SignInFailed, ActivityModules.Auth, "Failed sign-in attempt")
@@ -81,5 +105,6 @@ public class AuthService(
             },
             cancellationToken);
 
-    private static UserDto ToDto(User user) => new(user.Id, user.Username, user.Role.ToString());
+    private static UserDto ToDto(User user) =>
+        new(user.Id, user.Username, user.Role.ToString(), string.IsNullOrEmpty(user.FullName) ? null : user.FullName);
 }

@@ -129,7 +129,7 @@ Layouts react to the **width of the AppShell content area**, not the window or d
 
 | Breakpoint | Width | Behavior |
 | --- | --- | --- |
-| Compact | < 900 | 1 column, page padding 16, header actions wrap, list/details stack |
+| Compact | < 900 | 1 column, page padding 16, header actions wrap |
 | Medium | 900 - 1279 | 2 columns |
 | Wide | 1280 - 1599 | 3 columns |
 | XWide | >= 1600 | 4 columns, content capped at 1440 |
@@ -138,8 +138,7 @@ Layouts react to the **width of the AppShell content area**, not the window or d
 - Visibility: `hide-compact` / `show-compact` (900), `hide-medium` / `show-medium` (1280), `hide-wide` / `show-wide` (1600).
 - `stack-compact`: horizontal StackPanel becomes vertical below 900.
 - `ResponsiveGrid`: auto columns from `MinColumnWidth` and `MaxColumns`; `ui:ResponsiveGrid.ColumnSpan="0"` spans a row.
-- `AppShell` collapses the sidebar below `AutoCompactWidth` (1100 px); `ListDetailsView` stacks below 900.
-- C# constants: `Breakpoints.Medium / Wide / XWide`.
+- `AppShell` collapses the sidebar below `AutoCompactWidth` (1100 px).
 
 ## 11. Localization and RTL
 
@@ -155,7 +154,7 @@ Layouts react to the **width of the AppShell content area**, not the window or d
 
 | Service | Purpose |
 | --- | --- |
-| `SettingsService` | Loads and saves `settings.json` (theme, language) |
+| `SettingsService` | Loads `settings.json` (theme, language) once; `Save()` writes it on a background thread (flushed on exit) |
 | `ThemeService` | Light / Dark switching (`ui:PreferencesBar` in the UI) |
 | `LocalizationService` | Language, culture, RTL, translations |
 | `DialogService` | `ShowAsync(modal)`, `ConfirmAsync(message, ...)` on the window's `DialogHost` |

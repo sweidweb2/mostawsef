@@ -6,6 +6,7 @@ The full list of shared components for the Mostawsef desktop app (Avalonia).
 - **Built:** a custom component exists in `frontend/Mostawsef.Desktop/Components/`.
 - **Built-in:** an Avalonia control, styled by the theme. Use it directly, no wrapper needed.
 - **Deferred:** not built yet. Build it when a screen first needs it (see the rules in `.cursor/rules/`).
+  Rows marked *Removed while unused* were built early for the gallery and deleted; restore them from git history (commit `983d1b9`) when a screen needs one.
 
 All components use the design tokens in `Styles/Tokens/` (no hard-coded colors), support Light/Dark, and mirror correctly in Arabic (RTL).
 Styling, localization and responsiveness are explained in [ui-foundation.md](ui-foundation.md).
@@ -26,10 +27,11 @@ Usage namespace: `xmlns:ui="using:Mostawsef.Desktop.Components"`.
 | PageHeader (title, breadcrumb, actions) | Built | `ui:PageHeader` |
 | Card | Built | `ui:Card` (classes: `outlined`, `flat`, `interactive`) |
 | Section / Panel | Built | `ui:Section` |
-| SplitView (list + details) | Built | `ui:ListDetailsView` (stacks below 900 px) |
+| SplitView (list + details) | Deferred | Removed while unused (`ListDetailsView`) |
 | TabView | Built-in | `TabControl` / `TabItem` |
 | Divider | Built | `ui:Divider` (optional `Text`, `Orientation`) |
 | ResponsiveGrid (layout helper) | Built | `ui:ResponsiveGrid` (auto 1-4 columns) |
+| PageHost (shell content area) | Built | `ui:PageHost Page="{Binding CurrentPage}"`: shows a page view model's view and keeps it, so switching back reuses the view |
 
 ## Forms
 
@@ -42,16 +44,16 @@ Usage namespace: `xmlns:ui="using:Mostawsef.Desktop.Components"`.
 | SearchBox | Built | `ui:SearchBox` (`SearchCommand` on Enter, Esc clears) |
 | DatePicker | Built-in | `CalendarDatePicker` / `DatePicker` |
 | TimePicker | Built-in | `TimePicker` |
-| DateRangePicker | Built | `ui:DateRangePicker` (`From`, `To`) |
+| DateRangePicker | Deferred | Removed while unused; two `CalendarDatePicker`s for now |
 | Dropdown / Select | Built-in | `ComboBox` |
 | AutoComplete (patient and drug lookup) | Built-in | `AutoCompleteBox` |
 | Checkbox | Built-in | `CheckBox` |
 | RadioGroup | Built-in | `RadioButton` with shared `GroupName` |
 | ToggleSwitch | Built-in | `ToggleSwitch` |
-| FileUpload / ImagePicker | Built | `ui:FileUpload`, `ui:ImagePicker` |
+| FileUpload / ImagePicker | Deferred | Removed while unused |
 | FormField (label + input + validation message) | Built | `ui:FormField` (`Label`, `Hint`, `Error`, `IsRequired`) |
-| FormSection | Built | `ui:FormSection` (responsive columns, `MaxColumns`) |
-| ValidationSummary | Built | `ui:ValidationSummary` (`Errors`) |
+| FormSection | Deferred | Use `ui:ResponsiveGrid MaxColumns="2"` of `ui:FormField`s inside a `ui:Section` |
+| ValidationSummary | Deferred | Removed while unused; per-field errors via `ui:FormField Error` |
 
 ## Buttons
 
@@ -60,22 +62,22 @@ Usage namespace: `xmlns:ui="using:Mostawsef.Desktop.Components"`.
 | Button (primary / secondary / danger / ghost) | Built-in | `Button Classes="primary"` (also `secondary`, `danger`, `ghost`, `link`, sizes `sm`, `lg`) |
 | IconButton | Built | `ui:IconButton Icon="{StaticResource IconEdit}"` |
 | SplitButton / DropdownButton | Built-in | `SplitButton`, `DropDownButton` |
-| ButtonGroup | Built | `ui:ButtonGroup` |
+| ButtonGroup | Deferred | Removed while unused |
 
 ## Data display
 
 | Component | Status | Use |
 | --- | --- | --- |
-| DataTable (sorting, paging, selection) | Built | `ui:DataTable` wrapping a `DataGrid` (loading + empty states, toolbar, footer) |
+| DataTable (sorting, paging, selection) | Built | `ui:DataTable` wrapping a `DataGrid` (loading, empty and error states with `HasError` + `RetryCommand`, toolbar, footer) |
 | Pagination | Built | `ui:Pagination` (`CurrentPage`, `PageCount`) |
 | ListView | Built-in | `ListBox` |
-| DetailsView (label/value pairs) | Deferred | |
+| DetailsView (label/value pairs) | Built | `ui:DetailsView` + `ui:DetailsItem Label Value` (`IsCode` for JSON / stack traces) |
 | Badge / StatusTag | Built | `ui:Badge Text="Paid" Kind="Success"` (`Neutral`, `Primary`, `Success`, `Warning`, `Danger`, `Info`) |
 | Avatar | Built | `ui:Avatar` (initials or image) |
-| StatCard (dashboard numbers) | Deferred | |
+| StatCard (dashboard numbers) | Built | `ui:StatCard Title Value Caption Icon Kind` |
 | Chart | Deferred | |
 | Timeline (patient history) | Deferred | |
-| Calendar / Scheduler (appointments) | Built | `ui:Scheduler Items="{Binding Appointments}"` (day / week view, `SchedulerItem` entries) |
+| Calendar / Scheduler (appointments) | Deferred | Removed while unused (day / week `Scheduler`) |
 | Tooltip | Built-in | `ToolTip.Tip="..."` |
 
 ## Feedback
@@ -89,7 +91,7 @@ Usage namespace: `xmlns:ui="using:Mostawsef.Desktop.Components"`.
 | SkeletonLoader | Deferred | |
 | ProgressBar | Built-in | `ProgressBar` (classes: `success`, `warning`, `danger`) |
 | EmptyState | Built | `ui:EmptyState` |
-| ErrorState | Deferred | Use `ui:EmptyState` with an error icon for now |
+| ErrorState | Built | `ui:ErrorState RetryCommand="..."` (`Title`, `Description`, `Icon`; Retry button shows only with a command) |
 
 ## Overlays
 
@@ -105,8 +107,8 @@ Usage namespace: `xmlns:ui="using:Mostawsef.Desktop.Components"`.
 
 | Component | Status | Use |
 | --- | --- | --- |
-| Breadcrumb | Built | `ui:Breadcrumb` + `ui:BreadcrumbItem` |
-| Stepper / Wizard | Built | `ui:Stepper`, `ui:Wizard` + `ui:WizardPage` |
+| Breadcrumb | Deferred | Removed while unused; `ui:PageHeader.Breadcrumb` accepts any content |
+| Stepper / Wizard | Deferred | Removed while unused |
 | Tabs | Built-in | `TabControl` |
 
 ## Clinic-specific (shared across pages)
@@ -115,12 +117,12 @@ Display-only. They take plain values (text, status) and contain no business logi
 
 | Component | Status | Use |
 | --- | --- | --- |
-| PatientCard / PatientHeader | Built | `ui:PatientCard`, `ui:PatientHeader` |
+| PatientCard / PatientHeader | Deferred | Removed while unused |
 | AppointmentCard | Deferred | |
 | PrescriptionItem | Deferred | |
 | InvoiceSummary | Deferred | |
 | VitalsDisplay | Deferred | |
-| PrintPreview (prescriptions, invoices, reports) | Built | `ui:PrintPreview` (visual shell; real printing comes later) |
+| PrintPreview (prescriptions, invoices, reports) | Deferred | Removed while unused |
 
 ---
 

@@ -1,29 +1,35 @@
-mini-market/
+mostawsef/
 │
 ├── backend/
-│   ├── MiniMarket.Api/
-│   ├── MiniMarket.Application/
-│   ├── MiniMarket.Domain/
-│   ├── MiniMarket.Infrastructure/
-│   │
-│   └── MiniMarket.sln
+│   ├── Mostawsef.Api/
+│   ├── Mostawsef.Application/
+│   ├── Mostawsef.Domain/
+│   └── Mostawsef.Infrastructure/
+│
+├── shared/
+│   └── Mostawsef.Contracts/
 │
 ├── frontend/
-│   └── MiniMarket.Desktop/
+│   └── Mostawsef.Desktop/
 │
-├── docs/
+├── tests/
+│   ├── Mostawsef.Api.IntegrationTests/
+│   └── Mostawsef.Desktop.Tests/
 │
+├── Docs/
 ├── scripts/
-│
-└── README.md
+├── docker-compose.yml
+└── Mostawsef.slnx
 
 
 Responsibilities:
 Project	Responsibility
 Api	HTTP endpoints, controllers, middleware
-Application	Use cases, services, DTOs
-Domain	Entities, business rules, interfaces
-Infrastructure	PostgreSQL, EF Core, repositories
-Desktop	UI, screens, navigation, API integration
+Application	Use cases, services, application interfaces
+Domain	Entities, enums, business rules
+Infrastructure	PostgreSQL, EF Core, repositories, auth/logging services
+Contracts	Request/response DTOs shared by the API and the desktop app
+Desktop	UI, screens, navigation, API client
 
-The desktop application communicates with the backend through REST APIs.
+The desktop application communicates with the backend through REST APIs only.
+Full details: foundation.md.

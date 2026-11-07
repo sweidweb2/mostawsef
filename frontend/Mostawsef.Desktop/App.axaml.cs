@@ -32,6 +32,7 @@ public partial class App : Application
             Services = new ServiceCollection().AddMostawsefDesktop().BuildServiceProvider();
             Services.GetRequiredService<ErrorReporter>().Install();
             Services.GetRequiredService<ThemeService>().Initialize();
+            desktop.Exit += (_, _) => Services.GetRequiredService<SettingsService>().Flush();
 
             var window = new MainWindow
             {

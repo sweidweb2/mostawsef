@@ -2,7 +2,8 @@
 
 Locally installed **Clinic Management System** (desktop application + local backend + local database).
 
-This document records the foundational decisions only. No business logic or business modules are defined yet.
+This document records the foundational decisions only. No business (clinic) modules are defined yet; only the
+platform modules exist: auth, activity logs and system errors.
 
 ---
 
@@ -81,8 +82,12 @@ mostawsef/
 ├── frontend/
 │   └── Mostawsef.Desktop/
 │
+├── tests/
+│   ├── Mostawsef.Api.IntegrationTests/
+│   └── Mostawsef.Desktop.Tests/
+│
 ├── Docs/
-├── scripts/
+├── scripts/             ← test.ps1, capture-window.ps1
 ├── docker-compose.yml   ← development database only
 ├── Mostawsef.slnx
 └── README.md
@@ -133,7 +138,7 @@ backend/
 ├── Mostawsef.Application/
 │   ├── Common/
 │   ├── Interfaces/
-│   └── Modules/            ← empty for now; business modules added later
+│   └── Modules/            ← one folder per feature (Auth, Logs; business modules later)
 │
 ├── Mostawsef.Domain/
 │   ├── Common/
@@ -299,15 +304,18 @@ Health check: `GET http://localhost:5270/api/health` returns
 
 ## 10. Current bedrock (implemented)
 
-| File                                                          | Purpose                                             |
-| ------------------------------------------------------------- | --------------------------------------------------- |
-| `backend/Mostawsef.Infrastructure/Persistence/Context/AppDbContext.cs` | Empty EF Core context; auto-applies entity configurations |
-| `backend/Mostawsef.Infrastructure/DependencyInjection.cs`     | `AddInfrastructure(connectionString)` registers Npgsql |
-| `backend/Mostawsef.Api/Program.cs`                            | Reads `ConnectionStrings:Default`, wires Infrastructure |
-| `backend/Mostawsef.Api/Controllers/HealthController.cs`       | `GET /api/health` verifies API + database           |
-| `docker-compose.yml`                                          | Development PostgreSQL (+ optional pgAdmin)         |
+| Area | Where | Details |
+| --- | --- | --- |
+| Database | `Infrastructure/Persistence/Context/AppDbContext.cs`, `Configurations/`, `Migrations/` | Entities `User`, `ActivityLog`, `SystemError`; migrations `InitialUsers`, `AddActivityLogsAndSystemErrors` |
+| Startup | `Api/Program.cs`, `Infrastructure/Persistence/DatabaseInitializer.cs` | Applies pending migrations and seeds `Seed:Users` when the API starts |
+| Health | `Api/Controllers/HealthController.cs` | `GET /api/health` verifies API + database |
+| Auth | `AuthController`, `Application/Modules/Auth`, `Infrastructure/Services/Auth` | JWT, roles `Admin`/`Super`, PBKDF2 hashing, login rate limit. See `auth.md` |
+| Logging | `ActivityLogsController`, `SystemErrorsController`, `Application/Modules/Logs`, `ExceptionHandlingMiddleware` | Activity logs and system errors. See `logging.md` |
+| Desktop | `frontend/Mostawsef.Desktop` | Login, one portal shell per role from `AppRoutes`, Super pages for logs/errors, shared components, Light/Dark, Arabic/English. See `ui-foundation.md` |
+| Tests | `tests/` | API integration tests (Testcontainers) and headless desktop tests. See `.cursor/rules/testing.mdc` |
+| Dev database | `docker-compose.yml` | Development PostgreSQL (+ optional pgAdmin) |
 
-No entities, migrations, or business modules exist yet.
+No business (clinic) modules exist yet.
 
 ---
 
@@ -332,7 +340,6 @@ UI details: `Docs/ui-foundation.md`. Component catalog: `Docs/shared-components.
 
 - Automatically starting the backend when the desktop app opens.
 - Installing PostgreSQL natively on clinic PCs (installer or setup script).
-- First migration and applying migrations on startup (`Database.Migrate()`).
 - Packaging everything into an installer.
 - Backups and recovery.
 - Business modules (to be defined).

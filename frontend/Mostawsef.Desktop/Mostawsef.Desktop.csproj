@@ -4,6 +4,14 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <TieredCompilation>true</TieredCompilation>
+    <TieredPGO>true</TieredPGO>
+    <SatelliteResourceLanguages>en;ar</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <!-- ReadyToRun needs a target runtime: dotnet publish frontend/Mostawsef.Desktop -r win-x64 -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
+    <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
 
   <ItemGroup>

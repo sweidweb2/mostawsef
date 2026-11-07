@@ -11,7 +11,7 @@ SessionService (token in memory) ──► NavigationService ──► Admin por
 ```
 
 - Users sign in with **username + password**. Each user has one **role**: `Admin` or `Super`.
-- After sign-in, the desktop app opens the portal for that role. Each portal has its own shell (sidebar menu) built on a shared layout.
+- After sign-in, the desktop app opens the portal for that role. All portals share one shell; each role gets its own title and sidebar menu from `AppRoutes`.
 - Closing the app signs out (the token is kept in memory only).
 
 ## Database: `users`
@@ -64,9 +64,10 @@ These exist only through the Development seed. Production installs must set thei
 
 | Piece | Responsibility |
 | --- | --- |
-| `Services/Api/ApiClient` | HTTP calls, bearer token, maps errors (`Unreachable`, `Unauthorized`, `TooManyRequests`, ...). API address: `ApiBaseUrl` in `%AppData%\Mostawsef\settings.json` (default `http://localhost:5270`) |
+| `Services/Api/ApiClient` | HTTP calls, maps errors (`Unreachable`, `Unauthorized`, `TooManyRequests`, ...). Knows nothing about tokens. API address: `ApiBaseUrl` in `%AppData%\Mostawsef\settings.json` (default `http://localhost:5270`). Timeouts (`ServiceRegistration`): 3 s to connect, so a switched-off API PC shows `Unreachable` quickly, and 15 s for a whole request |
 | `Services/Api/AuthApi` | `LoginAsync`, `MeAsync` |
-| `Services/Auth/SessionService` | Current user + token in memory, auto sign-out at token expiry or on any `401` |
+| `Services/Auth/AuthHeaderHandler` | `HttpClient` pipeline step: adds the session's bearer token to each request; a `401` for that token expires the session (a late `401` for an earlier session is ignored) |
+| `Services/Auth/SessionService` | Current user + token in memory, auto sign-out at token expiry or when `AuthHeaderHandler` reports a rejected token |
 | `AppRoutes` (`Services/Navigation/RouteTable`) | Every screen in one table: its view, who may open it, and each role's portal (title + menu). DI, navigation, the shell and `ViewLocator` all read it |
 | `Services/Navigation/NavigationService` | Opens the login screen or the user's portal; the single access check (`CanAccess`, `CreatePage`) |
 | `ViewModels/Auth/LoginViewModel` + `Views/Auth/LoginView` | Sign-in form |

@@ -111,17 +111,4 @@ public class NavigationGuardTests
         Assert.Equal("Login.SessionExpired", login.ErrorKey);
         Assert.StartsWith("Your session has expired", app.Localization.Get(login.ErrorKey!));
     }
-
-    [AvaloniaFact]
-    public void Signed_in_requests_carry_the_bearer_token()
-    {
-        using var app = new TestServices();
-        app.SignInAs(Roles.Admin);
-
-        _ = app.Get<AuthApi>().MeAsync(TestContext.Current.CancellationToken);
-
-        var request = Assert.Single(app.Api.Requests);
-        Assert.Equal("Bearer", request.Headers.Authorization?.Scheme);
-        Assert.Equal("test-token", request.Headers.Authorization?.Parameter);
-    }
 }

@@ -21,6 +21,15 @@ public class DesktopServiceOptions
 
 public static class ServiceRegistration
 {
+    /// <summary>Longest wait for a whole API call (connect, server work, response).</summary>
+    public static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(15);
+
+    /// <summary>Longest wait to open a connection, so a switched-off API PC fails fast instead of after RequestTimeout.</summary>
+    public static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(3);
+
+    /// <summary>The real network handler under the API HttpClient.</summary>
+    public static SocketsHttpHandler CreateServerHandler() => new() { ConnectTimeout = ConnectTimeout };
+
     public static IServiceCollection AddMostawsefDesktop(this IServiceCollection services, DesktopServiceOptions? options = null)
     {
         options ??= new DesktopServiceOptions();
@@ -33,13 +42,18 @@ public static class ServiceRegistration
         // API
         services.AddSingleton(sp =>
         {
-            var http = options.HttpHandler is null ? new HttpClient() : new HttpClient(options.HttpHandler);
+            var auth = new AuthHeaderHandler(sp.GetRequiredService<SessionService>())
+            {
+                InnerHandler = options.HttpHandler ?? CreateServerHandler(),
+            };
+            var http = new HttpClient(auth);
             http.BaseAddress = new Uri(sp.GetRequiredService<SettingsService>().Current.ApiBaseUrl.TrimEnd('/') + "/");
-            http.Timeout = TimeSpan.FromSeconds(15);
+            http.Timeout = RequestTimeout;
             return http;
         });
         services.AddSingleton<ApiClient>();
         services.AddSingleton<AuthApi>();
+        services.AddSingleton<LogsApi>();
 
         // Auth + navigation
         services.AddSingleton<SessionService>();
@@ -48,7 +62,12 @@ public static class ServiceRegistration
 
         // UI
         services.AddSingleton<DialogService>();
+        services.AddSingleton<IDialogService>(sp => sp.GetRequiredService<DialogService>());
         services.AddSingleton<ToastService>();
+        services.AddSingleton<IToastService>(sp => sp.GetRequiredService<ToastService>());
+
+        // Diagnostics: desktop side of the system error engine
+        services.AddSingleton<ErrorReporter>();
 
         // View models: pages come from AppRoutes; portal shells are created by NavigationService.
         services.AddSingleton<MainWindowViewModel>();

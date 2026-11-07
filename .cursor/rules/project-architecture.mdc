@@ -35,7 +35,9 @@ tests/Mostawsef.Desktop.Tests          view models, navigation, headless views
 - Modular monolith: organize by feature modules (`Application/Modules/<Feature>`), no microservices.
 - Keep SQLite as a possible fallback: no `jsonb`, arrays, `citext`, `EF.Functions.ILike` or raw SQL; store money as integers (smallest unit).
 - Auth: username/password users with roles `Admin` and `Super` (JWT); each role has its own desktop portal. Details: `Docs/auth.md`.
+- App-wide engines: activity logs (`IActivityLogger`) and system errors (`ISystemErrorLogger` / desktop `ErrorReporter`). Details: `Docs/logging.md`.
 - Do not add business logic or business modules unless the user asks for them.
+- Working principles (simplicity, reuse, dependencies, never bypass layers, when to ask): `working-principles.mdc`.
 
 ## Commands
 ```powershell

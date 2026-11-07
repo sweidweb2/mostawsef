@@ -43,12 +43,12 @@ public class SystemErrorLogger(
                 entry.Message,
                 entry.ExceptionType,
                 entry.StackTrace,
-                currentUser.RequestPath,
-                currentUser.RequestMethod,
+                entry.IncludeRequestInfo ? currentUser.RequestPath : null,
+                entry.IncludeRequestInfo ? currentUser.RequestMethod : null,
                 entry.StatusCode,
                 entry.UserId ?? currentUser.UserId,
                 entry.Username ?? currentUser.Username,
-                currentUser.TraceId,
+                entry.IncludeRequestInfo ? currentUser.TraceId : null,
                 currentUser.IpAddress,
                 entry.Details is null ? null : JsonSerializer.Serialize(entry.Details, ActivityLogger.Json)));
 

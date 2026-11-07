@@ -62,6 +62,6 @@
             </ui:TopBar>
         </ui:AppShell.TopBar>
 
-        <ContentControl Content="{Binding CurrentPage}" />
+        <ui:PageHost Page="{Binding CurrentPage}" />
     </ui:AppShell>
 </UserControl>

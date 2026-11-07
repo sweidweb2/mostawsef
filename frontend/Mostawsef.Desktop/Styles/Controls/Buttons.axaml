@@ -64,18 +64,6 @@
         <Setter Property="Foreground" Value="{DynamicResource BrushText}" />
     </Style>
 
-    <!-- secondary.active: selected segment (e.g. in a ButtonGroup) -->
-    <Style Selector="Button.secondary.active">
-        <Setter Property="Background" Value="{DynamicResource BrushPrimarySubtle}" />
-        <Setter Property="Foreground" Value="{DynamicResource BrushPrimarySubtleText}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource BrushPrimary}" />
-    </Style>
-    <Style Selector="Button.secondary.active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-        <Setter Property="Background" Value="{DynamicResource BrushPrimarySubtle}" />
-        <Setter Property="Foreground" Value="{DynamicResource BrushPrimarySubtleText}" />
-        <Setter Property="BorderBrush" Value="{DynamicResource BrushPrimary}" />
-    </Style>
-
     <!-- danger -->
     <Style Selector="Button.danger">
         <Setter Property="Background" Value="{DynamicResource BrushDanger}" />
@@ -172,21 +160,5 @@
     <Style Selector=":is(Button).icon.sm PathIcon">
         <Setter Property="Width" Value="{DynamicResource IconSizeSm}" />
         <Setter Property="Height" Value="{DynamicResource IconSizeSm}" />
-    </Style>
-
-    <!-- ButtonGroup: joined segments -->
-    <Style Selector="ui|ButtonGroup > :is(Button)">
-        <Setter Property="CornerRadius" Value="0" />
-        <Setter Property="Margin" Value="-1,0,0,0" />
-    </Style>
-    <Style Selector="ui|ButtonGroup > :is(Button):nth-child(1)">
-        <Setter Property="CornerRadius" Value="8,0,0,8" />
-        <Setter Property="Margin" Value="0" />
-    </Style>
-    <Style Selector="ui|ButtonGroup > :is(Button):nth-last-child(1)">
-        <Setter Property="CornerRadius" Value="0,8,8,0" />
-    </Style>
-    <Style Selector="ui|ButtonGroup > :is(Button):nth-child(1):nth-last-child(1)">
-        <Setter Property="CornerRadius" Value="8" />
     </Style>
 </Styles>

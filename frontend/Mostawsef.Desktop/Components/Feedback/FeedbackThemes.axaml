@@ -3,6 +3,153 @@
                     xmlns:ui="using:Mostawsef.Desktop.Components"
                     xmlns:l="using:Mostawsef.Desktop.Services.Local">
 
+    <!-- Toast content -->
+    <ControlTheme x:Key="{x:Type ui:Toast}" TargetType="ui:Toast">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource Space3}" Margin="14,12,8,12">
+                    <Border Name="PART_IconTile"
+                            Width="32"
+                            Height="32"
+                            CornerRadius="{DynamicResource RadiusFull}"
+                            Background="{DynamicResource BrushInfoSubtle}"
+                            VerticalAlignment="Top">
+                        <PathIcon Name="PART_Icon"
+                                  Data="{StaticResource IconInfo}"
+                                  Width="{DynamicResource IconSize}"
+                                  Height="{DynamicResource IconSize}"
+                                  Foreground="{DynamicResource BrushInfo}" />
+                    </Border>
+                    <StackPanel Grid.Column="1" Spacing="{DynamicResource SpaceHalf}" VerticalAlignment="Center">
+                        <TextBlock Classes="strong"
+                                   Text="{TemplateBinding Title}"
+                                   TextWrapping="Wrap"
+                                   IsVisible="{TemplateBinding Title, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        <TextBlock Text="{TemplateBinding Message}"
+                                   Foreground="{DynamicResource BrushText}"
+                                   TextWrapping="Wrap"
+                                   MaxHeight="80"
+                                   TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <Button Grid.Column="2"
+                            Classes="ghost icon sm"
+                            Foreground="{DynamicResource BrushTextMuted}"
+                            VerticalAlignment="Top"
+                            NotificationCard.CloseOnClick="True"
+                            ToolTip.Tip="{l:Tr Common.Close}">
+                        <PathIcon Data="{StaticResource IconClose}" />
+                    </Button>
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:success /template/ Border#PART_IconTile">
+            <Setter Property="Background" Value="{DynamicResource BrushSuccessSubtle}" />
+        </Style>
+        <Style Selector="^:success /template/ PathIcon#PART_Icon">
+            <Setter Property="Data" Value="{StaticResource IconSuccess}" />
+            <Setter Property="Foreground" Value="{DynamicResource BrushSuccess}" />
+        </Style>
+        <Style Selector="^:warning /template/ Border#PART_IconTile">
+            <Setter Property="Background" Value="{DynamicResource BrushWarningSubtle}" />
+        </Style>
+        <Style Selector="^:warning /template/ PathIcon#PART_Icon">
+            <Setter Property="Data" Value="{StaticResource IconWarning}" />
+            <Setter Property="Foreground" Value="{DynamicResource BrushWarning}" />
+        </Style>
+        <Style Selector="^:danger /template/ Border#PART_IconTile">
+            <Setter Property="Background" Value="{DynamicResource BrushDangerSubtle}" />
+        </Style>
+        <Style Selector="^:danger /template/ PathIcon#PART_Icon">
+            <Setter Property="Data" Value="{StaticResource IconError}" />
+            <Setter Property="Foreground" Value="{DynamicResource BrushDanger}" />
+        </Style>
+    </ControlTheme>
+
+    <!-- Toast card: replaces Fluent's NotificationCard look (keeps its close/expire behavior) -->
+    <ControlTheme x:Key="{x:Type NotificationCard}" TargetType="NotificationCard">
+        <Setter Property="UseLayoutRounding" Value="True" />
+        <Setter Property="Width" Value="380" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushText}" />
+        <Setter Property="Background" Value="{DynamicResource BrushSurfaceRaised}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BrushBorder}" />
+        <Setter Property="BorderThickness" Value="{DynamicResource BorderWidth}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusLg}" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <LayoutTransformControl Name="PART_LayoutTransformControl" UseRenderTransform="True">
+                    <Border Margin="12,6"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            BoxShadow="{DynamicResource ShadowLg}"
+                            ClipToBounds="True">
+                        <Grid ColumnDefinitions="4,*">
+                            <Border Name="PART_Accent" Background="{DynamicResource BrushInfo}" />
+                            <ContentPresenter Name="PART_ContentPresenter"
+                                              Grid.Column="1"
+                                              Content="{TemplateBinding Content}" />
+                        </Grid>
+                    </Border>
+                </LayoutTransformControl>
+            </ControlTemplate>
+        </Setter>
+
+        <ControlTheme.Animations>
+            <Animation Duration="0:0:0.2" Easing="CubicEaseOut" FillMode="Forward">
+                <KeyFrame Cue="0%">
+                    <Setter Property="Opacity" Value="0" />
+                    <Setter Property="TranslateTransform.Y" Value="12" />
+                </KeyFrame>
+                <KeyFrame Cue="100%">
+                    <Setter Property="Opacity" Value="1" />
+                    <Setter Property="TranslateTransform.Y" Value="0" />
+                </KeyFrame>
+            </Animation>
+        </ControlTheme.Animations>
+
+        <!-- Fade out, then collapse so the toasts below slide into place -->
+        <Style Selector="^[IsClosing=true] /template/ LayoutTransformControl#PART_LayoutTransformControl">
+            <Setter Property="RenderTransformOrigin" Value="50%,0%" />
+            <Style.Animations>
+                <Animation Duration="0:0:0.3" Easing="CubicEaseIn" FillMode="Forward">
+                    <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="1" />
+                        <Setter Property="ScaleTransform.ScaleY" Value="1" />
+                    </KeyFrame>
+                    <KeyFrame Cue="60%">
+                        <Setter Property="Opacity" Value="0" />
+                        <Setter Property="ScaleTransform.ScaleY" Value="1" />
+                    </KeyFrame>
+                    <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="0" />
+                        <Setter Property="ScaleTransform.ScaleY" Value="0" />
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+        <Style Selector="^[IsClosing=true]">
+            <Style.Animations>
+                <Animation Duration="0:0:0.35" FillMode="Forward">
+                    <KeyFrame Cue="100%">
+                        <Setter Property="IsClosed" Value="True" />
+                    </KeyFrame>
+                </Animation>
+            </Style.Animations>
+        </Style>
+
+        <Style Selector="^:success /template/ Border#PART_Accent">
+            <Setter Property="Background" Value="{DynamicResource BrushSuccess}" />
+        </Style>
+        <Style Selector="^:warning /template/ Border#PART_Accent">
+            <Setter Property="Background" Value="{DynamicResource BrushWarning}" />
+        </Style>
+        <Style Selector="^:error /template/ Border#PART_Accent">
+            <Setter Property="Background" Value="{DynamicResource BrushDanger}" />
+        </Style>
+    </ControlTheme>
+
     <!-- Spinner -->
     <ControlTheme x:Key="{x:Type ui:Spinner}" TargetType="ui:Spinner">
         <Setter Property="Width" Value="32" />
@@ -98,6 +245,51 @@
                                       HorizontalAlignment="Center"
                                       Margin="0,4,0,0"
                                       IsVisible="{TemplateBinding Action, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                </StackPanel>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    <!-- ErrorState -->
+    <ControlTheme x:Key="{x:Type ui:ErrorState}" TargetType="ui:ErrorState">
+        <Setter Property="Icon" Value="{StaticResource IconError}" />
+        <Setter Property="Title" Value="{l:Tr Error.Title}" />
+        <Setter Property="Description" Value="{l:Tr Error.Description}" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <StackPanel Spacing="12" MaxWidth="360" HorizontalAlignment="Center">
+                    <Border Width="56"
+                            Height="56"
+                            CornerRadius="28"
+                            Background="{DynamicResource BrushDangerSubtle}"
+                            HorizontalAlignment="Center">
+                        <PathIcon Data="{TemplateBinding Icon}"
+                                  Width="26"
+                                  Height="26"
+                                  Foreground="{DynamicResource BrushDanger}" />
+                    </Border>
+                    <TextBlock Classes="h4"
+                               Text="{TemplateBinding Title}"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap" />
+                    <TextBlock Classes="muted"
+                               Text="{TemplateBinding Description}"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap"
+                               IsVisible="{TemplateBinding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    <Button Name="PART_Retry"
+                            Classes="secondary"
+                            HorizontalAlignment="Center"
+                            Margin="0,4,0,0"
+                            Command="{TemplateBinding RetryCommand}"
+                            IsVisible="{TemplateBinding RetryCommand, Converter={x:Static ObjectConverters.IsNotNull}}">
+                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                            <PathIcon Data="{StaticResource IconRefresh}" />
+                            <TextBlock Text="{l:Tr Common.Retry}" />
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </ControlTemplate>
         </Setter>

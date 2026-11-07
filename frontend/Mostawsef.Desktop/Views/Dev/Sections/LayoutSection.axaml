@@ -8,13 +8,6 @@
     <ScrollViewer>
         <StackPanel Classes="page">
             <ui:PageHeader Title="{l:Tr Gallery.Layout}" Subtitle="{l:Tr Gallery.Subtitle}">
-                <ui:PageHeader.Breadcrumb>
-                    <ui:Breadcrumb>
-                        <ui:BreadcrumbItem Content="{l:Tr App.Title}" />
-                        <ui:BreadcrumbItem Content="{l:Tr Gallery.Title}" />
-                        <ui:BreadcrumbItem Content="{l:Tr Gallery.Layout}" />
-                    </ui:Breadcrumb>
-                </ui:PageHeader.Breadcrumb>
                 <ui:PageHeader.Actions>
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button Classes="secondary" Content="{l:Tr Common.Export}" />
@@ -51,31 +44,6 @@
                 </ui:ResponsiveGrid>
             </ui:Section>
 
-            <ui:Section Title="ListDetailsView" Description="Side by side; stacks below 900 px.">
-                <ui:Section.Actions>
-                    <Button Classes="secondary sm" Content="Toggle details" Command="{Binding ToggleDetailsCommand}" />
-                </ui:Section.Actions>
-                <ui:Card Padding="0" Height="240">
-                    <ui:ListDetailsView IsDetailsOpen="{Binding IsDetailsOpen}" ListWidth="260">
-                        <ui:ListDetailsView.List>
-                            <ListBox ItemsSource="{Binding Patients}" SelectedIndex="0">
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:PatientRow">
-                                        <TextBlock Text="{Binding Name}" />
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                            </ListBox>
-                        </ui:ListDetailsView.List>
-                        <ui:ListDetailsView.Details>
-                            <StackPanel Margin="20" Spacing="8">
-                                <TextBlock Classes="h4" Text="Details" />
-                                <TextBlock Classes="muted" Text="Selected item details are shown here." TextWrapping="Wrap" />
-                            </StackPanel>
-                        </ui:ListDetailsView.Details>
-                    </ui:ListDetailsView>
-                </ui:Card>
-            </ui:Section>
-
             <ui:Section Title="Tabs + Divider">
                 <ui:Card>
                     <StackPanel>
@@ -92,26 +60,6 @@
                         </TabControl>
                         <ui:Divider Text="OR" />
                         <ui:Divider />
-                    </StackPanel>
-                </ui:Card>
-            </ui:Section>
-
-            <ui:Section Title="Stepper / Wizard">
-                <ui:Card>
-                    <StackPanel Spacing="24">
-                        <ui:Stepper Steps="{Binding Steps}" CurrentIndex="{Binding StepIndex}" />
-                        <ui:Divider />
-                        <ui:Wizard FinishCommand="{Binding FinishWizardCommand}">
-                            <ui:WizardPage Title="Patient">
-                                <TextBlock Text="Step 1: patient information." />
-                            </ui:WizardPage>
-                            <ui:WizardPage Title="Visit">
-                                <TextBlock Text="Step 2: visit details." />
-                            </ui:WizardPage>
-                            <ui:WizardPage Title="Payment">
-                                <TextBlock Text="Step 3: payment." />
-                            </ui:WizardPage>
-                        </ui:Wizard>
                     </StackPanel>
                 </ui:Card>
             </ui:Section>

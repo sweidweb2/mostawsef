@@ -16,7 +16,16 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasMaxLength(User.UsernameMaxLength)
             .IsRequired();
 
+        // Unique among deleted users too: usernames are never reused.
         builder.HasIndex(u => u.Username).IsUnique();
+
+        builder.Property(u => u.FullName)
+            .HasMaxLength(User.FullNameMaxLength)
+            .IsRequired();
+
+        builder.Property(u => u.SearchName)
+            .HasMaxLength(User.FullNameMaxLength)
+            .IsRequired();
 
         builder.Property(u => u.PasswordHash)
             .HasMaxLength(256)
@@ -28,6 +37,5 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .IsRequired();
 
         builder.Property(u => u.IsActive).IsRequired();
-        builder.Property(u => u.CreatedAt).IsRequired();
     }
 }

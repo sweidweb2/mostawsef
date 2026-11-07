@@ -19,7 +19,6 @@
                 <ui:NavMenuItem Icon="{StaticResource IconEdit}" Text="{l:Tr Gallery.Forms}" />
                 <ui:NavMenuItem Icon="{StaticResource IconDocument}" Text="{l:Tr Gallery.Data}" />
                 <ui:NavMenuItem Icon="{StaticResource IconBell}" Text="{l:Tr Gallery.Feedback}" />
-                <ui:NavMenuItem Icon="{StaticResource IconMedical}" Text="{l:Tr Gallery.Clinic}" />
             </ui:NavMenu>
         </ui:AppShell.Sidebar>
 
@@ -43,7 +42,6 @@
             <sections:FormsSection />
             <sections:DataSection />
             <sections:FeedbackSection />
-            <sections:ClinicSection />
         </Carousel>
     </ui:AppShell>
 </UserControl>

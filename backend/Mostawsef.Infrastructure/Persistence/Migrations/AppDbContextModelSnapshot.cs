@@ -75,11 +75,11 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Action");
-
-                    b.HasIndex("OccurredAt");
-
                     b.HasIndex("UserId");
+
+                    b.HasIndex("Action", "OccurredAt");
+
+                    b.HasIndex("OccurredAt", "Id");
 
                     b.ToTable("activity_logs", (string)null);
                 });
@@ -148,9 +148,7 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Level");
-
-                    b.HasIndex("OccurredAt");
+                    b.HasIndex("OccurredAt", "Id");
 
                     b.ToTable("system_errors", (string)null);
                 });

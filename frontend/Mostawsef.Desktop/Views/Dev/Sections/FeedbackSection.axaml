@@ -68,6 +68,12 @@
                     </ui:EmptyState>
                 </ui:Card>
             </ui:Section>
+
+            <ui:Section Title="ErrorState">
+                <ui:Card>
+                    <ui:ErrorState Margin="0,24" RetryCommand="{Binding ShowToastCommand}" />
+                </ui:Card>
+            </ui:Section>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

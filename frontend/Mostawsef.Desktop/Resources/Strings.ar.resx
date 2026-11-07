@@ -21,19 +21,9 @@
   <data name="Common.Clear" xml:space="preserve"><value>مسح</value></data>
   <data name="Common.Retry" xml:space="preserve"><value>إعادة المحاولة</value></data>
   <data name="Common.Back" xml:space="preserve"><value>السابق</value></data>
-  <data name="Common.Next" xml:space="preserve"><value>التالي</value></data>
-  <data name="Common.Finish" xml:space="preserve"><value>إنهاء</value></data>
-  <data name="Common.Browse" xml:space="preserve"><value>استعراض</value></data>
-  <data name="Common.Remove" xml:space="preserve"><value>إزالة</value></data>
   <data name="Common.Loading" xml:space="preserve"><value>جارٍ التحميل...</value></data>
   <data name="Common.Actions" xml:space="preserve"><value>إجراءات</value></data>
   <data name="Common.View" xml:space="preserve"><value>عرض</value></data>
-  <data name="Common.Today" xml:space="preserve"><value>اليوم</value></data>
-  <data name="Common.Day" xml:space="preserve"><value>يوم</value></data>
-  <data name="Common.Week" xml:space="preserve"><value>أسبوع</value></data>
-  <data name="Common.Print" xml:space="preserve"><value>طباعة</value></data>
-  <data name="Common.ZoomIn" xml:space="preserve"><value>تكبير</value></data>
-  <data name="Common.ZoomOut" xml:space="preserve"><value>تصغير</value></data>
   <data name="Common.Filter" xml:space="preserve"><value>تصفية</value></data>
   <data name="Common.Export" xml:space="preserve"><value>تصدير</value></data>
   <data name="Common.More" xml:space="preserve"><value>المزيد</value></data>
@@ -48,13 +38,9 @@
   <data name="Empty.Description" xml:space="preserve"><value>ستظهر العناصر التي تضيفها هنا.</value></data>
   <data name="Error.Title" xml:space="preserve"><value>حدث خطأ ما</value></data>
   <data name="Error.Description" xml:space="preserve"><value>تعذّر تحميل البيانات. يرجى المحاولة مرة أخرى.</value></data>
+  <data name="Error.UnreachableTitle" xml:space="preserve"><value>تعذّر الاتصال بالخادم</value></data>
+  <data name="Error.UnreachableDescription" xml:space="preserve"><value>تأكد من تشغيل خدمة مستوصف، ثم أعد المحاولة.</value></data>
 
-  <data name="FileUpload.Title" xml:space="preserve"><value>اختر ملفاً</value></data>
-  <data name="FileUpload.NoFile" xml:space="preserve"><value>لم يتم اختيار ملف</value></data>
-  <data name="ImagePicker.Title" xml:space="preserve"><value>اختر صورة</value></data>
-  <data name="DateRange.From" xml:space="preserve"><value>من</value></data>
-  <data name="DateRange.To" xml:space="preserve"><value>إلى</value></data>
-  <data name="Validation.Title" xml:space="preserve"><value>يرجى تصحيح ما يلي:</value></data>
   <data name="Confirm.Title" xml:space="preserve"><value>هل أنت متأكد؟</value></data>
 
   <data name="Patient.FileNo" xml:space="preserve"><value>رقم الملف</value></data>
@@ -74,7 +60,6 @@
   <data name="Invoice.Paid" xml:space="preserve"><value>المدفوع</value></data>
   <data name="Invoice.Due" xml:space="preserve"><value>المبلغ المتبقي</value></data>
   <data name="Vitals.Title" xml:space="preserve"><value>العلامات الحيوية</value></data>
-  <data name="Print.Title" xml:space="preserve"><value>معاينة الطباعة</value></data>
 
   <data name="Gallery.Title" xml:space="preserve"><value>معرض المكونات</value></data>
   <data name="Gallery.Subtitle" xml:space="preserve"><value>جميع المكونات المشتركة بكل حالاتها.</value></data>
@@ -85,7 +70,6 @@
   <data name="Gallery.Feedback" xml:space="preserve"><value>التنبيهات</value></data>
   <data name="Gallery.Overlays" xml:space="preserve"><value>النوافذ المنبثقة</value></data>
   <data name="Gallery.Navigation" xml:space="preserve"><value>التنقل</value></data>
-  <data name="Gallery.Clinic" xml:space="preserve"><value>العيادة</value></data>
 
   <data name="Login.Subtitle" xml:space="preserve"><value>سجّل الدخول للمتابعة</value></data>
   <data name="Login.Username" xml:space="preserve"><value>اسم المستخدم</value></data>
@@ -112,4 +96,56 @@
   <data name="Dashboard.Welcome" xml:space="preserve"><value>مرحباً، {0}</value></data>
   <data name="Dashboard.Empty.Title" xml:space="preserve"><value>لوحة التحكم فارغة</value></data>
   <data name="Dashboard.Empty.Description" xml:space="preserve"><value>ستظهر هنا المؤشرات والتقارير.</value></data>
+
+  <data name="Common.Refresh" xml:space="preserve"><value>تحديث</value></data>
+  <data name="Error.Unexpected" xml:space="preserve"><value>حدث خطأ ما. تم الإبلاغ عن الخطأ.</value></data>
+  <data name="Error.RequestFailed" xml:space="preserve"><value>فشل الطلب. يرجى المحاولة مرة أخرى.</value></data>
+
+  <data name="Nav.ActivityLogs" xml:space="preserve"><value>سجل النشاطات</value></data>
+  <data name="Nav.SystemErrors" xml:space="preserve"><value>أخطاء النظام</value></data>
+  <data name="Logs.ActivitySubtitle" xml:space="preserve"><value>كل الإجراءات الرئيسية في النظام: من فعل ماذا ومتى.</value></data>
+  <data name="Logs.ErrorsSubtitle" xml:space="preserve"><value>الأخطاء غير المتوقعة من الخادم وتطبيق سطح المكتب.</value></data>
+  <data name="Logs.Records" xml:space="preserve"><value>{0} سجل</value></data>
+  <data name="Logs.Stat.Total" xml:space="preserve"><value>إجمالي النشاطات</value></data>
+  <data name="Logs.Stat.TotalErrors" xml:space="preserve"><value>إجمالي الأخطاء</value></data>
+  <data name="Logs.Stat.Today" xml:space="preserve"><value>اليوم</value></data>
+  <data name="Logs.Stat.Last7Days" xml:space="preserve"><value>آخر 7 أيام</value></data>
+  <data name="Logs.Stat.FailedSignIns" xml:space="preserve"><value>محاولات دخول فاشلة اليوم</value></data>
+  <data name="Logs.Stat.Critical" xml:space="preserve"><value>أخطاء حرجة</value></data>
+  <data name="Logs.Col.Time" xml:space="preserve"><value>الوقت</value></data>
+  <data name="Logs.Col.User" xml:space="preserve"><value>المستخدم</value></data>
+  <data name="Logs.Col.Action" xml:space="preserve"><value>الإجراء</value></data>
+  <data name="Logs.Col.Module" xml:space="preserve"><value>القسم</value></data>
+  <data name="Logs.Col.Description" xml:space="preserve"><value>الوصف</value></data>
+  <data name="Logs.Col.Level" xml:space="preserve"><value>المستوى</value></data>
+  <data name="Logs.Col.Source" xml:space="preserve"><value>المصدر</value></data>
+  <data name="Logs.Col.Message" xml:space="preserve"><value>الرسالة</value></data>
+  <data name="Logs.Col.Path" xml:space="preserve"><value>الطلب</value></data>
+  <data name="Logs.Field.Code" xml:space="preserve"><value>رمز الإجراء</value></data>
+  <data name="Logs.Field.Entity" xml:space="preserve"><value>السجل المرتبط</value></data>
+  <data name="Logs.Field.IpAddress" xml:space="preserve"><value>عنوان IP</value></data>
+  <data name="Logs.Field.UserAgent" xml:space="preserve"><value>العميل</value></data>
+  <data name="Logs.Field.Details" xml:space="preserve"><value>التفاصيل</value></data>
+  <data name="Logs.Field.Id" xml:space="preserve"><value>المعرّف</value></data>
+  <data name="Logs.Field.ExceptionType" xml:space="preserve"><value>نوع الاستثناء</value></data>
+  <data name="Logs.Field.Request" xml:space="preserve"><value>الطلب</value></data>
+  <data name="Logs.Field.StatusCode" xml:space="preserve"><value>رمز الحالة</value></data>
+  <data name="Logs.Field.TraceId" xml:space="preserve"><value>معرّف التتبع</value></data>
+  <data name="Logs.Field.StackTrace" xml:space="preserve"><value>تتبع المكدس</value></data>
+  <data name="Logs.ActivityDetails" xml:space="preserve"><value>تفاصيل النشاط</value></data>
+  <data name="Logs.ErrorDetails" xml:space="preserve"><value>تفاصيل الخطأ</value></data>
+  <data name="Logs.DeleteActivityConfirm" xml:space="preserve"><value>حذف سجل النشاط هذا؟ لا يمكن التراجع عن ذلك.</value></data>
+  <data name="Logs.DeleteErrorConfirm" xml:space="preserve"><value>حذف سجل الخطأ هذا؟ لا يمكن التراجع عن ذلك.</value></data>
+  <data name="Logs.Deleted" xml:space="preserve"><value>تم حذف السجل.</value></data>
+
+  <data name="ErrorLevel.Warning" xml:space="preserve"><value>تحذير</value></data>
+  <data name="ErrorLevel.Error" xml:space="preserve"><value>خطأ</value></data>
+  <data name="ErrorLevel.Critical" xml:space="preserve"><value>حرج</value></data>
+
+  <data name="Action.auth.signed_in" xml:space="preserve"><value>تسجيل دخول</value></data>
+  <data name="Action.auth.sign_in_failed" xml:space="preserve"><value>محاولة دخول فاشلة</value></data>
+  <data name="Action.auth.signed_out" xml:space="preserve"><value>تسجيل خروج</value></data>
+  <data name="Action.logs.activity_deleted" xml:space="preserve"><value>حذف سجل نشاط</value></data>
+  <data name="Action.logs.error_deleted" xml:space="preserve"><value>حذف سجل خطأ</value></data>
+  <data name="Action.logs.purged" xml:space="preserve"><value>حذف السجلات القديمة تلقائيًا</value></data>
 </root>

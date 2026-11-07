@@ -1,7 +1,6 @@
 using System;
 using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading;
@@ -10,17 +9,12 @@ using System.Threading.Tasks;
 namespace Mostawsef.Desktop.Services.Api;
 
 /// <summary>
-/// The only way the desktop app talks to the backend. Adds the bearer token and maps failures to ApiError.
+/// The only way the desktop app talks to the backend. Maps failures to ApiError.
+/// The bearer token is added by AuthHeaderHandler in the HttpClient pipeline.
 /// </summary>
 public class ApiClient(HttpClient http)
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
-
-    /// <summary>Raised when an authenticated request is rejected with 401 (token expired or revoked).</summary>
-    public event EventHandler? Unauthorized;
-
-    public void SetAccessToken(string? token) =>
-        http.DefaultRequestHeaders.Authorization = token is null ? null : new AuthenticationHeaderValue("Bearer", token);
 
     public Task<ApiResult<T>> GetAsync<T>(string path, CancellationToken cancellationToken = default) =>
         SendAsync(() => http.GetAsync(path, cancellationToken), ReadJson<T>, cancellationToken);
@@ -57,11 +51,6 @@ public class ApiClient(HttpClient http)
                 return await read(response, cancellationToken);
             }
 
-            if (response.StatusCode == HttpStatusCode.Unauthorized && http.DefaultRequestHeaders.Authorization is not null)
-            {
-                Unauthorized?.Invoke(this, EventArgs.Empty);
-            }
-
             return ApiResult<T>.Fail(MapError(response.StatusCode), response.StatusCode);
         }
     }
@@ -82,6 +71,7 @@ public class ApiClient(HttpClient http)
         HttpStatusCode.TooManyRequests => ApiError.TooManyRequests,
         HttpStatusCode.BadRequest => ApiError.BadRequest,
         HttpStatusCode.NotFound => ApiError.NotFound,
+        HttpStatusCode.Conflict => ApiError.Conflict,
         _ => ApiError.Server,
     };
 }

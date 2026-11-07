@@ -1,7 +1,6 @@
 using System;
 using Avalonia.Threading;
 using Mostawsef.Contracts.Auth;
-using Mostawsef.Desktop.Services.Api;
 
 namespace Mostawsef.Desktop.Services.Auth;
 
@@ -14,17 +13,16 @@ public enum SignOutReason
 
 /// <summary>
 /// The signed-in user and their access token. Kept in memory only: closing the app signs out.
+/// AuthHeaderHandler adds the token to API requests.
 /// </summary>
 public class SessionService
 {
-    private readonly ApiClient _api;
     private readonly DispatcherTimer _expiryTimer = new();
+    private string? _accessToken;
     private DateTime _expiresAt;
 
-    public SessionService(ApiClient api)
+    public SessionService()
     {
-        _api = api;
-        _api.Unauthorized += (_, _) => SignOut(SignOutReason.Expired);
         _expiryTimer.Tick += (_, _) => SignOut(SignOutReason.Expired);
     }
 
@@ -32,7 +30,9 @@ public class SessionService
 
     public UserDto? CurrentUser { get; private set; }
 
-    /// <summary>The token itself lives only in ApiClient's Authorization header.</summary>
+    /// <summary>Bearer token of the current session, or null when signed out or expired.</summary>
+    public string? AccessToken => IsAuthenticated ? _accessToken : null;
+
     public bool IsAuthenticated => CurrentUser is not null && DateTime.UtcNow < _expiresAt;
 
     public SignOutReason LastSignOutReason { get; private set; }
@@ -42,9 +42,9 @@ public class SessionService
     public void SignIn(LoginResponse login)
     {
         CurrentUser = login.User;
+        _accessToken = login.AccessToken;
         _expiresAt = login.ExpiresAt.ToUniversalTime();
         LastSignOutReason = SignOutReason.None;
-        _api.SetAccessToken(login.AccessToken);
 
         _expiryTimer.Stop();
         var remaining = _expiresAt - DateTime.UtcNow;
@@ -63,9 +63,27 @@ public class SessionService
 
         _expiryTimer.Stop();
         CurrentUser = null;
+        _accessToken = null;
         _expiresAt = default;
         LastSignOutReason = reason;
-        _api.SetAccessToken(null);
         Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
+    /// Signs out as expired if <paramref name="rejectedToken"/> is still the current token
+    /// (a late 401 for an earlier session is ignored). Safe to call from any thread.
+    /// </summary>
+    public void Expire(string rejectedToken)
+    {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => Expire(rejectedToken));
+            return;
+        }
+
+        if (string.Equals(_accessToken, rejectedToken, StringComparison.Ordinal))
+        {
+            SignOut(SignOutReason.Expired);
+        }
     }
 }

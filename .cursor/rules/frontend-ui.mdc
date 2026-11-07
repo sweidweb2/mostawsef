@@ -28,16 +28,37 @@ alwaysApply: false
 - Every new `Window` must call `App.Localization.Apply(window)`.
 
 ## Responsiveness
-- Breakpoints on the AppShell content width: Compact < 900, Medium < 1280, Wide < 1600, XWide >= 1600.
-- Page roots use `Classes="page"`. Use `ui:ResponsiveGrid` for card/form grids and utility classes
-  `hide-compact|show-compact|stack-compact|hide-medium|show-medium|hide-wide|show-wide` (`Styles/Responsive.axaml`).
+- Breakpoints on the AppShell content width (container `AppContent`), not the window: Compact < 900, Medium < 1280,
+  Wide < 1600, XWide >= 1600. Values live in `Styles/Tokens/Breakpoints.axaml`; keep `Styles/Responsive.axaml` in sync.
+- Page roots use `Classes="page"` (page padding, content capped at `ContentMaxWidth`). Use `ui:ResponsiveGrid` for card/form
+  grids and utility classes `hide-compact|show-compact|stack-compact|hide-medium|show-medium|hide-wide|show-wide`.
+- No fixed widths/heights on page content; let it stretch and wrap. Text that can be long gets `TextWrapping` or `TextTrimming`.
+- The sidebar collapses to icons below `AppShell.AutoCompactWidth` (1100). The window has `WindowMinWidth`/`WindowMinHeight`
+  (720 x 520): every page must stay usable at that size, in both languages.
+- Layout must work at Compact width: test new pages with a narrow headless window when the layout changes per breakpoint.
 
 ## MVVM + bindings
 - Compiled bindings are on: every view/DataTemplate needs `x:DataType`.
 - View models derive from `ViewModelBase`, use `[ObservableProperty] public partial T Name { get; set; }` and `[RelayCommand]`.
 - Services come from DI (`ServiceRegistration.AddMostawsefDesktop`); register new services there. Page view models are registered from `AppRoutes`.
 - Dialogs: `DialogService.ShowAsync(modal)` / `ConfirmAsync(...)`. Notifications: `ToastService.Show(...)`.
-- API calls go in `Services/Api/` (through `ApiClient`) using DTOs from `Mostawsef.Contracts`.
+- API calls go in `Services/Api/` (one `<Feature>Api` class through `ApiClient`) using DTOs from `Mostawsef.Contracts`.
+  `ApiClient` never throws for HTTP failures: it returns `ApiResult<T>` with an `ApiError`
+  (`Unreachable|Unauthorized|Forbidden|BadRequest|NotFound|Conflict|TooManyRequests|Server`). View models map each relevant error to a resource key.
+
+## Validation (desktop)
+- The server is the source of truth; the desktop only checks what makes a request pointless (empty required fields, obvious format).
+- Disable the submit command via `CanExecute` until required fields are filled; show per-field messages with `ui:FormField Error`
+  (a resource key from the view model) and the server's 400/409 outcome as a form error or toast.
+- Do not duplicate business rules (uniqueness, allowed states) on the desktop.
+
+## State
+- **Session** (`SessionService`): user, role and token in memory only; cleared on sign-out or a 401.
+- **Preferences** (`SettingsService` -> `%AppData%/Mostawsef/settings.json`): only `Theme`, `Language`, `ApiBaseUrl`.
+  Never write tokens, passwords, user data or medical data to disk.
+- **Theme** (`ThemeService`) and **language** (`LocalizationService`) are app-wide singletons that save to settings; change them only through `ui:PreferencesBar`.
+- **Page state** lives in its view model. Services are singletons; page view models are transient (fresh per navigation).
+  No static mutable state.
 
 ## Auth + navigation (see `Docs/auth.md`)
 - Every screen is listed in `AppRoutes` (view, access, portal menus); open pages only via `NavigationService` or the shell menu.

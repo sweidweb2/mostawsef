@@ -3,9 +3,11 @@ using Mostawsef.Desktop.Services.Navigation;
 using Mostawsef.Desktop.ViewModels.Auth;
 using Mostawsef.Desktop.ViewModels.Dev;
 using Mostawsef.Desktop.ViewModels.Shell;
+using Mostawsef.Desktop.ViewModels.Super;
 using Mostawsef.Desktop.Views.Auth;
 using Mostawsef.Desktop.Views.Dev;
 using Mostawsef.Desktop.Views.Shell;
+using Mostawsef.Desktop.Views.Super;
 
 namespace Mostawsef.Desktop;
 
@@ -19,8 +21,12 @@ public static class AppRoutes
         .Public<LoginViewModel, LoginView>()
         .Public<GalleryViewModel, GalleryView>()
         .View<PortalShellViewModel, PortalShellView>()
+        .View<ActivityLogDetailsViewModel, ActivityLogDetailsView>()
+        .View<SystemErrorDetailsViewModel, SystemErrorDetailsView>()
         .Portal(Roles.Admin, "Portal.Admin", portal => portal
             .Page<DashboardViewModel, DashboardView>("IconDashboard", "Nav.Dashboard"))
         .Portal(Roles.Super, "Portal.Super", portal => portal
-            .Page<DashboardViewModel, DashboardView>("IconDashboard", "Nav.Dashboard"));
+            .Page<DashboardViewModel, DashboardView>("IconDashboard", "Nav.Dashboard")
+            .Page<ActivityLogsViewModel, ActivityLogsView>("IconClock", "Nav.ActivityLogs")
+            .Page<SystemErrorsViewModel, SystemErrorsView>("IconWarning", "Nav.SystemErrors"));
 }

@@ -3,7 +3,7 @@ using Mostawsef.Domain.Common;
 namespace Mostawsef.Domain.Entities;
 
 /// <summary>A meaningful user or system action (sign-in, record created, settings changed...). Append-only.</summary>
-public class ActivityLog
+public class ActivityLog : IChronological
 {
     public const int ActionMaxLength = 100;
     public const int ModuleMaxLength = 50;
@@ -13,6 +13,7 @@ public class ActivityLog
     public const int IpAddressMaxLength = 45;
     public const int UserAgentMaxLength = 300;
     public const int DetailsMaxLength = 8000;
+    public const int SearchTextMaxLength = UsernameMaxLength + ActionMaxLength + ModuleMaxLength + DescriptionMaxLength + 3;
 
     private ActivityLog()
     {
@@ -40,6 +41,7 @@ public class ActivityLog
         IpAddress = Text.Truncate(ipAddress, IpAddressMaxLength);
         UserAgent = Text.Truncate(userAgent, UserAgentMaxLength);
         Details = Text.Truncate(details, DetailsMaxLength);
+        SearchText = Text.SearchKey(Username, Action, Module, Description);
     }
 
     public Guid Id { get; private set; } = Guid.NewGuid();
@@ -67,4 +69,7 @@ public class ActivityLog
 
     /// <summary>Extra context as JSON.</summary>
     public string? Details { get; private set; }
+
+    /// <summary>Username, action, module and description, lowercased (Text.SearchKey). What the list search matches.</summary>
+    public string SearchText { get; private set; } = string.Empty;
 }

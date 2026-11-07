@@ -15,21 +15,25 @@ namespace Mostawsef.Desktop.Tests.Infrastructure;
 public sealed class TestServices : IDisposable
 {
     private readonly string _settingsDirectory = Path.Combine(Path.GetTempPath(), "mostawsef-tests", Guid.NewGuid().ToString("N"));
+    private readonly List<Window> _windows = [];
 
     public TestServices(AppLanguage language = AppLanguage.English)
     {
-        var settingsFile = Path.Combine(_settingsDirectory, "settings.json");
+        SettingsFile = Path.Combine(_settingsDirectory, "settings.json");
         Directory.CreateDirectory(_settingsDirectory);
-        File.WriteAllText(settingsFile, $$"""{ "Theme": "Light", "Language": "{{language}}" }""");
+        File.WriteAllText(SettingsFile, $$"""{ "Theme": "Light", "Language": "{{language}}" }""");
 
         Provider = new ServiceCollection()
-            .AddMostawsefDesktop(new DesktopServiceOptions { HttpHandler = Api, SettingsFilePath = settingsFile })
+            .AddMostawsefDesktop(new DesktopServiceOptions { HttpHandler = Api, SettingsFilePath = SettingsFile })
             .BuildServiceProvider();
         App.Services = Provider;
         Get<ThemeService>().Initialize();
     }
 
     public FakeApiHandler Api { get; } = new();
+
+    /// <summary>This test's own settings.json (a temp file).</summary>
+    public string SettingsFile { get; }
 
     public ServiceProvider Provider { get; }
 
@@ -44,12 +48,13 @@ public sealed class TestServices : IDisposable
     public void SignInAs(string role, string username = "user@test.local") =>
         Session.SignIn(FakeApiHandler.LoginResponseFor(role, username));
 
-    /// <summary>Shows content (usually a view model, resolved to its view) in a headless window.</summary>
+    /// <summary>Shows content (usually a view model, resolved to its view) in a headless window. Closed on Dispose.</summary>
     public Window Show(object content)
     {
         var window = new Window { Width = 1280, Height = 800, Content = content };
         Localization.Apply(window);
         window.Show();
+        _windows.Add(window);
         return window;
     }
 
@@ -62,6 +67,14 @@ public sealed class TestServices : IDisposable
 
     public void Dispose()
     {
+        // Close windows first: pending layout/render work must not reach the disposed services.
+        foreach (var window in _windows)
+        {
+            window.Close();
+        }
+
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Get<SettingsService>().Flush();
         Provider.Dispose();
         Directory.Delete(_settingsDirectory, recursive: true);
     }

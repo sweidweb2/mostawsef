@@ -9,63 +9,50 @@
         <StackPanel Classes="page">
             <ui:PageHeader Title="{l:Tr Gallery.Forms}" />
 
-            <ui:Section>
+            <ui:Section Title="FormField" Description="Two columns on wide screens, one on narrow screens.">
                 <ui:Card>
-                    <StackPanel Spacing="20">
-                        <ui:ValidationSummary Errors="{Binding ValidationErrors}" />
-
-                        <ui:FormSection Title="FormSection" Description="Two columns on wide screens, one on narrow screens.">
-                            <ui:FormField Label="TextField" IsRequired="True" Hint="Hint text">
-                                <TextBox PlaceholderText="Full name" />
-                            </ui:FormField>
-                            <ui:FormField Label="With error" Error="This field is required.">
-                                <TextBox />
-                            </ui:FormField>
-                            <ui:FormField Label="NumberField">
-                                <NumericUpDown Value="30" Minimum="0" Maximum="120" />
-                            </ui:FormField>
-                            <ui:FormField Label="Select">
-                                <ComboBox ItemsSource="{Binding Genders}" SelectedIndex="0" />
-                            </ui:FormField>
-                            <ui:FormField Label="DatePicker">
-                                <CalendarDatePicker />
-                            </ui:FormField>
-                            <ui:FormField Label="TimePicker">
-                                <TimePicker />
-                            </ui:FormField>
-                            <ui:FormField Label="AutoComplete" Hint="Type a drug name">
-                                <AutoCompleteBox ItemsSource="{Binding Drugs}" FilterMode="Contains" />
-                            </ui:FormField>
-                            <ui:FormField Label="PasswordField">
-                                <ui:PasswordField Text="secret" />
-                            </ui:FormField>
-                            <ui:FormField Label="SearchBox">
-                                <ui:SearchBox />
-                            </ui:FormField>
-                            <ui:FormField Label="DateRangePicker">
-                                <ui:DateRangePicker From="{Binding RangeFrom}" To="{Binding RangeTo}" />
-                            </ui:FormField>
-                            <ui:FormField Label="TextArea" ui:ResponsiveGrid.ColumnSpan="0">
-                                <TextBox Classes="textarea" PlaceholderText="Notes" />
-                            </ui:FormField>
-                            <ui:FormField Label="FileUpload">
-                                <ui:FileUpload FileTypes="*.pdf;*.png;*.jpg" />
-                            </ui:FormField>
-                            <ui:FormField Label="ImagePicker">
-                                <ui:ImagePicker />
-                            </ui:FormField>
-                            <ui:FormField Label="Checkbox / Radio / Toggle">
-                                <StackPanel Spacing="4">
-                                    <CheckBox Content="Checkbox" IsChecked="True" />
-                                    <StackPanel Orientation="Horizontal" Spacing="16">
-                                        <RadioButton GroupName="g" Content="Option A" IsChecked="True" />
-                                        <RadioButton GroupName="g" Content="Option B" />
-                                    </StackPanel>
-                                    <ToggleSwitch IsChecked="True" />
+                    <ui:ResponsiveGrid MinColumnWidth="260" MaxColumns="2">
+                        <ui:FormField Label="TextField" IsRequired="True" Hint="Hint text">
+                            <TextBox PlaceholderText="Full name" />
+                        </ui:FormField>
+                        <ui:FormField Label="With error" Error="This field is required.">
+                            <TextBox />
+                        </ui:FormField>
+                        <ui:FormField Label="NumberField">
+                            <NumericUpDown Value="30" Minimum="0" Maximum="120" />
+                        </ui:FormField>
+                        <ui:FormField Label="Select">
+                            <ComboBox ItemsSource="{Binding Genders}" SelectedIndex="0" />
+                        </ui:FormField>
+                        <ui:FormField Label="DatePicker">
+                            <CalendarDatePicker />
+                        </ui:FormField>
+                        <ui:FormField Label="TimePicker">
+                            <TimePicker />
+                        </ui:FormField>
+                        <ui:FormField Label="AutoComplete" Hint="Type a drug name">
+                            <AutoCompleteBox ItemsSource="{Binding Drugs}" FilterMode="Contains" />
+                        </ui:FormField>
+                        <ui:FormField Label="PasswordField">
+                            <ui:PasswordField Text="secret" />
+                        </ui:FormField>
+                        <ui:FormField Label="SearchBox">
+                            <ui:SearchBox />
+                        </ui:FormField>
+                        <ui:FormField Label="TextArea" ui:ResponsiveGrid.ColumnSpan="0">
+                            <TextBox Classes="textarea" PlaceholderText="Notes" />
+                        </ui:FormField>
+                        <ui:FormField Label="Checkbox / Radio / Toggle">
+                            <StackPanel Spacing="4">
+                                <CheckBox Content="Checkbox" IsChecked="True" />
+                                <StackPanel Orientation="Horizontal" Spacing="16">
+                                    <RadioButton GroupName="g" Content="Option A" IsChecked="True" />
+                                    <RadioButton GroupName="g" Content="Option B" />
                                 </StackPanel>
-                            </ui:FormField>
-                        </ui:FormSection>
-                    </StackPanel>
+                                <ToggleSwitch IsChecked="True" />
+                            </StackPanel>
+                        </ui:FormField>
+                    </ui:ResponsiveGrid>
                 </ui:Card>
             </ui:Section>
 
@@ -91,11 +78,6 @@
                             <ui:IconButton Classes="secondary" Margin="0,0,8,8" Icon="{StaticResource IconEdit}" />
                             <ui:IconButton Classes="danger" Margin="0,0,8,8" Icon="{StaticResource IconDelete}" />
                             <ui:IconButton Classes="ghost" Margin="0,0,8,8" Icon="{StaticResource IconMore}" />
-                            <ui:ButtonGroup Margin="8,0,8,8">
-                                <Button Classes="secondary" Content="Day" />
-                                <Button Classes="secondary" Content="Week" />
-                                <Button Classes="secondary" Content="Month" />
-                            </ui:ButtonGroup>
                         </WrapPanel>
                         <WrapPanel>
                             <SplitButton Margin="0,0,8,8" Content="SplitButton">

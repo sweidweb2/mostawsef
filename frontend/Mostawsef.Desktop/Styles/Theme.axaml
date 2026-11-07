@@ -32,13 +32,10 @@
 
                 <!-- 2. Component themes -->
                 <ResourceInclude Source="avares://Mostawsef.Desktop/Components/Layout/LayoutThemes.axaml" />
-                <ResourceInclude Source="avares://Mostawsef.Desktop/Components/Navigation/NavigationThemes.axaml" />
                 <ResourceInclude Source="avares://Mostawsef.Desktop/Components/Forms/FormThemes.axaml" />
-                <ResourceInclude Source="avares://Mostawsef.Desktop/Components/Buttons/ButtonThemes.axaml" />
                 <ResourceInclude Source="avares://Mostawsef.Desktop/Components/Data/DataThemes.axaml" />
                 <ResourceInclude Source="avares://Mostawsef.Desktop/Components/Feedback/FeedbackThemes.axaml" />
                 <ResourceInclude Source="avares://Mostawsef.Desktop/Components/Overlays/OverlayThemes.axaml" />
-                <ResourceInclude Source="avares://Mostawsef.Desktop/Components/Clinic/ClinicThemes.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Styles.Resources>
