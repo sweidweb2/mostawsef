@@ -2,6 +2,12 @@
 
 Run from the repository root.
 
+If a terminal says `dotnet` is not recognized, put the SDK on that terminal's PATH (or restart Cursor after installing the SDK):
+
+```powershell
+$env:Path = "C:\Program Files\dotnet;" + $env:Path
+```
+
 ## Tests
 
 ```powershell
@@ -33,7 +39,11 @@ Run from the repository root.
 ```
 
 Pattern: `./scripts/test.ps1 <all|api|desktop> <part of test name> [-Watch] [-Coverage] [-Detailed]`
-API tests need Docker running.
+API tests need Docker running. While the API or desktop app is running (Debug build, files locked), the script builds
+the tests in Release automatically.
+
+Every push to GitHub runs the same script in GitHub Actions (`.github/workflows/tests.yml`): `api` on Ubuntu (Linux
+containers for Testcontainers), `desktop` on Windows. Results are in the repository's **Actions** tab.
 
 ## Run the app
 
@@ -48,6 +58,17 @@ dotnet run --project frontend/Mostawsef.Desktop
 ```
 
 Dev logins: `admin@example.com` / `password`, `super@example.com` / `password`
+
+The API applies new migrations when it starts: restart it after pulling changes.
+
+## Database migrations
+
+```powershell
+dotnet ef migrations add <Name> --project backend/Mostawsef.Infrastructure --startup-project backend/Mostawsef.Api --output-dir Persistence/Migrations
+```
+
+While the API is running, add `--configuration Release` (the Debug build is locked). Check the generated file before
+committing: it must contain only your change, and no raw SQL (SQLite fallback).
 
 ## Publish the desktop app
 

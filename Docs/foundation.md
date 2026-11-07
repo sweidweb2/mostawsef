@@ -89,14 +89,28 @@ mostawsef/
 │   ├── Mostawsef.Api.IntegrationTests/
 │   └── Mostawsef.Desktop.Tests/
 │
+├── .github/workflows/   ← tests.yml: CI runs the tests on every push
 ├── Docs/
-├── scripts/             ← test.ps1, capture-window.ps1
-├── docker-compose.yml   ← development database only
+├── scripts/                 ← test.ps1, capture-window.ps1
+├── docker-compose.yml       ← development database only
+├── Directory.Build.props    ← settings shared by every project
+├── Directory.Packages.props ← the one list of package versions
+├── .editorconfig            ← code style and analyzer rules
 ├── Mostawsef.slnx
 └── README.md
 ```
 
 The solution file lives at the **repository root** because it contains both backend and frontend projects.
+
+### Shared build settings
+
+- `Directory.Build.props` sets `net10.0`, nullable, implicit usings (off in the desktop project), the .NET analyzers at
+  `latest-recommended`, code style checks in the build, and **warnings as errors**. A `.csproj` only lists what is
+  special to it.
+- `Directory.Packages.props` holds every package version (central package management). A `.csproj` references a
+  package without `Version`; `dotnet add package` writes the version there.
+- `.editorconfig` holds formatting, the style rules the build enforces (file-scoped namespaces, braces on every `if`)
+  and the analyzer rules switched off or lowered to suggestions, each with its reason.
 
 ---
 
@@ -300,7 +314,7 @@ dotnet run --project frontend/Mostawsef.Desktop
 Health check: `GET http://localhost:5270/api/health` returns
 
 ```json
-{ "status": "Healthy", "database": "Connected" }
+{ "status": "Healthy", "database": "Connected", "apiVersion": 1 }
 ```
 
 ---
@@ -309,9 +323,14 @@ Health check: `GET http://localhost:5270/api/health` returns
 
 | Area | Where | Details |
 | --- | --- | --- |
-| Database | `Infrastructure/Persistence/Context/AppDbContext.cs`, `Configurations/`, `Migrations/` | Entities `User`, `ActivityLog`, `SystemError` |
-| Startup | `Api/Program.cs`, `Infrastructure/Persistence/DatabaseInitializer.cs` | Applies pending migrations and seeds `Seed:Users` when the API starts |
-| Health | `Api/Controllers/HealthController.cs` | `GET /api/health` verifies API + database |
+| Database | `Infrastructure/Persistence/Context/AppDbContext.cs`, `Configurations/`, `Migrations/` | Entities `User`, `ActivityLog`, `SystemError`, `ClinicSettings`, `NumberSequence` |
+| Startup | `Api/Program.cs`, `Infrastructure/Persistence/DatabaseInitializer.cs` | Applies pending migrations, creates the clinic settings row and seeds `Seed:Users` when the API starts |
+| Health | `Api/Controllers/HealthController.cs` | `GET /api/health` verifies API + database and reports `apiVersion` (`Contracts/Common/ApiVersion`) |
+| Connection banner | desktop `Services/Api/ConnectionMonitor`, `PortalShellView` | While signed in: health check every 15 s (3 s while offline); banner when the server is unreachable or runs another API version |
+| Clinic settings | `ClinicSettingsController`, `Application/Modules/Settings`, desktop `ClinicContext` + Admin page | Name, address, phone, currency. Everyone reads, Admin edits. No logo yet (storage still to decide) |
+| Readable numbers | `Application/Interfaces/INumberSequence`, `Domain/Common/DocumentNumber` | `P-000123`-style numbers per sequence name, safe across PCs (gaps possible after a failed save) |
+| Clock, dates, money | `TimeProvider` (Infrastructure DI), `Contracts/Common/Money` + `Currencies`, desktop `{l:Money}` and `ValueConverters.DateOnly` | One injectable clock; money as `long` minor units shown with the clinic currency; `DateOnly` for calendar dates |
+| Printing | desktop `Services/Printing` (QuestPDF) | `ClinicPage` layout (clinic header, page footer, RTL in Arabic) and a printer test page on the Admin settings page |
 | Auth | `AuthController`, `Application/Modules/Auth`, `Infrastructure/Services/Auth` | JWT, roles `Admin`/`Super`, PBKDF2 hashing, login rate limit. See `auth.md` |
 | Logging | `ActivityLogsController`, `SystemErrorsController`, `Application/Modules/Logs`, `ExceptionHandlingMiddleware` | Activity logs and system errors. See `logging.md` |
 | Users | `UsersController`, `Application/Modules/Users`, desktop `UsersViewModel` + forms | User management (Super) and change password (everyone). The reference module to copy for CRUD features. See `auth.md` |
@@ -339,6 +358,13 @@ No business (clinic) modules exist yet.
 | UI languages        | Arabic (default, RTL) + English | Switchable at runtime                                  |
 | UI themes           | Light + Dark, token based      | Brand palette can be patched in `Colors.axaml`          |
 | Shared components   | Build the core set, defer the rest | New components are created when a screen needs one |
+| Expected errors     | `AppException` + `ErrorCodes`, mapped by middleware | One code per failure, translated on the desktop; controllers stay one-liners |
+| Paging              | Page numbers for lists sorted by a field; cursors for logs | Logs only grow (deep pages must stay fast); business lists sort by name |
+| Clock               | `TimeProvider` injected | Testable time; one source for audit fields, tokens and "today" |
+| Money               | `long` minor units + clinic currency | Exact, portable to SQLite, no per-amount currency |
+| Reference lists     | Enums for fixed workflow values, entities for staff-edited lists | No generic lookup table to maintain |
+| Printing            | QuestPDF (Community license) on the desktop | Correct Arabic shaping and RTL with the app font; PDF opened in the default viewer |
+| Arabic digits       | Latin digits in both languages (ar-EG) | Matches typed input, phone numbers and printouts |
 
 UI details: `Docs/ui-foundation.md`. Component catalog: `Docs/shared-components.md`. AI guidance: `.cursor/rules/`.
 
@@ -348,4 +374,6 @@ UI details: `Docs/ui-foundation.md`. Component catalog: `Docs/shared-components.
 - Installing PostgreSQL natively on clinic PCs (installer or setup script).
 - Packaging everything into an installer.
 - Backups and recovery.
+- Clinic logo (decide where images are stored first: database or files next to the API).
+- Unsaved-changes guard for full-page forms (forms open in dialogs today, which already ask).
 - Business modules (to be defined).

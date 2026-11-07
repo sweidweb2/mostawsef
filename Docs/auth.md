@@ -51,6 +51,9 @@ Unknown usernames take the same hashing time as wrong passwords, so response tim
 | `PUT /api/users/{id}` `{ fullName, role, isActive, version }` | Super | `200`, `400`, `404`, `409 concurrency_conflict` or `own_account` |
 | `POST /api/users/{id}/reset-password` `{ newPassword }` | Super | `204`, `400`, `404`, `409 own_account` |
 | `DELETE /api/users/{id}` | Super | `204` (soft delete), `404`, `409 own_account` |
+| `GET /api/clinic-settings` | Bearer token (any role) | `200 { name, address, phone, currencyCode, version, updatedAt, updatedBy }` |
+| `PUT /api/clinic-settings` `{ name, address, phone, currencyCode, version }` | Admin | `200`, `400`, `403` for Super, `409 concurrency_conflict` |
+| `GET /api/health` | Anonymous | `200 { status, database, apiVersion }`, `503` when the database is down |
 
 - Tokens: JWT signed with HMAC-SHA256, valid 8 hours (`Jwt:ExpiryMinutes`), claims `sub`, `unique_name`, `role`.
 - Every request re-checks the token's user: a deactivated, deleted or re-roled user gets `401` at once (the desktop then

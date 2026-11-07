@@ -37,6 +37,9 @@ Skip tests only for pure styling/token changes and docs.
   New seed data goes through `ApiFactory`; never depend on dev data.
 - Desktop tests: `using var app = new TestServices();` (real DI, fake API, temp settings, English). Stub the server with
   `app.Api.RespondToLoginWith(...)`, `RespondWithStatus(...)`, `FailWithNetworkError()`; sign in with `app.SignInAs(role)`.
+  Printouts never open a viewer in tests: `app.OpenedFiles` lists the PDFs the app asked to open.
+- Time-dependent API behavior: swap the clock with `factory.WithWebHostBuilder(... ConfigureTestServices(s => s.AddSingleton<TimeProvider>(fixed)))`
+  (see `ClockAndHealthTests`), never by sleeping.
 - Never call the real API, real settings file or real database from desktop tests.
 - Keep tests independent: no ordering, no shared mutable state between tests.
 
@@ -47,3 +50,6 @@ Always use the script (it checks Docker and switches to Release when the app is 
 ./scripts/test.ps1 api Login
 ./scripts/test.ps1 desktop NavigationGuard -Watch
 ```
+
+CI (`.github/workflows/tests.yml`) runs `./scripts/test.ps1 api` on Ubuntu and `./scripts/test.ps1 desktop` on Windows
+on every push. API tests must stay OS-neutral (no Windows-only paths or APIs); a red CI run blocks "done".

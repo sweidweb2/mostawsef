@@ -54,7 +54,8 @@ await activity.LogAsync(
 - Never put passwords, tokens or full medical notes in `Details`.
 
 Recorded today: `auth.signed_in`, `auth.sign_in_failed`, `auth.signed_out`, `auth.password_changed`, `users.created`,
-`users.updated`, `users.deleted`, `users.password_reset`, `logs.activity_deleted`, `logs.error_deleted`, `logs.purged`.
+`users.updated`, `users.deleted`, `users.password_reset`, `settings.clinic_updated`, `logs.activity_deleted`,
+`logs.error_deleted`, `logs.purged`.
 
 ## System error engine
 

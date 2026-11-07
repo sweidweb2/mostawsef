@@ -93,6 +93,9 @@ Usage namespace: `xmlns:ui="using:Mostawsef.Desktop.Components"`.
 | EmptyState | Built | `ui:EmptyState` |
 | ErrorState | Built | `ui:ErrorState RetryCommand="..."` (`Title`, `Description`, `Icon`; Retry button shows only with a command) |
 
+The portal shell shows a connection `ui:Alert` (`ConnectionBanner`) above every page while the server is unreachable
+or runs another API version; pages don't add their own.
+
 ## Overlays
 
 | Component | Status | Use |

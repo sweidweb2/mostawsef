@@ -22,11 +22,16 @@ alwaysApply: true
   - UI: components from `Docs/shared-components.md` before writing new XAML
 - One way per concern: `ApiClient` for HTTP, `IActivityLogger` for activity, `ISystemErrorLogger`/`ErrorReporter` for errors,
   `DialogService`/`ToastService` for feedback, `FormViewModel` + `ShowFormAsync` for forms, DataAnnotations with `ErrorCodes`
-  + `AppException` for validation and expected errors. Do not add a second mechanism.
+  + `AppException` for validation and expected errors, `TimeProvider` for the current time, `INumberSequence` for readable
+  numbers, `ClinicContext` for clinic details and currency, `PrintService` + `ClinicPage` for printouts,
+  `ConnectionMonitor` for server reachability. Do not add a second mechanism.
 
 ## Dependencies
 - No new NuGet package, project or external tool without asking the user first (say what it replaces and why the
   existing stack cannot do it). Packages go in the lowest layer that needs them; EF Core/Npgsql only in Infrastructure.
+- Package versions live only in `Directory.Packages.props` (a `.csproj` `PackageReference` has no `Version`); settings
+ shared by all projects live in `Directory.Build.props`. Warnings are errors: fix the cause, and only switch a rule off
+ in `.editorconfig` with a one-line reason when it does not fit the project.
 - Keep the SQLite fallback possible (see `project-architecture.mdc`).
 
 ## Layers are never bypassed

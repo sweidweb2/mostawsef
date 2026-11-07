@@ -68,7 +68,25 @@ alwaysApply: false
 - Searchable names: store `SearchText.Normalize(value)` in its own column (e.g. `User.SearchName`), normalize the term the
   same way and compare with `Contains` (Arabic hamza/ta marbuta/alef maqsura, diacritics and Arabic digits handled).
 
+## Time, numbers, money, reference lists
+- **Clock**: inject `TimeProvider` (registered once in Infrastructure); never `DateTime.UtcNow`/`DateTime.Today` in
+  Application or Infrastructure. Domain takes the time as a parameter when it matters. Tests swap it with
+  `WithWebHostBuilder` + `ConfigureTestServices`.
+- **Dates**: moments are UTC `DateTime` (`timestamptz`); calendar dates without a time (birth date) are `DateOnly` (`date`).
+  "Today" is the server's local day (`LogPeriods.Current(time)`).
+- **Readable numbers** (file no., invoice no.): `INumberSequence.NextAsync("patients")` + `DocumentNumber.Format("P", n)`
+  -> `P-000123`. Safe across PCs; a failed save can leave a gap.
+- **Money**: `long` minor units in entities, contracts and columns (`Contracts/Common/Money`: `ToMinor`/`ToMajor`, 100 per
+  unit). The currency is `ClinicSettings.CurrencyCode` (one of `Currencies.All`); amounts never carry their own currency.
+- **Reference lists**: fixed workflow values (order status, payment method) are C# enums stored as strings
+  (`HasConversion<string>()`), sent as strings, and translated on the desktop (`{l:TrKey Status, Prefix=OrderStatus.}`).
+  Lists the staff edit (lab tests, drugs) are real entities with their own module (copy the users module, `SearchName`
+  for search). No generic lookup table.
+- **Clinic settings** (`IClinicSettingsService`): name, address, phone, currency. One row, created at startup; everyone
+  reads it, Admin edits it.
+
 ## Conventions
 - Async all the way with `CancellationToken` on I/O methods.
 - Return proper status codes (400/401/403/404/409, 202/204 for no body); never leak exception details (the middleware returns a generic 500).
-- Keep `GET /api/health` working: the desktop app relies on it.
+- Keep `GET /api/health` working: the desktop app relies on it (connection banner, version check). Increase
+  `Contracts/Common/ApiVersion.Current` when a change removes or renames an endpoint or field the desktop uses.

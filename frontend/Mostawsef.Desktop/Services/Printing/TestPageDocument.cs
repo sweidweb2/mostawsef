@@ -1,3 +1,4 @@
+using System.Globalization;
 using Mostawsef.Desktop.Converters;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
@@ -42,7 +43,7 @@ public sealed class TestPageDocument(PrintContext context) : IDocument
             foreach (var (item, quantity, price) in Lines)
             {
                 table.Cell().Element(BodyCell).Text(item);
-                table.Cell().Element(BodyCell).Text(quantity.ToString());
+                table.Cell().Element(BodyCell).Text(quantity.ToString(CultureInfo.InvariantCulture));
                 table.Cell().Element(BodyCell).Text(MoneyFormat.Format(price * quantity, context.Clinic?.CurrencyCode, context.Localization));
             }
         });

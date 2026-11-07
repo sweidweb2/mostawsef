@@ -1,0 +1,67 @@
+root = true
+
+[*]
+charset = utf-8
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{json,csproj,props,targets,slnx,resx,xml,yml,yaml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[**/Migrations/*.cs]
+generated_code = true
+
+[*.cs]
+# Layout
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+dotnet_sort_system_directives_first = true
+
+# Rules the build enforces (warnings are errors)
+csharp_style_namespace_declarations = file_scoped:warning
+csharp_prefer_braces = true:warning
+dotnet_diagnostic.IDE0011.severity = warning
+dotnet_diagnostic.IDE0161.severity = warning
+
+# Analyzer rules (AnalysisLevel latest-recommended) that don't fit this app
+# CA1000: static factories on generic results (ApiResult<T>.Success) are intended.
+dotnet_diagnostic.CA1000.severity = none
+# CA1001: the CancellationTokenSource / SemaphoreSlim fields hold nothing that needs disposing, and nobody disposes view models.
+dotnet_diagnostic.CA1001.severity = none
+# CA1716: no Visual Basic callers, so names like Error are fine.
+dotnet_diagnostic.CA1716.severity = none
+# CA1822: properties bound from XAML must stay instance members.
+dotnet_diagnostic.CA1822.severity = suggestion
+# CA1863, CA1848, CA1873: speed-ups that only pay off on hot paths (formatting, logging).
+dotnet_diagnostic.CA1863.severity = suggestion
+dotnet_diagnostic.CA1848.severity = suggestion
+dotnet_diagnostic.CA1873.severity = suggestion
+
+# Preferences (editor suggestions only)
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = true:suggestion
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_expression_bodied_properties = true:suggestion
+csharp_style_prefer_primary_constructors = true:suggestion
+csharp_style_prefer_switch_expression = true:suggestion
+csharp_style_pattern_matching_over_is_with_cast_check = true:suggestion
+dotnet_style_prefer_collection_expression = true:suggestion
+dotnet_style_qualification_for_field = false:suggestion
+dotnet_style_qualification_for_property = false:suggestion
+dotnet_style_qualification_for_method = false:suggestion
+
+[tests/**.cs]
+# Test names are sentences with underscores (Wrong_password_returns_401).
+dotnet_diagnostic.CA1707.severity = none
+# xUnit collection definitions are named ...Collection (ApiCollection).
+dotnet_diagnostic.CA1711.severity = none

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Mostawsef.Contracts.Logs;
 using Mostawsef.Desktop.Converters;
@@ -25,7 +26,7 @@ public class SystemErrorDetailsViewModel(SystemErrorDto error) : ViewModelBase
 
     public string? Request => Error.RequestPath is null ? null : $"{Error.RequestMethod} {Error.RequestPath}".Trim();
 
-    public string? StatusCode => Error.StatusCode?.ToString();
+    public string? StatusCode => Error.StatusCode?.ToString(CultureInfo.InvariantCulture);
 
     public string? Details => LogFormat.PrettyJson(Error.Details);
 }
