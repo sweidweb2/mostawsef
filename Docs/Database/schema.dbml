@@ -1,0 +1,278 @@
+// Mostawsef database schema (PostgreSQL 17, EF Core).
+// Existing tables mirror AppDbContextModelSnapshot; business tables are the agreed design (not implemented yet).
+// Conventions: snake_case tables, PascalCase columns, enums stored as strings,
+// money as bigint minor units (SQLite fallback), currencies as ISO 4217 codes.
+
+Project Mostawsef {
+  database_type: 'PostgreSQL'
+}
+
+// ---------------------------------------------------------------------------
+// Existing tables
+// ---------------------------------------------------------------------------
+
+Table users {
+  Id uuid [pk]
+  Username varchar(50) [not null, unique, note: 'lower-case, trimmed; never reused']
+  FullName varchar(100) [not null]
+  SearchName varchar(100) [not null, note: 'FullName normalized for search']
+  PasswordHash varchar(256) [not null, note: 'PBKDF2; never returned']
+  Role varchar(20) [not null, note: 'UserRole']
+  IsActive boolean [not null]
+  LastLoginAt timestamptz
+  CreatedAt timestamptz [not null]
+  CreatedBy varchar(50)
+  UpdatedAt timestamptz
+  UpdatedBy varchar(50)
+  Version integer [not null, note: 'concurrency token']
+  IsDeleted boolean [not null]
+  DeletedAt timestamptz
+  DeletedBy varchar(50)
+}
+
+Table clinic_settings {
+  Id uuid [pk]
+  Name varchar(150) [not null]
+  Address varchar(300)
+  Phone varchar(30)
+  CurrencyCode varchar(3) [not null, note: 'ISO 4217, e.g. EGP']
+  CreatedAt timestamptz [not null]
+  CreatedBy varchar(50)
+  UpdatedAt timestamptz
+  UpdatedBy varchar(50)
+  Version integer [not null]
+
+  Note: 'Exactly one row, created at startup.'
+}
+
+Table number_sequences {
+  Name varchar(50) [pk]
+  NextValue bigint [not null]
+
+  Note: 'Named counters for readable document numbers.'
+}
+
+Table activity_logs {
+  Id uuid [pk]
+  OccurredAt timestamptz [not null]
+  Action varchar(100) [not null, note: 'ActivityActions code, e.g. auth.login']
+  Module varchar(50) [not null]
+  Description varchar(500) [not null]
+  UserId uuid
+  Username varchar(50)
+  EntityType varchar(100)
+  EntityId varchar(100)
+  IpAddress varchar(45)
+  UserAgent varchar(300)
+  Details varchar(8000) [note: 'JSON']
+  SearchText varchar(703) [not null]
+
+  Indexes {
+    (OccurredAt, Id)
+    (Action, OccurredAt)
+    UserId
+    SearchText [type: gin, note: 'gin_trgm_ops']
+  }
+
+  Note: 'Append-only.'
+}
+
+Table system_errors {
+  Id uuid [pk]
+  OccurredAt timestamptz [not null]
+  Level varchar(20) [not null, note: 'ErrorLevel']
+  Source varchar(50) [not null, note: 'Api / Desktop']
+  Message varchar(2000) [not null]
+  ExceptionType varchar(300)
+  StackTrace varchar(20000)
+  RequestPath varchar(500)
+  RequestMethod varchar(10)
+  StatusCode integer
+  UserId uuid
+  Username varchar(50)
+  TraceId varchar(100)
+  IpAddress varchar(45)
+  Details varchar(8000) [note: 'JSON']
+  SearchText varchar(2904) [not null]
+
+  Indexes {
+    (OccurredAt, Id)
+    (Level, OccurredAt)
+    SearchText [type: gin, note: 'gin_trgm_ops']
+  }
+
+  Note: 'Append-only.'
+}
+
+// ---------------------------------------------------------------------------
+// Business tables
+// ---------------------------------------------------------------------------
+
+Enum Gender {
+  Male
+  Female
+}
+
+Enum OrderStatus {
+  Pending
+  PartiallyPaid
+  Paid
+  Cancelled
+  Refunded
+}
+
+Enum DiscountType {
+  Percent
+  Fixed
+}
+
+Enum PaymentType {
+  Payment
+  Refund
+}
+
+Enum PaymentMethod {
+  Cash
+  Card
+  Transfer
+  Insurance
+}
+
+Enum ScheduledPaymentStatus {
+  Due
+  Paid
+  Overdue
+  Cancelled
+}
+
+Table patients {
+  Id uuid [pk]
+  FullName varchar(100) [not null]
+  Phone varchar(30) [not null]
+  GuardianPhone varchar(30)
+  Notes varchar(2000)
+  IsInsured boolean [not null, default: false]
+  Gender Gender [not null]
+  DateOfBirth date
+  CreatedAt timestamptz [not null]
+  CreatedBy varchar(50)
+  UpdatedAt timestamptz
+  UpdatedBy varchar(50)
+  Version integer [not null]
+  IsDeleted boolean [not null]
+  DeletedAt timestamptz
+  DeletedBy varchar(50)
+
+  Indexes {
+    Phone [note: 'not unique: siblings share a guardian phone']
+  }
+}
+
+Table lab_tests {
+  Id uuid [pk]
+  Code varchar(20) [not null, unique]
+  Name varchar(150) [not null, unique]
+  Price bigint [not null, note: 'our price, minor units']
+  LabCost bigint [not null, note: 'what the lab charges us, minor units']
+  IsActive boolean [not null, default: true]
+  CreatedAt timestamptz [not null]
+  CreatedBy varchar(50)
+  UpdatedAt timestamptz [note: 'last price/name change']
+  UpdatedBy varchar(50)
+  Version integer [not null]
+}
+
+Table orders {
+  Id uuid [pk]
+  PatientId uuid [not null]
+  PatientName varchar(100) [not null, note: 'snapshot at order time']
+  PatientPhone varchar(30) [not null, note: 'snapshot at order time']
+  Status OrderStatus [not null, default: 'Pending', note: 'Paid/PartiallyPaid derived from payments']
+  DiscountType DiscountType
+  DiscountValue bigint [not null, default: 0, note: 'Percent: 0-100; Fixed: minor units']
+  Currency varchar(3) [not null]
+  Notes varchar(2000)
+  CreatedAt timestamptz [not null]
+  CreatedBy varchar(50)
+  UpdatedAt timestamptz
+  UpdatedBy varchar(50)
+  Version integer [not null]
+
+  Indexes {
+    PatientId
+    (Status, CreatedAt)
+  }
+
+  Note: 'Total = sum(order_items.OurPrice) - discount; computed, not stored.'
+}
+
+Table order_items {
+  Id uuid [pk]
+  OrderId uuid [not null]
+  LabTestId uuid [not null]
+  LabPrice bigint [not null, note: 'copied from lab_tests.LabCost']
+  OurPrice bigint [not null, note: 'copied from lab_tests.Price']
+  CreatedAt timestamptz [not null]
+  CreatedBy varchar(50)
+  UpdatedAt timestamptz
+  UpdatedBy varchar(50)
+  Version integer [not null]
+
+  Indexes {
+    OrderId
+    LabTestId
+  }
+}
+
+Table payments {
+  Id uuid [pk]
+  OrderId uuid [not null]
+  Type PaymentType [not null, default: 'Payment']
+  Method PaymentMethod [not null]
+  Currency varchar(3) [not null]
+  Amount bigint [not null, note: 'positive, minor units of Currency']
+  ExchangeRate decimal(18,6) [not null, default: 1, note: 'Currency -> order currency']
+  PaidAt timestamptz [not null]
+  Notes varchar(500)
+  CreatedAt timestamptz [not null]
+  CreatedBy varchar(50)
+  UpdatedAt timestamptz
+  UpdatedBy varchar(50)
+  Version integer [not null]
+
+  Indexes {
+    OrderId
+    PaidAt
+  }
+
+  Note: 'Never edited or deleted; corrections are Refund rows.'
+}
+
+Table scheduled_payments {
+  Id uuid [pk]
+  OrderId uuid [not null]
+  DueDate date [not null]
+  Amount bigint [not null, note: 'minor units of Currency']
+  Currency varchar(3) [not null]
+  Status ScheduledPaymentStatus [not null, default: 'Due']
+  PaymentId uuid [unique, note: 'set when the installment is paid']
+  CreatedAt timestamptz [not null]
+  CreatedBy varchar(50)
+  UpdatedAt timestamptz
+  UpdatedBy varchar(50)
+  Version integer [not null]
+
+  Indexes {
+    OrderId
+    (Status, DueDate)
+  }
+
+  Note: 'Sum of open installments must not exceed the order balance.'
+}
+
+Ref: orders.PatientId > patients.Id [delete: restrict]
+Ref: order_items.OrderId > orders.Id [delete: cascade]
+Ref: order_items.LabTestId > lab_tests.Id [delete: restrict]
+Ref: payments.OrderId > orders.Id [delete: restrict]
+Ref: scheduled_payments.OrderId > orders.Id [delete: restrict]
+Ref: scheduled_payments.PaymentId - payments.Id [delete: set null]
