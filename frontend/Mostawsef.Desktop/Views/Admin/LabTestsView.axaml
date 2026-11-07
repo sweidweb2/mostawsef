@@ -3,6 +3,7 @@
              xmlns:ui="using:Mostawsef.Desktop.Components"
              xmlns:l="using:Mostawsef.Desktop.Services.Local"
              xmlns:tests="using:Mostawsef.Contracts.LabTests"
+             xmlns:common="using:Mostawsef.Contracts.Common"
              xmlns:vm="using:Mostawsef.Desktop.ViewModels.Admin"
              x:Class="Mostawsef.Desktop.Views.Admin.LabTestsView"
              x:DataType="vm:LabTestsViewModel">
@@ -41,25 +42,33 @@
                           ErrorDescription="{l:TrKey LoadErrorDescriptionKey}"
                           RetryCommand="{Binding RefreshCommand}">
                 <ui:DataTable.Toolbar>
-                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{DynamicResource GapControls}">
-                        <ui:SearchBox MaxWidth="360"
-                                      HorizontalAlignment="Left"
+                    <!-- Equal side columns keep the search box centered in the row. -->
+                    <Grid ColumnDefinitions="*,2*,*" ColumnSpacing="{DynamicResource GapControls}">
+                        <ui:SearchBox Name="SearchBox"
+                                      Grid.Column="1"
                                       Text="{Binding Search}"
+                                      MaxLength="{x:Static common:PageQuery.MaxSearchLength}"
+                                      PlaceholderText="{l:Tr LabTests.SearchPlaceholder}"
                                       SearchCommand="{Binding SearchCommand}" />
-                        <TextBlock Grid.Column="1" Classes="caption muted" Text="{l:Tr LabTests.Records, Arg=TotalCount}" VerticalAlignment="Center" />
-                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource Space1}">
-                            <ui:IconButton Name="TableViewButton"
-                                           Classes="ghost sm"
-                                           Classes.selected="{Binding !IsGridView}"
-                                           Icon="{StaticResource IconList}"
-                                           ToolTip.Tip="{l:Tr LabTests.TableView}"
-                                           Command="{Binding ShowTableCommand}" />
-                            <ui:IconButton Name="GridViewButton"
-                                           Classes="ghost sm"
-                                           Classes.selected="{Binding IsGridView}"
-                                           Icon="{StaticResource IconGrid}"
-                                           ToolTip.Tip="{l:Tr LabTests.GridView}"
-                                           Command="{Binding ShowGridCommand}" />
+                        <StackPanel Grid.Column="2"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Right"
+                                    Spacing="{DynamicResource GapControls}">
+                            <TextBlock Classes="caption muted" Text="{l:Tr LabTests.Records, Arg=TotalCount}" VerticalAlignment="Center" />
+                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}">
+                                <ui:IconButton Name="TableViewButton"
+                                               Classes="ghost sm"
+                                               Classes.selected="{Binding !IsGridView}"
+                                               Icon="{StaticResource IconList}"
+                                               ToolTip.Tip="{l:Tr LabTests.TableView}"
+                                               Command="{Binding ShowTableCommand}" />
+                                <ui:IconButton Name="GridViewButton"
+                                               Classes="ghost sm"
+                                               Classes.selected="{Binding IsGridView}"
+                                               Icon="{StaticResource IconGrid}"
+                                               ToolTip.Tip="{l:Tr LabTests.GridView}"
+                                               Command="{Binding ShowGridCommand}" />
+                            </StackPanel>
                         </StackPanel>
                     </Grid>
                 </ui:DataTable.Toolbar>
@@ -161,11 +170,7 @@
                                                 <ui:Badge Kind="Success" Text="{l:Tr LabTests.Active}" IsVisible="{Binding IsActive}" />
                                                 <ui:Badge Text="{l:Tr LabTests.Inactive}" IsVisible="{Binding !IsActive}" />
                                             </Panel>
-                                            <StackPanel Spacing="{DynamicResource Space1}" VerticalAlignment="Center">
-                                                <TextBlock Classes="h3" Text="{l:Money Price}" TextWrapping="Wrap" />
-                                                <TextBlock Classes="caption muted" Text="{l:Tr LabTests.Col.LabCost}" />
-                                                <TextBlock Classes="muted" Text="{l:Money LabCost}" TextWrapping="Wrap" />
-                                            </StackPanel>
+                                            <TextBlock Classes="h3" Text="{l:Money Price}" TextWrapping="Wrap" VerticalAlignment="Center" />
                                         </DockPanel>
                                     </ui:Card>
                                 </DataTemplate>

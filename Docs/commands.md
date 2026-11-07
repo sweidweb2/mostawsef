@@ -47,6 +47,15 @@ containers for Testcontainers), `desktop` on Windows. Results are in the reposit
 
 ## Run the app
 
+Everything in one window (database, API, then desktop; closing the desktop app stops the API, run it again after code
+changes):
+
+```powershell
+./scripts/dev.ps1
+```
+
+Or each part on its own:
+
 ```powershell
 docker compose up -d
 ```

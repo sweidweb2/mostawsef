@@ -330,7 +330,7 @@ Health check: `GET http://localhost:5270/api/health` returns
 | Clinic settings | `ClinicSettingsController`, `Application/Modules/Settings`, desktop `ClinicContext` + Admin page | Name, address, phone, currency. Everyone reads, Admin edits. No logo yet (storage still to decide) |
 | Readable numbers | `Application/Interfaces/INumberSequence`, `Domain/Common/DocumentNumber` | `P-000123`-style numbers per sequence name, safe across PCs (gaps possible after a failed save) |
 | Clock, dates, money | `TimeProvider` (Infrastructure DI), `Contracts/Common/Money` + `Currencies`, desktop `{l:Money}` and `ValueConverters.DateOnly` | One injectable clock; money as `long` minor units shown with the clinic currency; `DateOnly` for calendar dates |
-| Printing | desktop `Services/Printing` (QuestPDF) | `ClinicPage` layout (clinic header, page footer, RTL in Arabic) and a printer test page on the Admin settings page |
+| Printing | desktop `Services/Printing` (QuestPDF) | `ClinicPage` layout (clinic header, page footer, RTL in Arabic); first document: the lab test list exported from the Admin lab tests page |
 | Auth | `AuthController`, `Application/Modules/Auth`, `Infrastructure/Services/Auth` | JWT, roles `Admin`/`Super`, PBKDF2 hashing, login rate limit. See `auth.md` |
 | Logging | `ActivityLogsController`, `SystemErrorsController`, `Application/Modules/Logs`, `ExceptionHandlingMiddleware` | Activity logs and system errors. See `logging.md` |
 | Users | `UsersController`, `Application/Modules/Users`, desktop `UsersViewModel` + forms | User management (Super) and change password (everyone). The reference module to copy for CRUD features. See `auth.md` |

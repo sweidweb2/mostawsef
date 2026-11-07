@@ -29,6 +29,7 @@
                                Value="{Binding Price}"
                                Minimum="0"
                                Maximum="{Binding MaxAmount}"
+                               ClipValueToMinMax="True"
                                FormatString="0.00"
                                PlaceholderText="{l:Tr LabTests.Field.AmountPlaceholder}"
                                HorizontalAlignment="Stretch" />
@@ -38,6 +39,7 @@
                                Value="{Binding LabCost}"
                                Minimum="0"
                                Maximum="{Binding MaxAmount}"
+                               ClipValueToMinMax="True"
                                FormatString="0.00"
                                PlaceholderText="{l:Tr LabTests.Field.AmountPlaceholder}"
                                HorizontalAlignment="Stretch" />

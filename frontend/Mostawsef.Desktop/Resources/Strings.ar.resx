@@ -163,7 +163,6 @@
   <data name="Settings.Subtitle" xml:space="preserve"><value>بيانات العيادة التي تظهر في المطبوعات، والعملة المستخدمة لكل المبالغ.</value></data>
   <data name="Settings.EditTitle" xml:space="preserve"><value>تعديل إعدادات العيادة</value></data>
   <data name="Settings.Saved" xml:space="preserve"><value>تم حفظ إعدادات العيادة.</value></data>
-  <data name="Settings.PrintTestPage" xml:space="preserve"><value>طباعة صفحة اختبار</value></data>
   <data name="Settings.Field.Name" xml:space="preserve"><value>اسم العيادة</value></data>
   <data name="Settings.Field.Address" xml:space="preserve"><value>العنوان</value></data>
   <data name="Settings.Field.Phone" xml:space="preserve"><value>الهاتف</value></data>
@@ -185,12 +184,6 @@
   <data name="Print.Page" xml:space="preserve"><value>صفحة</value></data>
   <data name="Print.Of" xml:space="preserve"><value>من</value></data>
   <data name="Print.PrintedAt" xml:space="preserve"><value>طُبعت في</value></data>
-  <data name="Print.TestTitle" xml:space="preserve"><value>صفحة اختبار الطابعة</value></data>
-  <data name="Print.TestDescription" xml:space="preserve"><value>إذا ظهرت ترويسة العيادة واللغتان والجدول بالأسفل بشكل صحيح، فالطباعة جاهزة.</value></data>
-  <data name="Print.Item" xml:space="preserve"><value>البند</value></data>
-  <data name="Print.Quantity" xml:space="preserve"><value>الكمية</value></data>
-  <data name="Print.Price" xml:space="preserve"><value>المبلغ</value></data>
-  <data name="Print.Total" xml:space="preserve"><value>الإجمالي</value></data>
   <data name="Print.Failed" xml:space="preserve"><value>تعذّر إنشاء المطبوع. تم الإبلاغ عن الخطأ.</value></data>
 
   <data name="Form.DiscardTitle" xml:space="preserve"><value>تجاهل التغييرات؟</value></data>
@@ -201,7 +194,7 @@
   <data name="ErrorCode.required" xml:space="preserve"><value>هذا الحقل مطلوب.</value></data>
   <data name="ErrorCode.max_length" xml:space="preserve"><value>يجب ألا يزيد عن {0} حرفًا.</value></data>
   <data name="ErrorCode.min_length" xml:space="preserve"><value>يجب ألا يقل عن {0} أحرف.</value></data>
-  <data name="ErrorCode.min_value" xml:space="preserve"><value>يجب أن يكون {0} أو أكثر.</value></data>
+  <data name="ErrorCode.range" xml:space="preserve"><value>هذه القيمة خارج الحدود المسموح بها.</value></data>
   <data name="ErrorCode.invalid" xml:space="preserve"><value>هذه القيمة غير صالحة.</value></data>
   <data name="ErrorCode.validation" xml:space="preserve"><value>بعض الحقول تحتاج إلى مراجعة.</value></data>
   <data name="ErrorCode.not_found" xml:space="preserve"><value>هذا السجل لم يعد موجودًا.</value></data>
@@ -255,7 +248,13 @@
   <data name="LabTests.Col.Status" xml:space="preserve"><value>الحالة</value></data>
   <data name="LabTests.Active" xml:space="preserve"><value>متاح</value></data>
   <data name="LabTests.Inactive" xml:space="preserve"><value>غير متاح</value></data>
-  <data name="LabTests.Field.CodeHint" xml:space="preserve"><value>اختصار قصير، مثل CBC. يُحفظ بحروف كبيرة.</value></data>
+  <data name="LabTests.SearchPlaceholder" xml:space="preserve"><value>ابحث باسم التحليل أو الكود...</value></data>
+  <data name="LabTests.ExportHint" xml:space="preserve"><value>تصدير كل التحاليل كملف PDF</value></data>
+  <data name="LabTests.Field.NamePlaceholder" xml:space="preserve"><value>مثال: صورة دم كاملة</value></data>
+  <data name="LabTests.Field.CodePlaceholder" xml:space="preserve"><value>مثال: CBC</value></data>
+  <data name="LabTests.Field.AmountPlaceholder" xml:space="preserve"><value>0.00</value></data>
+  <data name="LabTests.Field.CodeHint" xml:space="preserve"><value>قصير وغير مكرر. يُحفظ بحروف كبيرة.</value></data>
+  <data name="LabTests.Field.PriceHint" xml:space="preserve"><value>ما يدفعه المريض، بحد أقصى {0}.</value></data>
   <data name="LabTests.Field.LabCostHint" xml:space="preserve"><value>ما يتقاضاه المعمل من العيادة.</value></data>
   <data name="LabTests.Field.IsActive" xml:space="preserve"><value>متاح للطلبات الجديدة</value></data>
   <data name="LabTests.Saved" xml:space="preserve"><value>تم حفظ التحليل.</value></data>

@@ -1,7 +1,9 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -9,6 +11,7 @@ using Mostawsef.Contracts.Auth;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.LabTests;
 using Mostawsef.Desktop.Components;
+using Mostawsef.Desktop.Services.Api;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Ui;
 using Mostawsef.Desktop.Tests.Infrastructure;
@@ -78,6 +81,10 @@ public class LabTestsPageTests
             Assert.True(card.Bounds.Height >= card.Bounds.Width - 1, $"{card.Bounds.Width}x{card.Bounds.Height}");
             Assert.Equal<object?>([page.EditCommand, page.DeleteCommand], RowButtons(card).Select(b => b.Command));
         });
+        var cardTexts = cards.SelectMany(c => c.GetVisualDescendants().OfType<TextBlock>()).Select(t => t.Text).ToList();
+        Assert.Contains("150.50", cardTexts);
+        Assert.DoesNotContain("90.00", cardTexts);
+        Assert.DoesNotContain("Lab cost", cardTexts);
         Assert.Contains("selected", Named<Button>(window, "GridViewButton").Classes);
         Assert.DoesNotContain("selected", Named<Button>(window, "TableViewButton").Classes);
 
@@ -86,6 +93,88 @@ public class LabTestsPageTests
 
         Assert.True(Table(window).IsEffectivelyVisible);
         Assert.Empty(VisibleCards(window));
+    }
+
+    [AvaloniaTheory]
+    [InlineData(AppLanguage.English)]
+    [InlineData(AppLanguage.Arabic)]
+    public async Task The_search_box_is_centered_in_the_toolbar_and_takes_half_of_it(AppLanguage language)
+    {
+        using var app = AdminWithTests(Cbc);
+        app.Localization.SetLanguage(language);
+        var (_, window) = await ShowPage(app);
+
+        var search = Named<SearchBox>(window, "SearchBox");
+        var toolbar = (Grid)search.Parent!;
+        var start = search.TranslatePoint(default, toolbar)!.Value.X;
+        var end = toolbar.Bounds.Width - start - search.Bounds.Width;
+
+        Assert.InRange(start - end, -1, 1);
+        Assert.True(search.Bounds.Width >= toolbar.Bounds.Width / 2 - 10, $"{search.Bounds.Width} of {toolbar.Bounds.Width}");
+        Assert.Equal(PageQuery.MaxSearchLength, search.MaxLength);
+        Assert.Equal(app.Localization.Get("LabTests.SearchPlaceholder"), search.PlaceholderText);
+    }
+
+    [AvaloniaFact]
+    public async Task The_list_asks_for_40_tests_per_page()
+    {
+        using var app = AdminWithTests(Cbc);
+
+        var (page, _) = await ShowPage(app);
+
+        Assert.Equal(40, page.PageSize);
+        Assert.Contains("pageSize=40", app.Api.RequestsTo(HttpMethod.Get, TestsPath).Single().RequestUri!.Query);
+    }
+
+    [AvaloniaFact]
+    public async Task Export_reads_every_test_whatever_the_search_and_opens_a_pdf()
+    {
+        using var app = new TestServices();
+        app.SignInAs(Roles.Admin);
+        var catalog = Enumerable.Range(1, 150)
+            .Select(i => Cbc with { Id = Guid.NewGuid(), Code = $"T{i:000}", Name = $"Test {i:000}" })
+            .ToList();
+        app.Api.On(HttpMethod.Get, TestsPath, request =>
+        {
+            var query = System.Web.HttpUtility.ParseQueryString(request.RequestUri!.Query);
+            var number = int.Parse(query["page"]!, CultureInfo.InvariantCulture);
+            var size = int.Parse(query["pageSize"]!, CultureInfo.InvariantCulture);
+            return FakeApiHandler.Json(new PagedResult<LabTestDto>(catalog.Skip((number - 1) * size).Take(size).ToList(), number, size, catalog.Count));
+        });
+        var (page, _) = await ShowPage(app);
+        page.Search = "T001";
+
+        await page.ExportCommand.ExecuteAsync(null);
+
+        var exportReads = app.Api.RequestsTo(HttpMethod.Get, TestsPath)
+            .Select(r => r.RequestUri!.Query)
+            .Where(q => q.Contains($"pageSize={PageQuery.MaxPageSize}", StringComparison.Ordinal))
+            .ToList();
+        Assert.Equal(2, exportReads.Count);
+        Assert.All(exportReads, q => Assert.DoesNotContain("search", q, StringComparison.Ordinal));
+        var file = Assert.Single(app.OpenedFiles);
+        Assert.StartsWith("lab-tests-", Path.GetFileName(file));
+        Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(File.ReadAllBytes(file), 0, 4));
+        File.Delete(file);
+    }
+
+    [AvaloniaFact]
+    public async Task Export_while_the_server_is_down_says_so_and_opens_nothing()
+    {
+        using var app = new TestServices();
+        app.SignInAs(Roles.Admin);
+        var serverDown = false;
+        app.Api.On(HttpMethod.Get, TestsPath, _ => serverDown
+            ? throw new HttpRequestException("Connection refused")
+            : FakeApiHandler.Json(new PagedResult<LabTestDto>([Cbc], 1, 40, 1)));
+        var (page, window) = await ShowPage(app);
+        serverDown = true;
+
+        await page.ExportCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Empty(app.OpenedFiles);
+        Assert.Contains(app.Localization.Get("Login.ServerUnreachable"), Toasts(window));
     }
 
     [AvaloniaFact]
@@ -140,15 +229,61 @@ public class LabTestsPageTests
         Assert.Equal(ErrorCodes.Required, form.Errors[nameof(form.LabCost)]);
         Assert.Equal("This field is required.", FieldError(window, "Price"));
         Assert.False(Named<CheckBox>(window, "IsActiveBox").IsEffectivelyVisible);
+        app.Localization.SetLanguage(AppLanguage.Arabic);
+        Assert.Equal("هذا الحقل مطلوب.", FieldError(window, "السعر"));
+        Assert.Empty(app.Api.RequestsTo(HttpMethod.Post, TestsPath));
+    }
 
-        form.Price = -1;
+    [AvaloniaFact]
+    public async Task Values_past_the_shared_limits_are_refused_before_calling_the_api()
+    {
+        using var app = AdminWithTests();
+        var form = new LabTestFormViewModel(app.Get<LabTestsApi>(), app.Get<IDialogService>(), app.Localization)
+        {
+            Code = new string('C', LabTestRules.CodeMaxLength + 1),
+            Name = new string('n', LabTestRules.NameMaxLength + 1),
+            Price = -1,
+            LabCost = Money.ToMajor(LabTestRules.MaxAmount) + 1,
+        };
+
         await form.SaveCommand.ExecuteAsync(null);
+
+        Assert.Equal($"max_length|{LabTestRules.CodeMaxLength}", form.Errors[nameof(form.Code)]);
+        Assert.Equal($"max_length|{LabTestRules.NameMaxLength}", form.Errors[nameof(form.Name)]);
+        Assert.Equal($"range|0|{LabTestRules.MaxAmount}", form.Errors[nameof(form.Price)]);
+        Assert.Equal($"range|0|{LabTestRules.MaxAmount}", form.Errors[nameof(form.LabCost)]);
+        Assert.Equal("This value is outside the allowed range.", app.Localization.Get("ErrorCode.range"));
+        Assert.Empty(app.Api.RequestsTo(HttpMethod.Post, TestsPath));
+    }
+
+    [AvaloniaFact]
+    public async Task Form_inputs_have_placeholders_and_the_same_limits_as_the_api()
+    {
+        using var app = AdminWithTests();
+        var (page, window) = await ShowPage(app);
+        var form = OpenAddForm(page, window);
+
+        var name = Named<TextBox>(window, "NameBox");
+        var code = Named<TextBox>(window, "CodeBox");
+        var price = Named<NumericUpDown>(window, "PriceBox");
+        var labCost = Named<NumericUpDown>(window, "LabCostBox");
+        Assert.Equal(("e.g. Complete blood count", LabTestRules.NameMaxLength), (name.PlaceholderText, name.MaxLength));
+        Assert.Equal(("e.g. CBC", LabTestRules.CodeMaxLength), (code.PlaceholderText, code.MaxLength));
+        Assert.All(new[] { price, labCost }, input =>
+        {
+            Assert.Equal("0.00", input.PlaceholderText);
+            Assert.Equal(0, input.Minimum);
+            Assert.Equal(Money.ToMajor(LabTestRules.MaxAmount), input.Maximum);
+        });
+        Assert.Contains("What the patient pays, up to 1000000.", window.GetVisualDescendants().OfType<FormField>().Select(f => f.Hint));
+
+        var typed = price.GetVisualDescendants().OfType<TextBox>().Single();
+        typed.Focus();
+        window.KeyTextInput("2000000");
+        window.KeyPressQwerty(Avalonia.Input.PhysicalKey.Enter, Avalonia.Input.RawInputModifiers.None);
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal("Must be 0 or more.", FieldError(window, "Price"));
-        app.Localization.SetLanguage(AppLanguage.Arabic);
-        Assert.Equal("يجب أن يكون 0 أو أكثر.", FieldError(window, "السعر"));
-        Assert.Empty(app.Api.RequestsTo(HttpMethod.Post, TestsPath));
+        Assert.Equal(Money.ToMajor(LabTestRules.MaxAmount), form.Price);
     }
 
     [AvaloniaFact]
@@ -272,7 +407,7 @@ public class LabTestsPageTests
         page.ShowGridCommand.Execute(null);
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Contains("تكلفة المعمل", Texts(window));
+        Assert.Contains("متاح", window.GetVisualDescendants().OfType<Badge>().Where(b => b.IsEffectivelyVisible).Select(b => b.Text));
         Assert.Equal(2, VisibleCards(window).Count());
     }
 

@@ -1,5 +1,6 @@
 using Avalonia.Headless.XUnit;
 using Mostawsef.Contracts.Common;
+using Mostawsef.Contracts.LabTests;
 using Mostawsef.Contracts.Settings;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Printing;
@@ -7,31 +8,37 @@ using Mostawsef.Desktop.Tests.Infrastructure;
 
 namespace Mostawsef.Desktop.Tests.Printing;
 
-/// <summary>Arabic letter shaping can't be asserted here: open a printed test page once to check it by eye.</summary>
+/// <summary>Arabic letter shaping can't be asserted here: open an exported lab test list once to check it by eye.</summary>
 public class PrintServiceTests
 {
+    private static readonly LabTestDto[] Tests =
+    [
+        new(Guid.NewGuid(), "CBC", "تحليل صورة دم كاملة / Complete blood count", 18050, 9000, true, DateTime.UtcNow, null, null, 0),
+        new(Guid.NewGuid(), "FBS", "Fasting blood sugar", 4000, 2500, false, DateTime.UtcNow, null, null, 0),
+    ];
+
     [AvaloniaTheory]
     [InlineData(AppLanguage.English)]
     [InlineData(AppLanguage.Arabic)]
-    public void The_test_page_renders_a_pdf_in_both_languages(AppLanguage language)
+    public void The_lab_test_list_renders_a_pdf_in_both_languages(AppLanguage language)
     {
         using var app = new TestServices(language);
         app.Get<ClinicContext>().Update(new ClinicSettingsDto("عيادة النور / Al Nour", "12 Nile St", "0223456789", Currencies.Egp, 0, null, null));
         var print = app.Get<PrintService>();
 
-        var pdf = print.Render(new TestPageDocument(print.CreateContext()));
+        var pdf = print.Render(new LabTestsDocument(print.CreateContext(), Tests));
 
         Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(pdf, 0, 4));
         Assert.True(pdf.Length > 5_000, $"Only {pdf.Length} bytes");
     }
 
     [AvaloniaFact]
-    public void A_page_prints_even_before_the_clinic_details_are_loaded()
+    public void A_document_prints_even_before_the_clinic_details_are_loaded_and_with_no_rows()
     {
         using var app = new TestServices();
         var print = app.Get<PrintService>();
 
-        var pdf = print.Render(new TestPageDocument(print.CreateContext()));
+        var pdf = print.Render(new LabTestsDocument(print.CreateContext(), []));
 
         Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(pdf, 0, 4));
     }
@@ -42,7 +49,7 @@ public class PrintServiceTests
         using var app = new TestServices();
         var print = app.Get<PrintService>();
 
-        var path = await print.PrintAsync(new TestPageDocument(print.CreateContext()), "unit-test");
+        var path = await print.PrintAsync(new LabTestsDocument(print.CreateContext(), Tests), "unit-test");
 
         Assert.Equal(path, Assert.Single(app.OpenedFiles));
         Assert.Equal(PrintService.PrintFolder, Path.GetDirectoryName(path));

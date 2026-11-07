@@ -67,7 +67,7 @@ alwaysApply: false
   moments (UTC `DateTime`) display with `ValueConverters.LocalDateTime`. Arabic keeps Latin digits (ar-EG culture).
 - Printouts are QuestPDF documents in `Services/Printing` built on `ClinicPage.Compose` (clinic header, page footer,
   RTL in Arabic, IBM Plex Sans Arabic). Show them with `PrintService.PrintAsync(document, name)` (PDF opened in the
-  default viewer); reference: `TestPageDocument`. Take `PrintService.CreateContext()` on the UI thread.
+  default viewer); reference: `LabTestsDocument`. Take `PrintService.CreateContext()` on the UI thread.
 
 ## State
 - **Session** (`SessionService`): user, role and token in memory only; cleared on sign-out or a 401.

@@ -163,7 +163,6 @@
   <data name="Settings.Subtitle" xml:space="preserve"><value>The clinic details shown on printouts, and the currency for all amounts.</value></data>
   <data name="Settings.EditTitle" xml:space="preserve"><value>Edit clinic settings</value></data>
   <data name="Settings.Saved" xml:space="preserve"><value>Clinic settings saved.</value></data>
-  <data name="Settings.PrintTestPage" xml:space="preserve"><value>Print test page</value></data>
   <data name="Settings.Field.Name" xml:space="preserve"><value>Clinic name</value></data>
   <data name="Settings.Field.Address" xml:space="preserve"><value>Address</value></data>
   <data name="Settings.Field.Phone" xml:space="preserve"><value>Phone</value></data>
@@ -185,12 +184,6 @@
   <data name="Print.Page" xml:space="preserve"><value>Page</value></data>
   <data name="Print.Of" xml:space="preserve"><value>of</value></data>
   <data name="Print.PrintedAt" xml:space="preserve"><value>Printed</value></data>
-  <data name="Print.TestTitle" xml:space="preserve"><value>Printer test page</value></data>
-  <data name="Print.TestDescription" xml:space="preserve"><value>If the clinic header, both languages and the table below look right, printing is ready.</value></data>
-  <data name="Print.Item" xml:space="preserve"><value>Item</value></data>
-  <data name="Print.Quantity" xml:space="preserve"><value>Qty</value></data>
-  <data name="Print.Price" xml:space="preserve"><value>Amount</value></data>
-  <data name="Print.Total" xml:space="preserve"><value>Total</value></data>
   <data name="Print.Failed" xml:space="preserve"><value>Could not create the printout. The error was reported.</value></data>
 
   <data name="Form.DiscardTitle" xml:space="preserve"><value>Discard changes?</value></data>
@@ -201,7 +194,7 @@
   <data name="ErrorCode.required" xml:space="preserve"><value>This field is required.</value></data>
   <data name="ErrorCode.max_length" xml:space="preserve"><value>Must be at most {0} characters.</value></data>
   <data name="ErrorCode.min_length" xml:space="preserve"><value>Must be at least {0} characters.</value></data>
-  <data name="ErrorCode.min_value" xml:space="preserve"><value>Must be {0} or more.</value></data>
+  <data name="ErrorCode.range" xml:space="preserve"><value>This value is outside the allowed range.</value></data>
   <data name="ErrorCode.invalid" xml:space="preserve"><value>This value is not valid.</value></data>
   <data name="ErrorCode.validation" xml:space="preserve"><value>Some fields need attention.</value></data>
   <data name="ErrorCode.not_found" xml:space="preserve"><value>This record no longer exists.</value></data>
@@ -255,7 +248,13 @@
   <data name="LabTests.Col.Status" xml:space="preserve"><value>Status</value></data>
   <data name="LabTests.Active" xml:space="preserve"><value>Available</value></data>
   <data name="LabTests.Inactive" xml:space="preserve"><value>Unavailable</value></data>
-  <data name="LabTests.Field.CodeHint" xml:space="preserve"><value>A short code, e.g. CBC. Saved in capital letters.</value></data>
+  <data name="LabTests.SearchPlaceholder" xml:space="preserve"><value>Search by test name or code...</value></data>
+  <data name="LabTests.ExportHint" xml:space="preserve"><value>Export all tests as a PDF</value></data>
+  <data name="LabTests.Field.NamePlaceholder" xml:space="preserve"><value>e.g. Complete blood count</value></data>
+  <data name="LabTests.Field.CodePlaceholder" xml:space="preserve"><value>e.g. CBC</value></data>
+  <data name="LabTests.Field.AmountPlaceholder" xml:space="preserve"><value>0.00</value></data>
+  <data name="LabTests.Field.CodeHint" xml:space="preserve"><value>Short and unique. Saved in capital letters.</value></data>
+  <data name="LabTests.Field.PriceHint" xml:space="preserve"><value>What the patient pays, up to {0}.</value></data>
   <data name="LabTests.Field.LabCostHint" xml:space="preserve"><value>What the lab charges the clinic.</value></data>
   <data name="LabTests.Field.IsActive" xml:space="preserve"><value>Available for new orders</value></data>
   <data name="LabTests.Saved" xml:space="preserve"><value>Lab test saved.</value></data>
