@@ -27,4 +27,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\shared\Mostawsef.Contracts\Mostawsef.Contracts.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Mostawsef.Desktop.Tests" />
+  </ItemGroup>
 </Project>

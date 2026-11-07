@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using Mostawsef.Desktop.Services.Ui;
@@ -12,5 +13,19 @@ public partial class MainWindow : Window
 
         App.Services.GetRequiredService<DialogService>().Attach(Host);
         App.Services.GetRequiredService<ToastService>().Attach(this);
+        FitRestoredSizeToScreen();
+    }
+
+    private void FitRestoredSizeToScreen()
+    {
+        if (Screens.Primary is not { } screen)
+        {
+            return;
+        }
+
+        var workArea = screen.WorkingArea.Size.ToSize(screen.Scaling);
+        var size = WindowSizing.FitToWorkArea(new Size(Width, Height), workArea);
+        Width = size.Width;
+        Height = size.Height;
     }
 }

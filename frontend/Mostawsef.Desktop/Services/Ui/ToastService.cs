@@ -12,7 +12,16 @@ public enum ToastKind
     Error,
 }
 
-public class ToastService
+public interface IToastService
+{
+    void Show(string message, string? title = null, ToastKind kind = ToastKind.Info, TimeSpan? duration = null);
+
+    void Success(string message, string? title = null) => Show(message, title, ToastKind.Success);
+
+    void Error(string message, string? title = null) => Show(message, title, ToastKind.Error);
+}
+
+public class ToastService : IToastService
 {
     private WindowNotificationManager? _manager;
 
@@ -35,8 +44,4 @@ public class ToastService
 
         _manager?.Show(new Notification(title, message, type, duration ?? TimeSpan.FromSeconds(4)));
     }
-
-    public void Success(string message, string? title = null) => Show(message, title, ToastKind.Success);
-
-    public void Error(string message, string? title = null) => Show(message, title, ToastKind.Error);
 }

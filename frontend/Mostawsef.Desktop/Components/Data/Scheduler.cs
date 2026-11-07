@@ -87,6 +87,7 @@ public class Scheduler : TemplatedControl
     private Button? _dayButton;
     private Button? _weekButton;
     private string _title = string.Empty;
+    private LocalizationService? _localization;
 
     public Scheduler()
     {
@@ -168,13 +169,18 @@ public class Scheduler : TemplatedControl
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        LocalizationService.Instance.LanguageChanged += OnLanguageChanged;
+        _localization = App.Localization;
+        _localization.LanguageChanged += OnLanguageChanged;
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
-        LocalizationService.Instance.LanguageChanged -= OnLanguageChanged;
+        if (_localization is not null)
+        {
+            _localization.LanguageChanged -= OnLanguageChanged;
+            _localization = null;
+        }
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -217,7 +223,7 @@ public class Scheduler : TemplatedControl
             return [Date.Date];
         }
 
-        var firstDay = LocalizationService.Instance.Culture.DateTimeFormat.FirstDayOfWeek;
+        var firstDay = App.Localization.Culture.DateTimeFormat.FirstDayOfWeek;
         var offset = ((int)Date.DayOfWeek - (int)firstDay + 7) % 7;
         var start = Date.Date.AddDays(-offset);
         return Enumerable.Range(0, 7).Select(i => start.AddDays(i)).ToList();
@@ -225,7 +231,7 @@ public class Scheduler : TemplatedControl
 
     private void Rebuild()
     {
-        var culture = LocalizationService.Instance.Culture;
+        var culture = App.Localization.Culture;
         var days = VisibleDays();
         var hours = Math.Max(1, EndHour - StartHour);
 

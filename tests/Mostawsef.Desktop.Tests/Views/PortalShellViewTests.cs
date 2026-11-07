@@ -52,6 +52,26 @@ public class PortalShellViewTests
         Assert.IsType<LoginViewModel>(app.Navigation.CurrentPage);
     }
 
+    [AvaloniaFact]
+    public void Sidebar_sign_out_asks_to_confirm_and_cancel_keeps_the_user_signed_in()
+    {
+        using var app = new TestServices();
+        var window = ShowPortal(app, Roles.Admin);
+        var signOut = window.GetVisualDescendants().OfType<NavMenuItem>().Single(i => i.Text == "Sign out");
+        var center = signOut.TranslatePoint(new Point(signOut.Bounds.Width / 2, signOut.Bounds.Height / 2), window)!.Value;
+
+        window.MouseDown(center, MouseButton.Left);
+        window.MouseUp(center, MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+
+        var confirm = window.GetVisualDescendants().OfType<ConfirmDialog>().Single();
+        confirm.Close(false);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(app.Session.IsAuthenticated);
+        Assert.Empty(window.GetVisualDescendants().OfType<ConfirmDialog>());
+    }
+
     [AvaloniaTheory]
     [InlineData(AppLanguage.English)]
     [InlineData(AppLanguage.Arabic)]
@@ -77,11 +97,7 @@ public class PortalShellViewTests
 
         var host = new DialogHost { Content = new ContentControl { Content = app.Navigation.CurrentPage } };
         app.Get<DialogService>().Attach(host);
-
-        var window = new Window { Width = 1280, Height = 800, Content = host };
-        LocalizationService.Instance.Apply(window);
-        window.Show();
-        return window;
+        return app.Show(host);
     }
 
     private static MenuFlyout OpenUserMenu(Window window)

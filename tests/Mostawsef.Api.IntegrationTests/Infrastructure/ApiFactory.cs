@@ -1,5 +1,9 @@
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 using Testcontainers.PostgreSql;
 
 namespace Mostawsef.Api.IntegrationTests.Infrastructure;
@@ -10,6 +14,9 @@ namespace Mostawsef.Api.IntegrationTests.Infrastructure;
 /// </summary>
 public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
+    /// <summary>Test-only route that throws, to exercise the global exception handling. ?message=... sets the message.</summary>
+    public const string ThrowPath = "/__test/throw";
+
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17")
         .WithDatabase("mostawsef_tests")
         .Build();
@@ -32,12 +39,29 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         }
     }
 
-    protected override void ConfigureWebHost(IWebHostBuilder builder) => builder.UseEnvironment("Testing");
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        builder.UseEnvironment("Testing");
+        builder.ConfigureTestServices(services => services.AddSingleton<IStartupFilter, ThrowingEndpointFilter>());
+    }
 
     public override async ValueTask DisposeAsync()
     {
         await base.DisposeAsync();
         await _postgres.DisposeAsync();
+    }
+
+    /// <summary>Appended after the app's own pipeline, so the app's exception middleware wraps it.</summary>
+    private sealed class ThrowingEndpointFilter : IStartupFilter
+    {
+        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
+        {
+            next(app);
+            app.Use((HttpContext context, RequestDelegate nextMiddleware) =>
+                context.Request.Path == ThrowPath
+                    ? throw new InvalidOperationException(context.Request.Query["message"].ToString())
+                    : nextMiddleware(context));
+        };
     }
 }
 

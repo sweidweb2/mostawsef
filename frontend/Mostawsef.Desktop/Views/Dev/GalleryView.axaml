@@ -9,12 +9,7 @@
 
     <ui:AppShell Name="Shell">
         <ui:AppShell.SidebarHeader>
-            <StackPanel Orientation="Horizontal" Spacing="10">
-                <Border Width="32" Height="32" CornerRadius="8" Background="{DynamicResource BrushPrimary}">
-                    <PathIcon Data="{StaticResource IconMedical}" Width="18" Height="18" Foreground="{DynamicResource BrushOnPrimary}" />
-                </Border>
-                <TextBlock Classes="h4" Text="{l:Tr App.Title}" VerticalAlignment="Center" />
-            </StackPanel>
+            <ui:BrandMark />
         </ui:AppShell.SidebarHeader>
 
         <ui:AppShell.Sidebar>
@@ -38,18 +33,7 @@
                 </ui:TopBar.Leading>
                 <ui:SearchBox MaxWidth="360" HorizontalAlignment="Left" Classes="hide-compact" />
                 <ui:TopBar.Actions>
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <ui:IconButton Classes="ghost"
-                                       Icon="{StaticResource IconTheme}"
-                                       Command="{Binding ToggleThemeCommand}"
-                                       ToolTip.Tip="{l:Tr Theme.Toggle}" />
-                        <Button Classes="secondary" Command="{Binding ToggleLanguageCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <PathIcon Data="{StaticResource IconGlobe}" />
-                                <TextBlock Text="{l:Tr Language.Switch}" />
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
+                    <ui:PreferencesBar />
                 </ui:TopBar.Actions>
             </ui:TopBar>
         </ui:AppShell.TopBar>

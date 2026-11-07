@@ -143,17 +143,20 @@ Layouts react to the **width of the AppShell content area**, not the window or d
 
 ## 11. Localization and RTL
 
-- Languages: **Arabic** (default, RTL) and **English**, switchable at runtime (`LocalizationService.Instance.Toggle()`).
-- Strings in `Resources/Strings.resx` + `Resources/Strings.ar.resx`; XAML `{l:Tr Key}`; code `LocalizationService.Instance.Get(key)`.
+- Languages: **Arabic** (default, RTL) and **English**, switchable at runtime with `ui:PreferencesBar` (or `LocalizationService.Toggle()`).
+- `LocalizationService` is a DI singleton: inject it into view models/services; code not created by DI (controls) uses `App.Localization`.
+- Strings in `Resources/Strings.resx` + `Resources/Strings.ar.resx`. XAML: `{l:Tr Key}`, with a bound argument
+  `{l:Tr Dashboard.Welcome, Arg=UserName}`, or a key held by the view model `{l:TrKey ErrorKey}`. Code: `localization.Get(key)`.
+- View models expose resource keys, not translated text, and never subscribe to `LanguageChanged` (only attached controls may).
 - Culture: `ar-EG` (Gregorian, Latin digits) / `en-US`. Layout, margins, borders and icons mirror automatically.
-- New windows must call `LocalizationService.Instance.Apply(window)`.
+- New windows must call `App.Localization.Apply(window)`.
 
 ## 12. App services (frontend)
 
 | Service | Purpose |
 | --- | --- |
 | `SettingsService` | Loads and saves `settings.json` (theme, language) |
-| `ThemeService` | Light / Dark switching |
+| `ThemeService` | Light / Dark switching (`ui:PreferencesBar` in the UI) |
 | `LocalizationService` | Language, culture, RTL, translations |
 | `DialogService` | `ShowAsync(modal)`, `ConfirmAsync(message, ...)` on the window's `DialogHost` |
 | `ToastService` | `Show(message, title, kind)`, `Success(...)`, `Error(...)` |

@@ -4,7 +4,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Mostawsef.Desktop.Services.Api;
 using Mostawsef.Desktop.Services.Auth;
-using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Navigation;
 using Mostawsef.Desktop.ViewModels.Dev;
 
@@ -15,22 +14,17 @@ public partial class LoginViewModel : ViewModelBase
     private readonly AuthApi _authApi;
     private readonly SessionService _session;
     private readonly NavigationService _navigation;
-    private readonly ThemeService _theme;
-    private string? _errorKey;
 
-    public LoginViewModel(AuthApi authApi, SessionService session, NavigationService navigation, ThemeService theme)
+    public LoginViewModel(AuthApi authApi, SessionService session, NavigationService navigation)
     {
         _authApi = authApi;
         _session = session;
         _navigation = navigation;
-        _theme = theme;
 
         if (session.LastSignOutReason == SignOutReason.Expired)
         {
-            SetError("Login.SessionExpired");
+            ErrorKey = "Login.SessionExpired";
         }
-
-        LocalizationService.Instance.LanguageChanged += (_, _) => OnPropertyChanged(nameof(ErrorMessage));
     }
 
     [ObservableProperty]
@@ -45,9 +39,12 @@ public partial class LoginViewModel : ViewModelBase
     [NotifyCanExecuteChangedFor(nameof(LoginCommand))]
     public partial bool IsBusy { get; set; }
 
-    public string? ErrorMessage => _errorKey is null ? null : LocalizationService.Instance.Get(_errorKey);
+    /// <summary>Resource key of the error to show (translated by the view), or null.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasError))]
+    public partial string? ErrorKey { get; private set; }
 
-    public bool HasError => _errorKey is not null;
+    public bool HasError => ErrorKey is not null;
 
 #if DEBUG
     public bool IsDevBuild => true;
@@ -60,7 +57,7 @@ public partial class LoginViewModel : ViewModelBase
     [RelayCommand(CanExecute = nameof(CanLogin))]
     private async Task LoginAsync()
     {
-        SetError(null);
+        ErrorKey = null;
         IsBusy = true;
 
         try
@@ -75,13 +72,13 @@ public partial class LoginViewModel : ViewModelBase
             }
 
             Password = string.Empty;
-            SetError(result.Error switch
+            ErrorKey = result.Error switch
             {
                 ApiError.Unauthorized => "Login.Invalid",
                 ApiError.TooManyRequests => "Login.TooMany",
                 ApiError.Unreachable => "Login.ServerUnreachable",
                 _ => "Login.Failed",
-            });
+            };
         }
         finally
         {
@@ -90,18 +87,5 @@ public partial class LoginViewModel : ViewModelBase
     }
 
     [RelayCommand]
-    private void ToggleTheme() => _theme.Toggle();
-
-    [RelayCommand]
-    private void ToggleLanguage() => LocalizationService.Instance.Toggle();
-
-    [RelayCommand]
     private void OpenGallery() => _navigation.NavigateTo<GalleryViewModel>();
-
-    private void SetError(string? key)
-    {
-        _errorKey = key;
-        OnPropertyChanged(nameof(ErrorMessage));
-        OnPropertyChanged(nameof(HasError));
-    }
 }

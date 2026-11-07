@@ -19,8 +19,10 @@ Usage namespace: `xmlns:ui="using:Mostawsef.Desktop.Components"`.
 | Component | Status | Use |
 | --- | --- | --- |
 | AppShell (sidebar + top bar + content area) | Built | `ui:AppShell` |
-| Sidebar / NavMenu | Built | `ui:NavMenu` + `ui:NavMenuItem` inside `AppShell.Sidebar` |
+| Sidebar / NavMenu | Built | `ui:NavMenu` + `ui:NavMenuItem` inside `AppShell.Sidebar`; a standalone `NavMenuItem` runs its `Command` (e.g. sign out) |
 | TopBar | Built | `ui:TopBar` |
+| BrandMark (logo tile + app title) | Built | `ui:BrandMark` (sidebar headers), `Classes="lg"` stacked and large (login) |
+| PreferencesBar (theme + language switches) | Built | `ui:PreferencesBar` (login screen, portal and gallery top bars) |
 | PageHeader (title, breadcrumb, actions) | Built | `ui:PageHeader` |
 | Card | Built | `ui:Card` (classes: `outlined`, `flat`, `interactive`) |
 | Section / Panel | Built | `ui:Section` |

@@ -37,6 +37,7 @@ public class Pagination : TemplatedControl
     private readonly RelayCommand _next;
     private readonly RelayCommand _last;
     private string _summary = string.Empty;
+    private LocalizationService? _localization;
 
     public Pagination()
     {
@@ -76,14 +77,19 @@ public class Pagination : TemplatedControl
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        LocalizationService.Instance.LanguageChanged += OnLanguageChanged;
+        _localization = App.Localization;
+        _localization.LanguageChanged += OnLanguageChanged;
         Refresh();
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
-        LocalizationService.Instance.LanguageChanged -= OnLanguageChanged;
+        if (_localization is not null)
+        {
+            _localization.LanguageChanged -= OnLanguageChanged;
+            _localization = null;
+        }
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -107,7 +113,7 @@ public class Pagination : TemplatedControl
 
     private void Refresh()
     {
-        Summary = LocalizationService.Instance.Format("Pagination.Summary", CurrentPage, Math.Max(1, PageCount));
+        Summary = App.Localization.Format("Pagination.Summary", CurrentPage, Math.Max(1, PageCount));
         _first.NotifyCanExecuteChanged();
         _previous.NotifyCanExecuteChanged();
         _next.NotifyCanExecuteChanged();

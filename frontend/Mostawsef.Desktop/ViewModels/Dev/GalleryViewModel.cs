@@ -17,17 +17,17 @@ public record PatientRow(string FileNumber, string Name, int Age, string Phone, 
 /// <summary>Development-only showcase of the shared components. Sample data only.</summary>
 public partial class GalleryViewModel : ViewModelBase
 {
-    private readonly ThemeService _theme;
     private readonly DialogService _dialogs;
     private readonly ToastService _toasts;
     private readonly NavigationService _navigation;
+    private readonly LocalizationService _localization;
 
-    public GalleryViewModel(ThemeService theme, DialogService dialogs, ToastService toasts, NavigationService navigation)
+    public GalleryViewModel(DialogService dialogs, ToastService toasts, NavigationService navigation, LocalizationService localization)
     {
-        _theme = theme;
         _dialogs = dialogs;
         _toasts = toasts;
         _navigation = navigation;
+        _localization = localization;
 
         var today = DateTime.Today;
         Appointments =
@@ -93,12 +93,6 @@ public partial class GalleryViewModel : ViewModelBase
     private void Back() => _navigation.NavigateToHome();
 
     [RelayCommand]
-    private void ToggleTheme() => _theme.Toggle();
-
-    [RelayCommand]
-    private void ToggleLanguage() => LocalizationService.Instance.Toggle();
-
-    [RelayCommand]
     private void ToggleTableLoading() => IsTableLoading = !IsTableLoading;
 
     [RelayCommand]
@@ -114,7 +108,7 @@ public partial class GalleryViewModel : ViewModelBase
     private void ShowToast(string? kind)
     {
         var toastKind = Enum.TryParse<ToastKind>(kind, out var parsed) ? parsed : ToastKind.Info;
-        _toasts.Show($"{toastKind} message", LocalizationService.Instance.Get("App.Title"), toastKind);
+        _toasts.Show($"{toastKind} message", _localization.Get("App.Title"), toastKind);
     }
 
     [RelayCommand]
@@ -125,7 +119,7 @@ public partial class GalleryViewModel : ViewModelBase
             Title = "Modal",
             Content = new TextBlock { Text = "Any content can go here: forms, details, previews.", TextWrapping = Avalonia.Media.TextWrapping.Wrap },
         };
-        modal.Footer = new Button { Content = LocalizationService.Instance.Get("Common.Ok"), Classes = { "primary" }, Command = modal.CloseCommand };
+        modal.Footer = new Button { Content = _localization.Get("Common.Ok"), Classes = { "primary" }, Command = modal.CloseCommand };
         await _dialogs.ShowAsync(modal);
     }
 
@@ -134,7 +128,7 @@ public partial class GalleryViewModel : ViewModelBase
     {
         var confirmed = await _dialogs.ConfirmAsync(
             "Delete this patient? This cannot be undone.",
-            confirmText: LocalizationService.Instance.Get("Common.Delete"),
+            confirmText: _localization.Get("Common.Delete"),
             isDanger: true);
 
         _toasts.Show(confirmed ? "Deleted" : "Cancelled", kind: confirmed ? ToastKind.Success : ToastKind.Info);

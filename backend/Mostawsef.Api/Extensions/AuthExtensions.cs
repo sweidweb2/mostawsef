@@ -13,6 +13,7 @@ public static class AuthPolicies
     public const string AdminOnly = nameof(AdminOnly);
     public const string SuperOnly = nameof(SuperOnly);
     public const string LoginRateLimit = "login";
+    public const string ClientErrorRateLimit = "client-errors";
 }
 
 public static class AuthExtensions
@@ -66,6 +67,10 @@ public static class AuthExtensions
                     context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                     _ => new FixedWindowRateLimiterOptions { PermitLimit = permitLimit, Window = TimeSpan.FromMinutes(1) });
             });
+            options.AddPolicy(AuthPolicies.ClientErrorRateLimit, context =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromMinutes(1) }));
         });
 
         return services;

@@ -31,6 +31,15 @@ public class AuthController(IAuthService auth) : ControllerBase
             : Ok(result);
     }
 
+    [HttpPost("logout")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> Logout(CancellationToken cancellationToken)
+    {
+        await auth.SignOutAsync(cancellationToken);
+        return NoContent();
+    }
+
     [HttpGet("me")]
     [Authorize]
     [ProducesResponseType<UserDto>(StatusCodes.Status200OK)]

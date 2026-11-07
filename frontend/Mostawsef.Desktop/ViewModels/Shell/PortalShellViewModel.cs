@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
+using Mostawsef.Desktop.Services.Api;
 using Mostawsef.Desktop.Services.Auth;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Navigation;
@@ -11,30 +12,26 @@ using Mostawsef.Desktop.Services.Ui;
 
 namespace Mostawsef.Desktop.ViewModels.Shell;
 
+/// <summary>Everything a portal shell needs, injected as one object so role shells stay one-liners.</summary>
+public record PortalShellDependencies(
+    IServiceProvider Services,
+    NavigationService Navigation,
+    SessionService Session,
+    ThemeService Theme,
+    IDialogService Dialogs,
+    AuthApi AuthApi);
+
 /// <summary>
 /// Shared layout for every role portal (sidebar menu, top bar with user, theme, language, sign out).
 /// Each role derives from it, declares [RequiresRole] and its own menu. View: Views/Shell/PortalShellView.
 /// </summary>
 public abstract partial class PortalShellViewModel : ViewModelBase
 {
-    private readonly IServiceProvider _services;
-    private readonly NavigationService _navigation;
-    private readonly SessionService _session;
-    private readonly ThemeService _theme;
-    private readonly DialogService _dialogs;
+    private readonly PortalShellDependencies _deps;
 
-    protected PortalShellViewModel(
-        IServiceProvider services,
-        NavigationService navigation,
-        SessionService session,
-        ThemeService theme,
-        DialogService dialogs)
+    protected PortalShellViewModel(PortalShellDependencies deps)
     {
-        _services = services;
-        _navigation = navigation;
-        _session = session;
-        _theme = theme;
-        _dialogs = dialogs;
+        _deps = deps;
         LocalizationService.Instance.LanguageChanged += (_, _) =>
         {
             OnPropertyChanged(nameof(PortalTitle));
@@ -49,9 +46,9 @@ public abstract partial class PortalShellViewModel : ViewModelBase
 
     public string PortalTitle => LocalizationService.Instance.Get(PortalTitleKey);
 
-    public string UserName => _session.CurrentUser?.Username ?? string.Empty;
+    public string UserName => _deps.Session.CurrentUser?.Username ?? string.Empty;
 
-    public string RoleName => LocalizationService.Instance.Get($"Role.{_session.CurrentUser?.Role}");
+    public string RoleName => LocalizationService.Instance.Get($"Role.{_deps.Session.CurrentUser?.Role}");
 
     [ObservableProperty]
     public partial int SelectedMenuIndex { get; set; } = -1;
@@ -70,17 +67,21 @@ public abstract partial class PortalShellViewModel : ViewModelBase
         }
 
         var pageType = MenuItems[value].PageType;
-        if (!_navigation.CanAccess(pageType))
+        if (!_deps.Navigation.CanAccess(pageType))
         {
-            _session.SignOut(SignOutReason.Expired);
+            _deps.Session.SignOut(SignOutReason.Expired);
             return;
         }
 
-        CurrentPage = (ViewModelBase)_services.GetRequiredService(pageType);
+        CurrentPage = (ViewModelBase)_deps.Services.GetRequiredService(pageType);
+        if (CurrentPage is ILoadablePage loadable)
+        {
+            _ = loadable.InitializeAsync();
+        }
     }
 
     [RelayCommand]
-    private void ToggleTheme() => _theme.Toggle();
+    private void ToggleTheme() => _deps.Theme.Toggle();
 
     [RelayCommand]
     private void ToggleLanguage() => LocalizationService.Instance.Toggle();
@@ -89,9 +90,10 @@ public abstract partial class PortalShellViewModel : ViewModelBase
     private async Task SignOutAsync()
     {
         var loc = LocalizationService.Instance;
-        if (await _dialogs.ConfirmAsync(loc.Get("Auth.LogoutConfirm"), confirmText: loc.Get("Auth.Logout")))
+        if (await _deps.Dialogs.ConfirmAsync(loc.Get("Auth.LogoutConfirm"), confirmText: loc.Get("Auth.Logout")))
         {
-            _session.SignOut();
+            await _deps.AuthApi.LogoutAsync();
+            _deps.Session.SignOut();
         }
     }
 }

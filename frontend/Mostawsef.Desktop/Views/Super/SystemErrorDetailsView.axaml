@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Mostawsef.Desktop.Components"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Super"
+             x:Class="Mostawsef.Desktop.Views.Super.SystemErrorDetailsView"
+             x:DataType="vm:SystemErrorDetailsViewModel">
+    <ui:DetailsView>
+        <ui:DetailsItem Label="{l:Tr Logs.Col.Time}" Value="{Binding OccurredAt}" />
+        <ui:DetailsItem Label="{l:Tr Logs.Col.Level}" Value="{Binding LevelLabel}" />
+        <ui:DetailsItem Label="{l:Tr Logs.Col.Source}" Value="{Binding Error.Source}" />
+        <ui:DetailsItem Label="{l:Tr Logs.Col.Message}" Value="{Binding Error.Message}" />
+        <ui:DetailsItem Label="{l:Tr Logs.Field.ExceptionType}" Value="{Binding Error.ExceptionType}" />
+        <ui:DetailsItem Label="{l:Tr Logs.Field.Request}" Value="{Binding Request}" />
+        <ui:DetailsItem Label="{l:Tr Logs.Field.StatusCode}" Value="{Binding StatusCode}" />
+        <ui:DetailsItem Label="{l:Tr Logs.Col.User}" Value="{Binding Error.Username}" />
+        <ui:DetailsItem Label="{l:Tr Logs.Field.IpAddress}" Value="{Binding Error.IpAddress}" />
+        <ui:DetailsItem Label="{l:Tr Logs.Field.TraceId}" Value="{Binding Error.TraceId}" />
+        <ui:DetailsItem Label="{l:Tr Logs.Field.Details}" Value="{Binding Details}" IsCode="True" />
+        <ui:DetailsItem Label="{l:Tr Logs.Field.StackTrace}" Value="{Binding Error.StackTrace}" IsCode="True" />
+        <ui:DetailsItem Label="{l:Tr Logs.Field.Id}" Value="{Binding Error.Id}" />
+    </ui:DetailsView>
+</UserControl>

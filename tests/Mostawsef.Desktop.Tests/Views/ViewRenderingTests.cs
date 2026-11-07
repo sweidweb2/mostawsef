@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
@@ -8,10 +9,9 @@ using Mostawsef.Desktop.Components;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Tests.Infrastructure;
 using Mostawsef.Desktop.ViewModels.Auth;
-using Mostawsef.Desktop.Views.Admin;
 using Mostawsef.Desktop.Views.Auth;
 using Mostawsef.Desktop.Views.Shell;
-using Mostawsef.Desktop.Views.Super;
+using static Mostawsef.Desktop.Tests.Infrastructure.TestServices;
 
 namespace Mostawsef.Desktop.Tests.Views;
 
@@ -22,10 +22,11 @@ public class ViewRenderingTests
     public void Login_screen_shows_the_sign_in_form()
     {
         using var app = new TestServices();
-        var window = Show(app.Get<LoginViewModel>());
+        var window = app.Show(app.Get<LoginViewModel>());
 
         Assert.NotNull(window.GetVisualDescendants().OfType<LoginView>().SingleOrDefault());
         Assert.NotNull(window.FindDescendantOfType<PasswordField>());
+        Assert.NotNull(window.FindDescendantOfType<PreferencesBar>());
         Assert.Contains(Texts(window), t => t == "Sign in");
     }
 
@@ -37,13 +38,14 @@ public class ViewRenderingTests
         var vm = app.Get<LoginViewModel>();
         vm.Username = "user@test.local";
         vm.Password = "secret";
-        var window = Show(vm);
+        var window = app.Show(vm);
 
         await vm.LoginCommand.ExecuteAsync(null);
         window.UpdateLayout();
 
         var card = window.FindDescendantOfType<Card>()!;
-        var error = window.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == vm.ErrorMessage);
+        var message = app.Localization.Get(vm.ErrorKey!);
+        var error = window.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == message);
         var errorRight = error.TranslatePoint(new Point(error.Bounds.Width, 0), card)!.Value.X;
 
         Assert.True(errorRight <= card.Bounds.Width, $"Error text ends at {errorRight}, card is {card.Bounds.Width} wide");
@@ -53,14 +55,14 @@ public class ViewRenderingTests
     public void Login_inputs_show_translated_placeholders()
     {
         using var app = new TestServices();
-        var window = Show(app.Get<LoginViewModel>());
+        var window = app.Show(app.Get<LoginViewModel>());
         var username = window.GetVisualDescendants().OfType<TextBox>().Single(t => t.Name == "UsernameBox");
         var password = window.FindDescendantOfType<PasswordField>()!;
 
         Assert.Equal("Enter your username", username.PlaceholderText);
         Assert.Equal("Enter your password", password.PlaceholderText);
 
-        LocalizationService.Instance.SetLanguage(AppLanguage.Arabic);
+        app.Localization.SetLanguage(AppLanguage.Arabic);
 
         Assert.Equal("أدخل اسم المستخدم", username.PlaceholderText);
         Assert.Equal("أدخل كلمة المرور", password.PlaceholderText);
@@ -73,11 +75,10 @@ public class ViewRenderingTests
         app.SignInAs(Roles.Admin, "admin@test.local");
         app.Navigation.NavigateToHome();
 
-        var window = Show(app.Navigation.CurrentPage!);
+        var window = app.Show(app.Navigation.CurrentPage!);
 
         Assert.NotNull(window.FindDescendantOfType<PortalShellView>());
-        Assert.NotNull(window.FindDescendantOfType<AdminDashboardView>());
-        Assert.Null(window.FindDescendantOfType<SuperDashboardView>());
+        Assert.NotNull(window.FindDescendantOfType<DashboardView>());
         Assert.Contains(Texts(window), t => t == "Admin portal");
         Assert.Contains(Texts(window), t => t == "Welcome, admin@test.local");
     }
@@ -89,43 +90,89 @@ public class ViewRenderingTests
         app.SignInAs(Roles.Super);
         app.Navigation.NavigateToHome();
 
-        var window = Show(app.Navigation.CurrentPage!);
+        var window = app.Show(app.Navigation.CurrentPage!);
 
-        Assert.NotNull(window.FindDescendantOfType<SuperDashboardView>());
+        Assert.NotNull(window.FindDescendantOfType<DashboardView>());
         Assert.Contains(Texts(window), t => t == "Super portal");
+        Assert.Contains(Texts(window), t => t == "Welcome, user@test.local");
+    }
+
+    [AvaloniaFact]
+    public void Portal_title_menu_and_welcome_follow_the_selected_language()
+    {
+        using var app = new TestServices();
+        app.SignInAs(Roles.Admin, "admin@test.local");
+        app.Navigation.NavigateToHome();
+        var window = app.Show(app.Navigation.CurrentPage!);
+
+        app.Localization.SetLanguage(AppLanguage.Arabic);
+
+        var texts = Texts(window);
+        Assert.Contains(app.Localization.Get("Portal.Admin"), texts);
+        Assert.Contains(app.Localization.Format("Dashboard.Welcome", "admin@test.local"), texts);
+        Assert.Contains(app.Localization.Get("Nav.Dashboard"), window.GetVisualDescendants().OfType<NavMenuItem>().Select(i => i.Text));
+        Assert.DoesNotContain("Admin portal", texts);
     }
 
     [AvaloniaFact]
     public void Arabic_switches_the_window_to_right_to_left_and_translates_text()
     {
         using var app = new TestServices(AppLanguage.Arabic);
-        var window = Show(app.Get<LoginViewModel>());
+        var window = app.Show(app.Get<LoginViewModel>());
 
         Assert.Equal(FlowDirection.RightToLeft, window.FlowDirection);
         Assert.Contains(Texts(window), t => t == "تسجيل الدخول");
 
-        LocalizationService.Instance.SetLanguage(AppLanguage.English);
+        app.Localization.SetLanguage(AppLanguage.English);
 
         Assert.Equal(FlowDirection.LeftToRight, window.FlowDirection);
         Assert.Contains(Texts(window), t => t == "Sign in");
     }
 
-    private static Window Show(object viewModel)
+    [AvaloniaFact]
+    public void Login_shows_the_large_brand_mark_and_the_portal_sidebar_the_small_one()
     {
-        var window = new Window
-        {
-            Width = 1280,
-            Height = 800,
-            Content = new ContentControl { Content = viewModel },
-        };
-        LocalizationService.Instance.Apply(window);
-        window.Show();
-        return window;
+        using var app = new TestServices();
+        var login = app.Show(app.Get<LoginViewModel>());
+        app.SignInAs(Roles.Admin);
+        app.Navigation.NavigateToHome();
+        var portal = app.Show(app.Navigation.CurrentPage!);
+
+        var large = Tile(login);
+        var small = Tile(portal);
+
+        Assert.Equal(56, large.Bounds.Width);
+        Assert.Equal(32, small.Bounds.Width);
+        Assert.Contains("Mostawsef", Texts(login));
+        Assert.Contains("Mostawsef", Texts(portal));
+
+        static Border Tile(Window window) =>
+            window.FindDescendantOfType<BrandMark>()!.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "PART_Tile");
     }
 
-    private static List<string> Texts(Window window) =>
-        window.GetVisualDescendants().OfType<TextBlock>()
-            .Where(t => t.IsEffectivelyVisible)
-            .Select(t => t.Text ?? string.Empty)
-            .ToList();
+    [AvaloniaFact]
+    public void Closed_portals_are_not_kept_alive_by_language_changes()
+    {
+        using var app = new TestServices();
+        var (shell, dashboard) = OpenPortalThenSignOut(app);
+
+        app.Localization.SetLanguage(AppLanguage.Arabic);
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        Assert.False(shell.TryGetTarget(out _), "Portal shell is still alive");
+        Assert.False(dashboard.TryGetTarget(out _), "Dashboard is still alive");
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static (WeakReference<object> Shell, WeakReference<object> Dashboard) OpenPortalThenSignOut(TestServices app)
+    {
+        app.SignInAs(Roles.Admin);
+        app.Navigation.NavigateToHome();
+        var shell = (ViewModels.Shell.PortalShellViewModel)app.Navigation.CurrentPage!;
+        var result = (new WeakReference<object>(shell), new WeakReference<object>(shell.CurrentPage!));
+        app.Session.SignOut();
+        return result;
+    }
 }

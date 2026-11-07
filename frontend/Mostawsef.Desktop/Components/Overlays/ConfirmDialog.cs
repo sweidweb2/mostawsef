@@ -1,7 +1,6 @@
 using System;
 using Avalonia.Controls;
 using Avalonia.Layout;
-using Mostawsef.Desktop.Services.Local;
 
 namespace Mostawsef.Desktop.Components;
 
@@ -10,7 +9,7 @@ public class ConfirmDialog : Modal
 {
     public ConfirmDialog(string message, string? title = null, string? confirmText = null, string? cancelText = null, bool isDanger = false)
     {
-        var loc = LocalizationService.Instance;
+        var loc = App.Localization;
         Title = title ?? loc.Get("Confirm.Title");
         MaxWidth = 440;
         Content = new TextBlock { Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap };

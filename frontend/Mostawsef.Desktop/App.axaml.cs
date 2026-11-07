@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
+using Mostawsef.Desktop.Services.Diagnostics;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Navigation;
 using Mostawsef.Desktop.ViewModels;
@@ -13,7 +14,10 @@ namespace Mostawsef.Desktop;
 
 public partial class App : Application
 {
-    public static IServiceProvider Services { get; private set; } = null!;
+    public static IServiceProvider Services { get; internal set; } = null!;
+
+    /// <summary>The DI LocalizationService, for code that DI does not create ({l:Tr}, controls).</summary>
+    public static LocalizationService Localization => Services.GetRequiredService<LocalizationService>();
 
     public override void Initialize()
     {
@@ -26,15 +30,14 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             Services = new ServiceCollection().AddMostawsefDesktop().BuildServiceProvider();
-
-            LocalizationService.Instance.Initialize(Services.GetRequiredService<SettingsService>());
+            Services.GetRequiredService<ErrorReporter>().Install();
             Services.GetRequiredService<ThemeService>().Initialize();
 
             var window = new MainWindow
             {
                 DataContext = Services.GetRequiredService<MainWindowViewModel>(),
             };
-            LocalizationService.Instance.Apply(window);
+            Localization.Apply(window);
             desktop.MainWindow = window;
 
             Services.GetRequiredService<NavigationService>().NavigateTo<LoginViewModel>();

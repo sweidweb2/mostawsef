@@ -11,4 +11,8 @@ public class AuthApi(ApiClient api)
 
     public Task<ApiResult<UserDto>> MeAsync(CancellationToken cancellationToken = default) =>
         api.GetAsync<UserDto>("api/auth/me", cancellationToken);
+
+    /// <summary>Records the sign-out on the server (activity log). The session is cleared by SessionService.</summary>
+    public Task<ApiResult<bool>> LogoutAsync(CancellationToken cancellationToken = default) =>
+        api.PostAsync("api/auth/logout", new { }, cancellationToken);
 }

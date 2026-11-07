@@ -1,0 +1,118 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Mostawsef.Desktop.Components"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:conv="using:Mostawsef.Desktop.Converters"
+             xmlns:logs="using:Mostawsef.Contracts.Logs"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Super"
+             x:Class="Mostawsef.Desktop.Views.Super.SystemErrorsView"
+             x:DataType="vm:SystemErrorsViewModel">
+    <ScrollViewer>
+        <StackPanel Classes="page">
+            <ui:PageHeader Title="{l:Tr Nav.SystemErrors}" Subtitle="{l:Tr Logs.ErrorsSubtitle}">
+                <ui:PageHeader.Actions>
+                    <Button Classes="secondary" Command="{Binding RefreshCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                            <PathIcon Data="{StaticResource IconRefresh}" />
+                            <TextBlock Text="{l:Tr Common.Refresh}" />
+                        </StackPanel>
+                    </Button>
+                </ui:PageHeader.Actions>
+            </ui:PageHeader>
+
+            <!-- Stats -->
+            <ui:ResponsiveGrid MinColumnWidth="220" Margin="0,0,0,24">
+                <ui:StatCard Title="{l:Tr Logs.Stat.TotalErrors}" Value="{Binding Stats.Total, FallbackValue='—'}"
+                             Icon="{StaticResource IconError}" Kind="Warning" />
+                <ui:StatCard Title="{l:Tr Logs.Stat.Today}" Value="{Binding Stats.Today, FallbackValue='—'}"
+                             Icon="{StaticResource IconClock}" Kind="Info" />
+                <ui:StatCard Title="{l:Tr Logs.Stat.Last7Days}" Value="{Binding Stats.Last7Days, FallbackValue='—'}"
+                             Icon="{StaticResource IconCalendar}" Kind="Primary" />
+                <ui:StatCard Title="{l:Tr Logs.Stat.Critical}" Value="{Binding Stats.Critical, FallbackValue='—'}"
+                             Icon="{StaticResource IconWarning}" Kind="Danger" />
+            </ui:ResponsiveGrid>
+
+            <!-- Table -->
+            <ui:DataTable Height="560" IsLoading="{Binding IsLoading}" IsEmpty="{Binding IsEmpty}">
+                <ui:DataTable.Toolbar>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <ui:SearchBox MaxWidth="360"
+                                      HorizontalAlignment="Left"
+                                      Text="{Binding Search}"
+                                      SearchCommand="{Binding SearchCommand}" />
+                        <TextBlock Grid.Column="1" Classes="caption muted" Text="{Binding TotalLabel}" VerticalAlignment="Center" />
+                    </Grid>
+                </ui:DataTable.Toolbar>
+
+                <DataGrid ItemsSource="{Binding Items}" IsReadOnly="True" CanUserSortColumns="False">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="{l:Tr Logs.Col.Time}" Width="150">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="logs:SystemErrorListItemDto">
+                                    <TextBlock Margin="12,0" VerticalAlignment="Center"
+                                               Text="{Binding OccurredAt, Converter={x:Static conv:ValueConverters.LocalDateTime}}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="{l:Tr Logs.Col.Level}" Width="110">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="logs:SystemErrorListItemDto">
+                                    <ui:Badge Margin="12,0"
+                                              Text="{Binding Level, Converter={x:Static conv:ValueConverters.ErrorLevelLabel}}"
+                                              Kind="{Binding Level, Converter={x:Static conv:ValueConverters.ErrorLevelToBadgeKind}}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="{l:Tr Logs.Col.Source}" Width="100">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="logs:SystemErrorListItemDto">
+                                    <TextBlock Margin="12,0" VerticalAlignment="Center" Text="{Binding Source}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="{l:Tr Logs.Col.Message}" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="logs:SystemErrorListItemDto">
+                                    <TextBlock Margin="12,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                               Text="{Binding Message, Converter={x:Static conv:ValueConverters.Truncate}, ConverterParameter=80}"
+                                               ToolTip.Tip="{Binding Message}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="{l:Tr Logs.Col.Path}" Width="180">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="logs:SystemErrorListItemDto">
+                                    <TextBlock Margin="12,0" VerticalAlignment="Center" Classes="muted"
+                                               Text="{Binding RequestPath, Converter={x:Static conv:ValueConverters.Truncate}, ConverterParameter=26}"
+                                               ToolTip.Tip="{Binding RequestPath}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="{l:Tr Common.Actions}" Width="100">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="logs:SystemErrorListItemDto">
+                                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}" Margin="8,0" VerticalAlignment="Center">
+                                        <ui:IconButton Classes="ghost sm"
+                                                       Icon="{StaticResource IconEye}"
+                                                       ToolTip.Tip="{l:Tr Common.View}"
+                                                       Command="{Binding $parent[DataGrid].((vm:SystemErrorsViewModel)DataContext).ViewDetailsCommand}"
+                                                       CommandParameter="{Binding}" />
+                                        <ui:IconButton Classes="ghost destructive sm"
+                                                       Icon="{StaticResource IconDelete}"
+                                                       ToolTip.Tip="{l:Tr Common.Delete}"
+                                                       Command="{Binding $parent[DataGrid].((vm:SystemErrorsViewModel)DataContext).DeleteCommand}"
+                                                       CommandParameter="{Binding}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <ui:DataTable.Footer>
+                    <ui:Pagination CurrentPage="{Binding CurrentPage}" PageCount="{Binding PageCount}" />
+                </ui:DataTable.Footer>
+            </ui:DataTable>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

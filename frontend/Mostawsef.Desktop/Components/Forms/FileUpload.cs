@@ -10,7 +10,6 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Data;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.Input;
-using Mostawsef.Desktop.Services.Local;
 
 namespace Mostawsef.Desktop.Components;
 
@@ -100,7 +99,7 @@ public class FileUpload : TemplatedControl
 
         var options = new FilePickerOpenOptions
         {
-            Title = Title ?? LocalizationService.Instance.Get(DialogTitleKey),
+            Title = Title ?? App.Localization.Get(DialogTitleKey),
             AllowMultiple = false,
         };
 

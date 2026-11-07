@@ -2,12 +2,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="using:Mostawsef.Desktop.Components"
              xmlns:l="using:Mostawsef.Desktop.Services.Local"
-             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Admin"
-             x:Class="Mostawsef.Desktop.Views.Admin.AdminDashboardView"
-             x:DataType="vm:AdminDashboardViewModel">
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Shell"
+             x:Class="Mostawsef.Desktop.Views.Shell.DashboardView"
+             x:DataType="vm:DashboardViewModel">
     <ScrollViewer>
         <StackPanel Classes="page">
-            <ui:PageHeader Title="{l:Tr Nav.Dashboard}" Subtitle="{Binding Welcome}" />
+            <ui:PageHeader Title="{l:Tr Nav.Dashboard}" Subtitle="{l:Tr Dashboard.Welcome, Arg=UserName}" />
             <ui:Card>
                 <ui:EmptyState Margin="0,32"
                                Icon="{StaticResource IconDashboard}"

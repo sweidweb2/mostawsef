@@ -3,21 +3,14 @@
              xmlns:ui="using:Mostawsef.Desktop.Components"
              xmlns:l="using:Mostawsef.Desktop.Services.Local"
              xmlns:vm="using:Mostawsef.Desktop.ViewModels.Shell"
+             xmlns:nav="using:Mostawsef.Desktop.Services.Navigation"
              x:Class="Mostawsef.Desktop.Views.Shell.PortalShellView"
              x:DataType="vm:PortalShellViewModel">
 
     <!-- Shared layout of every role portal (Admin, Super, ...). -->
     <ui:AppShell Name="Shell">
         <ui:AppShell.SidebarHeader>
-            <StackPanel Orientation="Horizontal" Spacing="10">
-                <Border Width="32" Height="32" CornerRadius="{DynamicResource RadiusMd}" Background="{DynamicResource BrushPrimary}">
-                    <PathIcon Data="{StaticResource IconMedical}"
-                              Width="{DynamicResource IconSize}"
-                              Height="{DynamicResource IconSize}"
-                              Foreground="{DynamicResource BrushOnPrimary}" />
-                </Border>
-                <TextBlock Classes="h4" Text="{l:Tr App.Title}" VerticalAlignment="Center" />
-            </StackPanel>
+            <ui:BrandMark />
         </ui:AppShell.SidebarHeader>
 
         <ui:AppShell.Sidebar>
@@ -25,8 +18,8 @@
                         SelectedIndex="{Binding SelectedMenuIndex}"
                         IsCompact="{Binding #Shell.IsSidebarCompact}">
                 <ui:NavMenu.Styles>
-                    <Style Selector="ui|NavMenuItem" x:DataType="vm:ShellMenuItem">
-                        <Setter Property="Text" Value="{Binding Title}" />
+                    <Style Selector="ui|NavMenuItem" x:DataType="nav:PortalPage">
+                        <Setter Property="Text" Value="{l:TrKey TitleKey}" />
                         <Setter Property="Icon" Value="{Binding Icon}" />
                     </Style>
                 </ui:NavMenu.Styles>
@@ -37,28 +30,19 @@
             <ui:NavMenuItem Icon="{StaticResource IconLogout}"
                             Text="{l:Tr Auth.Logout}"
                             IsCompact="{Binding #Shell.IsSidebarCompact}"
-                            Tapped="OnSignOutTapped" />
+                            Command="{Binding SignOutCommand}" />
         </ui:AppShell.SidebarFooter>
 
         <ui:AppShell.TopBar>
-            <ui:TopBar Title="{Binding PortalTitle}">
+            <ui:TopBar Title="{l:TrKey PortalTitleKey}">
                 <ui:TopBar.Actions>
                     <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
-                        <ui:IconButton Classes="ghost"
-                                       Icon="{StaticResource IconTheme}"
-                                       Command="{Binding ToggleThemeCommand}"
-                                       ToolTip.Tip="{l:Tr Theme.Toggle}" />
-                        <Button Classes="secondary" Command="{Binding ToggleLanguageCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
-                                <PathIcon Data="{StaticResource IconGlobe}" />
-                                <TextBlock Text="{l:Tr Language.Switch}" />
-                            </StackPanel>
-                        </Button>
+                        <ui:PreferencesBar />
                         <ui:Divider Orientation="Vertical" Height="24" />
                         <Button Name="UserMenuButton" Classes="ghost">
                             <Button.Flyout>
                                 <MenuFlyout Placement="BottomEdgeAlignedRight">
-                                    <MenuItem Name="LogoutMenuItem" Header="{l:Tr Auth.Logout}" Click="OnSignOutClick">
+                                    <MenuItem Name="LogoutMenuItem" Header="{l:Tr Auth.Logout}" Command="{Binding SignOutCommand}">
                                         <MenuItem.Icon>
                                             <PathIcon Data="{StaticResource IconLogout}" />
                                         </MenuItem.Icon>
@@ -69,7 +53,7 @@
                                 <ui:Avatar DisplayName="{Binding UserName}" Size="{DynamicResource AvatarSizeSm}" />
                                 <StackPanel VerticalAlignment="Center" Classes="hide-compact">
                                     <TextBlock Classes="strong" Text="{Binding UserName}" />
-                                    <TextBlock Classes="caption muted" Text="{Binding RoleName}" />
+                                    <TextBlock Classes="caption muted" Text="{l:TrKey RoleKey}" />
                                 </StackPanel>
                             </StackPanel>
                         </Button>

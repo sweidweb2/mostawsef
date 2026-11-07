@@ -113,6 +113,15 @@
         <Setter Property="Background" Value="Transparent" />
     </Style>
 
+    <!-- ghost.destructive: quiet red action (e.g. delete icon in a table row) -->
+    <Style Selector="Button.ghost.destructive">
+        <Setter Property="Foreground" Value="{DynamicResource BrushDanger}" />
+    </Style>
+    <Style Selector="Button.ghost.destructive:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource BrushDangerSubtle}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushDanger}" />
+    </Style>
+
     <!-- link -->
     <Style Selector="Button.link">
         <Setter Property="Background" Value="Transparent" />

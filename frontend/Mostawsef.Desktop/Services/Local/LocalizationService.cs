@@ -12,7 +12,7 @@ using Avalonia.Media;
 namespace Mostawsef.Desktop.Services.Local;
 
 /// <summary>
-/// Runtime language switching. Exposed as a singleton so XAML markup ({l:Tr Key}) can reach it.
+/// Runtime language switching. A DI singleton; code not created by DI (markup, controls) uses App.Localization.
 /// </summary>
 public class LocalizationService : INotifyPropertyChanged
 {
@@ -20,12 +20,12 @@ public class LocalizationService : INotifyPropertyChanged
         new("Mostawsef.Desktop.Resources.Strings", typeof(LocalizationService).Assembly);
 
     private readonly List<WeakReference<Window>> _windows = [];
-    private SettingsService? _settings;
+    private readonly SettingsService _settings;
 
-    public static LocalizationService Instance { get; } = new();
-
-    private LocalizationService()
+    public LocalizationService(SettingsService settings)
     {
+        _settings = settings;
+        ApplyCulture(settings.Current.Language);
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -40,16 +40,13 @@ public class LocalizationService : INotifyPropertyChanged
 
     public FlowDirection FlowDirection => IsRightToLeft ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
 
-    /// <summary>Incremented on every language change; bindings observe it to refresh translated text.</summary>
+    /// <summary>
+    /// Incremented on every language change; {l:Tr}/{l:TrKey} bindings observe it to refresh translated text.
+    /// Only controls attached to the visual tree should subscribe to LanguageChanged (and unsubscribe on detach).
+    /// </summary>
     public int Version { get; private set; }
 
     public string this[string key] => Get(key);
-
-    public void Initialize(SettingsService settings)
-    {
-        _settings = settings;
-        ApplyCulture(settings.Current.Language);
-    }
 
     public string Get(string key) => Resources.GetString(key, Culture) ?? key;
 
@@ -63,12 +60,8 @@ public class LocalizationService : INotifyPropertyChanged
         }
 
         ApplyCulture(language);
-
-        if (_settings is not null)
-        {
-            _settings.Current.Language = language;
-            _settings.Save();
-        }
+        _settings.Current.Language = language;
+        _settings.Save();
 
         Version++;
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Language)));

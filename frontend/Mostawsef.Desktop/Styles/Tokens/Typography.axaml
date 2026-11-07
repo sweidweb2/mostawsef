@@ -15,6 +15,9 @@
     <!-- Family -->
     <FontFamily x:Key="FontFamilyBase">avares://Mostawsef.Desktop/Assets/Fonts#IBM Plex Sans Arabic</FontFamily>
 
+    <!-- Code, stack traces, JSON -->
+    <FontFamily x:Key="FontFamilyMono">Cascadia Mono, Consolas, Courier New</FontFamily>
+
     <!-- Fluent overrides so built-in controls use the same font and base size -->
     <FontFamily x:Key="ContentControlThemeFontFamily">avares://Mostawsef.Desktop/Assets/Fonts#IBM Plex Sans Arabic</FontFamily>
     <x:Double x:Key="ControlContentThemeFontSize">14</x:Double>

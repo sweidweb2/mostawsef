@@ -4,45 +4,44 @@ using Mostawsef.Contracts.Auth;
 using Mostawsef.Desktop.Services.Api;
 using Mostawsef.Desktop.Services.Auth;
 using Mostawsef.Desktop.Tests.Infrastructure;
-using Mostawsef.Desktop.ViewModels.Admin;
 using Mostawsef.Desktop.ViewModels.Auth;
-using Mostawsef.Desktop.ViewModels.Super;
+using Mostawsef.Desktop.ViewModels.Shell;
 
 namespace Mostawsef.Desktop.Tests.Auth;
 
 public class NavigationGuardTests
 {
     [AvaloniaFact]
-    public void Signed_out_users_cannot_open_any_portal()
+    public void Signed_out_users_cannot_open_any_portal_or_portal_page()
     {
         using var app = new TestServices();
 
-        Assert.False(app.Navigation.NavigateTo<AdminShellViewModel>());
+        Assert.False(app.Navigation.NavigateToPortal(Roles.Admin));
         Assert.IsType<LoginViewModel>(app.Navigation.CurrentPage);
 
-        Assert.False(app.Navigation.NavigateTo<SuperShellViewModel>());
+        Assert.False(app.Navigation.NavigateToPortal(Roles.Super));
+        Assert.False(app.Navigation.NavigateTo<DashboardViewModel>());
+        Assert.Null(app.Navigation.CreatePage(typeof(DashboardViewModel)));
         Assert.IsType<LoginViewModel>(app.Navigation.CurrentPage);
     }
 
     [AvaloniaFact]
-    public void Admin_cannot_open_the_super_portal_or_its_pages()
+    public void Admin_cannot_open_the_super_portal()
     {
         using var app = new TestServices();
         app.SignInAs(Roles.Admin);
 
-        Assert.False(app.Navigation.NavigateTo<SuperShellViewModel>());
-        Assert.False(app.Navigation.CanAccess(typeof(SuperDashboardViewModel)));
+        Assert.False(app.Navigation.NavigateToPortal(Roles.Super));
         Assert.IsType<LoginViewModel>(app.Navigation.CurrentPage);
     }
 
     [AvaloniaFact]
-    public void Super_cannot_open_the_admin_portal_or_its_pages()
+    public void Super_cannot_open_the_admin_portal()
     {
         using var app = new TestServices();
         app.SignInAs(Roles.Super);
 
-        Assert.False(app.Navigation.NavigateTo<AdminShellViewModel>());
-        Assert.False(app.Navigation.CanAccess(typeof(AdminDashboardViewModel)));
+        Assert.False(app.Navigation.NavigateToPortal(Roles.Admin));
     }
 
     [AvaloniaFact]
@@ -52,13 +51,34 @@ public class NavigationGuardTests
 
         app.SignInAs(Roles.Admin);
         app.Navigation.NavigateToHome();
-        var admin = Assert.IsType<AdminShellViewModel>(app.Navigation.CurrentPage);
-        Assert.IsType<AdminDashboardViewModel>(admin.CurrentPage);
+        var admin = Assert.IsType<PortalShellViewModel>(app.Navigation.CurrentPage);
+        Assert.Equal("Portal.Admin", admin.PortalTitleKey);
+        Assert.IsType<DashboardViewModel>(admin.CurrentPage);
 
         app.SignInAs(Roles.Super);
         app.Navigation.NavigateToHome();
-        var super = Assert.IsType<SuperShellViewModel>(app.Navigation.CurrentPage);
-        Assert.IsType<SuperDashboardViewModel>(super.CurrentPage);
+        var super = Assert.IsType<PortalShellViewModel>(app.Navigation.CurrentPage);
+        Assert.Equal("Portal.Super", super.PortalTitleKey);
+        Assert.IsType<DashboardViewModel>(super.CurrentPage);
+    }
+
+    [AvaloniaFact]
+    public void Every_portal_menu_page_opens_for_its_role_and_not_for_other_roles_unless_they_list_it()
+    {
+        using var app = new TestServices();
+
+        foreach (var portal in AppRoutes.Table.Portals)
+        {
+            app.SignInAs(portal.Role);
+            Assert.NotEmpty(portal.Pages);
+            Assert.All(portal.Pages, page => Assert.True(app.Navigation.CanAccess(page.PageType), $"{portal.Role} -> {page.PageType.Name}"));
+
+            var otherPages = AppRoutes.Table.Portals
+                .Where(p => p.Role != portal.Role)
+                .SelectMany(p => p.Pages)
+                .Where(page => portal.Pages.All(own => own.PageType != page.PageType));
+            Assert.All(otherPages, page => Assert.False(app.Navigation.CanAccess(page.PageType), $"{portal.Role} -> {page.PageType.Name}"));
+        }
     }
 
     [AvaloniaFact]
@@ -88,7 +108,8 @@ public class NavigationGuardTests
         Assert.False(app.Session.IsAuthenticated);
         Assert.Equal(SignOutReason.Expired, app.Session.LastSignOutReason);
         var login = Assert.IsType<LoginViewModel>(app.Navigation.CurrentPage);
-        Assert.StartsWith("Your session has expired", login.ErrorMessage);
+        Assert.Equal("Login.SessionExpired", login.ErrorKey);
+        Assert.StartsWith("Your session has expired", app.Localization.Get(login.ErrorKey!));
     }
 
     [AvaloniaFact]

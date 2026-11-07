@@ -5,7 +5,7 @@ using Mostawsef.Desktop.Tests.Infrastructure;
 
 [assembly: AvaloniaTestApplication(typeof(TestAppBuilder))]
 
-// LocalizationService is a process-wide singleton, so desktop tests run one at a time.
+// Each test swaps App.Services (and the process culture follows its language), so desktop tests run one at a time.
 [assembly: CollectionBehavior(DisableTestParallelization = true)]
 
 namespace Mostawsef.Desktop.Tests.Infrastructure;

@@ -3,14 +3,11 @@ using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Mostawsef.Desktop.Services.Api;
 using Mostawsef.Desktop.Services.Auth;
+using Mostawsef.Desktop.Services.Diagnostics;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Navigation;
 using Mostawsef.Desktop.Services.Ui;
 using Mostawsef.Desktop.ViewModels;
-using Mostawsef.Desktop.ViewModels.Admin;
-using Mostawsef.Desktop.ViewModels.Auth;
-using Mostawsef.Desktop.ViewModels.Dev;
-using Mostawsef.Desktop.ViewModels.Super;
 
 namespace Mostawsef.Desktop;
 
@@ -31,7 +28,7 @@ public static class ServiceRegistration
         // Local
         services.AddSingleton(_ => options.SettingsFilePath is null ? new SettingsService() : new SettingsService(options.SettingsFilePath));
         services.AddSingleton<ThemeService>();
-        services.AddSingleton(LocalizationService.Instance);
+        services.AddSingleton<LocalizationService>();
 
         // API
         services.AddSingleton(sp =>
@@ -46,20 +43,19 @@ public static class ServiceRegistration
 
         // Auth + navigation
         services.AddSingleton<SessionService>();
+        services.AddSingleton(AppRoutes.Table);
         services.AddSingleton<NavigationService>();
 
         // UI
         services.AddSingleton<DialogService>();
         services.AddSingleton<ToastService>();
 
-        // View models
+        // View models: pages come from AppRoutes; portal shells are created by NavigationService.
         services.AddSingleton<MainWindowViewModel>();
-        services.AddTransient<LoginViewModel>();
-        services.AddTransient<AdminShellViewModel>();
-        services.AddTransient<AdminDashboardViewModel>();
-        services.AddTransient<SuperShellViewModel>();
-        services.AddTransient<SuperDashboardViewModel>();
-        services.AddTransient<GalleryViewModel>();
+        foreach (var pageType in AppRoutes.Table.PageTypes)
+        {
+            services.AddTransient(pageType);
+        }
 
         return services;
     }

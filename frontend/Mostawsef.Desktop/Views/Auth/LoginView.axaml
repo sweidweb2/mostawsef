@@ -8,22 +8,7 @@
              Background="{DynamicResource BrushBackground}">
 
     <Grid RowDefinitions="Auto,*">
-        <!-- Theme / language -->
-        <StackPanel Orientation="Horizontal"
-                    Spacing="{DynamicResource GapControls}"
-                    HorizontalAlignment="Right"
-                    Margin="{DynamicResource PaddingPage}">
-            <ui:IconButton Classes="ghost"
-                           Icon="{StaticResource IconTheme}"
-                           Command="{Binding ToggleThemeCommand}"
-                           ToolTip.Tip="{l:Tr Theme.Toggle}" />
-            <Button Classes="secondary" Command="{Binding ToggleLanguageCommand}">
-                <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
-                    <PathIcon Data="{StaticResource IconGlobe}" />
-                    <TextBlock Text="{l:Tr Language.Switch}" />
-                </StackPanel>
-            </Button>
-        </StackPanel>
+        <ui:PreferencesBar HorizontalAlignment="Right" Margin="{DynamicResource PaddingPage}" />
 
         <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
             <ui:Card Width="420"
@@ -35,17 +20,7 @@
                 <StackPanel Spacing="{DynamicResource Space6}">
                     <!-- Brand -->
                     <StackPanel Spacing="{DynamicResource Space3}" HorizontalAlignment="Center">
-                        <Border Width="56"
-                                Height="56"
-                                CornerRadius="{DynamicResource RadiusLg}"
-                                Background="{DynamicResource BrushPrimary}"
-                                HorizontalAlignment="Center">
-                            <PathIcon Data="{StaticResource IconMedical}"
-                                      Width="{DynamicResource IconSizeLg}"
-                                      Height="{DynamicResource IconSizeLg}"
-                                      Foreground="{DynamicResource BrushOnPrimary}" />
-                        </Border>
-                        <TextBlock Classes="h2" Text="{l:Tr App.Title}" HorizontalAlignment="Center" />
+                        <ui:BrandMark Classes="lg" HorizontalAlignment="Center" />
                         <TextBlock Classes="muted" Text="{l:Tr Login.Subtitle}" HorizontalAlignment="Center" />
                     </StackPanel>
 
@@ -76,7 +51,7 @@
                                           VerticalAlignment="Top"
                                           Foreground="{DynamicResource BrushDanger}" />
                                 <TextBlock Grid.Column="1"
-                                           Text="{Binding ErrorMessage}"
+                                           Text="{l:TrKey ErrorKey}"
                                            Foreground="{DynamicResource BrushDangerText}"
                                            TextWrapping="Wrap" />
                             </Grid>

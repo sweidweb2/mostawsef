@@ -23,12 +23,22 @@ public class ApiClient(HttpClient http)
         http.DefaultRequestHeaders.Authorization = token is null ? null : new AuthenticationHeaderValue("Bearer", token);
 
     public Task<ApiResult<T>> GetAsync<T>(string path, CancellationToken cancellationToken = default) =>
-        SendAsync<T>(() => http.GetAsync(path, cancellationToken), cancellationToken);
+        SendAsync(() => http.GetAsync(path, cancellationToken), ReadJson<T>, cancellationToken);
 
     public Task<ApiResult<TResponse>> PostAsync<TRequest, TResponse>(string path, TRequest body, CancellationToken cancellationToken = default) =>
-        SendAsync<TResponse>(() => http.PostAsJsonAsync(path, body, Json, cancellationToken), cancellationToken);
+        SendAsync(() => http.PostAsJsonAsync(path, body, Json, cancellationToken), ReadJson<TResponse>, cancellationToken);
 
-    private async Task<ApiResult<T>> SendAsync<T>(Func<Task<HttpResponseMessage>> send, CancellationToken cancellationToken)
+    /// <summary>POST without a response body (204 / 202). Value is true on success.</summary>
+    public Task<ApiResult<bool>> PostAsync<TRequest>(string path, TRequest body, CancellationToken cancellationToken = default) =>
+        SendAsync(() => http.PostAsJsonAsync(path, body, Json, cancellationToken), NoContent, cancellationToken);
+
+    public Task<ApiResult<bool>> DeleteAsync(string path, CancellationToken cancellationToken = default) =>
+        SendAsync(() => http.DeleteAsync(path, cancellationToken), NoContent, cancellationToken);
+
+    private async Task<ApiResult<T>> SendAsync<T>(
+        Func<Task<HttpResponseMessage>> send,
+        Func<HttpResponseMessage, CancellationToken, Task<ApiResult<T>>> read,
+        CancellationToken cancellationToken)
     {
         HttpResponseMessage response;
         try
@@ -44,8 +54,7 @@ public class ApiClient(HttpClient http)
         {
             if (response.IsSuccessStatusCode)
             {
-                var value = await response.Content.ReadFromJsonAsync<T>(Json, cancellationToken);
-                return value is null ? ApiResult<T>.Fail(ApiError.Server, response.StatusCode) : ApiResult<T>.Ok(value);
+                return await read(response, cancellationToken);
             }
 
             if (response.StatusCode == HttpStatusCode.Unauthorized && http.DefaultRequestHeaders.Authorization is not null)
@@ -56,6 +65,15 @@ public class ApiClient(HttpClient http)
             return ApiResult<T>.Fail(MapError(response.StatusCode), response.StatusCode);
         }
     }
+
+    private static async Task<ApiResult<T>> ReadJson<T>(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        var value = await response.Content.ReadFromJsonAsync<T>(Json, cancellationToken);
+        return value is null ? ApiResult<T>.Fail(ApiError.Server, response.StatusCode) : ApiResult<T>.Ok(value);
+    }
+
+    private static Task<ApiResult<bool>> NoContent(HttpResponseMessage response, CancellationToken cancellationToken) =>
+        Task.FromResult(ApiResult<bool>.Ok(true));
 
     private static ApiError MapError(HttpStatusCode status) => status switch
     {

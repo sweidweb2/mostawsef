@@ -1,0 +1,33 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Mostawsef.Api.Extensions;
+using Mostawsef.Application.Modules.Logs;
+using Mostawsef.Contracts.Common;
+using Mostawsef.Contracts.Logs;
+
+namespace Mostawsef.Api.Controllers;
+
+[ApiController]
+[Route("api/activity-logs")]
+[Authorize(Policy = AuthPolicies.SuperOnly)]
+public class ActivityLogsController(IActivityLogService logs) : ControllerBase
+{
+    [HttpGet]
+    public Task<PagedResult<ActivityLogListItemDto>> List([FromQuery] PageQuery query, CancellationToken cancellationToken) =>
+        logs.GetPageAsync(query, cancellationToken);
+
+    [HttpGet("stats")]
+    public Task<ActivityLogStatsDto> Stats(CancellationToken cancellationToken) => logs.GetStatsAsync(cancellationToken);
+
+    [HttpGet("{id:guid}")]
+    [ProducesResponseType<ActivityLogDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Get(Guid id, CancellationToken cancellationToken) =>
+        await logs.GetAsync(id, cancellationToken) is { } log ? Ok(log) : NotFound();
+
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken) =>
+        await logs.DeleteAsync(id, cancellationToken) ? NoContent() : NotFound();
+}

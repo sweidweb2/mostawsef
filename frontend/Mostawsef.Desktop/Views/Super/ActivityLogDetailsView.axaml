@@ -1,0 +1,21 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Mostawsef.Desktop.Components"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Super"
+             x:Class="Mostawsef.Desktop.Views.Super.ActivityLogDetailsView"
+             x:DataType="vm:ActivityLogDetailsViewModel">
+    <ui:DetailsView>
+        <ui:DetailsItem Label="{l:Tr Logs.Col.Time}" Value="{Binding OccurredAt}" />
+        <ui:DetailsItem Label="{l:Tr Logs.Col.Action}" Value="{Binding ActionLabel}" />
+        <ui:DetailsItem Label="{l:Tr Logs.Field.Code}" Value="{Binding Log.Action}" />
+        <ui:DetailsItem Label="{l:Tr Logs.Col.Module}" Value="{Binding Log.Module}" />
+        <ui:DetailsItem Label="{l:Tr Logs.Col.Description}" Value="{Binding Log.Description}" />
+        <ui:DetailsItem Label="{l:Tr Logs.Col.User}" Value="{Binding Log.Username}" />
+        <ui:DetailsItem Label="{l:Tr Logs.Field.Entity}" Value="{Binding Entity}" />
+        <ui:DetailsItem Label="{l:Tr Logs.Field.IpAddress}" Value="{Binding Log.IpAddress}" />
+        <ui:DetailsItem Label="{l:Tr Logs.Field.UserAgent}" Value="{Binding Log.UserAgent}" />
+        <ui:DetailsItem Label="{l:Tr Logs.Field.Details}" Value="{Binding Details}" IsCode="True" />
+        <ui:DetailsItem Label="{l:Tr Logs.Field.Id}" Value="{Binding Log.Id}" />
+    </ui:DetailsView>
+</UserControl>

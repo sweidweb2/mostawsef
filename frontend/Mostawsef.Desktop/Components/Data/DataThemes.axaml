@@ -139,6 +139,119 @@
         </Setter>
     </ControlTheme>
 
+    <!-- StatCard -->
+    <ControlTheme x:Key="{x:Type ui:StatCard}" TargetType="ui:StatCard">
+        <Setter Property="Background" Value="{DynamicResource BrushSurface}" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Padding="{DynamicResource PaddingCard}"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{DynamicResource BrushBorder}"
+                        BorderThickness="{DynamicResource BorderWidth}"
+                        CornerRadius="{DynamicResource RadiusLg}"
+                        BoxShadow="{DynamicResource ShadowSm}">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource Space4}">
+                        <Border Name="PART_IconTile"
+                                Width="44"
+                                Height="44"
+                                CornerRadius="{DynamicResource RadiusMd}"
+                                Background="{DynamicResource BrushPrimarySubtle}"
+                                VerticalAlignment="Top">
+                            <PathIcon Name="PART_Icon"
+                                      Data="{TemplateBinding Icon}"
+                                      Width="{DynamicResource IconSize}"
+                                      Height="{DynamicResource IconSize}"
+                                      Foreground="{DynamicResource BrushPrimary}" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="{DynamicResource Space1}" VerticalAlignment="Center">
+                            <TextBlock Classes="caption muted" Text="{TemplateBinding Title}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Classes="h2" Text="{TemplateBinding Value}" />
+                            <TextBlock Classes="caption muted"
+                                       Text="{TemplateBinding Caption}"
+                                       TextWrapping="Wrap"
+                                       IsVisible="{TemplateBinding Caption, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:success /template/ Border#PART_IconTile">
+            <Setter Property="Background" Value="{DynamicResource BrushSuccessSubtle}" />
+        </Style>
+        <Style Selector="^:success /template/ PathIcon#PART_Icon">
+            <Setter Property="Foreground" Value="{DynamicResource BrushSuccess}" />
+        </Style>
+        <Style Selector="^:warning /template/ Border#PART_IconTile">
+            <Setter Property="Background" Value="{DynamicResource BrushWarningSubtle}" />
+        </Style>
+        <Style Selector="^:warning /template/ PathIcon#PART_Icon">
+            <Setter Property="Foreground" Value="{DynamicResource BrushWarning}" />
+        </Style>
+        <Style Selector="^:danger /template/ Border#PART_IconTile">
+            <Setter Property="Background" Value="{DynamicResource BrushDangerSubtle}" />
+        </Style>
+        <Style Selector="^:danger /template/ PathIcon#PART_Icon">
+            <Setter Property="Foreground" Value="{DynamicResource BrushDanger}" />
+        </Style>
+        <Style Selector="^:info /template/ Border#PART_IconTile">
+            <Setter Property="Background" Value="{DynamicResource BrushInfoSubtle}" />
+        </Style>
+        <Style Selector="^:info /template/ PathIcon#PART_Icon">
+            <Setter Property="Foreground" Value="{DynamicResource BrushInfo}" />
+        </Style>
+    </ControlTheme>
+
+    <!-- DetailsView -->
+    <ControlTheme x:Key="{x:Type ui:DetailsView}" TargetType="ui:DetailsView">
+        <Setter Property="ItemsPanel">
+            <ItemsPanelTemplate>
+                <StackPanel Spacing="{DynamicResource Space3}" />
+            </ItemsPanelTemplate>
+        </Setter>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <ItemsPresenter Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}" />
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    <ControlTheme x:Key="{x:Type ui:DetailsItem}" TargetType="ui:DetailsItem">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid ColumnDefinitions="150,*" ColumnSpacing="{DynamicResource Space4}">
+                    <TextBlock Classes="muted" Text="{TemplateBinding Label}" TextWrapping="Wrap" />
+                    <SelectableTextBlock Name="PART_Value"
+                                         Grid.Column="1"
+                                         Text="{TemplateBinding DisplayValue}"
+                                         TextWrapping="Wrap" />
+                    <Border Name="PART_Code"
+                            Grid.Column="1"
+                            Padding="{DynamicResource PaddingControl}"
+                            Background="{DynamicResource BrushSurfaceAlt}"
+                            BorderBrush="{DynamicResource BrushBorder}"
+                            BorderThickness="{DynamicResource BorderWidth}"
+                            CornerRadius="{DynamicResource RadiusMd}"
+                            IsVisible="False">
+                        <ScrollViewer MaxHeight="260" HorizontalScrollBarVisibility="Auto">
+                            <SelectableTextBlock Text="{TemplateBinding DisplayValue}"
+                                                 FontFamily="{DynamicResource FontFamilyMono}"
+                                                 FontSize="{DynamicResource FontSizeCaption}"
+                                                 FlowDirection="LeftToRight" />
+                        </ScrollViewer>
+                    </Border>
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^[IsCode=True] /template/ SelectableTextBlock#PART_Value">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector="^[IsCode=True] /template/ Border#PART_Code">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+    </ControlTheme>
+
     <!-- Scheduler -->
     <ControlTheme x:Key="{x:Type ui:Scheduler}" TargetType="ui:Scheduler">
         <Setter Property="Template">

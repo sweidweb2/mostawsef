@@ -11,7 +11,8 @@
         Height="820"
         MinWidth="{StaticResource WindowMinWidth}"
         MinHeight="{StaticResource WindowMinHeight}"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        WindowState="Maximized">
 
     <!-- Login screen or the signed-in user's portal shell (see NavigationService). -->
     <ui:DialogHost x:Name="Host">

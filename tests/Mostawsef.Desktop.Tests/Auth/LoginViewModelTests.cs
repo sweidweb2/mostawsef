@@ -1,10 +1,10 @@
 using System.Net;
 using Avalonia.Headless.XUnit;
 using Mostawsef.Contracts.Auth;
+using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Tests.Infrastructure;
-using Mostawsef.Desktop.ViewModels.Admin;
 using Mostawsef.Desktop.ViewModels.Auth;
-using Mostawsef.Desktop.ViewModels.Super;
+using Mostawsef.Desktop.ViewModels.Shell;
 
 namespace Mostawsef.Desktop.Tests.Auth;
 
@@ -34,7 +34,8 @@ public class LoginViewModelTests
 
         await vm.LoginCommand.ExecuteAsync(null);
 
-        Assert.IsType<AdminShellViewModel>(app.Navigation.CurrentPage);
+        var shell = Assert.IsType<PortalShellViewModel>(app.Navigation.CurrentPage);
+        Assert.Equal("Portal.Admin", shell.PortalTitleKey);
         Assert.True(app.Session.IsInRole(Roles.Admin));
         Assert.Empty(vm.Password);
     }
@@ -48,7 +49,8 @@ public class LoginViewModelTests
 
         await vm.LoginCommand.ExecuteAsync(null);
 
-        Assert.IsType<SuperShellViewModel>(app.Navigation.CurrentPage);
+        var shell = Assert.IsType<PortalShellViewModel>(app.Navigation.CurrentPage);
+        Assert.Equal("Portal.Super", shell.PortalTitleKey);
     }
 
     [AvaloniaFact]
@@ -57,11 +59,13 @@ public class LoginViewModelTests
         using var app = new TestServices();
         app.Api.RespondWithStatus(HttpStatusCode.Unauthorized);
         var vm = Filled(app.Get<LoginViewModel>());
+        var window = app.Show(vm);
 
         await vm.LoginCommand.ExecuteAsync(null);
 
         Assert.True(vm.HasError);
-        Assert.Equal("Invalid username or password.", vm.ErrorMessage);
+        Assert.Equal("Login.Invalid", vm.ErrorKey);
+        Assert.Contains("Invalid username or password.", TestServices.Texts(window));
         Assert.Empty(vm.Password);
         Assert.False(app.Session.IsAuthenticated);
     }
@@ -75,7 +79,8 @@ public class LoginViewModelTests
 
         await vm.LoginCommand.ExecuteAsync(null);
 
-        Assert.StartsWith("Cannot reach the server", vm.ErrorMessage);
+        Assert.Equal("Login.ServerUnreachable", vm.ErrorKey);
+        Assert.StartsWith("Cannot reach the server", app.Localization.Get(vm.ErrorKey!));
     }
 
     [AvaloniaFact]
@@ -87,7 +92,8 @@ public class LoginViewModelTests
 
         await vm.LoginCommand.ExecuteAsync(null);
 
-        Assert.StartsWith("Too many attempts", vm.ErrorMessage);
+        Assert.Equal("Login.TooMany", vm.ErrorKey);
+        Assert.StartsWith("Too many attempts", app.Localization.Get(vm.ErrorKey!));
     }
 
     [AvaloniaFact]
@@ -96,11 +102,12 @@ public class LoginViewModelTests
         using var app = new TestServices();
         app.Api.RespondWithStatus(HttpStatusCode.Unauthorized);
         var vm = Filled(app.Get<LoginViewModel>());
+        var window = app.Show(vm);
         await vm.LoginCommand.ExecuteAsync(null);
 
-        Services.Local.LocalizationService.Instance.SetLanguage(Services.Local.AppLanguage.Arabic);
+        app.Localization.SetLanguage(AppLanguage.Arabic);
 
-        Assert.Equal("اسم المستخدم أو كلمة المرور غير صحيحة.", vm.ErrorMessage);
+        Assert.Contains("اسم المستخدم أو كلمة المرور غير صحيحة.", TestServices.Texts(window));
     }
 
     private static LoginViewModel Filled(LoginViewModel vm)

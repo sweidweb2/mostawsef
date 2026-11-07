@@ -18,11 +18,14 @@ alwaysApply: false
 - Icons: `<PathIcon Data="{StaticResource IconEdit}" />` from `Styles/Tokens/Icons.axaml`.
 
 ## Localization + RTL
-- No user-visible literal text in views or components: use `{l:Tr Key}` (`xmlns:l="using:Mostawsef.Desktop.Services.Local"`).
-  In code: `LocalizationService.Instance.Get("Key")` / `TrExtension.CreateBinding("Key")`.
+- No user-visible literal text in views or components: use `{l:Tr Key}` (`xmlns:l="using:Mostawsef.Desktop.Services.Local"`),
+  `{l:Tr Key, Arg=Property}` for a bound `{0}`, or `{l:TrKey Property}` when the view model holds the key.
+- View models expose resource keys and never subscribe to `LanguageChanged`. `LocalizationService` comes from DI;
+  controls use `App.Localization` (subscribe on attach, unsubscribe on detach). No static `Instance`.
 - Every new key goes into **both** `Resources/Strings.resx` (English) and `Resources/Strings.ar.resx` (Arabic).
 - Layout mirrors automatically in Arabic. Think "start/end": do not flip margins or alignment manually per language.
-- Every new `Window` must call `LocalizationService.Instance.Apply(window)`.
+- Theme/language switches: use `ui:PreferencesBar`; do not add toggle commands to view models.
+- Every new `Window` must call `App.Localization.Apply(window)`.
 
 ## Responsiveness
 - Breakpoints on the AppShell content width: Compact < 900, Medium < 1280, Wide < 1600, XWide >= 1600.
@@ -32,12 +35,12 @@ alwaysApply: false
 ## MVVM + bindings
 - Compiled bindings are on: every view/DataTemplate needs `x:DataType`.
 - View models derive from `ViewModelBase`, use `[ObservableProperty] public partial T Name { get; set; }` and `[RelayCommand]`.
-- Services come from DI (`App.ConfigureServices`); register new services/view models there.
+- Services come from DI (`ServiceRegistration.AddMostawsefDesktop`); register new services there. Page view models are registered from `AppRoutes`.
 - Dialogs: `DialogService.ShowAsync(modal)` / `ConfirmAsync(...)`. Notifications: `ToastService.Show(...)`.
 - API calls go in `Services/Api/` (through `ApiClient`) using DTOs from `Mostawsef.Contracts`.
 
 ## Auth + navigation (see `Docs/auth.md`)
-- Every page/shell view model declares `[RequiresRole(Roles.X)]`; open pages only via `NavigationService` or the shell menu.
-- New portal pages: view model + view under `ViewModels|Views/<Role>/`, register in DI, add a `ShellMenuItem` to the role shell.
-- Both portals share `Views/Shell/PortalShellView` (via `PortalShellViewModel`); do not copy the layout per role.
+- Every screen is listed in `AppRoutes` (view, access, portal menus); open pages only via `NavigationService` or the shell menu.
+- New portal pages: view model + view under `ViewModels|Views/<Role>/`, then one `.Page<Vm, View>(icon, titleKey)` line in the role's portal in `AppRoutes`.
+- All roles share one `PortalShellViewModel` + `Views/Shell/PortalShellView`; a role's title and menu come from its `AppRoutes` portal. Never subclass the shell per role.
 - Never store tokens or passwords on disk; the session lives in `SessionService` memory.

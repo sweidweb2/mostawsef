@@ -67,28 +67,27 @@ These exist only through the Development seed. Production installs must set thei
 | `Services/Api/ApiClient` | HTTP calls, bearer token, maps errors (`Unreachable`, `Unauthorized`, `TooManyRequests`, ...). API address: `ApiBaseUrl` in `%AppData%\Mostawsef\settings.json` (default `http://localhost:5270`) |
 | `Services/Api/AuthApi` | `LoginAsync`, `MeAsync` |
 | `Services/Auth/SessionService` | Current user + token in memory, auto sign-out at token expiry or on any `401` |
-| `Services/Navigation/NavigationService` | Opens the login screen or a portal; enforces `[RequiresRole]` / `[RequiresAuthentication]` |
+| `AppRoutes` (`Services/Navigation/RouteTable`) | Every screen in one table: its view, who may open it, and each role's portal (title + menu). DI, navigation, the shell and `ViewLocator` all read it |
+| `Services/Navigation/NavigationService` | Opens the login screen or the user's portal; the single access check (`CanAccess`, `CreatePage`) |
 | `ViewModels/Auth/LoginViewModel` + `Views/Auth/LoginView` | Sign-in form |
-| `ViewModels/Shell/PortalShellViewModel` + `Views/Shell/PortalShellView` | Shared portal layout: sidebar, top bar (user, theme, language), sign out |
-| `ViewModels/Admin/AdminShellViewModel` | `[RequiresRole(Roles.Admin)]`, Admin menu |
-| `ViewModels/Super/SuperShellViewModel` | `[RequiresRole(Roles.Super)]`, Super menu |
-| `Admin/AdminDashboard*`, `Super/SuperDashboard*` | Empty dashboard pages |
+| `ViewModels/Shell/PortalShellViewModel` + `Views/Shell/PortalShellView` | The one portal layout for every role: sidebar from the role's menu, top bar (user, `ui:PreferencesBar`), sign out |
+| `ViewModels/Shell/DashboardViewModel` + `Views/Shell/DashboardView` | Empty dashboard, the first page of every portal (split per role in `AppRoutes` when one needs its own) |
 
 ### Route protection
 
-- Every shell and page view model declares `[RequiresRole(...)]`. `NavigationService` and the shells check it before opening a page; a mismatch signs out and returns to login.
+- A page is reachable only if `AppRoutes` lists it: `Public` pages for anyone, portal pages only for that portal's role. Anything else is denied.
+- `NavigationService` and the shell check it before creating a page; a mismatch signs out and returns to login.
 - The API enforces the same roles on its endpoints, so the desktop check is for UX and the server check is the real security boundary.
 
 ### Adding a page to a portal
 
-1. Create `ViewModels/<Role>/<Name>ViewModel` with `[RequiresRole(Roles.<Role>)]` and `Views/<Role>/<Name>View.axaml`.
-2. Register the view model in `App.ConfigureServices()`.
-3. Add `new ShellMenuItem("Icon...", "Nav.<Name>", typeof(<Name>ViewModel))` to the shell's `MenuItems` and add `Nav.<Name>` to both resx files.
+1. Create `ViewModels/<Role>/<Name>ViewModel` and `Views/<Role>/<Name>View.axaml`.
+2. Add `.Page<<Name>ViewModel, <Name>View>("Icon...", "Nav.<Name>")` to the role's portal in `AppRoutes` (this also registers it in DI) and add `Nav.<Name>` to both resx files.
 
 ### Adding a role
 
 1. Add it to `Domain/Enums/UserRole` and `Contracts/Auth/Roles` (+ an API policy).
-2. Create `<Role>ShellViewModel : PortalShellViewModel` with `[RequiresRole]`, then route it in `NavigationService.NavigateToHome()`.
+2. Add `.Portal(Roles.<Role>, "Portal.<Role>", portal => portal.Page<...>(...))` to `AppRoutes`.
 3. Add `Portal.<Role>` and `Role.<Role>` strings.
 
 ## Run
