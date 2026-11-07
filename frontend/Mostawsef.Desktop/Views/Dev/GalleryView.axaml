@@ -30,6 +30,12 @@
 
         <ui:AppShell.TopBar>
             <ui:TopBar Title="{l:Tr Gallery.Title}">
+                <ui:TopBar.Leading>
+                    <ui:IconButton Classes="ghost"
+                                   Icon="{StaticResource IconChevronStart}"
+                                   Command="{Binding BackCommand}"
+                                   ToolTip.Tip="{l:Tr Common.Back}" />
+                </ui:TopBar.Leading>
                 <ui:SearchBox MaxWidth="360" HorizontalAlignment="Left" Classes="hide-compact" />
                 <ui:TopBar.Actions>
                     <StackPanel Orientation="Horizontal" Spacing="8">

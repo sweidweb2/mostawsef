@@ -86,4 +86,28 @@
   <data name="Gallery.Overlays" xml:space="preserve"><value>النوافذ المنبثقة</value></data>
   <data name="Gallery.Navigation" xml:space="preserve"><value>التنقل</value></data>
   <data name="Gallery.Clinic" xml:space="preserve"><value>العيادة</value></data>
+
+  <data name="Login.Subtitle" xml:space="preserve"><value>سجّل الدخول للمتابعة</value></data>
+  <data name="Login.Username" xml:space="preserve"><value>اسم المستخدم</value></data>
+  <data name="Login.Password" xml:space="preserve"><value>كلمة المرور</value></data>
+  <data name="Login.Submit" xml:space="preserve"><value>تسجيل الدخول</value></data>
+  <data name="Login.Invalid" xml:space="preserve"><value>اسم المستخدم أو كلمة المرور غير صحيحة.</value></data>
+  <data name="Login.TooMany" xml:space="preserve"><value>محاولات كثيرة. يرجى الانتظار دقيقة ثم المحاولة مرة أخرى.</value></data>
+  <data name="Login.ServerUnreachable" xml:space="preserve"><value>تعذّر الاتصال بالخادم. تأكد من تشغيل خدمة مستوصف.</value></data>
+  <data name="Login.Failed" xml:space="preserve"><value>تعذّر تسجيل الدخول. يرجى المحاولة مرة أخرى.</value></data>
+  <data name="Login.SessionExpired" xml:space="preserve"><value>انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.</value></data>
+  <data name="Login.OpenGallery" xml:space="preserve"><value>معرض المكونات (للتطوير)</value></data>
+
+  <data name="Auth.Logout" xml:space="preserve"><value>تسجيل الخروج</value></data>
+  <data name="Auth.LogoutConfirm" xml:space="preserve"><value>هل تريد تسجيل الخروج؟</value></data>
+
+  <data name="Portal.Admin" xml:space="preserve"><value>بوابة المسؤول</value></data>
+  <data name="Portal.Super" xml:space="preserve"><value>بوابة المشرف العام</value></data>
+  <data name="Role.Admin" xml:space="preserve"><value>مسؤول</value></data>
+  <data name="Role.Super" xml:space="preserve"><value>مشرف عام</value></data>
+
+  <data name="Nav.Dashboard" xml:space="preserve"><value>لوحة التحكم</value></data>
+  <data name="Dashboard.Welcome" xml:space="preserve"><value>مرحباً، {0}</value></data>
+  <data name="Dashboard.Empty.Title" xml:space="preserve"><value>لوحة التحكم فارغة</value></data>
+  <data name="Dashboard.Empty.Description" xml:space="preserve"><value>ستظهر هنا المؤشرات والتقارير.</value></data>
 </root>

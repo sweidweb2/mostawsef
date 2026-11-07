@@ -1,0 +1,102 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Mostawsef.Desktop.Components"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Auth"
+             x:Class="Mostawsef.Desktop.Views.Auth.LoginView"
+             x:DataType="vm:LoginViewModel"
+             Background="{DynamicResource BrushBackground}">
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- Theme / language -->
+        <StackPanel Orientation="Horizontal"
+                    Spacing="{DynamicResource GapControls}"
+                    HorizontalAlignment="Right"
+                    Margin="{DynamicResource PaddingPage}">
+            <ui:IconButton Classes="ghost"
+                           Icon="{StaticResource IconTheme}"
+                           Command="{Binding ToggleThemeCommand}"
+                           ToolTip.Tip="{l:Tr Theme.Toggle}" />
+            <Button Classes="secondary" Command="{Binding ToggleLanguageCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                    <PathIcon Data="{StaticResource IconGlobe}" />
+                    <TextBlock Text="{l:Tr Language.Switch}" />
+                </StackPanel>
+            </Button>
+        </StackPanel>
+
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+            <ui:Card Width="420"
+                     MaxWidth="420"
+                     Margin="{DynamicResource PaddingPageCompact}"
+                     Padding="32"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center">
+                <StackPanel Spacing="{DynamicResource Space6}">
+                    <!-- Brand -->
+                    <StackPanel Spacing="{DynamicResource Space3}" HorizontalAlignment="Center">
+                        <Border Width="56"
+                                Height="56"
+                                CornerRadius="{DynamicResource RadiusLg}"
+                                Background="{DynamicResource BrushPrimary}"
+                                HorizontalAlignment="Center">
+                            <PathIcon Data="{StaticResource IconMedical}"
+                                      Width="{DynamicResource IconSizeLg}"
+                                      Height="{DynamicResource IconSizeLg}"
+                                      Foreground="{DynamicResource BrushOnPrimary}" />
+                        </Border>
+                        <TextBlock Classes="h2" Text="{l:Tr App.Title}" HorizontalAlignment="Center" />
+                        <TextBlock Classes="muted" Text="{l:Tr Login.Subtitle}" HorizontalAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- Form -->
+                    <StackPanel Spacing="{DynamicResource GapGrid}">
+                        <ui:FormField Label="{l:Tr Login.Username}" IsRequired="True">
+                            <TextBox Name="UsernameBox" Text="{Binding Username}" />
+                        </ui:FormField>
+                        <ui:FormField Label="{l:Tr Login.Password}" IsRequired="True">
+                            <ui:PasswordField Text="{Binding Password}" />
+                        </ui:FormField>
+
+                        <Border Background="{DynamicResource BrushDangerSubtle}"
+                                BorderBrush="{DynamicResource BrushDangerBorder}"
+                                BorderThickness="{DynamicResource BorderWidth}"
+                                CornerRadius="{DynamicResource RadiusMd}"
+                                Padding="{DynamicResource PaddingControl}"
+                                IsVisible="{Binding HasError}">
+                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                                <PathIcon Data="{StaticResource IconError}"
+                                          Width="{DynamicResource IconSizeSm}"
+                                          Height="{DynamicResource IconSizeSm}"
+                                          Foreground="{DynamicResource BrushDanger}" />
+                                <TextBlock Text="{Binding ErrorMessage}"
+                                           Foreground="{DynamicResource BrushDangerText}"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
+                        <Button Classes="primary lg"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                IsDefault="True"
+                                Command="{Binding LoginCommand}">
+                            <Panel>
+                                <TextBlock Text="{l:Tr Login.Submit}" IsVisible="{Binding !IsBusy}" />
+                                <ui:Spinner Width="20"
+                                            Height="20"
+                                            Foreground="{DynamicResource BrushOnPrimary}"
+                                            IsVisible="{Binding IsBusy}" />
+                            </Panel>
+                        </Button>
+                    </StackPanel>
+
+                    <Button Classes="link"
+                            HorizontalAlignment="Center"
+                            Content="{l:Tr Login.OpenGallery}"
+                            Command="{Binding OpenGalleryCommand}"
+                            IsVisible="{Binding IsDevBuild}" />
+                </StackPanel>
+            </ui:Card>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

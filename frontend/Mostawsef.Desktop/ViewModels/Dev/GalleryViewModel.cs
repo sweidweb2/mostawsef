@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Mostawsef.Desktop.Components;
 using Mostawsef.Desktop.Services.Local;
+using Mostawsef.Desktop.Services.Navigation;
 using Mostawsef.Desktop.Services.Ui;
 
 namespace Mostawsef.Desktop.ViewModels.Dev;
@@ -19,12 +20,14 @@ public partial class GalleryViewModel : ViewModelBase
     private readonly ThemeService _theme;
     private readonly DialogService _dialogs;
     private readonly ToastService _toasts;
+    private readonly NavigationService _navigation;
 
-    public GalleryViewModel(ThemeService theme, DialogService dialogs, ToastService toasts)
+    public GalleryViewModel(ThemeService theme, DialogService dialogs, ToastService toasts, NavigationService navigation)
     {
         _theme = theme;
         _dialogs = dialogs;
         _toasts = toasts;
+        _navigation = navigation;
 
         var today = DateTime.Today;
         Appointments =
@@ -85,6 +88,9 @@ public partial class GalleryViewModel : ViewModelBase
     public IEnumerable<PatientRow> VisiblePatients => IsTableEmpty ? [] : Patients;
 
     public ObservableCollection<SchedulerItem> Appointments { get; }
+
+    [RelayCommand]
+    private void Back() => _navigation.NavigateToHome();
 
     [RelayCommand]
     private void ToggleTheme() => _theme.Toggle();

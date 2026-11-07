@@ -2,6 +2,7 @@
 # Usage: powershell -File scripts/capture-window.ps1 -ProcessName Mostawsef.Desktop -OutFile out.png
 param(
     [string]$ProcessName = "Mostawsef.Desktop",
+    [int]$ProcessId = 0,
     [string]$OutFile = "window.png"
 )
 
@@ -19,7 +20,7 @@ public static class Win32Capture {
 
 [Win32Capture]::SetProcessDPIAware() | Out-Null
 
-$process = Get-Process $ProcessName -ErrorAction Stop | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
+$process = if ($ProcessId -ne 0) { Get-Process -Id $ProcessId -ErrorAction Stop } else { Get-Process $ProcessName -ErrorAction Stop | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1 }
 $handle = $process.MainWindowHandle
 $rect = New-Object Win32Capture+RECT
 [Win32Capture]::GetWindowRect($handle, [ref]$rect) | Out-Null

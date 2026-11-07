@@ -32,6 +32,7 @@ frontend/Mostawsef.Desktop        Avalonia app
 - EF Core / Npgsql packages live only in Infrastructure (Api has `EntityFrameworkCore.Design` for tooling only).
 - Modular monolith: organize by feature modules (`Application/Modules/<Feature>`), no microservices.
 - Keep SQLite as a possible fallback: no `jsonb`, arrays, `citext`, `EF.Functions.ILike` or raw SQL; store money as integers (smallest unit).
+- Auth: username/password users with roles `Admin` and `Super` (JWT); each role has its own desktop portal. Details: `Docs/auth.md`.
 - Do not add business logic or business modules unless the user asks for them.
 
 ## Commands

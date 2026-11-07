@@ -34,4 +34,10 @@ alwaysApply: false
 - View models derive from `ViewModelBase`, use `[ObservableProperty] public partial T Name { get; set; }` and `[RelayCommand]`.
 - Services come from DI (`App.ConfigureServices`); register new services/view models there.
 - Dialogs: `DialogService.ShowAsync(modal)` / `ConfirmAsync(...)`. Notifications: `ToastService.Show(...)`.
-- API calls go in `Services/Api/` using DTOs from `Mostawsef.Contracts`.
+- API calls go in `Services/Api/` (through `ApiClient`) using DTOs from `Mostawsef.Contracts`.
+
+## Auth + navigation (see `Docs/auth.md`)
+- Every page/shell view model declares `[RequiresRole(Roles.X)]`; open pages only via `NavigationService` or the shell menu.
+- New portal pages: view model + view under `ViewModels|Views/<Role>/`, register in DI, add a `ShellMenuItem` to the role shell.
+- Both portals share `Views/Shell/PortalShellView` (via `PortalShellViewModel`); do not copy the layout per role.
+- Never store tokens or passwords on disk; the session lives in `SessionService` memory.

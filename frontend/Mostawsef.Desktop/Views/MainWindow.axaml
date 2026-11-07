@@ -2,8 +2,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="using:Mostawsef.Desktop.Components"
         xmlns:l="using:Mostawsef.Desktop.Services.Local"
-        xmlns:dev="using:Mostawsef.Desktop.Views.Dev"
+        xmlns:vm="using:Mostawsef.Desktop.ViewModels"
         x:Class="Mostawsef.Desktop.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="{l:Tr App.Title}"
         Width="1280"
@@ -12,8 +13,8 @@
         MinHeight="{StaticResource WindowMinHeight}"
         WindowStartupLocation="CenterScreen">
 
-    <!-- Temporary: the component gallery is the main content until real screens exist. -->
+    <!-- Login screen or the signed-in user's portal shell (see NavigationService). -->
     <ui:DialogHost x:Name="Host">
-        <dev:GalleryView />
+        <ContentControl Content="{Binding Navigation.CurrentPage}" />
     </ui:DialogHost>
 </Window>

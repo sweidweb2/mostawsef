@@ -1,0 +1,72 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Mostawsef.Desktop.Components"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Shell"
+             x:Class="Mostawsef.Desktop.Views.Shell.PortalShellView"
+             x:DataType="vm:PortalShellViewModel">
+
+    <!-- Shared layout of every role portal (Admin, Super, ...). -->
+    <ui:AppShell Name="Shell">
+        <ui:AppShell.SidebarHeader>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <Border Width="32" Height="32" CornerRadius="{DynamicResource RadiusMd}" Background="{DynamicResource BrushPrimary}">
+                    <PathIcon Data="{StaticResource IconMedical}"
+                              Width="{DynamicResource IconSize}"
+                              Height="{DynamicResource IconSize}"
+                              Foreground="{DynamicResource BrushOnPrimary}" />
+                </Border>
+                <TextBlock Classes="h4" Text="{l:Tr App.Title}" VerticalAlignment="Center" />
+            </StackPanel>
+        </ui:AppShell.SidebarHeader>
+
+        <ui:AppShell.Sidebar>
+            <ui:NavMenu ItemsSource="{Binding MenuItems}"
+                        SelectedIndex="{Binding SelectedMenuIndex}"
+                        IsCompact="{Binding #Shell.IsSidebarCompact}">
+                <ui:NavMenu.Styles>
+                    <Style Selector="ui|NavMenuItem" x:DataType="vm:ShellMenuItem">
+                        <Setter Property="Text" Value="{Binding Title}" />
+                        <Setter Property="Icon" Value="{Binding Icon}" />
+                    </Style>
+                </ui:NavMenu.Styles>
+            </ui:NavMenu>
+        </ui:AppShell.Sidebar>
+
+        <ui:AppShell.SidebarFooter>
+            <ui:NavMenuItem Icon="{StaticResource IconLogout}"
+                            Text="{l:Tr Auth.Logout}"
+                            IsCompact="{Binding #Shell.IsSidebarCompact}"
+                            Tapped="OnSignOutTapped" />
+        </ui:AppShell.SidebarFooter>
+
+        <ui:AppShell.TopBar>
+            <ui:TopBar Title="{Binding PortalTitle}">
+                <ui:TopBar.Actions>
+                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                        <ui:IconButton Classes="ghost"
+                                       Icon="{StaticResource IconTheme}"
+                                       Command="{Binding ToggleThemeCommand}"
+                                       ToolTip.Tip="{l:Tr Theme.Toggle}" />
+                        <Button Classes="secondary" Command="{Binding ToggleLanguageCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                                <PathIcon Data="{StaticResource IconGlobe}" />
+                                <TextBlock Text="{l:Tr Language.Switch}" />
+                            </StackPanel>
+                        </Button>
+                        <ui:Divider Orientation="Vertical" Height="24" />
+                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                            <ui:Avatar DisplayName="{Binding UserName}" Size="{DynamicResource AvatarSizeSm}" />
+                            <StackPanel VerticalAlignment="Center" Classes="hide-compact">
+                                <TextBlock Classes="strong" Text="{Binding UserName}" />
+                                <TextBlock Classes="caption muted" Text="{Binding RoleName}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </ui:TopBar.Actions>
+            </ui:TopBar>
+        </ui:AppShell.TopBar>
+
+        <ContentControl Content="{Binding CurrentPage}" />
+    </ui:AppShell>
+</UserControl>
