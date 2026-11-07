@@ -34,3 +34,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+/// <summary>Entry point type, referenced by WebApplicationFactory in integration tests.</summary>
+public partial class Program;

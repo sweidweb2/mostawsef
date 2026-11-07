@@ -55,8 +55,8 @@ Unknown usernames take the same hashing time as wrong passwords, so response tim
 
 | Username | Password | Role |
 | --- | --- | --- |
-| `super` | `Super@12345` | Super |
-| `admin` | `Admin@12345` | Admin |
+| `super@example.com` | `password` | Super |
+| `admin@example.com` | `password` | Admin |
 
 These exist only through the Development seed. Production installs must set their own `Jwt:Key` and first user (installer step, deferred).
 

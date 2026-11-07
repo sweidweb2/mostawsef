@@ -24,6 +24,8 @@ backend/Mostawsef.Domain          entities, enums, business rules (depends on no
 backend/Mostawsef.Infrastructure  EF Core, DbContext, repositories
 shared/Mostawsef.Contracts        request/response DTOs shared by API and desktop
 frontend/Mostawsef.Desktop        Avalonia app
+tests/Mostawsef.Api.IntegrationTests   API + real PostgreSQL (Testcontainers)
+tests/Mostawsef.Desktop.Tests          view models, navigation, headless views
 ```
 
 ## Hard rules
@@ -41,4 +43,5 @@ docker compose up -d                                   # dev PostgreSQL
 dotnet build Mostawsef.slnx
 dotnet run --project backend/Mostawsef.Api --launch-profile http   # http://localhost:5270/api/health
 dotnet run --project frontend/Mostawsef.Desktop
+dotnet test Mostawsef.slnx                             # all tests (see testing.mdc)
 ```

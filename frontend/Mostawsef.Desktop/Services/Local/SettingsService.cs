@@ -16,13 +16,14 @@ public class SettingsService
     private readonly string _filePath;
 
     public SettingsService()
+        : this(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Mostawsef", "settings.json"))
     {
-        var directory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "Mostawsef");
+    }
 
-        Directory.CreateDirectory(directory);
-        _filePath = Path.Combine(directory, "settings.json");
+    public SettingsService(string filePath)
+    {
+        _filePath = filePath;
+        Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
         Current = Load();
     }
 

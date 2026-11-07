@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Globalization;
 using System.Resources;
 using Avalonia;
@@ -17,6 +19,7 @@ public class LocalizationService : INotifyPropertyChanged
     private static readonly ResourceManager Resources =
         new("Mostawsef.Desktop.Resources.Strings", typeof(LocalizationService).Assembly);
 
+    private readonly List<WeakReference<Window>> _windows = [];
     private SettingsService? _settings;
 
     public static LocalizationService Instance { get; } = new();
@@ -78,8 +81,16 @@ public class LocalizationService : INotifyPropertyChanged
 
     public void Toggle() => SetLanguage(Language == AppLanguage.Arabic ? AppLanguage.English : AppLanguage.Arabic);
 
-    /// <summary>Applies the current flow direction to a window. Call for every window you create.</summary>
-    public void Apply(Window window) => window.FlowDirection = FlowDirection;
+    /// <summary>Applies the current flow direction to a window and keeps it updated on language changes. Call for every window you create.</summary>
+    public void Apply(Window window)
+    {
+        window.FlowDirection = FlowDirection;
+
+        if (!_windows.Any(w => w.TryGetTarget(out var existing) && ReferenceEquals(existing, window)))
+        {
+            _windows.Add(new WeakReference<Window>(window));
+        }
+    }
 
     private void ApplyCulture(AppLanguage language)
     {
@@ -91,6 +102,15 @@ public class LocalizationService : INotifyPropertyChanged
         CultureInfo.CurrentUICulture = Culture;
         CultureInfo.DefaultThreadCurrentCulture = Culture;
         CultureInfo.DefaultThreadCurrentUICulture = Culture;
+
+        _windows.RemoveAll(w => !w.TryGetTarget(out _));
+        foreach (var reference in _windows)
+        {
+            if (reference.TryGetTarget(out var window))
+            {
+                window.FlowDirection = FlowDirection;
+            }
+        }
 
         if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {

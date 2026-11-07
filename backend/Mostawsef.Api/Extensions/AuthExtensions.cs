@@ -58,9 +58,14 @@ public static class AuthExtensions
         {
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
             options.AddPolicy(AuthPolicies.LoginRateLimit, context =>
-                RateLimitPartition.GetFixedWindowLimiter(
+            {
+                var permitLimit = context.RequestServices.GetRequiredService<IConfiguration>()
+                    .GetValue("RateLimit:LoginPermitLimit", 10);
+
+                return RateLimitPartition.GetFixedWindowLimiter(
                     context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-                    _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1) }));
+                    _ => new FixedWindowRateLimiterOptions { PermitLimit = permitLimit, Window = TimeSpan.FromMinutes(1) });
+            });
         });
 
         return services;

@@ -1,0 +1,48 @@
+---
+description: When to write which test (API integration vs desktop view model vs headless UI), conventions and commands
+alwaysApply: true
+---
+
+# Testing
+
+Every feature or bug fix ships with tests in the same change. Two test projects (xUnit v3):
+
+| Project | Tools | Covers |
+| --- | --- | --- |
+| `tests/Mostawsef.Api.IntegrationTests` | WebApplicationFactory + Testcontainers PostgreSQL (needs Docker) | Real HTTP endpoints, auth, validation, database, migrations |
+| `tests/Mostawsef.Desktop.Tests` | Avalonia.Headless.XUnit (`[AvaloniaFact]`), `FakeApiHandler`, NSubstitute | View models, navigation/role guards, services, rendered views |
+
+## Which test for which change
+
+| Change | Required tests |
+| --- | --- |
+| New/changed API endpoint | Integration: success path, 400 (invalid input), 401 (no/invalid token), 403 (wrong role), 404/409 where relevant |
+| Endpoint with a role policy | Integration: allowed role gets 2xx, every other role gets 403 |
+| New entity / migration / constraint | Integration: data round-trips through the API; unique/required rules are enforced |
+| Anything touching passwords, tokens, secrets | Integration: values are hashed/never returned (see `PasswordStorageTests`) |
+| Business rule in Domain/Application | Integration through the endpoint that uses it (add a unit test only for complex pure logic) |
+| New view model / command | Desktop: commands' CanExecute, success path, each `ApiError` shown to the user, loading state |
+| New portal page or role | Desktop: allowed role can open it, other roles and signed-out users cannot (`NavigationGuardTests` pattern) |
+| New view / layout change | Desktop: headless render test that the view appears with key texts; check Arabic (RTL) if layout-sensitive |
+| New shared component with logic | Desktop: headless test of its behavior (properties -> visible state) |
+| New user-visible string | Covered by the view model/view test asserting the English text; Arabic key must exist in `Strings.ar.resx` |
+| Bug fix | A test that fails before the fix and passes after |
+
+Skip tests only for pure styling/token changes and docs.
+
+## Conventions
+- Names describe behavior: `Wrong_password_returns_401`, `Admin_cannot_open_the_super_portal`.
+- Folders mirror features: `Auth/`, later `Patients/`, `Appointments/`...
+- API tests: `[Collection(ApiCollection.Name)]`, use `TestUsers` and `HttpClientExtensions` (`LoginAsAsync`, `WithBearer`).
+  New seed data goes through `ApiFactory`; never depend on dev data.
+- Desktop tests: `using var app = new TestServices();` (real DI, fake API, temp settings, English). Stub the server with
+  `app.Api.RespondToLoginWith(...)`, `RespondWithStatus(...)`, `FailWithNetworkError()`; sign in with `app.SignInAs(role)`.
+- Never call the real API, real settings file or real database from desktop tests.
+- Keep tests independent: no ordering, no shared mutable state between tests.
+
+## Commands
+```powershell
+dotnet test Mostawsef.slnx                          # everything (Docker must be running)
+dotnet test tests/Mostawsef.Desktop.Tests           # fast, no Docker
+dotnet test Mostawsef.slnx -c Release               # use when the desktop app is running (Debug output is locked)
+```

@@ -11,4 +11,8 @@
   <Folder Name="/shared/">
     <Project Path="shared/Mostawsef.Contracts/Mostawsef.Contracts.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Mostawsef.Api.IntegrationTests/Mostawsef.Api.IntegrationTests.csproj" />
+    <Project Path="tests/Mostawsef.Desktop.Tests/Mostawsef.Desktop.Tests.csproj" />
+  </Folder>
 </Solution>
