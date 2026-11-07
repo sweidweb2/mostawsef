@@ -67,6 +67,13 @@
             </ui:TopBar>
         </ui:AppShell.TopBar>
 
-        <ui:PageHost Page="{Binding CurrentPage}" />
+        <DockPanel>
+            <ui:Alert Name="ConnectionBanner"
+                      DockPanel.Dock="Top"
+                      Margin="{DynamicResource PaddingPageCompact}"
+                      Kind="{Binding Connection.AlertKind}"
+                      Text="{l:TrKey Connection.MessageKey}" />
+            <ui:PageHost Page="{Binding CurrentPage}" />
+        </DockPanel>
     </ui:AppShell>
 </UserControl>

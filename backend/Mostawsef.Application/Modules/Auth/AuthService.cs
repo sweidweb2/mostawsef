@@ -24,7 +24,8 @@ public class AuthService(
     IUserRepository users,
     IPasswordHasher passwordHasher,
     ITokenService tokens,
-    IActivityLogger activity) : IAuthService
+    IActivityLogger activity,
+    TimeProvider time) : IAuthService
 {
     private static string? _dummyHash;
 
@@ -50,12 +51,12 @@ public class AuthService(
         if (check == PasswordCheck.SuccessRehashNeeded)
         {
             user.ChangePasswordHash(passwordHasher.Hash(request.Password));
-            user.RecordLogin(DateTime.UtcNow);
+            user.RecordLogin(time.GetUtcNow().UtcDateTime);
             await users.SaveChangesAsync(cancellationToken);
         }
         else
         {
-            await users.RecordLoginAsync(user.Id, DateTime.UtcNow, cancellationToken);
+            await users.RecordLoginAsync(user.Id, time.GetUtcNow().UtcDateTime, cancellationToken);
         }
 
         await activity.LogAsync(

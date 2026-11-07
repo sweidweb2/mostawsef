@@ -10,7 +10,7 @@ namespace Mostawsef.Infrastructure.Persistence;
 /// Fills the audit fields of every <see cref="Entity"/> on save, bumps its Version on update,
 /// and turns the deletion of an <see cref="ISoftDeletable"/> into an update that marks it deleted.
 /// </summary>
-public sealed class AuditInterceptor(ICurrentUser currentUser) : SaveChangesInterceptor
+public sealed class AuditInterceptor(ICurrentUser currentUser, TimeProvider time) : SaveChangesInterceptor
 {
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
@@ -35,7 +35,7 @@ public sealed class AuditInterceptor(ICurrentUser currentUser) : SaveChangesInte
         }
 
         context.ChangeTracker.DetectChanges();
-        var now = DateTime.UtcNow;
+        var now = time.GetUtcNow().UtcDateTime;
         var user = Text.Truncate(currentUser.Username, Entity.AuditUserMaxLength);
 
         foreach (var entry in context.ChangeTracker.Entries<Entity>())

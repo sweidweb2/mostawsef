@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Mostawsef.Application.Modules.Auth;
 using Mostawsef.Application.Modules.Logs;
+using Mostawsef.Application.Modules.Settings;
 using Mostawsef.Application.Modules.Users;
 
 namespace Mostawsef.Application;
@@ -14,6 +15,7 @@ public static class DependencyInjection
         services.AddScoped<IActivityLogService, ActivityLogService>();
         services.AddScoped<ISystemErrorService, SystemErrorService>();
         services.AddScoped<ILogRetentionService, LogRetentionService>();
+        services.AddScoped<IClinicSettingsService, ClinicSettingsService>();
 
         return services;
     }

@@ -154,6 +154,38 @@
   <data name="Action.users.updated" xml:space="preserve"><value>Updated a user</value></data>
   <data name="Action.users.deleted" xml:space="preserve"><value>Deleted a user</value></data>
   <data name="Action.users.password_reset" xml:space="preserve"><value>Reset a user's password</value></data>
+  <data name="Action.settings.clinic_updated" xml:space="preserve"><value>Updated the clinic settings</value></data>
+
+  <data name="Nav.ClinicSettings" xml:space="preserve"><value>Clinic settings</value></data>
+  <data name="Settings.Subtitle" xml:space="preserve"><value>The clinic details shown on printouts, and the currency for all amounts.</value></data>
+  <data name="Settings.EditTitle" xml:space="preserve"><value>Edit clinic settings</value></data>
+  <data name="Settings.Saved" xml:space="preserve"><value>Clinic settings saved.</value></data>
+  <data name="Settings.PrintTestPage" xml:space="preserve"><value>Print test page</value></data>
+  <data name="Settings.Field.Name" xml:space="preserve"><value>Clinic name</value></data>
+  <data name="Settings.Field.Address" xml:space="preserve"><value>Address</value></data>
+  <data name="Settings.Field.Phone" xml:space="preserve"><value>Phone</value></data>
+  <data name="Settings.Field.Currency" xml:space="preserve"><value>Currency</value></data>
+  <data name="Settings.Field.UpdatedBy" xml:space="preserve"><value>Last changed by</value></data>
+
+  <data name="Currency.EGP" xml:space="preserve"><value>EGP</value></data>
+  <data name="Currency.USD" xml:space="preserve"><value>USD</value></data>
+  <data name="Currency.EUR" xml:space="preserve"><value>EUR</value></data>
+  <data name="Currency.SAR" xml:space="preserve"><value>SAR</value></data>
+  <data name="Currency.AED" xml:space="preserve"><value>AED</value></data>
+
+  <data name="Connection.Lost" xml:space="preserve"><value>Connection to the server was lost. Retrying...</value></data>
+  <data name="Connection.VersionMismatch" xml:space="preserve"><value>This app does not match the server version. Update the app on this PC.</value></data>
+
+  <data name="Print.Page" xml:space="preserve"><value>Page</value></data>
+  <data name="Print.Of" xml:space="preserve"><value>of</value></data>
+  <data name="Print.PrintedAt" xml:space="preserve"><value>Printed</value></data>
+  <data name="Print.TestTitle" xml:space="preserve"><value>Printer test page</value></data>
+  <data name="Print.TestDescription" xml:space="preserve"><value>If the clinic header, both languages and the table below look right, printing is ready.</value></data>
+  <data name="Print.Item" xml:space="preserve"><value>Item</value></data>
+  <data name="Print.Quantity" xml:space="preserve"><value>Qty</value></data>
+  <data name="Print.Price" xml:space="preserve"><value>Amount</value></data>
+  <data name="Print.Total" xml:space="preserve"><value>Total</value></data>
+  <data name="Print.Failed" xml:space="preserve"><value>Could not create the printout. The error was reported.</value></data>
 
   <data name="Form.DiscardTitle" xml:space="preserve"><value>Discard changes?</value></data>
   <data name="Form.DiscardMessage" xml:space="preserve"><value>You have unsaved changes. Close without saving?</value></data>

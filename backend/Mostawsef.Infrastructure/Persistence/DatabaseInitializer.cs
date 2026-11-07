@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Mostawsef.Application.Interfaces;
+using Mostawsef.Contracts.Common;
 using Mostawsef.Domain.Entities;
 using Mostawsef.Domain.Enums;
 using Mostawsef.Infrastructure.Persistence.Context;
@@ -41,6 +42,11 @@ public static class DatabaseInitializer
         {
             var rebuilt = await SearchTextBackfill.RunAsync(db, cancellationToken);
             logger.LogInformation("Filled the search text of {Count} existing log rows", rebuilt);
+        }
+
+        if (!await db.Set<ClinicSettings>().AnyAsync(cancellationToken))
+        {
+            db.Add(new ClinicSettings("Mostawsef", Currencies.Egp));
         }
 
         foreach (var seed in seedUsers)

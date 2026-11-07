@@ -34,7 +34,9 @@ public partial class PortalShellViewModel : ViewModelBase
         IDialogService dialogs,
         LocalizationService localization,
         AuthApi authApi,
-        IToastService toasts)
+        IToastService toasts,
+        ConnectionMonitor connection,
+        ClinicContext clinic)
     {
         _navigation = navigation;
         _session = session;
@@ -42,12 +44,19 @@ public partial class PortalShellViewModel : ViewModelBase
         _localization = localization;
         _authApi = authApi;
         _toasts = toasts;
+        Connection = connection;
 
         PortalTitleKey = portal.TitleKey;
         MenuItems = portal.Pages;
         _pages = new ViewModelBase?[MenuItems.Count];
+
+        connection.Start();
+        _ = clinic.LoadAsync();
         SelectedMenuIndex = 0;
     }
+
+    /// <summary>Server reachability and version; the view shows its banner above the page.</summary>
+    public ConnectionMonitor Connection { get; }
 
     /// <summary>Resource key of the portal title, e.g. "Portal.Admin".</summary>
     public string PortalTitleKey { get; }

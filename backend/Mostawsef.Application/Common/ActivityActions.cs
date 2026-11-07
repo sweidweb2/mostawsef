@@ -6,6 +6,7 @@ public static class ActivityModules
     public const string Auth = "Auth";
     public const string Logs = "Logs";
     public const string Users = "Users";
+    public const string Settings = "Settings";
 }
 
 /// <summary>
@@ -27,4 +28,6 @@ public static class ActivityActions
     public const string UserUpdated = "users.updated";
     public const string UserDeleted = "users.deleted";
     public const string UserPasswordReset = "users.password_reset";
+
+    public const string ClinicSettingsUpdated = "settings.clinic_updated";
 }

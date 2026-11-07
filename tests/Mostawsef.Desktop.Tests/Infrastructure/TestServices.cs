@@ -24,13 +24,16 @@ public sealed class TestServices : IDisposable
         File.WriteAllText(SettingsFile, $$"""{ "Theme": "Light", "Language": "{{language}}" }""");
 
         Provider = new ServiceCollection()
-            .AddMostawsefDesktop(new DesktopServiceOptions { HttpHandler = Api, SettingsFilePath = SettingsFile })
+            .AddMostawsefDesktop(new DesktopServiceOptions { HttpHandler = Api, SettingsFilePath = SettingsFile, OpenFile = OpenedFiles.Add })
             .BuildServiceProvider();
         App.Services = Provider;
         Get<ThemeService>().Initialize();
     }
 
     public FakeApiHandler Api { get; } = new();
+
+    /// <summary>Files the app asked to open (printouts) instead of launching a viewer.</summary>
+    public List<string> OpenedFiles { get; } = [];
 
     /// <summary>This test's own settings.json (a temp file).</summary>
     public string SettingsFile { get; }

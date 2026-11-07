@@ -1,9 +1,11 @@
 using Mostawsef.Contracts.Auth;
 using Mostawsef.Desktop.Services.Navigation;
+using Mostawsef.Desktop.ViewModels.Admin;
 using Mostawsef.Desktop.ViewModels.Auth;
 using Mostawsef.Desktop.ViewModels.Dev;
 using Mostawsef.Desktop.ViewModels.Shell;
 using Mostawsef.Desktop.ViewModels.Super;
+using Mostawsef.Desktop.Views.Admin;
 using Mostawsef.Desktop.Views.Auth;
 using Mostawsef.Desktop.Views.Dev;
 using Mostawsef.Desktop.Views.Shell;
@@ -26,8 +28,10 @@ public static class AppRoutes
         .View<ChangePasswordFormViewModel, ChangePasswordFormView>()
         .View<UserFormViewModel, UserFormView>()
         .View<ResetPasswordFormViewModel, ResetPasswordFormView>()
+        .View<ClinicSettingsFormViewModel, ClinicSettingsFormView>()
         .Portal(Roles.Admin, "Portal.Admin", portal => portal
-            .Page<DashboardViewModel, DashboardView>("IconDashboard", "Nav.Dashboard"))
+            .Page<DashboardViewModel, DashboardView>("IconDashboard", "Nav.Dashboard")
+            .Page<ClinicSettingsViewModel, ClinicSettingsView>("IconSettings", "Nav.ClinicSettings"))
         .Portal(Roles.Super, "Portal.Super", portal => portal
             .Page<DashboardViewModel, DashboardView>("IconDashboard", "Nav.Dashboard")
             .Page<UsersViewModel, UsersView>("IconUsers", "Nav.Users")

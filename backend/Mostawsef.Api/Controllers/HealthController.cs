@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Mostawsef.Contracts.Common;
 using Mostawsef.Infrastructure.Persistence.Context;
 
 namespace Mostawsef.Api.Controllers;
@@ -13,7 +14,7 @@ public class HealthController(AppDbContext dbContext) : ControllerBase
         var databaseReachable = await dbContext.Database.CanConnectAsync(cancellationToken);
 
         return databaseReachable
-            ? Ok(new { status = "Healthy", database = "Connected" })
-            : StatusCode(StatusCodes.Status503ServiceUnavailable, new { status = "Unhealthy", database = "Unreachable" });
+            ? Ok(new HealthDto("Healthy", "Connected", ApiVersion.Current))
+            : StatusCode(StatusCodes.Status503ServiceUnavailable, new HealthDto("Unhealthy", "Unreachable", ApiVersion.Current));
     }
 }

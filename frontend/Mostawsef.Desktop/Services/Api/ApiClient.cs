@@ -18,6 +18,9 @@ public class ApiClient(HttpClient http)
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
+    /// <summary>Raised (on the calling thread) whenever a call fails because the API could not be reached.</summary>
+    public event EventHandler? Unreachable;
+
     public Task<ApiResult<T>> GetAsync<T>(string path, CancellationToken cancellationToken = default) =>
         SendAsync(() => http.GetAsync(path, cancellationToken), ReadJson<T>, cancellationToken);
 
@@ -46,6 +49,7 @@ public class ApiClient(HttpClient http)
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !cancellationToken.IsCancellationRequested)
         {
+            Unreachable?.Invoke(this, EventArgs.Empty);
             return ApiResult<T>.Fail(ApiError.Unreachable);
         }
 

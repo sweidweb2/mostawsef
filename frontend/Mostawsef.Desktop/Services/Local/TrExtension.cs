@@ -5,6 +5,7 @@ using Avalonia;
 using Avalonia.Data;
 using Avalonia.Data.Converters;
 using Avalonia.Markup.Xaml;
+using Microsoft.Extensions.DependencyInjection;
 using Mostawsef.Contracts.Common;
 
 namespace Mostawsef.Desktop.Services.Local;
@@ -82,6 +83,36 @@ public class FieldErrorExtension(string field) : MarkupExtension
             : Translation.Bind(new ReflectionBinding($"Errors[{Field}]"), new Translation.ErrorCodeConverter(App.Localization), null);
 }
 
+/// <summary>
+/// An amount in minor units shown with the clinic currency: Text="{l:Money Total}" -> "1,250.50 EGP".
+/// Refreshes when the language or the clinic currency changes.
+/// </summary>
+public class MoneyExtension(string path) : MarkupExtension
+{
+    public string Path { get; set; } = path;
+
+    public override object ProvideValue(IServiceProvider serviceProvider)
+    {
+        if (App.Services is null)
+        {
+            return Path;
+        }
+
+        var clinic = App.Services.GetRequiredService<ClinicContext>();
+        return new MultiBinding
+        {
+            Bindings =
+            {
+                new ReflectionBinding(Path),
+                new CompiledBinding(Translation.VersionPath) { Source = App.Localization },
+                new ReflectionBinding(nameof(ClinicContext.Settings)) { Source = clinic },
+            },
+            Mode = BindingMode.OneWay,
+            Converter = new Translation.MoneyConverter(App.Localization, clinic),
+        };
+    }
+}
+
 internal static class Translation
 {
     /// <summary>
@@ -150,6 +181,14 @@ internal static class Translation
 
             return Localization.Format(key, parts[1..]);
         }
+    }
+
+    public sealed class MoneyConverter(LocalizationService localization, ClinicContext clinic) : Converter(localization)
+    {
+        public override object? Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture) =>
+            values.Count > 0 && values[0] is long minorUnits
+                ? Converters.MoneyFormat.Format(minorUnits, clinic.CurrencyCode, Localization)
+                : null;
     }
 
     public sealed class FormatConverter(LocalizationService localization) : Converter(localization)

@@ -6,6 +6,7 @@ using Mostawsef.Desktop.Services.Auth;
 using Mostawsef.Desktop.Services.Diagnostics;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Navigation;
+using Mostawsef.Desktop.Services.Printing;
 using Mostawsef.Desktop.Services.Ui;
 using Mostawsef.Desktop.ViewModels;
 
@@ -17,6 +18,9 @@ public class DesktopServiceOptions
     public HttpMessageHandler? HttpHandler { get; init; }
 
     public string? SettingsFilePath { get; init; }
+
+    /// <summary>Opens a printed PDF; the default opens it in the system viewer.</summary>
+    public Action<string>? OpenFile { get; init; }
 }
 
 public static class ServiceRegistration
@@ -55,6 +59,15 @@ public static class ServiceRegistration
         services.AddSingleton<AuthApi>();
         services.AddSingleton<LogsApi>();
         services.AddSingleton<UsersApi>();
+        services.AddSingleton<ClinicSettingsApi>();
+        services.AddSingleton<ConnectionMonitor>();
+
+        // Clinic details + printing
+        services.AddSingleton<ClinicContext>();
+        services.AddSingleton(sp => new PrintService(
+            sp.GetRequiredService<LocalizationService>(),
+            sp.GetRequiredService<ClinicContext>(),
+            options.OpenFile ?? PrintService.OpenWithDefaultApp));
 
         // Auth + navigation
         services.AddSingleton<SessionService>();

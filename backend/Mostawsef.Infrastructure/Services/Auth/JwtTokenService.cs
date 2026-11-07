@@ -7,7 +7,7 @@ using Mostawsef.Domain.Entities;
 
 namespace Mostawsef.Infrastructure.Services.Auth;
 
-public class JwtTokenService(IOptions<JwtOptions> jwtOptions) : ITokenService
+public class JwtTokenService(IOptions<JwtOptions> jwtOptions, TimeProvider time) : ITokenService
 {
     private readonly JsonWebTokenHandler _handler = new();
     private readonly JwtOptions _options = jwtOptions.Value;
@@ -15,12 +15,15 @@ public class JwtTokenService(IOptions<JwtOptions> jwtOptions) : ITokenService
 
     public AccessToken CreateAccessToken(User user)
     {
-        var expiresAt = DateTime.UtcNow.AddMinutes(_options.ExpiryMinutes);
+        var now = time.GetUtcNow().UtcDateTime;
+        var expiresAt = now.AddMinutes(_options.ExpiryMinutes);
 
         var token = _handler.CreateToken(new SecurityTokenDescriptor
         {
             Issuer = _options.Issuer,
             Audience = _options.Audience,
+            IssuedAt = now,
+            NotBefore = now,
             Expires = expiresAt,
             SigningCredentials = new SigningCredentials(_signingKey, SecurityAlgorithms.HmacSha256),
             Subject = new ClaimsIdentity(

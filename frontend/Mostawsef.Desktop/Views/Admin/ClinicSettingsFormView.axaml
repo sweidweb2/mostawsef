@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Mostawsef.Desktop.Components"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Admin"
+             x:Class="Mostawsef.Desktop.Views.Admin.ClinicSettingsFormView"
+             x:DataType="vm:ClinicSettingsFormViewModel">
+    <StackPanel Spacing="{DynamicResource GapGrid}">
+        <ui:Alert Kind="Danger" Text="{l:TrKey FormErrorKey}" />
+
+        <ui:FormField Label="{l:Tr Settings.Field.Name}" IsRequired="True" Error="{l:FieldError Name}">
+            <TextBox Name="NameBox" Text="{Binding Name}" />
+        </ui:FormField>
+
+        <ui:FormField Label="{l:Tr Settings.Field.Address}" Error="{l:FieldError Address}">
+            <TextBox Name="AddressBox" Text="{Binding Address}" />
+        </ui:FormField>
+
+        <ui:FormField Label="{l:Tr Settings.Field.Phone}" Error="{l:FieldError Phone}">
+            <TextBox Name="PhoneBox" Text="{Binding Phone}" />
+        </ui:FormField>
+
+        <ui:FormField Label="{l:Tr Settings.Field.Currency}" IsRequired="True" Error="{l:FieldError CurrencyCode}">
+            <ComboBox Name="CurrencyBox" ItemsSource="{Binding CurrencyOptions}" SelectedItem="{Binding CurrencyCode}" HorizontalAlignment="Stretch">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                        <TextBlock Text="{l:TrKey ., Prefix=Currency.}" />
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+        </ui:FormField>
+    </StackPanel>
+</UserControl>

@@ -17,6 +17,8 @@ public static class DependencyInjection
     /// </summary>
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, string connectionString)
     {
+        // The one clock of the backend: inject TimeProvider instead of reading DateTime.UtcNow / DateTime.Today.
+        services.AddSingleton(TimeProvider.System);
         services.AddSingleton<AuditInterceptor>();
 
         // Pooled: registers a scoped AppDbContext (repositories) and IDbContextFactory (log engines), both renting from one pool.
@@ -27,6 +29,8 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
         services.AddScoped<ISystemErrorRepository, SystemErrorRepository>();
+        services.AddSingleton<INumberSequence, NumberSequenceRepository>();
+        services.AddScoped<IClinicSettingsRepository, ClinicSettingsRepository>();
 
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<ITokenService, JwtTokenService>();
