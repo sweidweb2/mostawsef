@@ -37,7 +37,7 @@ Every feature will copy these patterns, so they're worth settling first.
    - Add one shared formatter for amounts stored as integers in piasters. ✅
 8. **Clinic settings.** A single settings record holding the clinic's name, logo, address, phone and currency. Printouts
    and page headers will need it.
-9. **Reference lists.** Decide when a fixed list is a code enum and when it's an editable table with Arabic and English
+9. **Reference lists.** ✅ Decide when a fixed list is a code enum and when it's an editable table with Arabic and English
    names (for example specialties, drugs, services).
 
 ## Before the first clinic installation
@@ -62,7 +62,7 @@ Every feature will copy these patterns, so they're worth settling first.
 15. **Shared build settings.** ✅ Add Directory.Build.props, .editorconfig, central package versions and analyzers, and treat
     warnings as errors.
 16. **Automatic tests.** ✅ Set up continuous integration so tests run on every push.
-17. **New-feature scaffold.** A Cursor rule or skill that generates a new feature by copying the example feature from item 3.
+17. **New-feature scaffold.** ✅ A Cursor rule or skill that generates a new feature by copying the example feature from item 3.
 18. **Docs and README.**
     - Docs/foundation.md is out of date: sections 10 and 12 still say there are no entities or migrations yet. ✅
     - The README it mentions doesn't exist.
