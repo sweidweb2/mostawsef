@@ -1,0 +1,333 @@
+# Mostawsef — Project Foundation
+
+Locally installed **Clinic Management System** (desktop application + local backend + local database).
+
+This document records the foundational decisions only. No business logic or business modules are defined yet.
+
+---
+
+## 1. Technology stack
+
+| Layer     | Technology                      | Notes                                        |
+| --------- | ------------------------------- | -------------------------------------------- |
+| Runtime   | .NET 10 (LTS)                   | Supported until November 2028                |
+| Backend   | ASP.NET Core Web API (C#)       | Controllers-based REST API                   |
+| Frontend  | Avalonia UI 12 (C# / XAML, MVVM)| CommunityToolkit.Mvvm                        |
+| Database  | PostgreSQL 17                   | Docker in development, native on clinic PCs  |
+| ORM       | Entity Framework Core 10 + Npgsql | Data access, mappings, migrations          |
+| IDE       | Cursor                          | C# + Avalonia extensions                     |
+
+### Why PostgreSQL (not SQLite)
+
+- Chosen deliberately, accepting that the app cannot be "copied from USB and run": PostgreSQL must be installed on the host PC.
+- Supports multiple PCs on the clinic LAN sharing one database.
+- SQLite remains a fallback. To keep switching cheap, follow the portability rules in section 2.
+
+---
+
+## 2. Architecture
+
+**Style:** Modular monolith. No microservices.
+
+```
+┌──────────────────────────┐
+│    Desktop Application   │
+│       Avalonia UI        │
+└────────────┬─────────────┘
+             │ HTTP / REST
+┌────────────▼─────────────┐
+│    ASP.NET Core API      │
+│      Business Logic      │
+└────────────┬─────────────┘
+             │ EF Core
+┌────────────▼─────────────┐
+│       PostgreSQL         │
+│      Local Database      │
+└──────────────────────────┘
+```
+
+### Rules
+
+- The desktop application communicates with the backend **only** through the REST API.
+- The desktop application **never** connects to PostgreSQL directly.
+- All business operations live in the backend.
+- Database packages (EF Core, Npgsql) are installed **only** in the Infrastructure project. The Api project references `Microsoft.EntityFrameworkCore.Design` only because it is the startup project for EF tooling.
+
+### Database portability rules
+
+Keep the option of switching to SQLite open:
+
+- No PostgreSQL-only features: `jsonb`, array columns, `citext`, `EF.Functions.ILike`, raw SQL.
+- All database code stays in Infrastructure; switching provider means changing one package and one `Use...()` call.
+- Store money as integers in the smallest unit (e.g. piasters), not `decimal`.
+- Keep column types simple (text, integers, booleans, dates).
+
+---
+
+## 3. Repository structure
+
+```
+mostawsef/
+│
+├── backend/
+│   ├── Mostawsef.Api/
+│   ├── Mostawsef.Application/
+│   ├── Mostawsef.Domain/
+│   └── Mostawsef.Infrastructure/
+│
+├── shared/
+│   └── Mostawsef.Contracts/
+│
+├── frontend/
+│   └── Mostawsef.Desktop/
+│
+├── Docs/
+├── scripts/
+├── docker-compose.yml   ← development database only
+├── Mostawsef.slnx
+└── README.md
+```
+
+The solution file lives at the **repository root** because it contains both backend and frontend projects.
+
+---
+
+## 4. Project responsibilities
+
+| Project                  | Responsibility                                               |
+| ------------------------ | ------------------------------------------------------------ |
+| Mostawsef.Api            | HTTP endpoints, controllers, middleware, startup             |
+| Mostawsef.Application    | Use cases, services, application interfaces                  |
+| Mostawsef.Domain         | Entities, enums, business rules, domain interfaces           |
+| Mostawsef.Infrastructure | PostgreSQL, EF Core, DbContext, repositories                 |
+| Mostawsef.Contracts      | Request/response DTOs shared by the API and the desktop app  |
+| Mostawsef.Desktop        | UI, screens, navigation, API client                          |
+
+### Dependency direction
+
+```
+Domain          ← depends on nothing
+Application     → Domain, Contracts
+Infrastructure  → Domain, Application
+Api             → Application, Infrastructure, Contracts
+Contracts       ← depends on nothing
+Desktop         → Contracts   (never references backend projects)
+```
+
+---
+
+## 5. Folder layout
+
+### Backend
+
+```
+backend/
+│
+├── Mostawsef.Api/
+│   ├── Controllers/
+│   ├── Middleware/
+│   ├── Extensions/
+│   ├── Program.cs
+│   └── appsettings.json
+│
+├── Mostawsef.Application/
+│   ├── Common/
+│   ├── Interfaces/
+│   └── Modules/            ← empty for now; business modules added later
+│
+├── Mostawsef.Domain/
+│   ├── Common/
+│   ├── Entities/
+│   ├── Enums/
+│   └── Interfaces/
+│
+└── Mostawsef.Infrastructure/
+    ├── Persistence/
+    │   ├── Context/
+    │   ├── Configurations/
+    │   └── Repositories/
+    ├── Services/
+    └── DependencyInjection.cs
+```
+
+`Persistence/Migrations/` is generated by EF Core on the first migration. Do not create it manually.
+
+### Frontend
+
+```
+frontend/Mostawsef.Desktop/
+│
+├── Views/
+├── ViewModels/
+├── Models/
+├── Services/
+│   ├── Api/
+│   └── Local/
+├── Components/
+├── Converters/
+├── Assets/
+├── Styles/
+├── Navigation/
+├── App.axaml
+└── Program.cs
+```
+
+These are organizational folders only, not a commitment to implement every area immediately. Folders are created when their first file is added (git does not track empty folders).
+
+---
+
+## 6. Environment setup (Windows)
+
+1. Install the **.NET 10 SDK x64** (the SDK, not only the runtime): https://dotnet.microsoft.com/en-us/download/dotnet/10.0
+2. Verify:
+   ```powershell
+   dotnet --version
+   dotnet --list-sdks
+   ```
+3. Install Avalonia templates:
+   ```powershell
+   dotnet new install Avalonia.Templates
+   dotnet new list avalonia
+   ```
+4. Install Cursor extensions:
+   ```powershell
+   cursor --install-extension anysphere.csharp
+   cursor --install-extension AvaloniaTeam.vscode-avalonia
+   ```
+5. Install **Docker Desktop** (WSL 2 backend) for the development database.
+
+> After installing the SDK, fully quit Cursor (File → Exit) and reopen it, otherwise its terminals will not find `dotnet`.
+
+---
+
+## 7. Scaffolding commands
+
+Run from the repository root.
+
+> On .NET 10, `dotnet new sln` creates a `.slnx` file by default. All commands below use `Mostawsef.slnx`.
+
+```powershell
+# Solution
+dotnet new sln -n Mostawsef
+
+# Backend
+dotnet new webapi   -n Mostawsef.Api            -o backend/Mostawsef.Api --use-controllers
+dotnet new classlib -n Mostawsef.Application    -o backend/Mostawsef.Application
+dotnet new classlib -n Mostawsef.Domain         -o backend/Mostawsef.Domain
+dotnet new classlib -n Mostawsef.Infrastructure -o backend/Mostawsef.Infrastructure
+
+# Shared
+dotnet new classlib -n Mostawsef.Contracts      -o shared/Mostawsef.Contracts
+
+# Frontend
+dotnet new avalonia.mvvm -n Mostawsef.Desktop   -o frontend/Mostawsef.Desktop
+
+# Add to solution
+dotnet sln Mostawsef.slnx add backend/Mostawsef.Api
+dotnet sln Mostawsef.slnx add backend/Mostawsef.Application
+dotnet sln Mostawsef.slnx add backend/Mostawsef.Domain
+dotnet sln Mostawsef.slnx add backend/Mostawsef.Infrastructure
+dotnet sln Mostawsef.slnx add shared/Mostawsef.Contracts
+dotnet sln Mostawsef.slnx add frontend/Mostawsef.Desktop
+
+# Project references
+dotnet add backend/Mostawsef.Application    reference backend/Mostawsef.Domain
+dotnet add backend/Mostawsef.Application    reference shared/Mostawsef.Contracts
+
+dotnet add backend/Mostawsef.Infrastructure reference backend/Mostawsef.Domain
+dotnet add backend/Mostawsef.Infrastructure reference backend/Mostawsef.Application
+
+dotnet add backend/Mostawsef.Api            reference backend/Mostawsef.Application
+dotnet add backend/Mostawsef.Api            reference backend/Mostawsef.Infrastructure
+dotnet add backend/Mostawsef.Api            reference shared/Mostawsef.Contracts
+
+dotnet add frontend/Mostawsef.Desktop       reference shared/Mostawsef.Contracts
+
+# Database packages
+dotnet add backend/Mostawsef.Infrastructure package Npgsql.EntityFrameworkCore.PostgreSQL
+dotnet add backend/Mostawsef.Infrastructure package Microsoft.EntityFrameworkCore.Design
+dotnet add backend/Mostawsef.Api            package Microsoft.EntityFrameworkCore.Design
+```
+
+---
+
+## 8. Development database (Docker)
+
+Defined in `docker-compose.yml` at the repository root. Development only.
+
+| Setting  | Value           |
+| -------- | --------------- |
+| Host     | `localhost`     |
+| Port     | `5432`          |
+| Database | `mostawsef`     |
+| User     | `mostawsef`     |
+| Password | `mostawsef_dev` |
+
+The matching connection string is in `backend/Mostawsef.Api/appsettings.Development.json` under `ConnectionStrings:Default`.
+
+```powershell
+docker compose up -d                    # start PostgreSQL
+docker compose --profile tools up -d    # start PostgreSQL + pgAdmin (http://localhost:5050)
+docker compose down                     # stop (data is kept)
+docker compose down -v                  # stop and wipe all data
+```
+
+On clinic PCs, PostgreSQL is installed natively (not Docker) and the connection string is set in `appsettings.json` next to the API.
+
+---
+
+## 9. Run and verify
+
+```powershell
+docker compose up -d
+dotnet build Mostawsef.slnx
+
+# Terminal 1
+dotnet run --project backend/Mostawsef.Api --launch-profile http
+
+# Terminal 2
+dotnet run --project frontend/Mostawsef.Desktop
+```
+
+Health check: `GET http://localhost:5270/api/health` returns
+
+```json
+{ "status": "Healthy", "database": "Connected" }
+```
+
+---
+
+## 10. Current bedrock (implemented)
+
+| File                                                          | Purpose                                             |
+| ------------------------------------------------------------- | --------------------------------------------------- |
+| `backend/Mostawsef.Infrastructure/Persistence/Context/AppDbContext.cs` | Empty EF Core context; auto-applies entity configurations |
+| `backend/Mostawsef.Infrastructure/DependencyInjection.cs`     | `AddInfrastructure(connectionString)` registers Npgsql |
+| `backend/Mostawsef.Api/Program.cs`                            | Reads `ConnectionStrings:Default`, wires Infrastructure |
+| `backend/Mostawsef.Api/Controllers/HealthController.cs`       | `GET /api/health` verifies API + database           |
+| `docker-compose.yml`                                          | Development PostgreSQL (+ optional pgAdmin)         |
+
+No entities, migrations, or business modules exist yet.
+
+---
+
+## 11. Decision log
+
+| Decision            | Choice                         | Reason                                                  |
+| ------------------- | ------------------------------ | ------------------------------------------------------- |
+| Architecture        | Modular monolith               | Simple to build and deploy locally                      |
+| Frontend            | Avalonia                       | Mature, portable, cross-platform option kept open       |
+| Database            | PostgreSQL                     | Multi-PC ready; SQLite kept as fallback                 |
+| Dev database        | Docker                         | No local install, easy reset                            |
+| Shared DTOs         | `Mostawsef.Contracts` project  | One definition used by API and desktop                  |
+| Solution format     | `.slnx` at repository root     | .NET 10 default; contains backend and frontend          |
+| Project name prefix | `Mostawsef`                    | Repository name                                         |
+
+## 12. Deferred (planned for later)
+
+- Automatically starting the backend when the desktop app opens.
+- Installing PostgreSQL natively on clinic PCs (installer or setup script).
+- First migration and applying migrations on startup (`Database.Migrate()`).
+- Packaging everything into an installer.
+- Backups and recovery.
+- Business modules (to be defined).

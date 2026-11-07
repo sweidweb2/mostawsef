@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/backend/">
+    <Project Path="backend/Mostawsef.Api/Mostawsef.Api.csproj" />
+    <Project Path="backend/Mostawsef.Application/Mostawsef.Application.csproj" />
+    <Project Path="backend/Mostawsef.Domain/Mostawsef.Domain.csproj" />
+    <Project Path="backend/Mostawsef.Infrastructure/Mostawsef.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/frontend/">
+    <Project Path="frontend/Mostawsef.Desktop/Mostawsef.Desktop.csproj" />
+  </Folder>
+  <Folder Name="/shared/">
+    <Project Path="shared/Mostawsef.Contracts/Mostawsef.Contracts.csproj" />
+  </Folder>
+</Solution>

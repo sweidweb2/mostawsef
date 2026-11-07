@@ -1,0 +1,6 @@
+@Mostawsef.Api_HostAddress = http://localhost:5270
+
+GET {{Mostawsef.Api_HostAddress}}/api/health
+Accept: application/json
+
+###
