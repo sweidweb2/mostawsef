@@ -1,6 +1,16 @@
 <!--
-    Single entry point of the design system. Included once from App.axaml after FluentTheme.
-    Order: tokens -> built-in control styles -> component themes -> responsive rules.
+    THEME ENTRY POINT - the single file that assembles the design system.
+    Included once from App.axaml, right after <FluentTheme />.
+
+    Order matters:
+      1. Tokens        (Styles/Tokens)       colors, typography, spacing, radius, shadows, sizes,
+                                             breakpoints, z-index, effects, icons
+      2. Component themes (Components/**)    ControlTheme per custom control
+      3. Built-in control styles (Styles/Controls)
+      4. Styles for visuals created in code (Components/ComponentStyles.axaml)
+      5. Responsive rules (Styles/Responsive.axaml) - last, so they win
+
+    To re-brand: edit Styles/Tokens/Colors.axaml only.
 -->
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
@@ -8,18 +18,27 @@
     <Styles.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <!-- 1. Tokens -->
                 <ResourceInclude Source="avares://Mostawsef.Desktop/Styles/Tokens/Colors.axaml" />
                 <ResourceInclude Source="avares://Mostawsef.Desktop/Styles/Tokens/Typography.axaml" />
                 <ResourceInclude Source="avares://Mostawsef.Desktop/Styles/Tokens/Spacing.axaml" />
                 <ResourceInclude Source="avares://Mostawsef.Desktop/Styles/Tokens/Radius.axaml" />
                 <ResourceInclude Source="avares://Mostawsef.Desktop/Styles/Tokens/ShadowTokens.axaml" />
+                <ResourceInclude Source="avares://Mostawsef.Desktop/Styles/Tokens/Sizes.axaml" />
                 <ResourceInclude Source="avares://Mostawsef.Desktop/Styles/Tokens/Breakpoints.axaml" />
+                <ResourceInclude Source="avares://Mostawsef.Desktop/Styles/Tokens/ZIndex.axaml" />
+                <ResourceInclude Source="avares://Mostawsef.Desktop/Styles/Tokens/Effects.axaml" />
                 <ResourceInclude Source="avares://Mostawsef.Desktop/Styles/Tokens/Icons.axaml" />
 
-                <!-- Component themes -->
+                <!-- 2. Component themes -->
                 <ResourceInclude Source="avares://Mostawsef.Desktop/Components/Layout/LayoutThemes.axaml" />
                 <ResourceInclude Source="avares://Mostawsef.Desktop/Components/Navigation/NavigationThemes.axaml" />
                 <ResourceInclude Source="avares://Mostawsef.Desktop/Components/Forms/FormThemes.axaml" />
+                <ResourceInclude Source="avares://Mostawsef.Desktop/Components/Buttons/ButtonThemes.axaml" />
+                <ResourceInclude Source="avares://Mostawsef.Desktop/Components/Data/DataThemes.axaml" />
+                <ResourceInclude Source="avares://Mostawsef.Desktop/Components/Feedback/FeedbackThemes.axaml" />
+                <ResourceInclude Source="avares://Mostawsef.Desktop/Components/Overlays/OverlayThemes.axaml" />
+                <ResourceInclude Source="avares://Mostawsef.Desktop/Components/Clinic/ClinicThemes.axaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Styles.Resources>
@@ -27,13 +46,16 @@
     <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
     <StyleInclude Source="avares://Mostawsef.Desktop/Styles/Tokens/Shadows.axaml" />
 
-    <!-- Built-in controls -->
+    <!-- 3. Built-in controls -->
     <StyleInclude Source="avares://Mostawsef.Desktop/Styles/Controls/Text.axaml" />
     <StyleInclude Source="avares://Mostawsef.Desktop/Styles/Controls/Buttons.axaml" />
     <StyleInclude Source="avares://Mostawsef.Desktop/Styles/Controls/Inputs.axaml" />
     <StyleInclude Source="avares://Mostawsef.Desktop/Styles/Controls/Navigation.axaml" />
     <StyleInclude Source="avares://Mostawsef.Desktop/Styles/Controls/DataGrid.axaml" />
 
-    <!-- Responsive rules (last, so they win) -->
+    <!-- 4. Visuals created in code by components -->
+    <StyleInclude Source="avares://Mostawsef.Desktop/Components/ComponentStyles.axaml" />
+
+    <!-- 5. Responsive rules (last, so they win) -->
     <StyleInclude Source="avares://Mostawsef.Desktop/Styles/Responsive.axaml" />
 </Styles>

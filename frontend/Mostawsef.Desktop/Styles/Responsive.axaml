@@ -1,18 +1,35 @@
 ﻿<!--
-    Responsive utility classes driven by the width of the AppShell content area
-    (container "AppContent"). Values mirror Styles/Tokens/Breakpoints.axaml.
+    RESPONSIVENESS ENGINE
 
-      .hide-compact   hidden below 900
-      .show-compact   visible only below 900
+    Rules react to the width of the AppShell content area (container "AppContent"),
+    so they work the same whether the sidebar is expanded or collapsed.
+    Breakpoints (Styles/Tokens/Breakpoints.axaml):  Compact < 900 | Medium 900-1279 | Wide 1280-1599 | XWide >= 1600
+
+    Utility classes
+      .page           page root: padding 24, or 16 when compact; content capped at ContentMaxWidth
+      .hide-compact   hidden below 900          .show-compact   visible only below 900
+      .hide-medium    hidden below 1280         .show-medium    visible only below 1280
+      .hide-wide      hidden below 1600         .show-wide      visible only below 1600
       .stack-compact  horizontal StackPanel becomes vertical below 900
-      .hide-medium    hidden below 1280
-      .show-medium    visible only below 1280
+
+    Layout helpers (code): ResponsiveGrid (auto columns), ListDetailsView (stacks < 900),
+    AppShell (sidebar collapses below AutoCompactWidth).
 -->
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="using:Mostawsef.Desktop.Components">
 
+    <!-- Page root -->
+    <Style Selector=":is(Control).page">
+        <Setter Property="Margin" Value="{DynamicResource PaddingPage}" />
+        <Setter Property="MaxWidth" Value="{DynamicResource ContentMaxWidth}" />
+    </Style>
+
+    <!-- Compact: < 900 -->
     <ContainerQuery Name="AppContent" Query="max-width:899">
+        <Style Selector=":is(Control).page">
+            <Setter Property="Margin" Value="{DynamicResource PaddingPageCompact}" />
+        </Style>
         <Style Selector=":is(Control).hide-compact">
             <Setter Property="IsVisible" Value="False" />
         </Style>
@@ -35,6 +52,7 @@
         </Style>
     </ContainerQuery>
 
+    <!-- Medium and below: < 1280 -->
     <ContainerQuery Name="AppContent" Query="max-width:1279">
         <Style Selector=":is(Control).hide-medium">
             <Setter Property="IsVisible" Value="False" />
@@ -43,6 +61,19 @@
 
     <ContainerQuery Name="AppContent" Query="min-width:1280">
         <Style Selector=":is(Control).show-medium">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+    </ContainerQuery>
+
+    <!-- Wide and below: < 1600 -->
+    <ContainerQuery Name="AppContent" Query="max-width:1599">
+        <Style Selector=":is(Control).hide-wide">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+    </ContainerQuery>
+
+    <ContainerQuery Name="AppContent" Query="min-width:1600">
+        <Style Selector=":is(Control).show-wide">
             <Setter Property="IsVisible" Value="False" />
         </Style>
     </ContainerQuery>

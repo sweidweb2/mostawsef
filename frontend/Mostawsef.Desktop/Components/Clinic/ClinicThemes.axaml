@@ -1,0 +1,180 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="using:Mostawsef.Desktop.Components"
+                    xmlns:l="using:Mostawsef.Desktop.Services.Local">
+
+    <!-- PatientCard -->
+    <ControlTheme x:Key="{x:Type ui:PatientCard}" TargetType="ui:PatientCard">
+        <Setter Property="Background" Value="{DynamicResource BrushSurface}" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Name="PART_Root"
+                        Padding="16"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{DynamicResource BrushBorder}"
+                        BorderThickness="1"
+                        CornerRadius="{DynamicResource RadiusLg}">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <ui:Avatar DisplayName="{TemplateBinding PatientName}" Source="{TemplateBinding Photo}" Size="44" />
+                        <StackPanel Grid.Column="1" Margin="12,0" Spacing="2" VerticalAlignment="Center">
+                            <TextBlock Text="{TemplateBinding PatientName}"
+                                       FontWeight="SemiBold"
+                                       TextTrimming="CharacterEllipsis" />
+                            <WrapPanel>
+                                <TextBlock Classes="caption muted" Margin="0,0,12,0" Text="{TemplateBinding FileNumber}" />
+                                <TextBlock Classes="caption muted" Margin="0,0,12,0" Text="{TemplateBinding Age}" />
+                                <TextBlock Classes="caption muted" Text="{TemplateBinding Phone}" />
+                            </WrapPanel>
+                        </StackPanel>
+                        <ui:Badge Grid.Column="2"
+                                  Text="{TemplateBinding Status}"
+                                  Kind="{TemplateBinding StatusKind}"
+                                  IsVisible="{TemplateBinding Status, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:pointerover /template/ Border#PART_Root">
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushBorderStrong}" />
+            <Setter Property="BoxShadow" Value="{DynamicResource ShadowSm}" />
+        </Style>
+    </ControlTheme>
+
+    <!-- PatientHeader -->
+    <ControlTheme x:Key="{x:Type ui:PatientHeader}" TargetType="ui:PatientHeader">
+        <Setter Property="Background" Value="{DynamicResource BrushSurface}" />
+        <Setter Property="Margin" Value="0,0,0,24" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Padding="20"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{DynamicResource BrushBorder}"
+                        BorderThickness="1"
+                        CornerRadius="{DynamicResource RadiusLg}"
+                        BoxShadow="{DynamicResource ShadowSm}">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <ui:Avatar DisplayName="{TemplateBinding PatientName}"
+                                   Source="{TemplateBinding Photo}"
+                                   Size="64"
+                                   VerticalAlignment="Top" />
+                        <StackPanel Grid.Column="1" Margin="16,0" Spacing="8">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <TextBlock Classes="h3" Text="{TemplateBinding PatientName}" VerticalAlignment="Center" />
+                                <ui:Badge Text="{TemplateBinding Status}"
+                                          Kind="{TemplateBinding StatusKind}"
+                                          IsVisible="{TemplateBinding Status, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                            </StackPanel>
+                            <WrapPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,20,4"
+                                            IsVisible="{TemplateBinding FileNumber, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                    <TextBlock Classes="muted" Text="{l:Tr Patient.FileNo}" />
+                                    <TextBlock FontWeight="Medium" Text="{TemplateBinding FileNumber}" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,20,4"
+                                            IsVisible="{TemplateBinding Age, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                    <TextBlock Classes="muted" Text="{l:Tr Patient.Age}" />
+                                    <TextBlock FontWeight="Medium" Text="{TemplateBinding Age}" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,20,4"
+                                            IsVisible="{TemplateBinding Gender, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                    <TextBlock Classes="muted" Text="{l:Tr Patient.Gender}" />
+                                    <TextBlock FontWeight="Medium" Text="{TemplateBinding Gender}" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,20,4"
+                                            IsVisible="{TemplateBinding Phone, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                    <TextBlock Classes="muted" Text="{l:Tr Patient.Phone}" />
+                                    <TextBlock FontWeight="Medium" Text="{TemplateBinding Phone}" />
+                                </StackPanel>
+                            </WrapPanel>
+                            <Border HorizontalAlignment="Left"
+                                    Padding="10,4"
+                                    Background="{DynamicResource BrushDangerSubtle}"
+                                    CornerRadius="{DynamicResource RadiusMd}"
+                                    IsVisible="{TemplateBinding Allergies, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <PathIcon Data="{StaticResource IconWarning}"
+                                              Width="14"
+                                              Height="14"
+                                              Foreground="{DynamicResource BrushDanger}" />
+                                    <TextBlock Foreground="{DynamicResource BrushDangerText}" FontWeight="Medium" Text="{l:Tr Patient.Allergies}" />
+                                    <TextBlock Foreground="{DynamicResource BrushDangerText}" Text="{TemplateBinding Allergies}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                        <ContentPresenter Grid.Column="2" Content="{TemplateBinding Actions}" VerticalAlignment="Top" />
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    <!-- PrintPreview -->
+    <ControlTheme x:Key="{x:Type ui:PrintPreview}" TargetType="ui:PrintPreview">
+        <Setter Property="Title" Value="{l:Tr Print.Title}" />
+        <Setter Property="Padding" Value="48" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border BorderBrush="{DynamicResource BrushBorder}"
+                        BorderThickness="1"
+                        CornerRadius="{DynamicResource RadiusLg}"
+                        ClipToBounds="True">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top"
+                                Padding="16,8"
+                                Background="{DynamicResource BrushSurface}"
+                                BorderBrush="{DynamicResource BrushDivider}"
+                                BorderThickness="0,0,0,1">
+                            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto">
+                                <TextBlock Classes="h4" Text="{TemplateBinding Title}" VerticalAlignment="Center" />
+                                <ui:IconButton Grid.Column="1"
+                                               Classes="ghost sm"
+                                               Icon="{StaticResource IconMinus}"
+                                               Command="{TemplateBinding ZoomOutCommand}"
+                                               ToolTip.Tip="{l:Tr Common.ZoomOut}" />
+                                <TextBlock Grid.Column="2"
+                                           Classes="caption muted"
+                                           Margin="8,0"
+                                           MinWidth="40"
+                                           TextAlignment="Center"
+                                           Text="{TemplateBinding ZoomText}"
+                                           VerticalAlignment="Center" />
+                                <ui:IconButton Grid.Column="3"
+                                               Classes="ghost sm"
+                                               Icon="{StaticResource IconPlus}"
+                                               Command="{TemplateBinding ZoomInCommand}"
+                                               ToolTip.Tip="{l:Tr Common.ZoomIn}" />
+                                <Button Grid.Column="4"
+                                        Margin="12,0,0,0"
+                                        Classes="primary"
+                                        Command="{TemplateBinding PrintCommand}">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <PathIcon Data="{StaticResource IconPrinter}" />
+                                        <TextBlock Text="{l:Tr Common.Print}" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                        </Border>
+                        <ScrollViewer Background="{DynamicResource BrushSurfaceAlt}"
+                                      HorizontalScrollBarVisibility="Auto"
+                                      VerticalScrollBarVisibility="Auto">
+                            <LayoutTransformControl Name="PART_Zoom" HorizontalAlignment="Center" Margin="24">
+                                <ThemeVariantScope RequestedThemeVariant="Light">
+                                    <Border Width="{TemplateBinding PaperWidth}"
+                                            Height="{TemplateBinding PaperHeight}"
+                                            Background="{DynamicResource BrushPaper}"
+                                            BoxShadow="{DynamicResource ShadowMd}">
+                                        <ContentPresenter Content="{TemplateBinding Content}"
+                                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                          Padding="{TemplateBinding Padding}"
+                                                          Foreground="{DynamicResource BrushPaperText}" />
+                                    </Border>
+                                </ThemeVariantScope>
+                            </LayoutTransformControl>
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+</ResourceDictionary>

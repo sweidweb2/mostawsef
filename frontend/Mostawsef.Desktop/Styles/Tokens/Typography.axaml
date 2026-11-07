@@ -1,12 +1,25 @@
+<!--
+    TYPOGRAPHY TOKENS
+
+    Font: IBM Plex Sans Arabic (Arabic + Latin, OFL), embedded in Assets/Fonts.
+    Scale: 12 / 14 / 16 / 18 / 20 / 24 / 30 / 36. Body text is 14.
+    Line height ~1.5x (Arabic needs more vertical room than Latin).
+    Rules
+      - Use the text classes in Styles/Controls/Text.axaml (h1..h4, body, caption, ...) rather than raw sizes.
+      - No letter spacing: it breaks Arabic letter joining.
+      - Weights: Regular for body, Medium for labels/buttons, SemiBold for headings, Bold for display numbers.
+-->
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <!-- Covers both Arabic and Latin glyphs -->
+
+    <!-- Family -->
     <FontFamily x:Key="FontFamilyBase">avares://Mostawsef.Desktop/Assets/Fonts#IBM Plex Sans Arabic</FontFamily>
 
-    <!-- Fluent overrides so built-in controls use the same font -->
+    <!-- Fluent overrides so built-in controls use the same font and base size -->
     <FontFamily x:Key="ContentControlThemeFontFamily">avares://Mostawsef.Desktop/Assets/Fonts#IBM Plex Sans Arabic</FontFamily>
     <x:Double x:Key="ControlContentThemeFontSize">14</x:Double>
 
+    <!-- Size scale -->
     <x:Double x:Key="FontSizeCaption">12</x:Double>
     <x:Double x:Key="FontSizeBody">14</x:Double>
     <x:Double x:Key="FontSizeBodyLarge">16</x:Double>
@@ -16,6 +29,17 @@
     <x:Double x:Key="FontSizeH1">30</x:Double>
     <x:Double x:Key="FontSizeDisplay">36</x:Double>
 
+    <!-- Line heights (px), paired with the sizes above -->
+    <x:Double x:Key="LineHeightCaption">18</x:Double>
+    <x:Double x:Key="LineHeightBody">22</x:Double>
+    <x:Double x:Key="LineHeightBodyLarge">26</x:Double>
+    <x:Double x:Key="LineHeightH4">28</x:Double>
+    <x:Double x:Key="LineHeightH3">30</x:Double>
+    <x:Double x:Key="LineHeightH2">34</x:Double>
+    <x:Double x:Key="LineHeightH1">42</x:Double>
+    <x:Double x:Key="LineHeightDisplay">48</x:Double>
+
+    <!-- Weights -->
     <FontWeight x:Key="FontWeightRegular">Normal</FontWeight>
     <FontWeight x:Key="FontWeightMedium">Medium</FontWeight>
     <FontWeight x:Key="FontWeightSemiBold">SemiBold</FontWeight>

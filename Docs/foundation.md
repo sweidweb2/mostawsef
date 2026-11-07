@@ -12,7 +12,7 @@ This document records the foundational decisions only. No business logic or busi
 | --------- | ------------------------------- | -------------------------------------------- |
 | Runtime   | .NET 10 (LTS)                   | Supported until November 2028                |
 | Backend   | ASP.NET Core Web API (C#)       | Controllers-based REST API                   |
-| Frontend  | Avalonia UI 12 (C# / XAML, MVVM)| CommunityToolkit.Mvvm                        |
+| Frontend  | Avalonia UI 12 (C# / XAML, MVVM)| CommunityToolkit.Mvvm, see `ui-foundation.md` |
 | Database  | PostgreSQL 17                   | Docker in development, native on clinic PCs  |
 | ORM       | Entity Framework Core 10 + Npgsql | Data access, mappings, migrations          |
 | IDE       | Cursor                          | C# + Avalonia extensions                     |
@@ -322,6 +322,11 @@ No entities, migrations, or business modules exist yet.
 | Shared DTOs         | `Mostawsef.Contracts` project  | One definition used by API and desktop                  |
 | Solution format     | `.slnx` at repository root     | .NET 10 default; contains backend and frontend          |
 | Project name prefix | `Mostawsef`                    | Repository name                                         |
+| UI languages        | Arabic (default, RTL) + English | Switchable at runtime                                  |
+| UI themes           | Light + Dark, token based      | Brand palette can be patched in `Colors.axaml`          |
+| Shared components   | Build the core set, defer the rest | New components are created when a screen needs one |
+
+UI details: `Docs/ui-foundation.md`. Component catalog: `Docs/shared-components.md`. AI guidance: `.cursor/rules/`.
 
 ## 12. Deferred (planned for later)
 

@@ -1,0 +1,77 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Mostawsef.Desktop.Components"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Dev"
+             x:Class="Mostawsef.Desktop.Views.Dev.Sections.DataSection"
+             x:DataType="vm:GalleryViewModel">
+    <ScrollViewer>
+        <StackPanel Classes="page">
+            <ui:PageHeader Title="{l:Tr Gallery.Data}" />
+
+            <ui:Section Title="DataTable + Pagination">
+                <ui:Section.Actions>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Classes="secondary sm" Content="Toggle loading" Command="{Binding ToggleTableLoadingCommand}" />
+                        <Button Classes="secondary sm" Content="Toggle empty" Command="{Binding ToggleTableEmptyCommand}" />
+                    </StackPanel>
+                </ui:Section.Actions>
+                <ui:DataTable Height="380" IsLoading="{Binding IsTableLoading}" IsEmpty="{Binding IsTableEmpty}">
+                    <ui:DataTable.Toolbar>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <ui:SearchBox MaxWidth="320" HorizontalAlignment="Left" />
+                            <Button Grid.Column="1" Classes="primary">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <PathIcon Data="{StaticResource IconPlus}" />
+                                    <TextBlock Text="{l:Tr Common.Add}" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </ui:DataTable.Toolbar>
+                    <DataGrid ItemsSource="{Binding VisiblePatients}" IsReadOnly="True">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn x:DataType="vm:PatientRow" Header="{l:Tr Patient.FileNo}" Binding="{Binding FileNumber}" Width="120" />
+                            <DataGridTextColumn x:DataType="vm:PatientRow" Header="Name" Binding="{Binding Name}" Width="*" />
+                            <DataGridTextColumn x:DataType="vm:PatientRow" Header="{l:Tr Patient.Age}" Binding="{Binding Age}" Width="80" />
+                            <DataGridTextColumn x:DataType="vm:PatientRow" Header="{l:Tr Patient.Phone}" Binding="{Binding Phone}" Width="150" />
+                            <DataGridTemplateColumn Header="Status" Width="120">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate x:DataType="vm:PatientRow">
+                                        <ui:Badge Margin="12,0" Text="{Binding Status}" Kind="{Binding StatusKind}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <ui:DataTable.Footer>
+                        <ui:Pagination CurrentPage="{Binding CurrentPage}" PageCount="12" />
+                    </ui:DataTable.Footer>
+                </ui:DataTable>
+            </ui:Section>
+
+            <ui:Section Title="Badge + Avatar">
+                <ui:Card>
+                    <StackPanel Spacing="16">
+                        <WrapPanel>
+                            <ui:Badge Margin="0,0,8,8" Text="Neutral" />
+                            <ui:Badge Margin="0,0,8,8" Text="Primary" Kind="Primary" />
+                            <ui:Badge Margin="0,0,8,8" Text="Success" Kind="Success" />
+                            <ui:Badge Margin="0,0,8,8" Text="Warning" Kind="Warning" />
+                            <ui:Badge Margin="0,0,8,8" Text="Danger" Kind="Danger" />
+                            <ui:Badge Margin="0,0,8,8" Text="Info" Kind="Info" />
+                        </WrapPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <ui:Avatar DisplayName="Sara Mahmoud" Size="32" />
+                            <ui:Avatar DisplayName="أحمد علي" />
+                            <ui:Avatar DisplayName="Omar Khaled" Size="56" />
+                        </StackPanel>
+                    </StackPanel>
+                </ui:Card>
+            </ui:Section>
+
+            <ui:Section Title="Calendar / Scheduler">
+                <ui:Scheduler Height="560" Items="{Binding Appointments}" StartHour="8" EndHour="18" />
+            </ui:Section>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

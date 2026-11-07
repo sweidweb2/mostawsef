@@ -1,0 +1,37 @@
+---
+description: Avalonia desktop UI rules - design tokens, Light/Dark, Arabic/English RTL, MVVM, bindings
+globs: frontend/**
+alwaysApply: false
+---
+
+# Desktop UI Rules (Avalonia 12)
+
+## Styling: tokens only
+- Never hard-code colors, font sizes, spacing, radii, sizes, opacity or durations. Use tokens from `Styles/Tokens/`
+  via `{DynamicResource ...}` (e.g. `BrushPrimary`, `BrushSurface`, `BrushTextMuted`, `FontSizeH3`, `Space4`,
+  `RadiusLg`, `ShadowSm`, `ControlHeight`, `OpacityDisabled`). Full reference: `Docs/ui-foundation.md`.
+- Brand 60-30-10: 60% `#FFFFFF`/`#EAF3FB` surfaces and background, 30% `#B7D6F0`/`#4A90C8` secondary,
+  10% `#1F5A8A` primary accent. Never put normal-size text on `#4A90C8` (contrast too low).
+- New colors go into `Styles/Tokens/Colors.axaml` in **both** the `Light` and `Dark` dictionaries; use semantic keys, not palette primitives.
+- Text styles: `<TextBlock Classes="h2" />`, `caption`, `muted`, `strong`, `danger`...
+- Button variants: `Classes="primary|secondary|danger|ghost|link"`, sizes `sm|lg`, icon-only `icon`.
+- Icons: `<PathIcon Data="{StaticResource IconEdit}" />` from `Styles/Tokens/Icons.axaml`.
+
+## Localization + RTL
+- No user-visible literal text in views or components: use `{l:Tr Key}` (`xmlns:l="using:Mostawsef.Desktop.Services.Local"`).
+  In code: `LocalizationService.Instance.Get("Key")` / `TrExtension.CreateBinding("Key")`.
+- Every new key goes into **both** `Resources/Strings.resx` (English) and `Resources/Strings.ar.resx` (Arabic).
+- Layout mirrors automatically in Arabic. Think "start/end": do not flip margins or alignment manually per language.
+- Every new `Window` must call `LocalizationService.Instance.Apply(window)`.
+
+## Responsiveness
+- Breakpoints on the AppShell content width: Compact < 900, Medium < 1280, Wide < 1600, XWide >= 1600.
+- Page roots use `Classes="page"`. Use `ui:ResponsiveGrid` for card/form grids and utility classes
+  `hide-compact|show-compact|stack-compact|hide-medium|show-medium|hide-wide|show-wide` (`Styles/Responsive.axaml`).
+
+## MVVM + bindings
+- Compiled bindings are on: every view/DataTemplate needs `x:DataType`.
+- View models derive from `ViewModelBase`, use `[ObservableProperty] public partial T Name { get; set; }` and `[RelayCommand]`.
+- Services come from DI (`App.ConfigureServices`); register new services/view models there.
+- Dialogs: `DialogService.ShowAsync(modal)` / `ConfirmAsync(...)`. Notifications: `ToastService.Show(...)`.
+- API calls go in `Services/Api/` using DTOs from `Mostawsef.Contracts`.

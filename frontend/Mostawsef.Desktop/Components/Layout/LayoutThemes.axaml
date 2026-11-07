@@ -15,7 +15,7 @@
                             BorderThickness="0,0,1,0">
                         <Border.Transitions>
                             <Transitions>
-                                <DoubleTransition Property="Width" Duration="0:0:0.18" />
+                                <DoubleTransition Property="Width" Duration="{StaticResource DurationNormal}" />
                             </Transitions>
                         </Border.Transitions>
                         <DockPanel>

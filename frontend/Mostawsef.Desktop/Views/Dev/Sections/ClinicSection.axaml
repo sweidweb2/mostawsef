@@ -1,0 +1,55 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Mostawsef.Desktop.Components"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Dev"
+             x:Class="Mostawsef.Desktop.Views.Dev.Sections.ClinicSection"
+             x:DataType="vm:GalleryViewModel">
+    <ScrollViewer>
+        <StackPanel Classes="page">
+            <ui:PageHeader Title="{l:Tr Gallery.Clinic}" />
+
+            <ui:PatientHeader PatientName="أحمد علي محمود"
+                              FileNumber="P-1001"
+                              Age="34"
+                              Gender="ذكر"
+                              Phone="01001234567"
+                              Status="Active"
+                              StatusKind="Success"
+                              Allergies="Penicillin">
+                <ui:PatientHeader.Actions>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <ui:IconButton Classes="secondary" Icon="{StaticResource IconEdit}" ToolTip.Tip="{l:Tr Common.Edit}" />
+                        <Button Classes="primary" Content="New visit" />
+                    </StackPanel>
+                </ui:PatientHeader.Actions>
+            </ui:PatientHeader>
+
+            <ui:Section Title="PatientCard">
+                <ui:ResponsiveGrid MinColumnWidth="280">
+                    <ui:PatientCard PatientName="Sara Mahmoud" FileNumber="P-1002" Age="27 y" Phone="01111234567" Status="Waiting" StatusKind="Warning" />
+                    <ui:PatientCard PatientName="محمد حسن" FileNumber="P-1003" Age="52 y" Phone="01221234567" Status="Active" StatusKind="Success" />
+                    <ui:PatientCard PatientName="Omar Khaled" FileNumber="P-1004" Age="8 y" Phone="01551234567" Status="New" StatusKind="Info" />
+                </ui:ResponsiveGrid>
+            </ui:Section>
+
+            <ui:Section Title="PrintPreview">
+                <ui:PrintPreview Height="640" PrintCommand="{Binding PrintCommand}">
+                    <StackPanel Spacing="16">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel>
+                                <TextBlock Classes="h2" Text="{l:Tr App.Title}" />
+                                <TextBlock Classes="muted" Text="Dr. Example - Internal Medicine" />
+                            </StackPanel>
+                            <TextBlock Grid.Column="1" Classes="muted" Text="07/11/2026" />
+                        </Grid>
+                        <ui:Divider />
+                        <TextBlock Classes="h4" Text="Rx" />
+                        <TextBlock Text="1. Paracetamol 500 mg - 1 tablet every 8 hours - 5 days" />
+                        <TextBlock Text="2. Omeprazole 20 mg - 1 capsule before breakfast - 14 days" />
+                    </StackPanel>
+                </ui:PrintPreview>
+            </ui:Section>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

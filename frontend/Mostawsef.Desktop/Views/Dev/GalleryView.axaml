@@ -1,0 +1,59 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Mostawsef.Desktop.Components"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Dev"
+             xmlns:sections="using:Mostawsef.Desktop.Views.Dev.Sections"
+             x:Class="Mostawsef.Desktop.Views.Dev.GalleryView"
+             x:DataType="vm:GalleryViewModel">
+
+    <ui:AppShell Name="Shell">
+        <ui:AppShell.SidebarHeader>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <Border Width="32" Height="32" CornerRadius="8" Background="{DynamicResource BrushPrimary}">
+                    <PathIcon Data="{StaticResource IconMedical}" Width="18" Height="18" Foreground="{DynamicResource BrushOnPrimary}" />
+                </Border>
+                <TextBlock Classes="h4" Text="{l:Tr App.Title}" VerticalAlignment="Center" />
+            </StackPanel>
+        </ui:AppShell.SidebarHeader>
+
+        <ui:AppShell.Sidebar>
+            <ui:NavMenu SelectedIndex="{Binding SelectedSectionIndex}"
+                        IsCompact="{Binding #Shell.IsSidebarCompact}">
+                <ui:NavMenuItem Icon="{StaticResource IconDashboard}" Text="{l:Tr Gallery.Layout}" />
+                <ui:NavMenuItem Icon="{StaticResource IconEdit}" Text="{l:Tr Gallery.Forms}" />
+                <ui:NavMenuItem Icon="{StaticResource IconDocument}" Text="{l:Tr Gallery.Data}" />
+                <ui:NavMenuItem Icon="{StaticResource IconBell}" Text="{l:Tr Gallery.Feedback}" />
+                <ui:NavMenuItem Icon="{StaticResource IconMedical}" Text="{l:Tr Gallery.Clinic}" />
+            </ui:NavMenu>
+        </ui:AppShell.Sidebar>
+
+        <ui:AppShell.TopBar>
+            <ui:TopBar Title="{l:Tr Gallery.Title}">
+                <ui:SearchBox MaxWidth="360" HorizontalAlignment="Left" Classes="hide-compact" />
+                <ui:TopBar.Actions>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <ui:IconButton Classes="ghost"
+                                       Icon="{StaticResource IconTheme}"
+                                       Command="{Binding ToggleThemeCommand}"
+                                       ToolTip.Tip="{l:Tr Theme.Toggle}" />
+                        <Button Classes="secondary" Command="{Binding ToggleLanguageCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <PathIcon Data="{StaticResource IconGlobe}" />
+                                <TextBlock Text="{l:Tr Language.Switch}" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </ui:TopBar.Actions>
+            </ui:TopBar>
+        </ui:AppShell.TopBar>
+
+        <Carousel SelectedIndex="{Binding SelectedSectionIndex}">
+            <sections:LayoutSection />
+            <sections:FormsSection />
+            <sections:DataSection />
+            <sections:FeedbackSection />
+            <sections:ClinicSection />
+        </Carousel>
+    </ui:AppShell>
+</UserControl>

@@ -1,0 +1,196 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="using:Mostawsef.Desktop.Components"
+                    xmlns:l="using:Mostawsef.Desktop.Services.Local">
+
+    <!-- Badge -->
+    <ControlTheme x:Key="{x:Type ui:Badge}" TargetType="ui:Badge">
+        <Setter Property="Background" Value="{DynamicResource BrushNeutralSubtle}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushNeutralText}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeCaption}" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        CornerRadius="{DynamicResource RadiusFull}"
+                        Padding="{DynamicResource PaddingChip}">
+                    <TextBlock Text="{TemplateBinding Text}"
+                               Foreground="{TemplateBinding Foreground}"
+                               FontSize="{TemplateBinding FontSize}"
+                               FontWeight="{TemplateBinding FontWeight}" />
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:primary">
+            <Setter Property="Background" Value="{DynamicResource BrushPrimarySubtle}" />
+            <Setter Property="Foreground" Value="{DynamicResource BrushPrimarySubtleText}" />
+        </Style>
+        <Style Selector="^:success">
+            <Setter Property="Background" Value="{DynamicResource BrushSuccessSubtle}" />
+            <Setter Property="Foreground" Value="{DynamicResource BrushSuccessText}" />
+        </Style>
+        <Style Selector="^:warning">
+            <Setter Property="Background" Value="{DynamicResource BrushWarningSubtle}" />
+            <Setter Property="Foreground" Value="{DynamicResource BrushWarningText}" />
+        </Style>
+        <Style Selector="^:danger">
+            <Setter Property="Background" Value="{DynamicResource BrushDangerSubtle}" />
+            <Setter Property="Foreground" Value="{DynamicResource BrushDangerText}" />
+        </Style>
+        <Style Selector="^:info">
+            <Setter Property="Background" Value="{DynamicResource BrushInfoSubtle}" />
+            <Setter Property="Foreground" Value="{DynamicResource BrushInfoText}" />
+        </Style>
+    </ControlTheme>
+
+    <!-- Avatar -->
+    <ControlTheme x:Key="{x:Type ui:Avatar}" TargetType="ui:Avatar">
+        <Setter Property="Background" Value="{DynamicResource BrushPrimarySubtle}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushPrimarySubtleText}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Width="{TemplateBinding Size}"
+                        Height="{TemplateBinding Size}"
+                        CornerRadius="{TemplateBinding RoundRadius}"
+                        Background="{TemplateBinding Background}"
+                        ClipToBounds="True">
+                    <Panel>
+                        <TextBlock Text="{TemplateBinding Initials}"
+                                   FontSize="{TemplateBinding InitialsFontSize}"
+                                   FontWeight="SemiBold"
+                                   Foreground="{TemplateBinding Foreground}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+                        <Image Source="{TemplateBinding Source}" Stretch="UniformToFill" />
+                    </Panel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    <!-- Pagination -->
+    <ControlTheme x:Key="{x:Type ui:Pagination}" TargetType="ui:Pagination">
+        <Setter Property="HorizontalAlignment" Value="Right" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <ui:IconButton Classes="ghost sm"
+                                   Icon="{StaticResource IconChevronStart}"
+                                   Command="{TemplateBinding PreviousCommand}"
+                                   ToolTip.Tip="{l:Tr Pagination.Previous}" />
+                    <TextBlock Classes="caption muted"
+                               Margin="8,0"
+                               Text="{TemplateBinding Summary}"
+                               VerticalAlignment="Center" />
+                    <ui:IconButton Classes="ghost sm"
+                                   Icon="{StaticResource IconChevronEnd}"
+                                   Command="{TemplateBinding NextCommand}"
+                                   ToolTip.Tip="{l:Tr Pagination.Next}" />
+                </StackPanel>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    <!-- DataTable -->
+    <ControlTheme x:Key="{x:Type ui:DataTable}" TargetType="ui:DataTable">
+        <Setter Property="EmptyTitle" Value="{l:Tr Empty.Title}" />
+        <Setter Property="EmptyDescription" Value="{l:Tr Empty.Description}" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{DynamicResource BrushSurface}"
+                        BorderBrush="{DynamicResource BrushBorder}"
+                        BorderThickness="1"
+                        CornerRadius="{DynamicResource RadiusLg}"
+                        ClipToBounds="True">
+                    <DockPanel>
+                        <Border DockPanel.Dock="Top"
+                                Padding="12"
+                                BorderBrush="{DynamicResource BrushDivider}"
+                                BorderThickness="0,0,0,1"
+                                IsVisible="{TemplateBinding Toolbar, Converter={x:Static ObjectConverters.IsNotNull}}">
+                            <ContentPresenter Content="{TemplateBinding Toolbar}" />
+                        </Border>
+                        <Border DockPanel.Dock="Bottom"
+                                Padding="12,6"
+                                BorderBrush="{DynamicResource BrushDivider}"
+                                BorderThickness="0,1,0,0"
+                                IsVisible="{TemplateBinding Footer, Converter={x:Static ObjectConverters.IsNotNull}}">
+                            <ContentPresenter Content="{TemplateBinding Footer}" />
+                        </Border>
+                        <ui:LoadingOverlay IsLoading="{TemplateBinding IsLoading}">
+                            <Panel>
+                                <ContentPresenter Content="{TemplateBinding Content}"
+                                                  ContentTemplate="{TemplateBinding ContentTemplate}" />
+                                <ui:EmptyState Margin="0,56,0,24"
+                                               VerticalAlignment="Top"
+                                               Icon="{StaticResource IconInbox}"
+                                               Title="{TemplateBinding EmptyTitle}"
+                                               Description="{TemplateBinding EmptyDescription}"
+                                               IsVisible="{TemplateBinding ShowEmpty}" />
+                            </Panel>
+                        </ui:LoadingOverlay>
+                    </DockPanel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    <!-- Scheduler -->
+    <ControlTheme x:Key="{x:Type ui:Scheduler}" TargetType="ui:Scheduler">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{DynamicResource BrushSurface}"
+                        BorderBrush="{DynamicResource BrushBorder}"
+                        BorderThickness="1"
+                        CornerRadius="{DynamicResource RadiusLg}"
+                        ClipToBounds="True">
+                    <DockPanel>
+                        <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,Auto,Auto,*,Auto" Margin="16,12">
+                            <Button Classes="secondary sm"
+                                    Content="{l:Tr Common.Today}"
+                                    Command="{TemplateBinding TodayCommand}" />
+                            <ui:IconButton Grid.Column="1"
+                                           Margin="8,0,0,0"
+                                           Classes="ghost sm"
+                                           Icon="{StaticResource IconChevronStart}"
+                                           Command="{TemplateBinding PreviousCommand}" />
+                            <ui:IconButton Grid.Column="2"
+                                           Classes="ghost sm"
+                                           Icon="{StaticResource IconChevronEnd}"
+                                           Command="{TemplateBinding NextCommand}" />
+                            <TextBlock Grid.Column="3"
+                                       Classes="h4"
+                                       Margin="12,0"
+                                       Text="{TemplateBinding Title}"
+                                       VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis" />
+                            <ui:ButtonGroup Grid.Column="4">
+                                <Button Name="PART_DayButton"
+                                        Classes="secondary sm"
+                                        Content="{l:Tr Common.Day}"
+                                        Command="{TemplateBinding DayViewCommand}" />
+                                <Button Name="PART_WeekButton"
+                                        Classes="secondary sm"
+                                        Content="{l:Tr Common.Week}"
+                                        Command="{TemplateBinding WeekViewCommand}" />
+                            </ui:ButtonGroup>
+                        </Grid>
+                        <Border DockPanel.Dock="Top"
+                                Background="{DynamicResource BrushSurfaceAlt}"
+                                BorderBrush="{DynamicResource BrushDivider}"
+                                BorderThickness="0,1">
+                            <Grid Name="PART_DayHeaders" />
+                        </Border>
+                        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+                            <Grid Name="PART_Body" />
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+</ResourceDictionary>

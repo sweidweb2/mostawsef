@@ -1,0 +1,61 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="using:Mostawsef.Desktop.Components">
+
+    <!-- DialogHost -->
+    <ControlTheme x:Key="{x:Type ui:DialogHost}" TargetType="ui:DialogHost">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Panel>
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}" />
+                    <Panel Name="PART_OverlayLayer" IsVisible="False" ZIndex="{StaticResource ZIndexModal}" />
+                </Panel>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    <!-- Modal -->
+    <ControlTheme x:Key="{x:Type ui:Modal}" TargetType="ui:Modal">
+        <Setter Property="Background" Value="{DynamicResource BrushSurfaceRaised}" />
+        <Setter Property="MaxWidth" Value="{DynamicResource DialogMaxWidth}" />
+        <Setter Property="MinWidth" Value="320" />
+        <Setter Property="Margin" Value="24" />
+        <Setter Property="Padding" Value="24,8,24,24" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{DynamicResource BrushBorder}"
+                        BorderThickness="1"
+                        CornerRadius="{DynamicResource RadiusLg}"
+                        BoxShadow="{DynamicResource ShadowLg}">
+                    <DockPanel>
+                        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="24,20,16,0">
+                            <TextBlock Classes="h4"
+                                       Text="{TemplateBinding Title}"
+                                       TextWrapping="Wrap"
+                                       VerticalAlignment="Center" />
+                            <ui:IconButton Grid.Column="1"
+                                           Classes="ghost sm"
+                                           Icon="{StaticResource IconClose}"
+                                           Command="{TemplateBinding CloseCommand}"
+                                           IsVisible="{TemplateBinding ShowCloseButton}" />
+                        </Grid>
+                        <Border DockPanel.Dock="Bottom"
+                                Padding="24,12"
+                                BorderBrush="{DynamicResource BrushDivider}"
+                                BorderThickness="0,1,0,0"
+                                IsVisible="{TemplateBinding Footer, Converter={x:Static ObjectConverters.IsNotNull}}">
+                            <ContentPresenter Content="{TemplateBinding Footer}" />
+                        </Border>
+                        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                            <ContentPresenter Content="{TemplateBinding Content}"
+                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              Padding="{TemplateBinding Padding}" />
+                        </ScrollViewer>
+                    </DockPanel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+</ResourceDictionary>

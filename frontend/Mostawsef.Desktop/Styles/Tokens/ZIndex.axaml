@@ -1,0 +1,19 @@
+<!--
+    Z-INDEX TOKENS
+
+    In Avalonia, ZIndex orders siblings inside the same panel only. Popups, tooltips and flyouts
+    are drawn in their own top-level layers, so these values matter for in-window layering
+    (sticky headers, overlays inside DialogHost, floating buttons).
+    Keep in sync with Components/Layout/ZIndexes.cs.
+-->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <x:Int32 x:Key="ZIndexBase">0</x:Int32>
+    <x:Int32 x:Key="ZIndexRaised">1</x:Int32>
+    <x:Int32 x:Key="ZIndexSticky">10</x:Int32>
+    <x:Int32 x:Key="ZIndexDropdown">100</x:Int32>
+    <x:Int32 x:Key="ZIndexOverlay">1000</x:Int32>
+    <x:Int32 x:Key="ZIndexModal">1100</x:Int32>
+    <x:Int32 x:Key="ZIndexToast">1200</x:Int32>
+    <x:Int32 x:Key="ZIndexTooltip">1300</x:Int32>
+</ResourceDictionary>

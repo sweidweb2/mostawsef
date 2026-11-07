@@ -1,0 +1,23 @@
+<!--
+    OPACITY AND MOTION TOKENS
+
+    Opacity
+      OpacityDisabled   disabled controls
+      OpacityMuted      secondary decorative elements
+      OpacityVeil       loading veil over content
+    Motion (keep animations short; respect a calm clinical feel)
+      DurationFast    hover/press feedback
+      DurationNormal  expand/collapse, sidebar, tabs
+      DurationSlow    dialogs and drawers entering
+-->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="using:System">
+    <x:Double x:Key="OpacityDisabled">0.5</x:Double>
+    <x:Double x:Key="OpacityMuted">0.7</x:Double>
+    <x:Double x:Key="OpacityVeil">0.75</x:Double>
+
+    <sys:TimeSpan x:Key="DurationFast">0:0:0.12</sys:TimeSpan>
+    <sys:TimeSpan x:Key="DurationNormal">0:0:0.2</sys:TimeSpan>
+    <sys:TimeSpan x:Key="DurationSlow">0:0:0.3</sys:TimeSpan>
+</ResourceDictionary>

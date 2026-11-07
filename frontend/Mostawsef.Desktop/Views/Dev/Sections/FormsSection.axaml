@@ -1,0 +1,146 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Mostawsef.Desktop.Components"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Dev"
+             x:Class="Mostawsef.Desktop.Views.Dev.Sections.FormsSection"
+             x:DataType="vm:GalleryViewModel">
+    <ScrollViewer>
+        <StackPanel Classes="page">
+            <ui:PageHeader Title="{l:Tr Gallery.Forms}" />
+
+            <ui:Section>
+                <ui:Card>
+                    <StackPanel Spacing="20">
+                        <ui:ValidationSummary Errors="{Binding ValidationErrors}" />
+
+                        <ui:FormSection Title="FormSection" Description="Two columns on wide screens, one on narrow screens.">
+                            <ui:FormField Label="TextField" IsRequired="True" Hint="Hint text">
+                                <TextBox PlaceholderText="Full name" />
+                            </ui:FormField>
+                            <ui:FormField Label="With error" Error="This field is required.">
+                                <TextBox />
+                            </ui:FormField>
+                            <ui:FormField Label="NumberField">
+                                <NumericUpDown Value="30" Minimum="0" Maximum="120" />
+                            </ui:FormField>
+                            <ui:FormField Label="Select">
+                                <ComboBox ItemsSource="{Binding Genders}" SelectedIndex="0" />
+                            </ui:FormField>
+                            <ui:FormField Label="DatePicker">
+                                <CalendarDatePicker />
+                            </ui:FormField>
+                            <ui:FormField Label="TimePicker">
+                                <TimePicker />
+                            </ui:FormField>
+                            <ui:FormField Label="AutoComplete" Hint="Type a drug name">
+                                <AutoCompleteBox ItemsSource="{Binding Drugs}" FilterMode="Contains" />
+                            </ui:FormField>
+                            <ui:FormField Label="PasswordField">
+                                <ui:PasswordField Text="secret" />
+                            </ui:FormField>
+                            <ui:FormField Label="SearchBox">
+                                <ui:SearchBox />
+                            </ui:FormField>
+                            <ui:FormField Label="DateRangePicker">
+                                <ui:DateRangePicker From="{Binding RangeFrom}" To="{Binding RangeTo}" />
+                            </ui:FormField>
+                            <ui:FormField Label="TextArea" ui:ResponsiveGrid.ColumnSpan="0">
+                                <TextBox Classes="textarea" PlaceholderText="Notes" />
+                            </ui:FormField>
+                            <ui:FormField Label="FileUpload">
+                                <ui:FileUpload FileTypes="*.pdf;*.png;*.jpg" />
+                            </ui:FormField>
+                            <ui:FormField Label="ImagePicker">
+                                <ui:ImagePicker />
+                            </ui:FormField>
+                            <ui:FormField Label="Checkbox / Radio / Toggle">
+                                <StackPanel Spacing="4">
+                                    <CheckBox Content="Checkbox" IsChecked="True" />
+                                    <StackPanel Orientation="Horizontal" Spacing="16">
+                                        <RadioButton GroupName="g" Content="Option A" IsChecked="True" />
+                                        <RadioButton GroupName="g" Content="Option B" />
+                                    </StackPanel>
+                                    <ToggleSwitch IsChecked="True" />
+                                </StackPanel>
+                            </ui:FormField>
+                        </ui:FormSection>
+                    </StackPanel>
+                </ui:Card>
+            </ui:Section>
+
+            <ui:Section Title="{l:Tr Gallery.Buttons}">
+                <ui:Card>
+                    <StackPanel Spacing="16">
+                        <WrapPanel>
+                            <Button Classes="primary" Margin="0,0,8,8" Content="Primary" />
+                            <Button Classes="secondary" Margin="0,0,8,8" Content="Secondary" />
+                            <Button Classes="danger" Margin="0,0,8,8" Content="Danger" />
+                            <Button Classes="ghost" Margin="0,0,8,8" Content="Ghost" />
+                            <Button Classes="link" Margin="0,0,8,8" Content="Link" />
+                            <Button Margin="0,0,8,8" Content="Default" />
+                            <Button Classes="primary" Margin="0,0,8,8" Content="Disabled" IsEnabled="False" />
+                        </WrapPanel>
+                        <WrapPanel>
+                            <Button Classes="primary sm" Margin="0,0,8,8" Content="Small" />
+                            <Button Classes="primary" Margin="0,0,8,8" Content="Medium" />
+                            <Button Classes="primary lg" Margin="0,0,8,8" Content="Large" />
+                        </WrapPanel>
+                        <WrapPanel>
+                            <ui:IconButton Classes="primary" Margin="0,0,8,8" Icon="{StaticResource IconPlus}" />
+                            <ui:IconButton Classes="secondary" Margin="0,0,8,8" Icon="{StaticResource IconEdit}" />
+                            <ui:IconButton Classes="danger" Margin="0,0,8,8" Icon="{StaticResource IconDelete}" />
+                            <ui:IconButton Classes="ghost" Margin="0,0,8,8" Icon="{StaticResource IconMore}" />
+                            <ui:ButtonGroup Margin="8,0,8,8">
+                                <Button Classes="secondary" Content="Day" />
+                                <Button Classes="secondary" Content="Week" />
+                                <Button Classes="secondary" Content="Month" />
+                            </ui:ButtonGroup>
+                        </WrapPanel>
+                        <WrapPanel>
+                            <SplitButton Margin="0,0,8,8" Content="SplitButton">
+                                <SplitButton.Flyout>
+                                    <MenuFlyout>
+                                        <MenuItem Header="Option 1" />
+                                        <MenuItem Header="Option 2" />
+                                    </MenuFlyout>
+                                </SplitButton.Flyout>
+                            </SplitButton>
+                            <DropDownButton Margin="0,0,8,8" Content="DropDownButton">
+                                <DropDownButton.Flyout>
+                                    <MenuFlyout>
+                                        <MenuItem Header="{l:Tr Common.Edit}" />
+                                        <MenuItem Header="{l:Tr Common.Delete}" Classes="danger" />
+                                    </MenuFlyout>
+                                </DropDownButton.Flyout>
+                            </DropDownButton>
+                            <Button Classes="secondary" Margin="0,0,8,8" Content="Popover">
+                                <Button.Flyout>
+                                    <Flyout FlyoutPresenterClasses="popover">
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Classes="strong" Text="Popover" />
+                                            <TextBlock Classes="muted" Text="Rich content in a flyout." TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Flyout>
+                                </Button.Flyout>
+                            </Button>
+                            <Border Margin="0,0,8,8"
+                                    Padding="12,8"
+                                    Background="{DynamicResource BrushSurfaceAlt}"
+                                    CornerRadius="{DynamicResource RadiusMd}"
+                                    ToolTip.Tip="Tooltip text">
+                                <TextBlock Text="Right-click / hover me" />
+                                <Border.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="{l:Tr Common.Edit}" />
+                                        <MenuItem Header="{l:Tr Common.Delete}" Classes="danger" />
+                                    </ContextMenu>
+                                </Border.ContextMenu>
+                            </Border>
+                        </WrapPanel>
+                    </StackPanel>
+                </ui:Card>
+            </ui:Section>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

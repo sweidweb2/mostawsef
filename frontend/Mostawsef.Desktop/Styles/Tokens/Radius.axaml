@@ -1,8 +1,23 @@
+<!--
+    RADIUS TOKENS
+
+    Scale: 0 / 4 / 6 / 8 / 12 / 16 / full
+    Usage
+      RadiusXs   4   tooltips, small tags, scheduler entries
+      RadiusSm   6   small buttons, checkboxes
+      RadiusMd   8   buttons, inputs, menus (default control radius)
+      RadiusLg   12  cards, tables, dialogs
+      RadiusXl   16  large panels, hero areas
+      RadiusFull     pills, badges, avatars, progress bars
+-->
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <CornerRadius x:Key="RadiusSm">4</CornerRadius>
+    <CornerRadius x:Key="RadiusNone">0</CornerRadius>
+    <CornerRadius x:Key="RadiusXs">4</CornerRadius>
+    <CornerRadius x:Key="RadiusSm">6</CornerRadius>
     <CornerRadius x:Key="RadiusMd">8</CornerRadius>
     <CornerRadius x:Key="RadiusLg">12</CornerRadius>
+    <CornerRadius x:Key="RadiusXl">16</CornerRadius>
     <CornerRadius x:Key="RadiusFull">999</CornerRadius>
 
     <!-- Fluent overrides -->

@@ -1,0 +1,120 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Mostawsef.Desktop.Components"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Dev"
+             x:Class="Mostawsef.Desktop.Views.Dev.Sections.LayoutSection"
+             x:DataType="vm:GalleryViewModel">
+    <ScrollViewer>
+        <StackPanel Classes="page">
+            <ui:PageHeader Title="{l:Tr Gallery.Layout}" Subtitle="{l:Tr Gallery.Subtitle}">
+                <ui:PageHeader.Breadcrumb>
+                    <ui:Breadcrumb>
+                        <ui:BreadcrumbItem Content="{l:Tr App.Title}" />
+                        <ui:BreadcrumbItem Content="{l:Tr Gallery.Title}" />
+                        <ui:BreadcrumbItem Content="{l:Tr Gallery.Layout}" />
+                    </ui:Breadcrumb>
+                </ui:PageHeader.Breadcrumb>
+                <ui:PageHeader.Actions>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Classes="secondary" Content="{l:Tr Common.Export}" />
+                        <Button Classes="primary">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <PathIcon Data="{StaticResource IconPlus}" />
+                                <TextBlock Text="{l:Tr Common.Add}" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </ui:PageHeader.Actions>
+            </ui:PageHeader>
+
+            <ui:Section Title="Card" Description="Default, outlined, flat and interactive.">
+                <ui:ResponsiveGrid MinColumnWidth="220">
+                    <ui:Card Title="Default" Subtitle="Elevated surface">
+                        <TextBlock Text="Card content." TextWrapping="Wrap" />
+                    </ui:Card>
+                    <ui:Card Classes="outlined" Title="Outlined">
+                        <TextBlock Text="No shadow." />
+                        <ui:Card.Footer>
+                            <Button Classes="link" Content="{l:Tr Common.View}" />
+                        </ui:Card.Footer>
+                    </ui:Card>
+                    <ui:Card Classes="flat" Title="Flat">
+                        <TextBlock Text="Subtle background." />
+                    </ui:Card>
+                    <ui:Card Classes="interactive" Title="Interactive">
+                        <ui:Card.HeaderActions>
+                            <ui:IconButton Classes="ghost sm" Icon="{StaticResource IconMore}" />
+                        </ui:Card.HeaderActions>
+                        <TextBlock Text="Hover me." />
+                    </ui:Card>
+                </ui:ResponsiveGrid>
+            </ui:Section>
+
+            <ui:Section Title="ListDetailsView" Description="Side by side; stacks below 900 px.">
+                <ui:Section.Actions>
+                    <Button Classes="secondary sm" Content="Toggle details" Command="{Binding ToggleDetailsCommand}" />
+                </ui:Section.Actions>
+                <ui:Card Padding="0" Height="240">
+                    <ui:ListDetailsView IsDetailsOpen="{Binding IsDetailsOpen}" ListWidth="260">
+                        <ui:ListDetailsView.List>
+                            <ListBox ItemsSource="{Binding Patients}" SelectedIndex="0">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:PatientRow">
+                                        <TextBlock Text="{Binding Name}" />
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </ui:ListDetailsView.List>
+                        <ui:ListDetailsView.Details>
+                            <StackPanel Margin="20" Spacing="8">
+                                <TextBlock Classes="h4" Text="Details" />
+                                <TextBlock Classes="muted" Text="Selected item details are shown here." TextWrapping="Wrap" />
+                            </StackPanel>
+                        </ui:ListDetailsView.Details>
+                    </ui:ListDetailsView>
+                </ui:Card>
+            </ui:Section>
+
+            <ui:Section Title="Tabs + Divider">
+                <ui:Card>
+                    <StackPanel>
+                        <TabControl>
+                            <TabItem Header="Overview">
+                                <TextBlock Margin="0,12" Text="Overview tab" />
+                            </TabItem>
+                            <TabItem Header="History">
+                                <TextBlock Margin="0,12" Text="History tab" />
+                            </TabItem>
+                            <TabItem Header="Billing">
+                                <TextBlock Margin="0,12" Text="Billing tab" />
+                            </TabItem>
+                        </TabControl>
+                        <ui:Divider Text="OR" />
+                        <ui:Divider />
+                    </StackPanel>
+                </ui:Card>
+            </ui:Section>
+
+            <ui:Section Title="Stepper / Wizard">
+                <ui:Card>
+                    <StackPanel Spacing="24">
+                        <ui:Stepper Steps="{Binding Steps}" CurrentIndex="{Binding StepIndex}" />
+                        <ui:Divider />
+                        <ui:Wizard FinishCommand="{Binding FinishWizardCommand}">
+                            <ui:WizardPage Title="Patient">
+                                <TextBlock Text="Step 1: patient information." />
+                            </ui:WizardPage>
+                            <ui:WizardPage Title="Visit">
+                                <TextBlock Text="Step 2: visit details." />
+                            </ui:WizardPage>
+                            <ui:WizardPage Title="Payment">
+                                <TextBlock Text="Step 3: payment." />
+                            </ui:WizardPage>
+                        </ui:Wizard>
+                    </StackPanel>
+                </ui:Card>
+            </ui:Section>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,12 +1,16 @@
 <!--
-    Breakpoints (width of the AppShell content area, not the window).
-    Keep in sync with Mostawsef.Desktop.Components.Breakpoints and the queries in Styles/Responsive.axaml.
-      Compact: < 900
-      Medium:  900 - 1279
-      Wide:    >= 1280
+    BREAKPOINT TOKENS
+
+    Measured on the width of the AppShell content area (container "AppContent"), not the window.
+      Compact  <  900       one column, sidebar collapsed, page padding 16
+      Medium   900 - 1279   two columns
+      Wide     1280 - 1599  three columns
+      XWide    >= 1600      four columns, content capped at ContentMaxWidth
+    Keep in sync with Components/Layout/Breakpoints.cs and the queries in Styles/Responsive.axaml.
 -->
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <x:Double x:Key="BreakpointMedium">900</x:Double>
     <x:Double x:Key="BreakpointWide">1280</x:Double>
+    <x:Double x:Key="BreakpointXWide">1600</x:Double>
 </ResourceDictionary>

@@ -1,0 +1,28 @@
+---
+description: ASP.NET Core backend rules - clean layering, EF Core with PostgreSQL, contracts
+globs: backend/**,shared/**
+alwaysApply: false
+---
+
+# Backend Rules
+
+## Layers
+- **Domain**: entities, enums, value rules. No references to EF Core, ASP.NET or other projects.
+- **Application**: use cases/services and interfaces (e.g. repositories) per module in `Modules/<Feature>/`.
+  Maps between Domain entities and `Mostawsef.Contracts` DTOs.
+- **Infrastructure**: `AppDbContext`, `IEntityTypeConfiguration<T>` classes in `Persistence/Configurations/`,
+  repository implementations, external services. Registered through `AddInfrastructure(connectionString)`.
+- **Api**: thin controllers (`api/[controller]`) that call Application services; no data access in controllers.
+- **Contracts** (`shared/`): request/response DTOs only (records), no logic, no references.
+
+## Database
+- Configure entities with Fluent API configuration classes (auto-applied by `ApplyConfigurationsFromAssembly`), not attributes.
+- Migrations live in Infrastructure; startup project is Api:
+  `dotnet ef migrations add <Name> --project backend/Mostawsef.Infrastructure --startup-project backend/Mostawsef.Api`
+- Connection string key: `ConnectionStrings:Default` (dev value in `appsettings.Development.json`, Docker PostgreSQL).
+- Portability (SQLite fallback): no PostgreSQL-only types/functions or raw SQL; money as integer minor units.
+
+## Conventions
+- Async all the way with `CancellationToken` on I/O methods.
+- Validate input at the API boundary; return proper status codes (400/404/409), never leak exceptions.
+- Keep `GET /api/health` working: the desktop app relies on it.

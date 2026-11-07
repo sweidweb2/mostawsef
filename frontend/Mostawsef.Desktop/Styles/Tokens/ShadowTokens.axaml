@@ -1,7 +1,34 @@
+<!--
+    SHADOW (ELEVATION) TOKENS
+
+    Shadows are tinted with the brand navy (#0C2840) so they feel part of the palette.
+    Levels
+      ShadowXs  hairline lift: inputs on hover, table rows
+      ShadowSm  cards (default)
+      ShadowMd  hovered cards, dropdowns, popovers
+      ShadowLg  dialogs, drawers
+      ShadowXl  toasts, floating panels
+    Dark mode uses stronger, neutral-black shadows (they are less visible on dark surfaces).
+    As classes on any Border: Classes="shadow-sm" (see Shadows.axaml).
+-->
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <BoxShadows x:Key="ShadowNone">0 0 0 0 Transparent</BoxShadows>
-    <BoxShadows x:Key="ShadowSm">0 1 2 0 #14000000</BoxShadows>
-    <BoxShadows x:Key="ShadowMd">0 4 12 0 #1A000000</BoxShadows>
-    <BoxShadows x:Key="ShadowLg">0 12 32 0 #29000000</BoxShadows>
+
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+            <BoxShadows x:Key="ShadowXs">0 1 2 0 #0F0C2840</BoxShadows>
+            <BoxShadows x:Key="ShadowSm">0 1 3 0 #140C2840, 0 1 2 0 #0F0C2840</BoxShadows>
+            <BoxShadows x:Key="ShadowMd">0 4 12 0 #1A0C2840</BoxShadows>
+            <BoxShadows x:Key="ShadowLg">0 12 28 0 #240C2840</BoxShadows>
+            <BoxShadows x:Key="ShadowXl">0 20 40 0 #2E0C2840</BoxShadows>
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+            <BoxShadows x:Key="ShadowXs">0 1 2 0 #33000000</BoxShadows>
+            <BoxShadows x:Key="ShadowSm">0 1 3 0 #40000000</BoxShadows>
+            <BoxShadows x:Key="ShadowMd">0 4 12 0 #59000000</BoxShadows>
+            <BoxShadows x:Key="ShadowLg">0 12 28 0 #73000000</BoxShadows>
+            <BoxShadows x:Key="ShadowXl">0 20 40 0 #80000000</BoxShadows>
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
 </ResourceDictionary>

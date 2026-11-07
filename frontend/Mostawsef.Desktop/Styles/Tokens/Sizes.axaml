@@ -1,0 +1,48 @@
+<!--
+    SIZE TOKENS
+
+    Controls: sm 28 / md 36 (default) / lg 44. 44 is also the minimum touch target if touch/mobile is added later.
+    Icons:    14 / 18 / 24 (+ 40 for empty-state illustrations).
+    Rules
+      - Interactive controls in the same row share one height token.
+      - Fixed widths only for shell chrome (sidebar, top bar, drawer, dialog). Content stays fluid.
+-->
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Control heights -->
+    <x:Double x:Key="ControlHeightSm">28</x:Double>
+    <x:Double x:Key="ControlHeight">36</x:Double>
+    <x:Double x:Key="ControlHeightLg">44</x:Double>
+    <x:Double x:Key="TouchTargetMin">44</x:Double>
+
+    <!-- Icons -->
+    <x:Double x:Key="IconSizeSm">14</x:Double>
+    <x:Double x:Key="IconSize">18</x:Double>
+    <x:Double x:Key="IconSizeLg">24</x:Double>
+    <x:Double x:Key="IconSizeXl">40</x:Double>
+
+    <!-- Avatars -->
+    <x:Double x:Key="AvatarSizeSm">32</x:Double>
+    <x:Double x:Key="AvatarSize">40</x:Double>
+    <x:Double x:Key="AvatarSizeLg">64</x:Double>
+
+    <!-- Borders and focus -->
+    <Thickness x:Key="BorderWidth">1</Thickness>
+    <Thickness x:Key="BorderWidthThick">2</Thickness>
+    <x:Double x:Key="FocusRingWidth">2</x:Double>
+
+    <!-- Shell -->
+    <x:Double x:Key="SidebarWidth">240</x:Double>
+    <x:Double x:Key="SidebarCompactWidth">64</x:Double>
+    <x:Double x:Key="TopBarHeight">56</x:Double>
+    <x:Double x:Key="DrawerWidth">420</x:Double>
+    <x:Double x:Key="DialogMaxWidth">560</x:Double>
+    <x:Double x:Key="DialogMaxWidthLg">800</x:Double>
+    <x:Double x:Key="ContentMaxWidth">1440</x:Double>
+    <x:Double x:Key="FormMaxWidth">960</x:Double>
+
+    <!-- Window -->
+    <x:Double x:Key="WindowMinWidth">720</x:Double>
+    <x:Double x:Key="WindowMinHeight">520</x:Double>
+</ResourceDictionary>

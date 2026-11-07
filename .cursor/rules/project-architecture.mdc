@@ -1,0 +1,43 @@
+---
+description: Mostawsef clinic management system - product, tech stack, architecture and layering rules
+alwaysApply: true
+---
+
+# Mostawsef - Project Architecture
+
+Locally installed **Clinic Management System**: desktop app + local REST backend + local database.
+Full decisions: `Docs/foundation.md`. UI system: `Docs/ui-foundation.md`. Components: `Docs/shared-components.md`.
+
+## Tech stack (locked)
+- .NET 10 (C#), solution `Mostawsef.slnx` at the repo root
+- Backend: ASP.NET Core Web API (controllers)
+- Frontend: Avalonia 12 (XAML, MVVM with CommunityToolkit.Mvvm), Fluent theme + our tokens
+- Database: PostgreSQL 17 (Docker in development, native install on clinic PCs)
+- ORM: EF Core 10 + Npgsql
+- UI languages: Arabic (RTL, default) and English, switchable at runtime; Light and Dark themes
+
+## Structure
+```
+backend/Mostawsef.Api             controllers, middleware, startup
+backend/Mostawsef.Application     use cases, services, interfaces
+backend/Mostawsef.Domain          entities, enums, business rules (depends on nothing)
+backend/Mostawsef.Infrastructure  EF Core, DbContext, repositories
+shared/Mostawsef.Contracts        request/response DTOs shared by API and desktop
+frontend/Mostawsef.Desktop        Avalonia app
+```
+
+## Hard rules
+- The desktop app talks to the backend **only over HTTP/REST**. It never references backend projects and never connects to the database.
+- Dependency direction: Domain <- Application <- Infrastructure <- Api. Desktop -> Contracts only.
+- EF Core / Npgsql packages live only in Infrastructure (Api has `EntityFrameworkCore.Design` for tooling only).
+- Modular monolith: organize by feature modules (`Application/Modules/<Feature>`), no microservices.
+- Keep SQLite as a possible fallback: no `jsonb`, arrays, `citext`, `EF.Functions.ILike` or raw SQL; store money as integers (smallest unit).
+- Do not add business logic or business modules unless the user asks for them.
+
+## Commands
+```powershell
+docker compose up -d                                   # dev PostgreSQL
+dotnet build Mostawsef.slnx
+dotnet run --project backend/Mostawsef.Api --launch-profile http   # http://localhost:5270/api/health
+dotnet run --project frontend/Mostawsef.Desktop
+```

@@ -3,7 +3,8 @@
     TextBox.textarea  multi-line text
 -->
 <Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="using:Mostawsef.Desktop.Components">
 
     <!-- Text inputs -->
     <Style Selector="TextBox">
@@ -12,7 +13,7 @@
         <Setter Property="Background" Value="{DynamicResource BrushSurface}" />
         <Setter Property="Foreground" Value="{DynamicResource BrushText}" />
         <Setter Property="BorderBrush" Value="{DynamicResource BrushBorderStrong}" />
-        <Setter Property="Padding" Value="10,6" />
+        <Setter Property="Padding" Value="{DynamicResource PaddingInput}" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
     <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
@@ -27,7 +28,7 @@
     <Style Selector="TextBox:pointerover, TextBox:focus">
         <Setter Property="Foreground" Value="{DynamicResource BrushText}" />
     </Style>
-    <Style Selector="TextBox:error /template/ Border#PART_BorderElement">
+    <Style Selector="TextBox:error /template/ Border#PART_BorderElement, ui|FormField:error TextBox /template/ Border#PART_BorderElement">
         <Setter Property="BorderBrush" Value="{DynamicResource BrushDanger}" />
     </Style>
     <Style Selector="TextBox.textarea">
@@ -49,7 +50,7 @@
         <Setter Property="HorizontalAlignment" Value="Stretch" />
     </Style>
     <Style Selector="ComboBox">
-        <Setter Property="Padding" Value="10,6" />
+        <Setter Property="Padding" Value="{DynamicResource PaddingInput}" />
     </Style>
 
     <!-- Selection -->
@@ -59,6 +60,18 @@
     </Style>
     <Style Selector="ToggleSwitch">
         <Setter Property="Foreground" Value="{DynamicResource BrushText}" />
+    </Style>
+
+    <!-- Lists -->
+    <Style Selector="ListBox">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource BrushSurfaceAlt}" />
+    </Style>
+    <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter, ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource BrushSurfaceSelected}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushPrimarySubtleText}" />
     </Style>
 
     <!-- Slider / progress -->

@@ -1,6 +1,9 @@
 <!-- Elevation utility classes for any Border: Classes="shadow-md". Values live in ShadowTokens.axaml. -->
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Style Selector="Border.shadow-xs">
+        <Setter Property="BoxShadow" Value="{DynamicResource ShadowXs}" />
+    </Style>
     <Style Selector="Border.shadow-sm">
         <Setter Property="BoxShadow" Value="{DynamicResource ShadowSm}" />
     </Style>
@@ -9,5 +12,8 @@
     </Style>
     <Style Selector="Border.shadow-lg">
         <Setter Property="BoxShadow" Value="{DynamicResource ShadowLg}" />
+    </Style>
+    <Style Selector="Border.shadow-xl">
+        <Setter Property="BoxShadow" Value="{DynamicResource ShadowXl}" />
     </Style>
 </Styles>
