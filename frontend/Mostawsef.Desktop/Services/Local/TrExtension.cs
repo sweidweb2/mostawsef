@@ -5,6 +5,7 @@ using Avalonia;
 using Avalonia.Data;
 using Avalonia.Data.Converters;
 using Avalonia.Markup.Xaml;
+using Mostawsef.Contracts.Common;
 
 namespace Mostawsef.Desktop.Services.Local;
 
@@ -67,6 +68,20 @@ public class TrKeyExtension(string path) : MarkupExtension
             : Translation.Bind(new ReflectionBinding(Path), new Translation.KeyConverter(App.Localization), Prefix);
 }
 
+/// <summary>
+/// The translated error of a form field, for a FormViewModel DataContext: Error="{l:FieldError Username}".
+/// Shows "ErrorCode.&lt;code&gt;" with the code's arguments as {0}, {1} (e.g. "max_length|50"); unknown codes show "ErrorCode.invalid".
+/// </summary>
+public class FieldErrorExtension(string field) : MarkupExtension
+{
+    public string Field { get; set; } = field;
+
+    public override object ProvideValue(IServiceProvider serviceProvider) =>
+        App.Services is null
+            ? Field
+            : Translation.Bind(new ReflectionBinding($"Errors[{Field}]"), new Translation.ErrorCodeConverter(App.Localization), null);
+}
+
 internal static class Translation
 {
     /// <summary>
@@ -114,6 +129,26 @@ internal static class Translation
             var key = prefix + value;
             var text = Localization.Get(key);
             return text == key ? value : text;
+        }
+    }
+
+    public sealed class ErrorCodeConverter(LocalizationService localization) : Converter(localization)
+    {
+        public override object? Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture)
+        {
+            if (values.Count == 0 || values[0] is not string { Length: > 0 } code)
+            {
+                return null;
+            }
+
+            var parts = code.Split(ErrorCodes.ArgumentSeparator);
+            var key = "ErrorCode." + parts[0];
+            if (Localization.Get(key) == key)
+            {
+                return Localization.Get("ErrorCode." + ErrorCodes.Invalid);
+            }
+
+            return Localization.Format(key, parts[1..]);
         }
     }
 

@@ -54,6 +54,7 @@ public static class ServiceRegistration
         services.AddSingleton<ApiClient>();
         services.AddSingleton<AuthApi>();
         services.AddSingleton<LogsApi>();
+        services.AddSingleton<UsersApi>();
 
         // Auth + navigation
         services.AddSingleton<SessionService>();

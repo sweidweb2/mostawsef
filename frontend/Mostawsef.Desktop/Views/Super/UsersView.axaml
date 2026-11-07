@@ -1,0 +1,123 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Mostawsef.Desktop.Components"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:conv="using:Mostawsef.Desktop.Converters"
+             xmlns:users="using:Mostawsef.Contracts.Users"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Super"
+             x:Class="Mostawsef.Desktop.Views.Super.UsersView"
+             x:DataType="vm:UsersViewModel">
+    <ScrollViewer>
+        <StackPanel Classes="page">
+            <ui:PageHeader Title="{l:Tr Nav.Users}" Subtitle="{l:Tr Users.Subtitle}">
+                <ui:PageHeader.Actions>
+                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                        <Button Classes="secondary" Command="{Binding RefreshCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                                <PathIcon Data="{StaticResource IconRefresh}" />
+                                <TextBlock Text="{l:Tr Common.Refresh}" />
+                            </StackPanel>
+                        </Button>
+                        <Button Name="AddUserButton" Classes="primary" Command="{Binding AddCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                                <PathIcon Data="{StaticResource IconPlus}" />
+                                <TextBlock Text="{l:Tr Users.Add}" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </ui:PageHeader.Actions>
+            </ui:PageHeader>
+
+            <ui:DataTable Height="560"
+                          IsLoading="{Binding IsLoading}"
+                          IsEmpty="{Binding IsEmpty}"
+                          HasError="{Binding HasLoadError}"
+                          ErrorTitle="{l:TrKey LoadErrorTitleKey}"
+                          ErrorDescription="{l:TrKey LoadErrorDescriptionKey}"
+                          RetryCommand="{Binding RefreshCommand}">
+                <ui:DataTable.Toolbar>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <ui:SearchBox MaxWidth="360"
+                                      HorizontalAlignment="Left"
+                                      Text="{Binding Search}"
+                                      SearchCommand="{Binding SearchCommand}" />
+                        <TextBlock Grid.Column="1" Classes="caption muted" Text="{l:Tr Users.Records, Arg=TotalCount}" VerticalAlignment="Center" />
+                    </Grid>
+                </ui:DataTable.Toolbar>
+
+                <DataGrid ItemsSource="{Binding Items}" IsReadOnly="True" CanUserSortColumns="False">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="{l:Tr Users.Col.FullName}" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="users:UserListItemDto">
+                                    <TextBlock Margin="12,0" VerticalAlignment="Center" FontWeight="Medium"
+                                               TextTrimming="CharacterEllipsis" Text="{Binding FullName}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="{l:Tr Users.Col.Username}" Width="220">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="users:UserListItemDto">
+                                    <TextBlock Margin="12,0" VerticalAlignment="Center" Classes="muted"
+                                               TextTrimming="CharacterEllipsis" Text="{Binding Username}" ToolTip.Tip="{Binding Username}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="{l:Tr Users.Col.Role}" Width="130">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="users:UserListItemDto">
+                                    <ui:Badge Margin="12,0" Kind="Primary" Text="{l:TrKey Role, Prefix=Role.}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="{l:Tr Users.Col.Status}" Width="110">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="users:UserListItemDto">
+                                    <Panel Margin="12,0" VerticalAlignment="Center">
+                                        <ui:Badge Kind="Success" Text="{l:Tr Users.Active}" IsVisible="{Binding IsActive}" />
+                                        <ui:Badge Text="{l:Tr Users.Inactive}" IsVisible="{Binding !IsActive}" />
+                                    </Panel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="{l:Tr Users.Col.LastLogin}" Width="160">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="users:UserListItemDto">
+                                    <TextBlock Margin="12,0" VerticalAlignment="Center" Classes="muted"
+                                               Text="{Binding LastLoginAt, Converter={x:Static conv:ValueConverters.LocalDateTime}, FallbackValue='—', TargetNullValue='—'}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="{l:Tr Common.Actions}" Width="140">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="users:UserListItemDto">
+                                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}" Margin="8,0" VerticalAlignment="Center">
+                                        <ui:IconButton Classes="ghost sm"
+                                                       Icon="{StaticResource IconEdit}"
+                                                       ToolTip.Tip="{l:Tr Common.Edit}"
+                                                       Command="{Binding $parent[DataGrid].((vm:UsersViewModel)DataContext).EditCommand}"
+                                                       CommandParameter="{Binding}" />
+                                        <ui:IconButton Classes="ghost sm"
+                                                       Icon="{StaticResource IconKey}"
+                                                       ToolTip.Tip="{l:Tr Users.ResetPasswordTitle}"
+                                                       Command="{Binding $parent[DataGrid].((vm:UsersViewModel)DataContext).ResetPasswordCommand}"
+                                                       CommandParameter="{Binding}" />
+                                        <ui:IconButton Classes="ghost destructive sm"
+                                                       Icon="{StaticResource IconDelete}"
+                                                       ToolTip.Tip="{l:Tr Common.Delete}"
+                                                       Command="{Binding $parent[DataGrid].((vm:UsersViewModel)DataContext).DeleteCommand}"
+                                                       CommandParameter="{Binding}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <ui:DataTable.Footer>
+                    <ui:Pagination CurrentPage="{Binding CurrentPage}" PageCount="{Binding PageCount}" IsEnabled="{Binding !IsLoading}" />
+                </ui:DataTable.Footer>
+            </ui:DataTable>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

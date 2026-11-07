@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -26,6 +28,9 @@ public class ApiClient(HttpClient http)
     public Task<ApiResult<bool>> PostAsync<TRequest>(string path, TRequest body, CancellationToken cancellationToken = default) =>
         SendAsync(() => http.PostAsJsonAsync(path, body, Json, cancellationToken), NoContent, cancellationToken);
 
+    public Task<ApiResult<TResponse>> PutAsync<TRequest, TResponse>(string path, TRequest body, CancellationToken cancellationToken = default) =>
+        SendAsync(() => http.PutAsJsonAsync(path, body, Json, cancellationToken), ReadJson<TResponse>, cancellationToken);
+
     public Task<ApiResult<bool>> DeleteAsync(string path, CancellationToken cancellationToken = default) =>
         SendAsync(() => http.DeleteAsync(path, cancellationToken), NoContent, cancellationToken);
 
@@ -51,7 +56,50 @@ public class ApiClient(HttpClient http)
                 return await read(response, cancellationToken);
             }
 
-            return ApiResult<T>.Fail(MapError(response.StatusCode), response.StatusCode);
+            var problem = (int)response.StatusCode is >= 400 and < 500 ? await ReadProblemAsync(response, cancellationToken) : null;
+            return ApiResult<T>.Fail(MapError(response.StatusCode), response.StatusCode, problem);
+        }
+    }
+
+    /// <summary>Reads "code" and "errors" from a problem body; null when the body is not a problem.</summary>
+    private static async Task<ApiProblem?> ReadProblemAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (string.IsNullOrWhiteSpace(body))
+            {
+                return null;
+            }
+
+            using var document = JsonDocument.Parse(body);
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object)
+            {
+                return null;
+            }
+
+            var code = root.TryGetProperty("code", out var c) && c.ValueKind == JsonValueKind.String ? c.GetString() : null;
+            var errors = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase);
+            if (root.TryGetProperty("errors", out var e) && e.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var field in e.EnumerateObject())
+                {
+                    if (field.Value.ValueKind == JsonValueKind.Array)
+                    {
+                        errors[field.Name] = field.Value.EnumerateArray()
+                            .Where(v => v.ValueKind == JsonValueKind.String)
+                            .Select(v => v.GetString()!)
+                            .ToArray();
+                    }
+                }
+            }
+
+            return new ApiProblem(code, errors);
+        }
+        catch (JsonException)
+        {
+            return null;
         }
     }
 

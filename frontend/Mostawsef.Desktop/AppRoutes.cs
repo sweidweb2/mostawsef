@@ -23,10 +23,14 @@ public static class AppRoutes
         .View<PortalShellViewModel, PortalShellView>()
         .View<ActivityLogDetailsViewModel, ActivityLogDetailsView>()
         .View<SystemErrorDetailsViewModel, SystemErrorDetailsView>()
+        .View<ChangePasswordFormViewModel, ChangePasswordFormView>()
+        .View<UserFormViewModel, UserFormView>()
+        .View<ResetPasswordFormViewModel, ResetPasswordFormView>()
         .Portal(Roles.Admin, "Portal.Admin", portal => portal
             .Page<DashboardViewModel, DashboardView>("IconDashboard", "Nav.Dashboard"))
         .Portal(Roles.Super, "Portal.Super", portal => portal
             .Page<DashboardViewModel, DashboardView>("IconDashboard", "Nav.Dashboard")
+            .Page<UsersViewModel, UsersView>("IconUsers", "Nav.Users")
             .Page<ActivityLogsViewModel, ActivityLogsView>("IconClock", "Nav.ActivityLogs")
             .Page<SystemErrorsViewModel, SystemErrorsView>("IconWarning", "Nav.SystemErrors"));
 }

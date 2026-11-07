@@ -7,6 +7,7 @@ using Mostawsef.Desktop.Services.Auth;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Navigation;
 using Mostawsef.Desktop.Services.Ui;
+using Mostawsef.Desktop.ViewModels.Auth;
 
 namespace Mostawsef.Desktop.ViewModels.Shell;
 
@@ -21,6 +22,7 @@ public partial class PortalShellViewModel : ViewModelBase
     private readonly IDialogService _dialogs;
     private readonly LocalizationService _localization;
     private readonly AuthApi _authApi;
+    private readonly IToastService _toasts;
 
     /// <summary>Pages already opened, by menu index: switching back reuses them instead of creating and loading them again.</summary>
     private readonly ViewModelBase?[] _pages;
@@ -31,13 +33,15 @@ public partial class PortalShellViewModel : ViewModelBase
         SessionService session,
         IDialogService dialogs,
         LocalizationService localization,
-        AuthApi authApi)
+        AuthApi authApi,
+        IToastService toasts)
     {
         _navigation = navigation;
         _session = session;
         _dialogs = dialogs;
         _localization = localization;
         _authApi = authApi;
+        _toasts = toasts;
 
         PortalTitleKey = portal.TitleKey;
         MenuItems = portal.Pages;
@@ -51,6 +55,9 @@ public partial class PortalShellViewModel : ViewModelBase
     public IReadOnlyList<PortalPage> MenuItems { get; }
 
     public string UserName => _session.CurrentUser?.Username ?? string.Empty;
+
+    /// <summary>The user's full name, or the username for accounts without one.</summary>
+    public string DisplayName => _session.CurrentUser is { FullName: { Length: > 0 } fullName } ? fullName : UserName;
 
     /// <summary>Resource key of the user's role name, e.g. "Role.Super".</summary>
     public string RoleKey => $"Role.{_session.CurrentUser?.Role}";
@@ -86,6 +93,16 @@ public partial class PortalShellViewModel : ViewModelBase
 
     /// <summary>Called when the portal is replaced (e.g. sign-out): cancels the open page's API calls.</summary>
     public void Close() => (CurrentPage as ILoadablePage)?.Deactivate();
+
+    [RelayCommand]
+    private async Task ChangePasswordAsync()
+    {
+        var form = new ChangePasswordFormViewModel(_authApi, _dialogs, _localization);
+        if (await _dialogs.ShowFormAsync(form, _localization.Get("Auth.ChangePassword")))
+        {
+            _toasts.Success(_localization.Get("Auth.PasswordChanged"));
+        }
+    }
 
     [RelayCommand]
     private async Task SignOutAsync()

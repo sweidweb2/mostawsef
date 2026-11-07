@@ -66,12 +66,19 @@ Recorded today: `auth.signed_in`, `auth.sign_in_failed`, `auth.signed_out`, `log
 
 | Endpoint | Purpose |
 | --- | --- |
-| `GET /api/activity-logs?page=&pageSize=&search=` | Paged list, newest first (max page size 100) |
-| `GET /api/activity-logs/stats` | Total, today, last 7 days, failed sign-ins today |
+| `GET /api/activity-logs?pageSize=&search=&after=\|before=\|last=true&includeTotal=` | Keyset-paged list, newest first (max page size 100); see below |
+| `GET /api/activity-logs/stats` | Total, today, last 7 days, failed sign-ins today (one query) |
 | `GET /api/activity-logs/{id}` | Full record |
 | `DELETE /api/activity-logs/{id}` | Delete (the deletion itself is logged) |
 | `GET /api/system-errors...` | Same four endpoints for errors (stats: total, today, last 7 days, critical) |
 | `POST /api/system-errors/report` | Desktop error report (anonymous, 30/min per IP) |
+
+Lists use keyset paging (`CursorQuery` / `CursorPage<T>`), because log tables only grow: each page is read from
+the `(OccurredAt, Id)` index from a cursor, so a deep page costs the same as the first one (no `OFFSET`).
+Without a position the newest page comes back; `after=NextCursor` moves to older rows, `before=PreviousCursor` to newer
+ones, `last=true` reads the oldest rows. A null cursor means that end is reached. The `COUNT` of matches is the
+expensive part: send `includeTotal=false` when only the page changes (`TotalCount` is then null). An unknown cursor,
+or more than one position, returns 400.
 
 ## Desktop pages (Super portal)
 
@@ -79,5 +86,7 @@ Recorded today: `auth.signed_in`, `auth.sign_in_failed`, `auth.signed_out`, `log
 pagination, an eye button (details modal) and a delete button (with confirmation) on each row.
 If the list cannot load, the table shows an error state with a Retry button (a specific message when the server is unreachable).
 Both pages derive from `ViewModels/Shell/PagedListViewModel`, which a new list page can reuse as well.
+Page moves send one cursor request without the total; a search counts again; the stat cards load only on the
+first load, Refresh and after a delete (they cover the whole table, not the shown page or search).
 The shell keeps a page once opened: returning to it shows the loaded data without a new request (Refresh reloads).
 Leaving a page cancels its requests still running; if that interrupted the first load, returning loads it again.

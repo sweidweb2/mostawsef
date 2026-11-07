@@ -4,6 +4,7 @@ using Mostawsef.Api.Middleware;
 using Mostawsef.Api.Services;
 using Mostawsef.Application;
 using Mostawsef.Application.Interfaces;
+using Mostawsef.Application.Modules.Logs;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Infrastructure;
 using Mostawsef.Infrastructure.Persistence;
@@ -28,6 +29,11 @@ builder.Services.AddSingleton<ICurrentUser, CurrentUser>();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(connectionString);
 builder.Services.AddJwtAuth();
+builder.Services.AddOptions<LogRetentionOptions>()
+    .BindConfiguration(LogRetentionOptions.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddHostedService<LogRetentionWorker>();
 
 var app = builder.Build();
 
@@ -41,8 +47,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseHttpsRedirection();
-
+// No HTTPS redirection: the desktop app calls the API over plain HTTP, and a redirect drops the Authorization header.
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();

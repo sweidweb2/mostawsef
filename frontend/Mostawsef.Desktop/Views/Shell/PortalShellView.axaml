@@ -42,6 +42,11 @@
                         <Button Name="UserMenuButton" Classes="ghost">
                             <Button.Flyout>
                                 <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                    <MenuItem Name="ChangePasswordMenuItem" Header="{l:Tr Auth.ChangePassword}" Command="{Binding ChangePasswordCommand}">
+                                        <MenuItem.Icon>
+                                            <PathIcon Data="{StaticResource IconKey}" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
                                     <MenuItem Name="LogoutMenuItem" Header="{l:Tr Auth.Logout}" Command="{Binding SignOutCommand}">
                                         <MenuItem.Icon>
                                             <PathIcon Data="{StaticResource IconLogout}" />
@@ -50,9 +55,9 @@
                                 </MenuFlyout>
                             </Button.Flyout>
                             <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
-                                <ui:Avatar DisplayName="{Binding UserName}" Size="{DynamicResource AvatarSizeSm}" />
+                                <ui:Avatar DisplayName="{Binding DisplayName}" Size="{DynamicResource AvatarSizeSm}" />
                                 <StackPanel VerticalAlignment="Center" Classes="hide-compact">
-                                    <TextBlock Classes="strong" Text="{Binding UserName}" />
+                                    <TextBlock Classes="strong" Text="{Binding DisplayName}" />
                                     <TextBlock Classes="caption muted" Text="{l:TrKey RoleKey}" />
                                 </StackPanel>
                             </StackPanel>

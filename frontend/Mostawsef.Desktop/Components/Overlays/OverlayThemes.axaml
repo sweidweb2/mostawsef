@@ -38,7 +38,7 @@
                             <ui:IconButton Grid.Column="1"
                                            Classes="ghost sm"
                                            Icon="{StaticResource IconClose}"
-                                           Command="{TemplateBinding CloseCommand}"
+                                           Command="{TemplateBinding DismissCommand}"
                                            IsVisible="{TemplateBinding ShowCloseButton}" />
                         </Grid>
                         <Border DockPanel.Dock="Bottom"

@@ -63,7 +63,7 @@ public class DialogHost : ContentControl
             var top = _layers.Keys.Last();
             if (top.ShowCloseButton)
             {
-                top.Close();
+                _ = top.DismissAsync();
                 e.Handled = true;
                 return;
             }

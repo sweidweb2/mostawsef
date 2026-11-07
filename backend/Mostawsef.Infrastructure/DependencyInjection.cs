@@ -19,8 +19,8 @@ public static class DependencyInjection
     {
         services.AddSingleton<AuditInterceptor>();
 
-        // Registers both a scoped AppDbContext (repositories) and IDbContextFactory (log engines).
-        services.AddDbContextFactory<AppDbContext>((sp, options) => options
+        // Pooled: registers a scoped AppDbContext (repositories) and IDbContextFactory (log engines), both renting from one pool.
+        services.AddPooledDbContextFactory<AppDbContext>((sp, options) => options
             .UseNpgsql(connectionString, npgsql => npgsql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName))
             .AddInterceptors(sp.GetRequiredService<AuditInterceptor>()));
 

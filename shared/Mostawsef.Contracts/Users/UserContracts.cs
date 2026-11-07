@@ -12,8 +12,8 @@ public static class UserRules
     public const int PasswordMinLength = 8;
     public const int PasswordMaxLength = 128;
 
-    /// <summary>Letters, digits and . _ @ - (e.g. an email address).</summary>
-    public const string UsernamePattern = "^[A-Za-z0-9._@-]+$";
+    /// <summary>Letters, digits and . _ @ - (e.g. an email address). Surrounding spaces are trimmed by the API.</summary>
+    public const string UsernamePattern = @"^\s*[A-Za-z0-9._@-]+\s*$";
 }
 
 public record UserListItemDto(

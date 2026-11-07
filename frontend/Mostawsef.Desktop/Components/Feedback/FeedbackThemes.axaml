@@ -250,6 +250,64 @@
         </Setter>
     </ControlTheme>
 
+    <!-- Alert -->
+    <ControlTheme x:Key="{x:Type ui:Alert}" TargetType="ui:Alert">
+        <Setter Property="Background" Value="{DynamicResource BrushInfoSubtle}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BrushInfoBorder}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushInfoText}" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{DynamicResource BorderWidth}"
+                        CornerRadius="{DynamicResource RadiusMd}"
+                        Padding="{DynamicResource PaddingControl}">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource GapControls}">
+                        <PathIcon Name="PART_Icon"
+                                  Data="{StaticResource IconInfo}"
+                                  Width="{DynamicResource IconSizeSm}"
+                                  Height="{DynamicResource IconSizeSm}"
+                                  Margin="0,3,0,0"
+                                  VerticalAlignment="Top"
+                                  Foreground="{DynamicResource BrushInfo}" />
+                        <TextBlock Grid.Column="1"
+                                   Text="{TemplateBinding Text}"
+                                   Foreground="{TemplateBinding Foreground}"
+                                   TextWrapping="Wrap" />
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:success">
+            <Setter Property="Background" Value="{DynamicResource BrushSuccessSubtle}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushSuccessBorder}" />
+            <Setter Property="Foreground" Value="{DynamicResource BrushSuccessText}" />
+        </Style>
+        <Style Selector="^:success /template/ PathIcon#PART_Icon">
+            <Setter Property="Data" Value="{StaticResource IconSuccess}" />
+            <Setter Property="Foreground" Value="{DynamicResource BrushSuccess}" />
+        </Style>
+        <Style Selector="^:warning">
+            <Setter Property="Background" Value="{DynamicResource BrushWarningSubtle}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushWarningBorder}" />
+            <Setter Property="Foreground" Value="{DynamicResource BrushWarningText}" />
+        </Style>
+        <Style Selector="^:warning /template/ PathIcon#PART_Icon">
+            <Setter Property="Data" Value="{StaticResource IconWarning}" />
+            <Setter Property="Foreground" Value="{DynamicResource BrushWarning}" />
+        </Style>
+        <Style Selector="^:danger">
+            <Setter Property="Background" Value="{DynamicResource BrushDangerSubtle}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushDangerBorder}" />
+            <Setter Property="Foreground" Value="{DynamicResource BrushDangerText}" />
+        </Style>
+        <Style Selector="^:danger /template/ PathIcon#PART_Icon">
+            <Setter Property="Data" Value="{StaticResource IconError}" />
+            <Setter Property="Foreground" Value="{DynamicResource BrushDanger}" />
+        </Style>
+    </ControlTheme>
+
     <!-- ErrorState -->
     <ControlTheme x:Key="{x:Type ui:ErrorState}" TargetType="ui:ErrorState">
         <Setter Property="Icon" Value="{StaticResource IconError}" />
