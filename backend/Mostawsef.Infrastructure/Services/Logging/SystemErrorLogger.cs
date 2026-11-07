@@ -5,6 +5,7 @@ using Mostawsef.Application.Interfaces;
 using Mostawsef.Domain.Entities;
 using Mostawsef.Domain.Enums;
 using Mostawsef.Infrastructure.Persistence.Context;
+using Mostawsef.Infrastructure.Persistence.Repositories;
 
 namespace Mostawsef.Infrastructure.Services.Logging;
 
@@ -37,7 +38,7 @@ public class SystemErrorLogger(
         try
         {
             await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
-            db.SystemErrors.Add(new SystemError(
+            var error = new SystemError(
                 entry.Level,
                 entry.Source,
                 entry.Message,
@@ -50,7 +51,9 @@ public class SystemErrorLogger(
                 entry.Username ?? currentUser.Username,
                 entry.IncludeRequestInfo ? currentUser.TraceId : null,
                 currentUser.IpAddress,
-                entry.Details is null ? null : JsonSerializer.Serialize(entry.Details, ActivityLogger.Json)));
+                entry.Details is null ? null : JsonSerializer.Serialize(entry.Details, ActivityLogger.Json));
+            error.FillSearchText();
+            db.SystemErrors.Add(error);
 
             await db.SaveChangesAsync(cancellationToken);
         }

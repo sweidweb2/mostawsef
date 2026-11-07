@@ -1,0 +1,88 @@
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Mostawsef.Contracts.Orders;
+using Mostawsef.Desktop.Services.Api;
+using Mostawsef.Desktop.Services.Navigation;
+using Mostawsef.Desktop.ViewModels.Shell;
+
+namespace Mostawsef.Desktop.ViewModels.Admin;
+
+/// <summary>Admin portal sub-page: one order's main details and tests (read-only). Set <see cref="OrderId"/> before it opens.</summary>
+public partial class OrderDetailsViewModel(OrdersApi orders, NavigationService navigation) : ViewModelBase, ILoadablePage
+{
+    private CancellationTokenSource? _loadCancellation;
+
+    public Guid OrderId { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasOrder))]
+    public partial OrderDetailsDto? Order { get; private set; }
+
+    public bool HasOrder => Order is not null;
+
+    [ObservableProperty]
+    public partial bool IsLoading { get; private set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasLoadError), nameof(LoadErrorTitleKey), nameof(LoadErrorDescriptionKey))]
+    public partial ApiError? LoadError { get; private set; }
+
+    public bool HasLoadError => LoadError is not null;
+
+    public string? LoadErrorTitleKey => LoadError switch
+    {
+        null => null,
+        ApiError.Unreachable => "Error.UnreachableTitle",
+        ApiError.NotFound => "OrderDetails.NotFound",
+        _ => "Error.Title",
+    };
+
+    public string? LoadErrorDescriptionKey => LoadError switch
+    {
+        null => null,
+        ApiError.Unreachable => "Error.UnreachableDescription",
+        ApiError.NotFound => null,
+        _ => "Error.Description",
+    };
+
+    public Task ActivateAsync() => Order is null ? LoadAsync() : Task.CompletedTask;
+
+    public void Deactivate() => _loadCancellation?.Cancel();
+
+    [RelayCommand]
+    private Task RefreshAsync() => LoadAsync();
+
+    [RelayCommand]
+    private Task<bool> BackAsync() => navigation.BackAsync();
+
+    private async Task LoadAsync()
+    {
+        _loadCancellation?.Cancel();
+        using var cancellation = new CancellationTokenSource();
+        _loadCancellation = cancellation;
+
+        IsLoading = true;
+        try
+        {
+            var result = await orders.GetOrderAsync(OrderId, cancellation.Token);
+            cancellation.Token.ThrowIfCancellationRequested();
+            Order = result.Value;
+            LoadError = result.IsSuccess ? null : result.Error;
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            // The user left the page; the next activation loads again.
+        }
+        finally
+        {
+            if (_loadCancellation == cancellation)
+            {
+                _loadCancellation = null;
+                IsLoading = false;
+            }
+        }
+    }
+}

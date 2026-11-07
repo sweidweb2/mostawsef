@@ -1,0 +1,109 @@
+using System.ComponentModel.DataAnnotations;
+using Mostawsef.Contracts.Common;
+using Mostawsef.Contracts.LabTests;
+using Mostawsef.Contracts.Patients;
+
+namespace Mostawsef.Contracts.Orders;
+
+/// <summary>Limits shared by the API and the desktop. Amounts are minor units of the clinic currency.</summary>
+public static class OrderRules
+{
+    public const int PaymentNotesMaxLength = 500;
+
+    /// <summary>10,000,000.00 in the clinic currency.</summary>
+    public const long MaxPaymentAmount = 1_000_000_000;
+}
+
+/// <summary>Order status values. The desktop shows "OrderStatus.&lt;value&gt;".</summary>
+public static class OrderStatuses
+{
+    public const string Pending = "Pending";
+    public const string PartiallyPaid = "PartiallyPaid";
+    public const string Paid = "Paid";
+    public const string Cancelled = "Cancelled";
+    public const string Refunded = "Refunded";
+
+    public static readonly IReadOnlyList<string> All = [Pending, PartiallyPaid, Paid, Cancelled, Refunded];
+}
+
+/// <summary>Payment methods. The desktop shows "PaymentMethod.&lt;value&gt;".</summary>
+public static class PaymentMethods
+{
+    public const string Cash = "Cash";
+    public const string Card = "Card";
+    public const string Transfer = "Transfer";
+    public const string Insurance = "Insurance";
+
+    public static readonly IReadOnlyList<string> All = [Cash, Card, Transfer, Insurance];
+}
+
+public record OrderListItemDto(
+    Guid Id,
+    string Number,
+    DateTime CreatedAt,
+    string PatientName,
+    string PatientPhone,
+    int TestsCount,
+    long Total,
+    long Paid,
+    string Status);
+
+public record OrderItemDto(Guid LabTestId, string Code, string Name, long OurPrice);
+
+public record OrderDetailsDto(
+    Guid Id,
+    string Number,
+    DateTime CreatedAt,
+    string? CreatedBy,
+    Guid PatientId,
+    string PatientName,
+    string PatientPhone,
+    string Status,
+    string Currency,
+    long Total,
+    long Paid,
+    long Balance,
+    IReadOnlyList<OrderItemDto> Items);
+
+/// <summary>
+/// A new order. Exactly one of <see cref="PatientId"/> (an existing patient) and <see cref="NewPatient"/> (created with the order).
+/// Field errors of nested values come back as "NewPatient.Phone", "Items[0].LabTestId", "FirstPayment.Amount".
+/// </summary>
+public record CreateOrderRequest
+{
+    public Guid? PatientId { get; init; }
+
+    public CreatePatientRequest? NewPatient { get; init; }
+
+    [Required(ErrorMessage = ErrorCodes.Required)]
+    [MinLength(1, ErrorMessage = ErrorCodes.Required)]
+    public IReadOnlyList<CreateOrderItemRequest> Items { get; init; } = [];
+
+    /// <summary>Optional; at most the order total.</summary>
+    public CreateFirstPaymentRequest? FirstPayment { get; init; }
+}
+
+public record CreateOrderItemRequest
+{
+    [Required(ErrorMessage = ErrorCodes.Required)]
+    public Guid? LabTestId { get; init; }
+
+    /// <summary>Our price for this order; null uses the test's catalog price.</summary>
+    [Range(0, LabTestRules.MaxAmount, ErrorMessage = ErrorCodes.Range)]
+    public long? OurPrice { get; init; }
+}
+
+/// <summary>Paid in the clinic currency when the order is created.</summary>
+public record CreateFirstPaymentRequest
+{
+    [Required(ErrorMessage = ErrorCodes.Required)]
+    [Range(1, OrderRules.MaxPaymentAmount, ErrorMessage = ErrorCodes.Range)]
+    public long? Amount { get; init; }
+
+    [Required(ErrorMessage = ErrorCodes.Required)]
+    [AllowedValues(PaymentMethods.Cash, PaymentMethods.Card, PaymentMethods.Transfer, PaymentMethods.Insurance, ErrorMessage = ErrorCodes.Invalid)]
+    public string Method { get; init; } = PaymentMethods.Cash;
+
+    [MaxLength(OrderRules.PaymentNotesMaxLength, ErrorMessage = ErrorCodes.MaxLength)]
+    public string? Notes { get; init; }
+}

@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Mostawsef.Desktop.Components"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:conv="using:Mostawsef.Desktop.Converters"
+             xmlns:orders="using:Mostawsef.Contracts.Orders"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Admin"
+             x:Class="Mostawsef.Desktop.Views.Admin.OrderDetailsView"
+             x:DataType="vm:OrderDetailsViewModel">
+    <ScrollViewer>
+        <StackPanel Classes="page">
+            <ui:PageHeader Title="{l:Tr OrderDetails.Title, Arg=Order.Number}" Subtitle="{l:Tr OrderDetails.Subtitle}">
+                <ui:PageHeader.Breadcrumb>
+                    <Button Name="BackButton" Classes="ghost sm" Command="{Binding BackCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}">
+                            <PathIcon Data="{StaticResource IconChevronStart}" />
+                            <TextBlock Text="{l:Tr OrderDetails.BackToOrders}" />
+                        </StackPanel>
+                    </Button>
+                </ui:PageHeader.Breadcrumb>
+                <ui:PageHeader.Actions>
+                    <ui:Badge Name="StatusBadge"
+                              IsVisible="{Binding HasOrder}"
+                              Kind="{Binding Order.Status, Converter={x:Static conv:ValueConverters.OrderStatusToBadgeKind}}"
+                              Text="{l:TrKey Order.Status, Prefix=OrderStatus.}" />
+                </ui:PageHeader.Actions>
+            </ui:PageHeader>
+
+            <Panel MinHeight="240">
+                <ui:ErrorState IsVisible="{Binding HasLoadError}"
+                               Title="{l:TrKey LoadErrorTitleKey}"
+                               Description="{l:TrKey LoadErrorDescriptionKey}"
+                               RetryCommand="{Binding RefreshCommand}" />
+
+                <StackPanel Spacing="{DynamicResource GapGrid}" IsVisible="{Binding HasOrder}">
+                    <ui:ResponsiveGrid MinColumnWidth="180" MaxColumns="3"
+                                       ColumnSpacing="{DynamicResource GapGrid}" RowSpacing="{DynamicResource GapGrid}">
+                        <ui:StatCard Name="TotalCard" Title="{l:Tr Orders.Col.Total}" Value="{l:Money Order.Total}" />
+                        <ui:StatCard Name="PaidCard" Kind="Success" Title="{l:Tr Orders.Col.Paid}" Value="{l:Money Order.Paid}" />
+                        <ui:StatCard Name="BalanceCard" Kind="Warning" Title="{l:Tr OrderDetails.Balance}" Value="{l:Money Order.Balance}" />
+                    </ui:ResponsiveGrid>
+
+                    <ui:Card Title="{l:Tr OrderDetails.Info}">
+                        <ui:DetailsView>
+                            <ui:DetailsItem Label="{l:Tr Orders.Col.Number}" Value="{Binding Order.Number}" />
+                            <ui:DetailsItem Label="{l:Tr Orders.Col.Date}"
+                                            Value="{Binding Order.CreatedAt, Converter={x:Static conv:ValueConverters.LocalDateTime}}" />
+                            <ui:DetailsItem Label="{l:Tr Orders.Col.Patient}" Value="{Binding Order.PatientName}" />
+                            <ui:DetailsItem Label="{l:Tr Orders.Col.Phone}" Value="{Binding Order.PatientPhone}" />
+                            <ui:DetailsItem Label="{l:Tr Orders.Col.Status}" Value="{l:TrKey Order.Status, Prefix=OrderStatus.}" />
+                            <ui:DetailsItem Label="{l:Tr OrderDetails.CreatedBy}" Value="{Binding Order.CreatedBy}" />
+                        </ui:DetailsView>
+                    </ui:Card>
+
+                    <ui:Card Title="{l:Tr OrderDetails.Tests, Arg=Order.Items.Count}">
+                        <ItemsControl Name="TestsList" ItemsSource="{Binding Order.Items}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Spacing="{DynamicResource GapControls}" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="orders:OrderItemDto">
+                                    <Grid ColumnDefinitions="120,*,Auto" ColumnSpacing="{DynamicResource GapControls}">
+                                        <TextBlock Classes="muted" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Text="{Binding Code}" />
+                                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontWeight="Medium"
+                                                   TextWrapping="Wrap" Text="{Binding Name}" />
+                                        <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="{l:Money OurPrice}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ui:Card>
+                </StackPanel>
+
+                <ui:LoadingOverlay IsLoading="{Binding IsLoading}" />
+            </Panel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

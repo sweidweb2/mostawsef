@@ -27,6 +27,9 @@ public partial class PortalShellViewModel : ViewModelBase
     /// <summary>Pages already opened, by menu index: switching back reuses them instead of creating and loading them again.</summary>
     private readonly ViewModelBase?[] _pages;
 
+    /// <summary>Set while the menu goes back to its entry because the user kept a sub-page's changes.</summary>
+    private bool _restoringMenu;
+
     public PortalShellViewModel(
         PortalDefinition portal,
         NavigationService navigation,
@@ -74,24 +77,88 @@ public partial class PortalShellViewModel : ViewModelBase
     [ObservableProperty]
     public partial int SelectedMenuIndex { get; set; } = -1;
 
+    /// <summary>The menu page, or the sub-page opened on top of it.</summary>
     [ObservableProperty]
     public partial ViewModelBase? CurrentPage { get; private set; }
 
-    partial void OnSelectedMenuIndexChanged(int value)
+    /// <summary>A page opened from the menu page (NavigationService.OpenAsync); the menu keeps its entry selected.</summary>
+    public ViewModelBase? SubPage { get; private set; }
+
+    partial void OnSelectedMenuIndexChanged(int oldValue, int newValue)
     {
-        if (value < 0 || value >= MenuItems.Count)
+        if (_restoringMenu || newValue < 0 || newValue >= MenuItems.Count)
         {
             return;
         }
 
-        var pageType = MenuItems[value].PageType;
-        var page = _navigation.CanAccess(pageType) ? _pages[value] ??= _navigation.CreatePage(pageType) : null;
+        if (SubPage is FormViewModel { IsDirty: true } form)
+        {
+            _ = LeaveDirtySubPageAsync(form, oldValue, newValue);
+            return;
+        }
+
+        ShowMenuPage(newValue);
+    }
+
+    /// <summary>Shows <paramref name="page"/> in place of the current page; false if the open sub-page kept unsaved changes.</summary>
+    public async Task<bool> ShowSubPageAsync(ViewModelBase page)
+    {
+        if (SubPage is FormViewModel form && !await form.ConfirmDiscardAsync())
+        {
+            return false;
+        }
+
+        Show(page);
+        SubPage = page;
+        return true;
+    }
+
+    /// <summary>Back to the menu page; false if the sub-page kept unsaved changes.</summary>
+    public async Task<bool> CloseSubPageAsync()
+    {
+        if (SubPage is null)
+        {
+            return true;
+        }
+
+        if (SubPage is FormViewModel form && !await form.ConfirmDiscardAsync())
+        {
+            return false;
+        }
+
+        ShowMenuPage(SelectedMenuIndex);
+        return true;
+    }
+
+    private async Task LeaveDirtySubPageAsync(FormViewModel form, int oldValue, int newValue)
+    {
+        if (await form.ConfirmDiscardAsync())
+        {
+            ShowMenuPage(newValue);
+            return;
+        }
+
+        _restoringMenu = true;
+        SelectedMenuIndex = oldValue;
+        _restoringMenu = false;
+    }
+
+    private void ShowMenuPage(int index)
+    {
+        var pageType = MenuItems[index].PageType;
+        var page = _navigation.CanAccess(pageType) ? _pages[index] ??= _navigation.CreatePage(pageType) : null;
         if (page is null)
         {
             _session.SignOut(SignOutReason.Expired);
             return;
         }
 
+        SubPage = null;
+        Show(page);
+    }
+
+    private void Show(ViewModelBase page)
+    {
         (CurrentPage as ILoadablePage)?.Deactivate();
         CurrentPage = page;
         if (page is ILoadablePage loadable)

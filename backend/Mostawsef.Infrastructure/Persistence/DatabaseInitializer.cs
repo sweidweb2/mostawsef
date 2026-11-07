@@ -63,7 +63,7 @@ public static class DatabaseInitializer
             }
 
             var fullName = string.IsNullOrWhiteSpace(seed.FullName) ? username : seed.FullName;
-            db.Users.Add(new User(username, fullName, hasher.Hash(seed.Password), seed.Role));
+            db.Users.Add(new User(username, fullName, SearchText.Normalize(fullName), hasher.Hash(seed.Password), seed.Role));
             logger.LogInformation("Seeded user {Username} with role {Role}", username, seed.Role);
         }
 

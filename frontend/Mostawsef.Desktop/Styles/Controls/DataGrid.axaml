@@ -8,7 +8,7 @@
         <Setter Property="GridLinesVisibility" Value="Horizontal" />
         <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource BrushDivider}" />
         <Setter Property="HeadersVisibility" Value="Column" />
-        <Setter Property="RowHeight" Value="44" />
+        <Setter Property="RowHeight" Value="{DynamicResource TableRowHeight}" />
         <Setter Property="CanUserResizeColumns" Value="True" />
         <Setter Property="CanUserSortColumns" Value="True" />
         <Setter Property="SelectionMode" Value="Single" />
@@ -20,11 +20,38 @@
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="FontSize" Value="{DynamicResource FontSizeCaption}" />
         <Setter Property="Padding" Value="12,0" />
-        <Setter Property="MinHeight" Value="40" />
+        <Setter Property="MinHeight" Value="{DynamicResource TableHeaderHeight}" />
     </Style>
 
     <Style Selector="DataGridCell">
         <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
         <Setter Property="Padding" Value="12,0" />
+    </Style>
+
+    <!--
+        Row hover: a light tint and an accent bar on the start edge (left in English, right in Arabic).
+        The bar is always there but transparent, so hovering never shifts the cells.
+    -->
+    <Style Selector="DataGridRow">
+        <Setter Property="BorderThickness" Value="{DynamicResource TableRowAccent}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="BorderBrush" Duration="{StaticResource DurationFast}" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="DataGridRow /template/ Rectangle#BackgroundRectangle">
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Fill" Duration="{StaticResource DurationFast}" />
+            </Transitions>
+        </Setter>
+    </Style>
+    <Style Selector="DataGridRow:pointerover">
+        <Setter Property="BorderBrush" Value="{DynamicResource BrushPrimary}" />
+    </Style>
+    <Style Selector="DataGridRow:pointerover /template/ Rectangle#BackgroundRectangle">
+        <Setter Property="Fill" Value="{DynamicResource BrushPrimarySubtle}" />
     </Style>
 </Styles>

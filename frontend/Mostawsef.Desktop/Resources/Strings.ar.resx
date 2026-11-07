@@ -158,6 +158,9 @@
   <data name="Action.lab_tests.created" xml:space="preserve"><value>إضافة تحليل</value></data>
   <data name="Action.lab_tests.updated" xml:space="preserve"><value>تعديل تحليل</value></data>
   <data name="Action.lab_tests.deleted" xml:space="preserve"><value>حذف تحليل</value></data>
+  <data name="Action.patients.created" xml:space="preserve"><value>إضافة مريض</value></data>
+  <data name="Action.patients.updated" xml:space="preserve"><value>تعديل مريض</value></data>
+  <data name="Action.patients.deleted" xml:space="preserve"><value>حذف مريض</value></data>
 
   <data name="Nav.ClinicSettings" xml:space="preserve"><value>إعدادات العيادة</value></data>
   <data name="Settings.Subtitle" xml:space="preserve"><value>بيانات العيادة التي تظهر في المطبوعات، والعملة المستخدمة لكل المبالغ.</value></data>
@@ -239,8 +242,10 @@
   <data name="LabTests.AddTitle" xml:space="preserve"><value>تحليل جديد</value></data>
   <data name="LabTests.EditTitle" xml:space="preserve"><value>تعديل التحليل</value></data>
   <data name="LabTests.Records" xml:space="preserve"><value>{0} تحليل</value></data>
-  <data name="LabTests.TableView" xml:space="preserve"><value>عرض كجدول</value></data>
-  <data name="LabTests.GridView" xml:space="preserve"><value>عرض كبطاقات</value></data>
+  <data name="Common.Copy" xml:space="preserve"><value>نسخ</value></data>
+  <data name="Common.RowNumber" xml:space="preserve"><value>#</value></data>
+  <data name="Common.TableView" xml:space="preserve"><value>عرض كجدول</value></data>
+  <data name="Common.GridView" xml:space="preserve"><value>عرض كبطاقات</value></data>
   <data name="LabTests.Col.Code" xml:space="preserve"><value>الكود</value></data>
   <data name="LabTests.Col.Name" xml:space="preserve"><value>اسم التحليل</value></data>
   <data name="LabTests.Col.Price" xml:space="preserve"><value>السعر</value></data>
@@ -260,4 +265,97 @@
   <data name="LabTests.Saved" xml:space="preserve"><value>تم حفظ التحليل.</value></data>
   <data name="LabTests.Deleted" xml:space="preserve"><value>تم حذف التحليل.</value></data>
   <data name="LabTests.DeleteConfirm" xml:space="preserve"><value>حذف التحليل "{0}"؟</value></data>
+
+  <data name="Gender.Male" xml:space="preserve"><value>ذكر</value></data>
+  <data name="Gender.Female" xml:space="preserve"><value>أنثى</value></data>
+
+  <data name="Nav.Patients" xml:space="preserve"><value>المرضى</value></data>
+  <data name="Patients.Subtitle" xml:space="preserve"><value>مرضى العيادة، وأرقام التواصل، والتأمين.</value></data>
+  <data name="Patients.Add" xml:space="preserve"><value>إضافة مريض</value></data>
+  <data name="Patients.AddTitle" xml:space="preserve"><value>مريض جديد</value></data>
+  <data name="Patients.EditTitle" xml:space="preserve"><value>تعديل المريض</value></data>
+  <data name="Patients.Records" xml:space="preserve"><value>{0} مريض</value></data>
+  <data name="Patients.SearchPlaceholder" xml:space="preserve"><value>ابحث بالاسم أو رقم الهاتف...</value></data>
+  <data name="Patients.ExportHint" xml:space="preserve"><value>تصدير كل المرضى كملف PDF</value></data>
+  <data name="Patients.Col.FullName" xml:space="preserve"><value>الاسم الكامل</value></data>
+  <data name="Patients.Col.Phone" xml:space="preserve"><value>الهاتف</value></data>
+  <data name="Patients.Col.GuardianPhone" xml:space="preserve"><value>هاتف ولي الأمر</value></data>
+  <data name="Patients.Col.Gender" xml:space="preserve"><value>النوع</value></data>
+  <data name="Patients.Col.DateOfBirth" xml:space="preserve"><value>تاريخ الميلاد</value></data>
+  <data name="Patients.Col.Insured" xml:space="preserve"><value>التأمين</value></data>
+  <data name="Patients.Col.Notes" xml:space="preserve"><value>ملاحظات</value></data>
+  <data name="Patients.Insured" xml:space="preserve"><value>مؤمَّن عليه</value></data>
+  <data name="Patients.NotInsured" xml:space="preserve"><value>غير مؤمَّن</value></data>
+  <data name="Patients.Field.FullNamePlaceholder" xml:space="preserve"><value>مثال: منى عادل حسن</value></data>
+  <data name="Patients.Field.PhonePlaceholder" xml:space="preserve"><value>مثال: 010 1234 5678</value></data>
+  <data name="Patients.Field.GuardianPhonePlaceholder" xml:space="preserve"><value>اختياري، مثل رقم أحد الوالدين</value></data>
+  <data name="Patients.Field.GenderPlaceholder" xml:space="preserve"><value>اختر...</value></data>
+  <data name="Patients.Field.DateOfBirthPlaceholder" xml:space="preserve"><value>اختياري</value></data>
+  <data name="Patients.Field.NotesPlaceholder" xml:space="preserve"><value>الحساسية، الأمراض المزمنة، أي شيء يجب أن يعرفه الفريق</value></data>
+  <data name="Patients.Field.IsInsured" xml:space="preserve"><value>المريض مؤمَّن عليه</value></data>
+  <data name="Patients.Saved" xml:space="preserve"><value>تم حفظ المريض.</value></data>
+  <data name="Patients.Deleted" xml:space="preserve"><value>تم حذف المريض.</value></data>
+  <data name="Patients.DeleteConfirm" xml:space="preserve"><value>حذف المريض "{0}"؟</value></data>
+
+  <data name="Nav.Orders" xml:space="preserve"><value>الطلبات</value></data>
+  <data name="Orders.Subtitle" xml:space="preserve"><value>طلبات التحاليل، الأحدث أولاً، مع ما تم دفعه.</value></data>
+  <data name="Orders.New" xml:space="preserve"><value>طلب جديد</value></data>
+  <data name="Orders.Records" xml:space="preserve"><value>{0} طلب</value></data>
+  <data name="Orders.SearchPlaceholder" xml:space="preserve"><value>ابحث باسم المريض أو الهاتف أو رقم الطلب...</value></data>
+  <data name="Orders.Col.Number" xml:space="preserve"><value>رقم الطلب</value></data>
+  <data name="Orders.Col.Date" xml:space="preserve"><value>التاريخ</value></data>
+  <data name="Orders.Col.Patient" xml:space="preserve"><value>المريض</value></data>
+  <data name="Orders.Col.Phone" xml:space="preserve"><value>الهاتف</value></data>
+  <data name="Orders.Col.Tests" xml:space="preserve"><value>التحاليل</value></data>
+  <data name="Orders.Col.Total" xml:space="preserve"><value>الإجمالي</value></data>
+  <data name="Orders.Col.Paid" xml:space="preserve"><value>المدفوع</value></data>
+  <data name="Orders.Col.Status" xml:space="preserve"><value>الحالة</value></data>
+  <data name="Orders.Created" xml:space="preserve"><value>تم إنشاء الطلب {0}.</value></data>
+  <data name="OrderStatus.Pending" xml:space="preserve"><value>بانتظار الدفع</value></data>
+  <data name="OrderStatus.PartiallyPaid" xml:space="preserve"><value>مدفوع جزئياً</value></data>
+  <data name="OrderStatus.Paid" xml:space="preserve"><value>مدفوع</value></data>
+  <data name="OrderStatus.Cancelled" xml:space="preserve"><value>ملغي</value></data>
+  <data name="OrderStatus.Refunded" xml:space="preserve"><value>مسترد</value></data>
+  <data name="PaymentMethod.Cash" xml:space="preserve"><value>نقداً</value></data>
+  <data name="PaymentMethod.Card" xml:space="preserve"><value>بطاقة</value></data>
+  <data name="PaymentMethod.Transfer" xml:space="preserve"><value>تحويل</value></data>
+  <data name="PaymentMethod.Insurance" xml:space="preserve"><value>تأمين</value></data>
+  <data name="NewOrder.Title" xml:space="preserve"><value>طلب جديد</value></data>
+  <data name="NewOrder.Subtitle" xml:space="preserve"><value>اختر المريض، ثم اضغط على التحاليل لإضافتها.</value></data>
+  <data name="NewOrder.Patient" xml:space="preserve"><value>المريض</value></data>
+  <data name="NewOrder.SelectedTestsCount" xml:space="preserve"><value>التحاليل المختارة ({0})</value></data>
+  <data name="NewOrder.Catalog" xml:space="preserve"><value>التحاليل</value></data>
+  <data name="NewOrder.ExistingPatient" xml:space="preserve"><value>مريض مسجل</value></data>
+  <data name="NewOrder.NewPatient" xml:space="preserve"><value>مريض جديد</value></data>
+  <data name="NewOrder.ChangePatient" xml:space="preserve"><value>تغيير</value></data>
+  <data name="NewOrder.PatientSearchPlaceholder" xml:space="preserve"><value>الاسم أو الهاتف، ثم Enter...</value></data>
+  <data name="NewOrder.NoPatientsFound" xml:space="preserve"><value>لا يوجد مريض مطابق. راجع الكتابة أو أضف مريضاً جديداً.</value></data>
+  <data name="NewOrder.FirstPayment" xml:space="preserve"><value>الدفعة الأولى</value></data>
+  <data name="NewOrder.FirstPaymentHint" xml:space="preserve"><value>اختيارية. لا تزيد عن إجمالي الطلب.</value></data>
+  <data name="NewOrder.PaymentAmount" xml:space="preserve"><value>المبلغ</value></data>
+  <data name="NewOrder.PaymentMethod" xml:space="preserve"><value>طريقة الدفع</value></data>
+  <data name="NewOrder.PaymentNotes" xml:space="preserve"><value>ملاحظات</value></data>
+  <data name="NewOrder.PaymentNotesPlaceholder" xml:space="preserve"><value>اختياري، مثل رقم الإيصال</value></data>
+  <data name="NewOrder.RemoveTest" xml:space="preserve"><value>إزالة</value></data>
+  <data name="NewOrder.OurPrice" xml:space="preserve"><value>سعرنا</value></data>
+  <data name="NewOrder.OurPriceHint" xml:space="preserve"><value>اتركه فارغاً لاستخدام سعر القائمة.</value></data>
+  <data name="NewOrder.NoTests" xml:space="preserve"><value>لا توجد تحاليل بعد</value></data>
+  <data name="NewOrder.NoTestsHint" xml:space="preserve"><value>اضغط على تحليل من القائمة لإضافته.</value></data>
+  <data name="NewOrder.Total" xml:space="preserve"><value>الإجمالي</value></data>
+  <data name="NewOrder.Remaining" xml:space="preserve"><value>المتبقي بعد الدفعة:</value></data>
+  <data name="NewOrder.Create" xml:space="preserve"><value>إنشاء الطلب</value></data>
+  <data name="NewOrder.CatalogEmpty" xml:space="preserve"><value>لا يوجد تحليل فعّال مطابق.</value></data>
+  <data name="OrderDetails.Title" xml:space="preserve"><value>الطلب {0}</value></data>
+  <data name="OrderDetails.Subtitle" xml:space="preserve"><value>مريض الطلب ومبالغه وتحاليله.</value></data>
+  <data name="OrderDetails.BackToOrders" xml:space="preserve"><value>العودة إلى الطلبات</value></data>
+  <data name="OrderDetails.Balance" xml:space="preserve"><value>المتبقي</value></data>
+  <data name="OrderDetails.Info" xml:space="preserve"><value>الطلب</value></data>
+  <data name="OrderDetails.CreatedBy" xml:space="preserve"><value>أنشأه</value></data>
+  <data name="OrderDetails.Tests" xml:space="preserve"><value>التحاليل ({0})</value></data>
+  <data name="OrderDetails.NotFound" xml:space="preserve"><value>هذا الطلب لم يعد موجوداً.</value></data>
+  <data name="Action.orders.created" xml:space="preserve"><value>إنشاء طلب</value></data>
+  <data name="ErrorCode.in_use" xml:space="preserve"><value>هذا التحليل مستخدم في طلبات، لذا لا يمكن حذفه. أوقف تفعيله بدلاً من ذلك.</value></data>
+  <data name="ErrorCode.inactive" xml:space="preserve"><value>هذا التحليل لم يعد متاحاً.</value></data>
+  <data name="ErrorCode.duplicate" xml:space="preserve"><value>هذا التحليل موجود بالفعل في الطلب.</value></data>
+  <data name="ErrorCode.exceeds_total" xml:space="preserve"><value>لا يمكن أن تزيد الدفعة عن إجمالي الطلب.</value></data>
 </root>

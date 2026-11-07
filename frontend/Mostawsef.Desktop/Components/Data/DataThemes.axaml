@@ -70,6 +70,24 @@
                 </Border>
             </ControlTemplate>
         </Setter>
+
+        <!-- IsColorful: one tone per name; tone0 keeps the default primary look -->
+        <Style Selector="^:tone1">
+            <Setter Property="Background" Value="{DynamicResource BrushSuccessSubtle}" />
+            <Setter Property="Foreground" Value="{DynamicResource BrushSuccessText}" />
+        </Style>
+        <Style Selector="^:tone2">
+            <Setter Property="Background" Value="{DynamicResource BrushWarningSubtle}" />
+            <Setter Property="Foreground" Value="{DynamicResource BrushWarningText}" />
+        </Style>
+        <Style Selector="^:tone3">
+            <Setter Property="Background" Value="{DynamicResource BrushDangerSubtle}" />
+            <Setter Property="Foreground" Value="{DynamicResource BrushDangerText}" />
+        </Style>
+        <Style Selector="^:tone4">
+            <Setter Property="Background" Value="{DynamicResource BrushInfoSubtle}" />
+            <Setter Property="Foreground" Value="{DynamicResource BrushInfoText}" />
+        </Style>
     </ControlTheme>
 
     <!-- Pagination -->

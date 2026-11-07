@@ -4,6 +4,8 @@ using Mostawsef.Api.IntegrationTests.Infrastructure;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.LabTests;
 using Mostawsef.Contracts.Logs;
+using Mostawsef.Contracts.Orders;
+using Mostawsef.Contracts.Patients;
 
 namespace Mostawsef.Api.IntegrationTests.LabTests;
 
@@ -208,6 +210,24 @@ public class LabTestsTests(ApiFactory factory)
         Assert.Equal(HttpStatusCode.NotFound, (await admin.GetAsync($"{Url}/{test.Id}", Ct)).StatusCode);
         var again = await admin.PostAsJsonAsync(Url, new CreateLabTestRequest { Code = test.Code, Name = test.Name, Price = 1, LabCost = 1 }, Ct);
         Assert.Equal(HttpStatusCode.Created, again.StatusCode);
+    }
+
+    [Fact]
+    public async Task A_test_used_by_an_order_cannot_be_deleted()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var test = await CreateAsync(admin);
+        var order = await admin.PostAsJsonAsync("api/orders", new CreateOrderRequest
+        {
+            NewPatient = new() { FullName = "Lab Test User", Phone = "0100", Gender = Genders.Male },
+            Items = [new() { LabTestId = test.Id }],
+        }, Ct);
+        order.EnsureSuccessStatusCode();
+
+        var problem = await ProblemResponse.ReadAsync(await admin.DeleteAsync($"{Url}/{test.Id}", Ct));
+
+        Assert.Equal((HttpStatusCode.Conflict, ErrorCodes.InUse), (problem.Status, problem.Code));
+        Assert.Equal(HttpStatusCode.OK, (await admin.GetAsync($"{Url}/{test.Id}", Ct)).StatusCode);
     }
 
     [Theory]

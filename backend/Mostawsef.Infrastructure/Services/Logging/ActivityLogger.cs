@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Domain.Entities;
 using Mostawsef.Infrastructure.Persistence.Context;
+using Mostawsef.Infrastructure.Persistence.Repositories;
 
 namespace Mostawsef.Infrastructure.Services.Logging;
 
@@ -23,7 +24,7 @@ public class ActivityLogger(
         try
         {
             await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
-            db.ActivityLogs.Add(new ActivityLog(
+            var log = new ActivityLog(
                 entry.Action,
                 entry.Module,
                 entry.Description,
@@ -33,7 +34,9 @@ public class ActivityLogger(
                 entry.EntityId,
                 currentUser.IpAddress,
                 currentUser.UserAgent,
-                entry.Details is null ? null : JsonSerializer.Serialize(entry.Details, Json)));
+                entry.Details is null ? null : JsonSerializer.Serialize(entry.Details, Json));
+            log.FillSearchText();
+            db.ActivityLogs.Add(log);
 
             await db.SaveChangesAsync(cancellationToken);
         }

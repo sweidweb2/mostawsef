@@ -9,7 +9,8 @@ namespace Mostawsef.Desktop.Components;
 
 /// <summary>
 /// Dialog surface (title, content, footer). Show it with DialogService.ShowAsync and close it with Close(result).
-/// The X button and Esc dismiss it (result null), asking <see cref="ConfirmDismiss"/> first when set.
+/// The X button, Esc and a click outside it dismiss it (result null), asking <see cref="ConfirmDismiss"/> first when set.
+/// Without the X button (<see cref="ShowCloseButton"/> false) none of them do.
 /// </summary>
 public class Modal : ContentControl
 {
@@ -54,7 +55,7 @@ public class Modal : ContentControl
         set => SetValue(ShowCloseButtonProperty, value);
     }
 
-    /// <summary>Asked before the X button or Esc closes the dialog; false keeps it open (e.g. unsaved changes).</summary>
+    /// <summary>Asked before the X button, Esc or a click outside closes the dialog; false keeps it open (e.g. unsaved changes).</summary>
     public Func<Task<bool>>? ConfirmDismiss { get; set; }
 
     /// <summary>Closes with the given result. Bind buttons with CommandParameter to return values.</summary>

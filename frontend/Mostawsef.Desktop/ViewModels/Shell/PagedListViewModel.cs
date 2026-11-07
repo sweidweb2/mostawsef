@@ -56,6 +56,10 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
     [ObservableProperty]
     public partial int TotalCount { get; private set; }
 
+    /// <summary>Number of the first shown row, counted from the newest (21 on page 2 of 20 per page). Bind it to DataTable.FirstRowNumber.</summary>
+    [ObservableProperty]
+    public partial int FirstRowNumber { get; private set; } = 1;
+
     [ObservableProperty]
     public partial string? Search { get; set; }
 
@@ -253,6 +257,7 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
         PageCount = pageCount;
         CurrentPage = _shownPage;
         _suppressPageReload = false;
+        FirstRowNumber = (_shownPage - 1) * PageSize + 1;
     }
 
     /// <summary>An API read tied to the page (e.g. details for a modal): null when the user left the page before it finished.</summary>

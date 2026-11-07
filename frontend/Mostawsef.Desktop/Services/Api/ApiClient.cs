@@ -7,6 +7,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Mostawsef.Contracts.Common;
 
 namespace Mostawsef.Desktop.Services.Api;
 
@@ -23,6 +24,29 @@ public class ApiClient(HttpClient http)
 
     public Task<ApiResult<T>> GetAsync<T>(string path, CancellationToken cancellationToken = default) =>
         SendAsync(() => http.GetAsync(path, cancellationToken), ReadJson<T>, cancellationToken);
+
+    /// <summary>
+    /// Every row of a page-numbered list (<c>path</c> without a query string), read at the largest page size.
+    /// Fails as soon as one page fails.
+    /// </summary>
+    public async Task<ApiResult<IReadOnlyList<T>>> GetAllPagesAsync<T>(string path, CancellationToken cancellationToken = default)
+    {
+        var all = new List<T>();
+        for (var page = 1; ; page++)
+        {
+            var result = await GetAsync<PagedResult<T>>($"{path}?page={page}&pageSize={PageQuery.MaxPageSize}", cancellationToken);
+            if (!result.IsSuccess)
+            {
+                return ApiResult<IReadOnlyList<T>>.Fail(result.Error, result.StatusCode, result.Problem);
+            }
+
+            all.AddRange(result.Value!.Items);
+            if (result.Value.Items.Count == 0 || page >= result.Value.TotalPages)
+            {
+                return ApiResult<IReadOnlyList<T>>.Ok(all);
+            }
+        }
+    }
 
     public Task<ApiResult<TResponse>> PostAsync<TRequest, TResponse>(string path, TRequest body, CancellationToken cancellationToken = default) =>
         SendAsync(() => http.PostAsJsonAsync(path, body, Json, cancellationToken), ReadJson<TResponse>, cancellationToken);

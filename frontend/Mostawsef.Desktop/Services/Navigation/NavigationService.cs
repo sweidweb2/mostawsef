@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.Extensions.DependencyInjection;
 using Mostawsef.Desktop.Services.Auth;
@@ -68,6 +69,25 @@ public partial class NavigationService : ObservableObject
         CurrentPage = ActivatorUtilities.CreateInstance<PortalShellViewModel>(_services, portal);
         return true;
     }
+
+    /// <summary>
+    /// Opens a sub-page of the current portal (e.g. a details page) in place of the shown page; <paramref name="setup"/>
+    /// passes its parameters before it loads. False if the user may not open it or kept unsaved changes of the open sub-page.
+    /// </summary>
+    public async Task<bool> OpenAsync<TViewModel>(Action<TViewModel>? setup = null) where TViewModel : ViewModelBase
+    {
+        if (CurrentPage is not PortalShellViewModel shell || CreatePage(typeof(TViewModel)) is not TViewModel page)
+        {
+            return false;
+        }
+
+        setup?.Invoke(page);
+        return await shell.ShowSubPageAsync(page);
+    }
+
+    /// <summary>Closes the open sub-page and returns to the menu page (asks first if it has unsaved changes).</summary>
+    public Task<bool> BackAsync() =>
+        CurrentPage is PortalShellViewModel shell ? shell.CloseSubPageAsync() : Task.FromResult(false);
 
     public bool CanAccess(Type viewModelType) => _routes.IsAllowed(viewModelType, _session.IsInRole);
 

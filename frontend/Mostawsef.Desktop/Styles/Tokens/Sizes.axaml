@@ -27,6 +27,11 @@
     <x:Double x:Key="AvatarSize">40</x:Double>
     <x:Double x:Key="AvatarSizeLg">64</x:Double>
 
+    <!-- Tables: row and header heights, and the start-edge accent a row shows on hover -->
+    <x:Double x:Key="TableRowHeight">56</x:Double>
+    <x:Double x:Key="TableHeaderHeight">44</x:Double>
+    <Thickness x:Key="TableRowAccent">3,0,0,0</Thickness>
+
     <!-- Brand mark (logo tile) -->
     <x:Double x:Key="BrandMarkSize">32</x:Double>
     <x:Double x:Key="BrandMarkSizeLg">56</x:Double>

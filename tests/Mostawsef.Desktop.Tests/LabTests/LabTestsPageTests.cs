@@ -62,6 +62,10 @@ public class LabTestsPageTests
         Assert.Contains("Unavailable", window.GetVisualDescendants().OfType<Badge>().Where(b => b.IsEffectivelyVisible).Select(b => b.Text));
         Assert.Equal(2, RowButtons(Table(window)).Count(b => b.Command == page.EditCommand));
         Assert.Equal(2, RowButtons(Table(window)).Count(b => b.Command == page.DeleteCommand));
+        var numbers = window.GetVisualDescendants().OfType<RowNumber>().ToDictionary(n => ((LabTestDto)n.DataContext!).Id, n => n.Text);
+        Assert.Equal(("1", "2"), (numbers[Cbc.Id], numbers[Sugar.Id]));
+        var copies = Table(window).GetVisualDescendants().OfType<CopyButton>().Select(b => b.Text).ToList();
+        Assert.Equal<string?>(["CBC", "Complete blood count", "FBS", Sugar.Name], copies.Order(StringComparer.Ordinal));
     }
 
     [AvaloniaFact]

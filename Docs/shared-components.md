@@ -61,6 +61,7 @@ Usage namespace: `xmlns:ui="using:Mostawsef.Desktop.Components"`.
 | --- | --- | --- |
 | Button (primary / secondary / danger / ghost) | Built-in | `Button Classes="primary"` (also `secondary`, `danger`, `ghost`, `link`, sizes `sm`, `lg`); `ghost` + `Classes.selected="{Binding ...}"` marks the chosen option of a small switch (lab tests table / grid) |
 | IconButton | Built | `ui:IconButton Icon="{StaticResource IconEdit}"` |
+| CopyButton | Built | `ui:CopyButton Classes="sm" Text="{Binding Phone}"`: copies Text to the clipboard, shows a check mark for a moment, hidden while Text is empty. Put it beside table values people copy (names, phones, codes) |
 | SplitButton / DropdownButton | Built-in | `SplitButton`, `DropDownButton` |
 | ButtonGroup | Deferred | Removed while unused |
 
@@ -68,12 +69,12 @@ Usage namespace: `xmlns:ui="using:Mostawsef.Desktop.Components"`.
 
 | Component | Status | Use |
 | --- | --- | --- |
-| DataTable (sorting, paging, selection) | Built | `ui:DataTable` wrapping a `DataGrid` (loading, empty and error states with `HasError` + `RetryCommand`, toolbar, footer) |
+| DataTable (sorting, paging, selection) | Built | `ui:DataTable` wrapping a `DataGrid` (loading, empty and error states with `HasError` + `RetryCommand`, toolbar, footer). Every table starts with a `#` column of `ui:RowNumber` cells and binds `FirstRowNumber="{Binding FirstRowNumber}"` (both list view model bases provide it), so numbering continues across pages. Rows are `TableRowHeight` tall and, on hover, get a light tint and an accent bar on the start edge (styled once in `Styles/Controls/DataGrid.axaml`) |
 | Pagination | Built | `ui:Pagination` (`CurrentPage`, `PageCount`) |
 | ListView | Built-in | `ListBox` |
 | DetailsView (label/value pairs) | Built | `ui:DetailsView` + `ui:DetailsItem Label Value` (`IsCode` for JSON / stack traces) |
 | Badge / StatusTag | Built | `ui:Badge Text="Paid" Kind="Success"` (`Neutral`, `Primary`, `Success`, `Warning`, `Danger`, `Info`) |
-| Avatar | Built | `ui:Avatar` (initials or image) |
+| Avatar | Built | `ui:Avatar` (initials or image); `MaxInitials="1"` for the first letter only, `IsColorful="True"` for one of five tones picked from the name (same name, same color), e.g. beside patient names |
 | StatCard (dashboard numbers) | Built | `ui:StatCard Title Value Caption Icon Kind` |
 | Chart | Deferred | |
 | Timeline (patient history) | Deferred | |
@@ -100,7 +101,7 @@ or runs another API version; pages don't add their own.
 
 | Component | Status | Use |
 | --- | --- | --- |
-| Modal / Dialog | Built | `ui:Modal` shown with `DialogService.ShowAsync(...)` (hosted by `ui:DialogHost` in MainWindow) |
+| Modal / Dialog | Built | `ui:Modal` shown with `DialogService.ShowAsync(...)` (hosted by `ui:DialogHost` in MainWindow). The X button, Esc and a click outside (press and release both outside) dismiss it through `ConfirmDismiss`; `ShowCloseButton="False"` turns all three off |
 | ConfirmDialog | Built | `DialogService.ConfirmAsync(...)` |
 | Drawer / SidePanel | Deferred | |
 | ContextMenu | Built-in | `ContextMenu` / `MenuFlyout` |

@@ -61,6 +61,8 @@ public static class ServiceRegistration
         services.AddSingleton<UsersApi>();
         services.AddSingleton<ClinicSettingsApi>();
         services.AddSingleton<LabTestsApi>();
+        services.AddSingleton<PatientsApi>();
+        services.AddSingleton<OrdersApi>();
         services.AddSingleton<ConnectionMonitor>();
 
         // Clinic details + printing

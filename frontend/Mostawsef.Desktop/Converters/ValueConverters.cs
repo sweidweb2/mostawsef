@@ -1,5 +1,6 @@
 using System;
 using Avalonia.Data.Converters;
+using Mostawsef.Contracts.Orders;
 using Mostawsef.Desktop.Components;
 
 namespace Mostawsef.Desktop.Converters;
@@ -35,11 +36,25 @@ public static class ValueConverters
         _ => BadgeKind.Neutral,
     });
 
+    /// <summary>Order status (OrderStatuses) -> Badge kind.</summary>
+    public static readonly IValueConverter OrderStatusToBadgeKind = new FuncValueConverter<string?, BadgeKind>(status => status switch
+    {
+        OrderStatuses.Paid => BadgeKind.Success,
+        OrderStatuses.PartiallyPaid => BadgeKind.Info,
+        OrderStatuses.Pending => BadgeKind.Warning,
+        OrderStatuses.Cancelled or OrderStatuses.Refunded => BadgeKind.Danger,
+        _ => BadgeKind.Neutral,
+    });
+
     /// <summary>
     /// Calendar dates (DateOnly, e.g. a birth date) for CalendarDatePicker, which works with DateTime:
     /// SelectedDate="{Binding BirthDate, Converter={x:Static conv:ValueConverters.DateOnly}}".
     /// </summary>
     public static readonly IValueConverter DateOnly = new DateOnlyConverter();
+
+    /// <summary>Calendar date (DateOnly) -> short date in the current language's format; empty for null.</summary>
+    public static readonly IValueConverter ShortDate = new FuncValueConverter<System.DateOnly?, string>(date =>
+        date?.ToString("d", App.Services is null ? System.Globalization.CultureInfo.CurrentCulture : App.Localization.Culture) ?? string.Empty);
 
     public static string FormatLocal(DateTime value) =>
         DateTime.SpecifyKind(value, value.Kind == DateTimeKind.Unspecified ? DateTimeKind.Utc : value.Kind)

@@ -7,6 +7,7 @@ namespace Mostawsef.Desktop.Components;
 /// <summary>
 /// Frame for a DataGrid (Content): optional Toolbar and Footer (e.g. Pagination),
 /// plus loading, empty and error states. The error state wins over the empty state.
+/// A "#" column of <see cref="RowNumber"/> cells numbers the rows from <see cref="FirstRowNumber"/>.
 /// </summary>
 public class DataTable : ContentControl
 {
@@ -39,6 +40,9 @@ public class DataTable : ContentControl
 
     public static readonly StyledProperty<ICommand?> RetryCommandProperty =
         AvaloniaProperty.Register<DataTable, ICommand?>(nameof(RetryCommand));
+
+    public static readonly StyledProperty<int> FirstRowNumberProperty =
+        AvaloniaProperty.Register<DataTable, int>(nameof(FirstRowNumber), 1);
 
     public static readonly DirectProperty<DataTable, bool> ShowEmptyProperty =
         AvaloniaProperty.RegisterDirect<DataTable, bool>(nameof(ShowEmpty), o => o.ShowEmpty);
@@ -107,6 +111,13 @@ public class DataTable : ContentControl
     {
         get => GetValue(RetryCommandProperty);
         set => SetValue(RetryCommandProperty, value);
+    }
+
+    /// <summary>Number shown by <see cref="RowNumber"/> cells on the first row (e.g. 41 on page 3 of 20 per page).</summary>
+    public int FirstRowNumber
+    {
+        get => GetValue(FirstRowNumberProperty);
+        set => SetValue(FirstRowNumberProperty, value);
     }
 
     public bool ShowEmpty

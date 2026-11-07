@@ -64,11 +64,28 @@ public class LogPagesTests
         Assert.Equal(2, page.CurrentPage);
         Assert.Equal(45, page.TotalCount);
         Assert.Equal(3, page.PageCount);
+        Assert.Equal(21, page.FirstRowNumber);
 
         page.Search = "admin";
         await page.SearchCommand.ExecuteAsync(null);
         Assert.Equal(1, page.CurrentPage);
+        Assert.Equal(1, page.FirstRowNumber);
         Assert.Equal("?pageSize=20&search=admin", LastListRequest(app, ActivityPath));
+    }
+
+    [AvaloniaFact]
+    public async Task Rows_are_numbered_and_the_numbering_continues_on_the_next_page()
+    {
+        using var app = SuperWithActivity(total: 45, SignIn);
+        var (page, window) = await ShowPage<ActivityLogsViewModel>(app);
+
+        Assert.Equal("1", window.GetVisualDescendants().OfType<RowNumber>().Single().Text);
+
+        page.CurrentPage = 2;
+        await WaitUntil(() => !page.IsLoading);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal("21", window.GetVisualDescendants().OfType<RowNumber>().Single().Text);
     }
 
     [AvaloniaFact]

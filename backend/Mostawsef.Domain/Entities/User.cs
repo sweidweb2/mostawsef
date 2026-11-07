@@ -16,12 +16,12 @@ public class User : SoftDeletableEntity
     {
     }
 
-    public User(string username, string fullName, string passwordHash, UserRole role)
+    public User(string username, string fullName, string searchName, string passwordHash, UserRole role)
     {
         Username = NormalizeUsername(username);
         PasswordHash = passwordHash;
         Role = role;
-        Rename(fullName);
+        Rename(fullName, searchName);
     }
 
     /// <summary>Lower-case, trimmed. Unique, also among deleted users.</summary>
@@ -29,7 +29,7 @@ public class User : SoftDeletableEntity
 
     public string FullName { get; private set; } = string.Empty;
 
-    /// <summary>FullName normalized with <see cref="SearchText"/>.</summary>
+    /// <summary>FullName normalized with Contracts SearchText (by the caller).</summary>
     public string SearchName { get; private set; } = string.Empty;
 
     public string PasswordHash { get; private set; } = string.Empty;
@@ -42,10 +42,10 @@ public class User : SoftDeletableEntity
 
     public static string NormalizeUsername(string username) => username.Trim().ToLowerInvariant();
 
-    public void Rename(string fullName)
+    public void Rename(string fullName, string searchName)
     {
         FullName = fullName.Trim();
-        SearchName = SearchText.Normalize(FullName);
+        SearchName = searchName;
     }
 
     public void ChangeRole(UserRole role) => Role = role;

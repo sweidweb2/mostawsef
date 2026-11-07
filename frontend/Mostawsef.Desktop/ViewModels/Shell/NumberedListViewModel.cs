@@ -49,6 +49,10 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
     [ObservableProperty]
     public partial int TotalCount { get; private set; }
 
+    /// <summary>Number of the first shown row across all pages (41 on page 3 of 20 per page). Bind it to DataTable.FirstRowNumber.</summary>
+    [ObservableProperty]
+    public partial int FirstRowNumber { get; private set; } = 1;
+
     [ObservableProperty]
     public partial string? Search { get; set; }
 
@@ -100,6 +104,9 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
 
         _pageCancellation.Cancel();
     }
+
+    /// <summary>The next activation loads the page again, e.g. when the user comes back from a sub-page that added a record.</summary>
+    protected void MarkStale() => _loaded = false;
 
     [RelayCommand]
     private Task RefreshAsync() => ReloadAsync();
@@ -182,6 +189,7 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
         PageCount = Math.Max(1, result.TotalPages);
         CurrentPage = result.Page;
         _suppressPageReload = false;
+        FirstRowNumber = (result.Page - 1) * PageSize + 1;
     }
 
     /// <summary>An API read tied to the page (e.g. details for a modal): null when the user left the page before it finished.</summary>

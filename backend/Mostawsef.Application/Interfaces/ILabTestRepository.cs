@@ -7,6 +7,12 @@ public interface ILabTestRepository
 {
     Task<LabTest?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
+    /// <summary>The tests with these ids that exist (tracked, so order items can reference them).</summary>
+    Task<IReadOnlyList<LabTest>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
+
+    /// <summary>True if an order item references the test.</summary>
+    Task<bool> IsUsedAsync(Guid id, CancellationToken cancellationToken);
+
     /// <summary>True if another test (not <paramref name="exceptId"/>) has this normalized code.</summary>
     Task<bool> CodeExistsAsync(string code, Guid? exceptId, CancellationToken cancellationToken);
 

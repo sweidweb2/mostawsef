@@ -1,15 +1,19 @@
 using System.Text;
 
-namespace Mostawsef.Domain.Common;
+namespace Mostawsef.Contracts.Common;
 
 /// <summary>
 /// Normalizes text for searching, so the way a name was typed does not matter. Store the normalized value in its own
 /// column and normalize the search term the same way, then compare with Contains (works on PostgreSQL and SQLite).
+/// The desktop filters local lists with the same rules.
 /// Arabic: أ إ آ ٱ → ا, ة → ه, ى ی → ي, ؤ → و, ئ → ي, ک → ك, diacritics and tatweel removed, Arabic-Indic digits → 0-9.
 /// Also lower-cases and collapses whitespace.
 /// </summary>
 public static class SearchText
 {
+    /// <summary>Separates the fields inside a search key, so a term cannot match across two fields.</summary>
+    public const char KeySeparator = '\n';
+
     public static string Normalize(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -44,6 +48,10 @@ public static class SearchText
 
         return builder.ToString();
     }
+
+    /// <summary>The value of a multi-field search column (e.g. log SearchText): each field normalized, then joined.</summary>
+    public static string Key(params string?[] fields) =>
+        string.Join(KeySeparator, fields.Select(Normalize).Where(f => f.Length > 0));
 
     private static char Map(char c) => c switch
     {

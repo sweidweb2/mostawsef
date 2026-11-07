@@ -24,6 +24,20 @@ public static class ErrorCodes
     /// <summary>Another record already has this value (e.g. a lab test code); set on that field.</summary>
     public const string Taken = "taken";
 
+    /// <summary>The record is referenced elsewhere (e.g. a lab test used by orders) and cannot be deleted.</summary>
+    public const string InUse = "in_use";
+
+    // Orders
+
+    /// <summary>A lab test that is no longer offered; set on that item's field.</summary>
+    public const string Inactive = "inactive";
+
+    /// <summary>The same value appears twice in a list (e.g. a test ordered twice); set on the repeated item.</summary>
+    public const string Duplicate = "duplicate";
+
+    /// <summary>A payment larger than the order total.</summary>
+    public const string ExceedsTotal = "exceeds_total";
+
     // Users and passwords
     public const string UsernameTaken = "username_taken";
     public const string OwnAccount = "own_account";

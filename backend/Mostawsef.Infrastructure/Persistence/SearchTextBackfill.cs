@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Mostawsef.Domain.Common;
 using Mostawsef.Infrastructure.Persistence.Context;
+using Mostawsef.Infrastructure.Persistence.Repositories;
 
 namespace Mostawsef.Infrastructure.Persistence;
 
@@ -18,8 +19,8 @@ public static class SearchTextBackfill
 
     /// <summary>Returns how many rows were rebuilt.</summary>
     public static async Task<int> RunAsync(AppDbContext db, CancellationToken cancellationToken = default) =>
-        await FillAsync(db, db.ActivityLogs, l => l.SearchText == string.Empty, l => l.RebuildSearchText(), cancellationToken)
-        + await FillAsync(db, db.SystemErrors, e => e.SearchText == string.Empty, e => e.RebuildSearchText(), cancellationToken);
+        await FillAsync(db, db.ActivityLogs, l => l.SearchText == string.Empty, l => l.FillSearchText(), cancellationToken)
+        + await FillAsync(db, db.SystemErrors, e => e.SearchText == string.Empty, e => e.FillSearchText(), cancellationToken);
 
     /// <summary>Walks the empty rows in Id order, one batch per SaveChanges; a row whose fields are all empty stays empty and is not read again.</summary>
     private static async Task<int> FillAsync<T>(

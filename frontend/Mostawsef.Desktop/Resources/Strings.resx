@@ -158,6 +158,9 @@
   <data name="Action.lab_tests.created" xml:space="preserve"><value>Added a lab test</value></data>
   <data name="Action.lab_tests.updated" xml:space="preserve"><value>Updated a lab test</value></data>
   <data name="Action.lab_tests.deleted" xml:space="preserve"><value>Deleted a lab test</value></data>
+  <data name="Action.patients.created" xml:space="preserve"><value>Added a patient</value></data>
+  <data name="Action.patients.updated" xml:space="preserve"><value>Updated a patient</value></data>
+  <data name="Action.patients.deleted" xml:space="preserve"><value>Deleted a patient</value></data>
 
   <data name="Nav.ClinicSettings" xml:space="preserve"><value>Clinic settings</value></data>
   <data name="Settings.Subtitle" xml:space="preserve"><value>The clinic details shown on printouts, and the currency for all amounts.</value></data>
@@ -239,8 +242,10 @@
   <data name="LabTests.AddTitle" xml:space="preserve"><value>New lab test</value></data>
   <data name="LabTests.EditTitle" xml:space="preserve"><value>Edit lab test</value></data>
   <data name="LabTests.Records" xml:space="preserve"><value>{0} tests</value></data>
-  <data name="LabTests.TableView" xml:space="preserve"><value>Show as table</value></data>
-  <data name="LabTests.GridView" xml:space="preserve"><value>Show as cards</value></data>
+  <data name="Common.Copy" xml:space="preserve"><value>Copy</value></data>
+  <data name="Common.RowNumber" xml:space="preserve"><value>#</value></data>
+  <data name="Common.TableView" xml:space="preserve"><value>Show as table</value></data>
+  <data name="Common.GridView" xml:space="preserve"><value>Show as cards</value></data>
   <data name="LabTests.Col.Code" xml:space="preserve"><value>Code</value></data>
   <data name="LabTests.Col.Name" xml:space="preserve"><value>Test name</value></data>
   <data name="LabTests.Col.Price" xml:space="preserve"><value>Price</value></data>
@@ -260,4 +265,97 @@
   <data name="LabTests.Saved" xml:space="preserve"><value>Lab test saved.</value></data>
   <data name="LabTests.Deleted" xml:space="preserve"><value>Lab test deleted.</value></data>
   <data name="LabTests.DeleteConfirm" xml:space="preserve"><value>Delete the test "{0}"?</value></data>
+
+  <data name="Gender.Male" xml:space="preserve"><value>Male</value></data>
+  <data name="Gender.Female" xml:space="preserve"><value>Female</value></data>
+
+  <data name="Nav.Patients" xml:space="preserve"><value>Patients</value></data>
+  <data name="Patients.Subtitle" xml:space="preserve"><value>The clinic's patients, their contact numbers and insurance.</value></data>
+  <data name="Patients.Add" xml:space="preserve"><value>Add patient</value></data>
+  <data name="Patients.AddTitle" xml:space="preserve"><value>New patient</value></data>
+  <data name="Patients.EditTitle" xml:space="preserve"><value>Edit patient</value></data>
+  <data name="Patients.Records" xml:space="preserve"><value>{0} patients</value></data>
+  <data name="Patients.SearchPlaceholder" xml:space="preserve"><value>Search by name or phone...</value></data>
+  <data name="Patients.ExportHint" xml:space="preserve"><value>Export all patients as a PDF</value></data>
+  <data name="Patients.Col.FullName" xml:space="preserve"><value>Full name</value></data>
+  <data name="Patients.Col.Phone" xml:space="preserve"><value>Phone</value></data>
+  <data name="Patients.Col.GuardianPhone" xml:space="preserve"><value>Guardian phone</value></data>
+  <data name="Patients.Col.Gender" xml:space="preserve"><value>Gender</value></data>
+  <data name="Patients.Col.DateOfBirth" xml:space="preserve"><value>Date of birth</value></data>
+  <data name="Patients.Col.Insured" xml:space="preserve"><value>Insurance</value></data>
+  <data name="Patients.Col.Notes" xml:space="preserve"><value>Notes</value></data>
+  <data name="Patients.Insured" xml:space="preserve"><value>Insured</value></data>
+  <data name="Patients.NotInsured" xml:space="preserve"><value>Not insured</value></data>
+  <data name="Patients.Field.FullNamePlaceholder" xml:space="preserve"><value>e.g. Mona Adel Hassan</value></data>
+  <data name="Patients.Field.PhonePlaceholder" xml:space="preserve"><value>e.g. 010 1234 5678</value></data>
+  <data name="Patients.Field.GuardianPhonePlaceholder" xml:space="preserve"><value>Optional, e.g. a parent's number</value></data>
+  <data name="Patients.Field.GenderPlaceholder" xml:space="preserve"><value>Choose...</value></data>
+  <data name="Patients.Field.DateOfBirthPlaceholder" xml:space="preserve"><value>Optional</value></data>
+  <data name="Patients.Field.NotesPlaceholder" xml:space="preserve"><value>Allergies, chronic conditions, anything the staff should know</value></data>
+  <data name="Patients.Field.IsInsured" xml:space="preserve"><value>The patient is insured</value></data>
+  <data name="Patients.Saved" xml:space="preserve"><value>Patient saved.</value></data>
+  <data name="Patients.Deleted" xml:space="preserve"><value>Patient deleted.</value></data>
+  <data name="Patients.DeleteConfirm" xml:space="preserve"><value>Delete the patient "{0}"?</value></data>
+
+  <data name="Nav.Orders" xml:space="preserve"><value>Orders</value></data>
+  <data name="Orders.Subtitle" xml:space="preserve"><value>Lab test orders, newest first, with what was paid.</value></data>
+  <data name="Orders.New" xml:space="preserve"><value>New order</value></data>
+  <data name="Orders.Records" xml:space="preserve"><value>{0} orders</value></data>
+  <data name="Orders.SearchPlaceholder" xml:space="preserve"><value>Search by patient name, phone or order number...</value></data>
+  <data name="Orders.Col.Number" xml:space="preserve"><value>Order no.</value></data>
+  <data name="Orders.Col.Date" xml:space="preserve"><value>Date</value></data>
+  <data name="Orders.Col.Patient" xml:space="preserve"><value>Patient</value></data>
+  <data name="Orders.Col.Phone" xml:space="preserve"><value>Phone</value></data>
+  <data name="Orders.Col.Tests" xml:space="preserve"><value>Tests</value></data>
+  <data name="Orders.Col.Total" xml:space="preserve"><value>Total</value></data>
+  <data name="Orders.Col.Paid" xml:space="preserve"><value>Paid</value></data>
+  <data name="Orders.Col.Status" xml:space="preserve"><value>Status</value></data>
+  <data name="Orders.Created" xml:space="preserve"><value>Order {0} created.</value></data>
+  <data name="OrderStatus.Pending" xml:space="preserve"><value>Pending</value></data>
+  <data name="OrderStatus.PartiallyPaid" xml:space="preserve"><value>Partially paid</value></data>
+  <data name="OrderStatus.Paid" xml:space="preserve"><value>Paid</value></data>
+  <data name="OrderStatus.Cancelled" xml:space="preserve"><value>Cancelled</value></data>
+  <data name="OrderStatus.Refunded" xml:space="preserve"><value>Refunded</value></data>
+  <data name="PaymentMethod.Cash" xml:space="preserve"><value>Cash</value></data>
+  <data name="PaymentMethod.Card" xml:space="preserve"><value>Card</value></data>
+  <data name="PaymentMethod.Transfer" xml:space="preserve"><value>Transfer</value></data>
+  <data name="PaymentMethod.Insurance" xml:space="preserve"><value>Insurance</value></data>
+  <data name="NewOrder.Title" xml:space="preserve"><value>New order</value></data>
+  <data name="NewOrder.Subtitle" xml:space="preserve"><value>Pick the patient, then click the tests to add them.</value></data>
+  <data name="NewOrder.Patient" xml:space="preserve"><value>Patient</value></data>
+  <data name="NewOrder.SelectedTestsCount" xml:space="preserve"><value>Selected tests ({0})</value></data>
+  <data name="NewOrder.Catalog" xml:space="preserve"><value>Lab tests</value></data>
+  <data name="NewOrder.ExistingPatient" xml:space="preserve"><value>Existing patient</value></data>
+  <data name="NewOrder.NewPatient" xml:space="preserve"><value>New patient</value></data>
+  <data name="NewOrder.ChangePatient" xml:space="preserve"><value>Change</value></data>
+  <data name="NewOrder.PatientSearchPlaceholder" xml:space="preserve"><value>Name or phone, then Enter...</value></data>
+  <data name="NewOrder.NoPatientsFound" xml:space="preserve"><value>No patient matches. Check the spelling or add a new patient.</value></data>
+  <data name="NewOrder.FirstPayment" xml:space="preserve"><value>First payment</value></data>
+  <data name="NewOrder.FirstPaymentHint" xml:space="preserve"><value>Optional. At most the order total.</value></data>
+  <data name="NewOrder.PaymentAmount" xml:space="preserve"><value>Amount</value></data>
+  <data name="NewOrder.PaymentMethod" xml:space="preserve"><value>Method</value></data>
+  <data name="NewOrder.PaymentNotes" xml:space="preserve"><value>Notes</value></data>
+  <data name="NewOrder.PaymentNotesPlaceholder" xml:space="preserve"><value>Optional, e.g. a receipt number</value></data>
+  <data name="NewOrder.RemoveTest" xml:space="preserve"><value>Remove</value></data>
+  <data name="NewOrder.OurPrice" xml:space="preserve"><value>Our price</value></data>
+  <data name="NewOrder.OurPriceHint" xml:space="preserve"><value>Leave empty to use the catalog price.</value></data>
+  <data name="NewOrder.NoTests" xml:space="preserve"><value>No tests yet</value></data>
+  <data name="NewOrder.NoTestsHint" xml:space="preserve"><value>Click a test in the catalog to add it.</value></data>
+  <data name="NewOrder.Total" xml:space="preserve"><value>Total</value></data>
+  <data name="NewOrder.Remaining" xml:space="preserve"><value>Remaining after the payment:</value></data>
+  <data name="NewOrder.Create" xml:space="preserve"><value>Create order</value></data>
+  <data name="NewOrder.CatalogEmpty" xml:space="preserve"><value>No active test matches.</value></data>
+  <data name="OrderDetails.Title" xml:space="preserve"><value>Order {0}</value></data>
+  <data name="OrderDetails.Subtitle" xml:space="preserve"><value>The order's patient, amounts and tests.</value></data>
+  <data name="OrderDetails.BackToOrders" xml:space="preserve"><value>Back to orders</value></data>
+  <data name="OrderDetails.Balance" xml:space="preserve"><value>Balance</value></data>
+  <data name="OrderDetails.Info" xml:space="preserve"><value>Order</value></data>
+  <data name="OrderDetails.CreatedBy" xml:space="preserve"><value>Created by</value></data>
+  <data name="OrderDetails.Tests" xml:space="preserve"><value>Tests ({0})</value></data>
+  <data name="OrderDetails.NotFound" xml:space="preserve"><value>This order no longer exists.</value></data>
+  <data name="Action.orders.created" xml:space="preserve"><value>Order created</value></data>
+  <data name="ErrorCode.in_use" xml:space="preserve"><value>This test is used by orders, so it can't be deleted. Deactivate it instead.</value></data>
+  <data name="ErrorCode.inactive" xml:space="preserve"><value>This test is no longer offered.</value></data>
+  <data name="ErrorCode.duplicate" xml:space="preserve"><value>This test is already in the order.</value></data>
+  <data name="ErrorCode.exceeds_total" xml:space="preserve"><value>The payment can't be more than the order total.</value></data>
 </root>

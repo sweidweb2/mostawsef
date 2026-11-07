@@ -16,25 +16,9 @@ public class LabTestsApi(ApiClient api)
             (string.IsNullOrWhiteSpace(search) ? string.Empty : $"&search={Uri.EscapeDataString(search.Trim())}"),
             cancellationToken);
 
-    /// <summary>Every test, sorted by name, read page by page at the largest page size. Fails as soon as one page fails.</summary>
-    public async Task<ApiResult<IReadOnlyList<LabTestDto>>> GetAllTestsAsync(CancellationToken cancellationToken = default)
-    {
-        var all = new List<LabTestDto>();
-        for (var page = 1; ; page++)
-        {
-            var result = await GetTestsAsync(page, PageQuery.MaxPageSize, null, cancellationToken);
-            if (!result.IsSuccess)
-            {
-                return ApiResult<IReadOnlyList<LabTestDto>>.Fail(result.Error, result.StatusCode, result.Problem);
-            }
-
-            all.AddRange(result.Value!.Items);
-            if (result.Value.Items.Count == 0 || page >= result.Value.TotalPages)
-            {
-                return ApiResult<IReadOnlyList<LabTestDto>>.Ok(all);
-            }
-        }
-    }
+    /// <summary>Every test, sorted by name.</summary>
+    public Task<ApiResult<IReadOnlyList<LabTestDto>>> GetAllTestsAsync(CancellationToken cancellationToken = default) =>
+        api.GetAllPagesAsync<LabTestDto>("api/lab-tests", cancellationToken);
 
     public Task<ApiResult<LabTestDto>> GetTestAsync(Guid id, CancellationToken cancellationToken = default) =>
         api.GetAsync<LabTestDto>($"api/lab-tests/{id}", cancellationToken);

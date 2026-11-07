@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Mostawsef.Domain.Common;
+using Mostawsef.Contracts.Common;
 using Mostawsef.Domain.Entities;
 
 namespace Mostawsef.Infrastructure.Persistence.Repositories;
@@ -11,6 +11,13 @@ namespace Mostawsef.Infrastructure.Persistence.Repositories;
 public static class LogSearch
 {
     private const string EscapeCharacter = "\\";
+
+    /// <summary>Sets SearchText from the searchable fields (new rows and the backfill of older ones).</summary>
+    public static void FillSearchText(this ActivityLog log) =>
+        log.SetSearchText(SearchText.Key(log.Username, log.Action, log.Module, log.Description));
+
+    public static void FillSearchText(this SystemError error) =>
+        error.SetSearchText(SearchText.Key(error.Message, error.Source, error.ExceptionType, error.RequestPath, error.Username));
 
     public static IQueryable<ActivityLog> Matching(this IQueryable<ActivityLog> logs, string? search) =>
         ContainsPattern(search) is { } pattern
@@ -29,7 +36,7 @@ public static class LogSearch
             return null;
         }
 
-        var term = Text.NormalizeSearchTerm(search)
+        var term = SearchText.Normalize(search)
             .Replace(EscapeCharacter, EscapeCharacter + EscapeCharacter)
             .Replace("%", EscapeCharacter + "%")
             .Replace("_", EscapeCharacter + "_");

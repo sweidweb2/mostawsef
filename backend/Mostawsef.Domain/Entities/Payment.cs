@@ -1,0 +1,43 @@
+using Mostawsef.Domain.Common;
+using Mostawsef.Domain.Enums;
+
+namespace Mostawsef.Domain.Entities;
+
+/// <summary>Money received for (or refunded from) an order. Never edited or deleted; corrections are Refund rows.</summary>
+public class Payment : Entity
+{
+    public const int NotesMaxLength = 500;
+
+    private Payment()
+    {
+    }
+
+    internal Payment(PaymentType type, PaymentMethod method, string currency, long amount, decimal exchangeRate, DateTime paidAt, string? notes)
+    {
+        Type = type;
+        Method = method;
+        Currency = currency;
+        Amount = amount;
+        ExchangeRate = exchangeRate;
+        PaidAt = paidAt;
+        Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
+    }
+
+    public Guid OrderId { get; private set; }
+
+    public PaymentType Type { get; private set; }
+
+    public PaymentMethod Method { get; private set; }
+
+    public string Currency { get; private set; } = string.Empty;
+
+    /// <summary>Positive, minor units of <see cref="Currency"/>.</summary>
+    public long Amount { get; private set; }
+
+    /// <summary>Currency to order currency.</summary>
+    public decimal ExchangeRate { get; private set; }
+
+    public DateTime PaidAt { get; private set; }
+
+    public string? Notes { get; private set; }
+}

@@ -2,7 +2,6 @@ using Mostawsef.Application.Common;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.LabTests;
-using Mostawsef.Domain.Common;
 using Mostawsef.Domain.Entities;
 
 namespace Mostawsef.Application.Modules.LabTests;
@@ -36,7 +35,7 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
     {
         await EnsureUniqueAsync(request.Code, request.Name, null, cancellationToken);
 
-        var test = new LabTest(request.Code, request.Name, request.Price!.Value, request.LabCost!.Value);
+        var test = new LabTest(request.Code, request.Name, SearchText.Normalize(request.Name), request.Price!.Value, request.LabCost!.Value);
         tests.Add(test);
         await tests.SaveChangesAsync(cancellationToken);
 
@@ -54,7 +53,8 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
 
         await EnsureUniqueAsync(request.Code, request.Name, test.Id, cancellationToken);
 
-        test.Update(request.Code, request.Name, request.Price!.Value, request.LabCost!.Value, request.IsActive);
+        test.Update(
+            request.Code, request.Name, SearchText.Normalize(request.Name), request.Price!.Value, request.LabCost!.Value, request.IsActive);
         await tests.SaveChangesAsync(cancellationToken);
 
         await LogAsync(ActivityActions.LabTestUpdated, "Updated a lab test", test, cancellationToken);
@@ -64,6 +64,11 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
         var test = await FindAsync(id, cancellationToken);
+        if (await tests.IsUsedAsync(test.Id, cancellationToken))
+        {
+            throw AppException.Conflict(ErrorCodes.InUse);
+        }
+
         tests.Remove(test);
         await tests.SaveChangesAsync(cancellationToken);
 

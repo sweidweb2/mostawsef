@@ -33,6 +33,24 @@ public class DialogHost : ContentControl
         var scrim = new Border { Classes = { "dialog-scrim" } };
         var layer = new Panel { Children = { scrim, modal } };
 
+        // A click outside acts like the X button, but only when both press and release land outside the modal,
+        // so selecting text in a field and releasing past its edge does not close it.
+        var pressedOutside = false;
+        scrim.PointerPressed += (_, e) => pressedOutside = e.GetCurrentPoint(scrim).Properties.IsLeftButtonPressed;
+        scrim.PointerReleased += (_, e) =>
+        {
+            var wasPressedOutside = pressedOutside;
+            pressedOutside = false;
+            if (wasPressedOutside
+                && e.InitialPressMouseButton == MouseButton.Left
+                && !modal.Bounds.Contains(e.GetPosition(layer))
+                && modal.ShowCloseButton)
+            {
+                e.Handled = true;
+                _ = modal.DismissAsync();
+            }
+        };
+
         _layers[modal] = layer;
         _overlayLayer.Children.Add(layer);
         _overlayLayer.IsVisible = true;

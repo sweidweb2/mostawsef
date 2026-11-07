@@ -1,14 +1,22 @@
 using System;
 using System.Linq;
 using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Metadata;
 using Avalonia.Controls.Primitives;
 using Avalonia.Media;
 
 namespace Mostawsef.Desktop.Components;
 
-/// <summary>Round picture or initials of DisplayName.</summary>
+/// <summary>
+/// Round picture or initials of DisplayName. MaxInitials limits the letters (1 = first letter only).
+/// IsColorful picks one of five tones from the name, so the same name always gets the same color.
+/// </summary>
+[PseudoClasses(":tone0", ":tone1", ":tone2", ":tone3", ":tone4")]
 public class Avatar : TemplatedControl
 {
+    public const int ToneCount = 5;
+
     public static readonly StyledProperty<string?> DisplayNameProperty =
         AvaloniaProperty.Register<Avatar, string?>(nameof(DisplayName));
 
@@ -17,6 +25,12 @@ public class Avatar : TemplatedControl
 
     public static readonly StyledProperty<double> SizeProperty =
         AvaloniaProperty.Register<Avatar, double>(nameof(Size), 40);
+
+    public static readonly StyledProperty<int> MaxInitialsProperty =
+        AvaloniaProperty.Register<Avatar, int>(nameof(MaxInitials), 2);
+
+    public static readonly StyledProperty<bool> IsColorfulProperty =
+        AvaloniaProperty.Register<Avatar, bool>(nameof(IsColorful));
 
     public static readonly DirectProperty<Avatar, string> InitialsProperty =
         AvaloniaProperty.RegisterDirect<Avatar, string>(nameof(Initials), o => o.Initials);
@@ -49,6 +63,18 @@ public class Avatar : TemplatedControl
         set => SetValue(SizeProperty, value);
     }
 
+    public int MaxInitials
+    {
+        get => GetValue(MaxInitialsProperty);
+        set => SetValue(MaxInitialsProperty, value);
+    }
+
+    public bool IsColorful
+    {
+        get => GetValue(IsColorfulProperty);
+        set => SetValue(IsColorfulProperty, value);
+    }
+
     public string Initials
     {
         get => _initials;
@@ -67,19 +93,40 @@ public class Avatar : TemplatedControl
         private set => SetAndRaise(InitialsFontSizeProperty, ref _initialsFontSize, value);
     }
 
+    /// <summary>0..ToneCount-1 from the characters of the name; stable across runs (unlike string.GetHashCode).</summary>
+    public static int ToneOf(string? name)
+    {
+        var sum = 0;
+        foreach (var c in (name ?? string.Empty).Trim())
+        {
+            sum = unchecked(sum * 31 + char.ToUpperInvariant(c));
+        }
+
+        return (int)((uint)sum % ToneCount);
+    }
+
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
 
-        if (change.Property == DisplayNameProperty)
+        if (change.Property == DisplayNameProperty || change.Property == MaxInitialsProperty)
         {
             var words = (DisplayName ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            Initials = string.Concat(words.Take(2).Select(w => char.ToUpperInvariant(w[0])));
+            Initials = string.Concat(words.Take(Math.Max(1, MaxInitials)).Select(w => char.ToUpperInvariant(w[0])));
         }
         else if (change.Property == SizeProperty)
         {
             RoundRadius = new CornerRadius(Size / 2);
             InitialsFontSize = Math.Round(Size * 0.38);
+        }
+
+        if (change.Property == DisplayNameProperty || change.Property == IsColorfulProperty)
+        {
+            var tone = IsColorful ? ToneOf(DisplayName) : -1;
+            for (var i = 0; i < ToneCount; i++)
+            {
+                PseudoClasses.Set($":tone{i}", i == tone);
+            }
         }
     }
 }

@@ -148,12 +148,13 @@ Enum ScheduledPaymentStatus {
 Table patients {
   Id uuid [pk]
   FullName varchar(100) [not null]
-  Phone varchar(30) [not null]
+  SearchName varchar(100) [not null, note: 'FullName normalized for search']
+  Phone varchar(30) [not null, note: 'normalized: Latin digits, single spaces']
   GuardianPhone varchar(30)
-  Notes varchar(2000)
+  Notes varchar(2000) [note: 'medical data: never logged or exported']
   IsInsured boolean [not null, default: false]
-  Gender Gender [not null]
-  DateOfBirth date
+  Gender Gender [not null, note: 'stored as varchar(10)']
+  DateOfBirth date [note: 'between 1900-01-01 and today']
   CreatedAt timestamptz [not null]
   CreatedBy varchar(50)
   UpdatedAt timestamptz
@@ -165,7 +166,10 @@ Table patients {
 
   Indexes {
     Phone [note: 'not unique: siblings share a guardian phone']
+    SearchName
   }
+
+  Note: 'Implemented (migration AddPatients).'
 }
 
 Table lab_tests {

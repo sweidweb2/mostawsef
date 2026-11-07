@@ -56,6 +56,8 @@ public class UsersPageTests
         Assert.Contains("Super admin", window.GetVisualDescendants().OfType<Badge>().Select(b => b.Text));
         Assert.Contains("Inactive", window.GetVisualDescendants().OfType<Badge>().Where(b => b.IsEffectivelyVisible).Select(b => b.Text));
         Assert.Contains("2 users", texts);
+        var numbers = window.GetVisualDescendants().OfType<RowNumber>().ToDictionary(n => ((UserListItemDto)n.DataContext!).Id, n => n.Text);
+        Assert.Equal(("1", "2"), (numbers[Sara.Id], numbers[Omar.Id]));
     }
 
     [AvaloniaFact]

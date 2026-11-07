@@ -57,7 +57,7 @@ public abstract partial class FormViewModel : ViewModelBase
     /// <summary>Resource key of an error that belongs to no field (e.g. a conflict or the server being down).</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasFormError))]
-    public partial string? FormErrorKey { get; private set; }
+    public partial string? FormErrorKey { get; protected set; }
 
     public bool HasFormError => FormErrorKey is not null;
 
@@ -76,6 +76,13 @@ public abstract partial class FormViewModel : ViewModelBase
     {
         _savedRequest = BuildRequest();
         IsDirty = false;
+    }
+
+    /// <summary>Checks the fields as Save does, without sending: for a form embedded in another one (e.g. a new patient in an order).</summary>
+    public bool ValidateInput()
+    {
+        Errors.Clear();
+        return Validate(BuildRequest());
     }
 
     /// <summary>True when there is nothing to lose, or the user agreed to discard the changes.</summary>
@@ -97,10 +104,29 @@ public abstract partial class FormViewModel : ViewModelBase
         }
 
         Errors.Clear(e.PropertyName);
-        IsDirty = !Equals(BuildRequest(), _savedRequest);
+        IsDirty = HasChanges(BuildRequest(), _savedRequest);
     }
 
-    private bool CanSave() => !IsBusy;
+    /// <summary>Requests are records, so value equality works unless they hold lists: override then.</summary>
+    protected virtual bool HasChanges(object request, object savedRequest) => !Equals(request, savedRequest);
+
+    /// <summary>Call SaveCommand.NotifyCanExecuteChanged() when an override's inputs change.</summary>
+    protected virtual bool CanSave() => !IsBusy;
+
+    /// <summary>
+    /// Puts an API field error next to its input; false sends it to the form-level message. Override to map nested
+    /// fields such as "NewPatient.Phone" or "Items[0].OurPrice".
+    /// </summary>
+    protected virtual bool TrySetFieldError(string field, string code)
+    {
+        if (!IsField(field))
+        {
+            return false;
+        }
+
+        Errors.Set(field, code);
+        return true;
+    }
 
     [RelayCommand(CanExecute = nameof(CanSave))]
     private async Task SaveAsync()
@@ -166,6 +192,7 @@ public abstract partial class FormViewModel : ViewModelBase
     private void ShowFailure(IApiResult result)
     {
         var problem = result.Problem ?? ApiProblem.Empty;
+        var shownOnField = false;
         foreach (var (field, codes) in problem.FieldErrors)
         {
             if (codes.Length == 0)
@@ -173,9 +200,9 @@ public abstract partial class FormViewModel : ViewModelBase
                 continue;
             }
 
-            if (IsField(field))
+            if (TrySetFieldError(field, codes[0]))
             {
-                Errors.Set(field, codes[0]);
+                shownOnField = true;
             }
             else
             {
@@ -183,7 +210,7 @@ public abstract partial class FormViewModel : ViewModelBase
             }
         }
 
-        if (Errors.HasErrors || FormErrorKey is not null)
+        if (shownOnField || FormErrorKey is not null)
         {
             return;
         }

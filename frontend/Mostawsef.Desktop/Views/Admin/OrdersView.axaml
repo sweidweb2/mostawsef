@@ -1,0 +1,150 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Mostawsef.Desktop.Components"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:conv="using:Mostawsef.Desktop.Converters"
+             xmlns:orders="using:Mostawsef.Contracts.Orders"
+             xmlns:common="using:Mostawsef.Contracts.Common"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Admin"
+             x:Class="Mostawsef.Desktop.Views.Admin.OrdersView"
+             x:DataType="vm:OrdersViewModel">
+    <ScrollViewer>
+        <StackPanel Classes="page">
+            <ui:PageHeader Title="{l:Tr Nav.Orders}" Subtitle="{l:Tr Orders.Subtitle}">
+                <ui:PageHeader.Actions>
+                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                        <Button Classes="secondary" Command="{Binding RefreshCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                                <PathIcon Data="{StaticResource IconRefresh}" />
+                                <TextBlock Text="{l:Tr Common.Refresh}" />
+                            </StackPanel>
+                        </Button>
+                        <Button Name="NewOrderButton" Classes="primary" Command="{Binding NewOrderCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                                <PathIcon Data="{StaticResource IconPlus}" />
+                                <TextBlock Text="{l:Tr Orders.New}" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </ui:PageHeader.Actions>
+            </ui:PageHeader>
+
+            <ui:DataTable Height="560"
+                          IsLoading="{Binding IsLoading}"
+                          IsEmpty="{Binding IsEmpty}"
+                          HasError="{Binding HasLoadError}"
+                          ErrorTitle="{l:TrKey LoadErrorTitleKey}"
+                          ErrorDescription="{l:TrKey LoadErrorDescriptionKey}"
+                          RetryCommand="{Binding RefreshCommand}"
+                          FirstRowNumber="{Binding FirstRowNumber}">
+                <ui:DataTable.Toolbar>
+                    <!-- Equal side columns keep the search box centered in the row. -->
+                    <Grid ColumnDefinitions="*,2*,*" ColumnSpacing="{DynamicResource GapControls}">
+                        <ui:SearchBox Name="SearchBox"
+                                      Grid.Column="1"
+                                      Text="{Binding Search}"
+                                      MaxLength="{x:Static common:PageQuery.MaxSearchLength}"
+                                      PlaceholderText="{l:Tr Orders.SearchPlaceholder}"
+                                      SearchCommand="{Binding SearchCommand}" />
+                        <TextBlock Grid.Column="2"
+                                   Classes="caption muted"
+                                   HorizontalAlignment="Right"
+                                   VerticalAlignment="Center"
+                                   Text="{l:Tr Orders.Records, Arg=TotalCount}" />
+                    </Grid>
+                </ui:DataTable.Toolbar>
+
+                <DataGrid ItemsSource="{Binding Items}" IsReadOnly="True" CanUserSortColumns="False">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="{l:Tr Common.RowNumber}" Width="56">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="orders:OrderListItemDto">
+                                    <ui:RowNumber Margin="12,0" VerticalAlignment="Center" Classes="muted" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="{l:Tr Orders.Col.Number}" Width="130">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="orders:OrderListItemDto">
+                                    <TextBlock Margin="12,0" VerticalAlignment="Center" Classes="muted" Text="{Binding Number}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="{l:Tr Orders.Col.Date}" Width="150">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="orders:OrderListItemDto">
+                                    <TextBlock Margin="12,0" VerticalAlignment="Center"
+                                               Text="{Binding CreatedAt, Converter={x:Static conv:ValueConverters.LocalDateTime}}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="{l:Tr Orders.Col.Patient}" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="orders:OrderListItemDto">
+                                    <TextBlock Margin="12,0" VerticalAlignment="Center" FontWeight="Medium"
+                                               TextTrimming="CharacterEllipsis" Text="{Binding PatientName}" ToolTip.Tip="{Binding PatientName}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="{l:Tr Orders.Col.Phone}" Width="130">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="orders:OrderListItemDto">
+                                    <TextBlock Margin="12,0" VerticalAlignment="Center" FlowDirection="LeftToRight"
+                                               HorizontalAlignment="Left" Text="{Binding PatientPhone}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="{l:Tr Orders.Col.Tests}" Width="80">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="orders:OrderListItemDto">
+                                    <TextBlock Margin="12,0" VerticalAlignment="Center" Text="{Binding TestsCount}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="{l:Tr Orders.Col.Total}" Width="130">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="orders:OrderListItemDto">
+                                    <TextBlock Margin="12,0" VerticalAlignment="Center" Text="{l:Money Total}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="{l:Tr Orders.Col.Paid}" Width="130">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="orders:OrderListItemDto">
+                                    <TextBlock Margin="12,0" VerticalAlignment="Center" Classes="muted" Text="{l:Money Paid}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="{l:Tr Orders.Col.Status}" Width="130">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="orders:OrderListItemDto">
+                                    <ui:Badge Margin="12,0" VerticalAlignment="Center" HorizontalAlignment="Left"
+                                              Kind="{Binding Status, Converter={x:Static conv:ValueConverters.OrderStatusToBadgeKind}}"
+                                              Text="{l:TrKey Status, Prefix=OrderStatus.}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="{l:Tr Common.Actions}" Width="80">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="orders:OrderListItemDto">
+                                    <ui:IconButton Classes="ghost sm"
+                                                   Margin="8,0"
+                                                   VerticalAlignment="Center"
+                                                   HorizontalAlignment="Left"
+                                                   Icon="{StaticResource IconEye}"
+                                                   ToolTip.Tip="{l:Tr Common.View}"
+                                                   Command="{Binding $parent[DataGrid].((vm:OrdersViewModel)DataContext).ViewCommand}"
+                                                   CommandParameter="{Binding}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <ui:DataTable.Footer>
+                    <ui:Pagination CurrentPage="{Binding CurrentPage}" PageCount="{Binding PageCount}" IsEnabled="{Binding !IsLoading}" />
+                </ui:DataTable.Footer>
+            </ui:DataTable>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Contracts.Common;
-using Mostawsef.Domain.Common;
 using Mostawsef.Domain.Entities;
 using Mostawsef.Infrastructure.Persistence.Context;
 
@@ -11,6 +10,12 @@ public class LabTestRepository(AppDbContext db) : ILabTestRepository
 {
     public Task<LabTest?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
         db.LabTests.FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+
+    public async Task<IReadOnlyList<LabTest>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken) =>
+        await db.LabTests.Where(t => ids.Contains(t.Id)).ToListAsync(cancellationToken);
+
+    public Task<bool> IsUsedAsync(Guid id, CancellationToken cancellationToken) =>
+        db.OrderItems.AnyAsync(i => i.LabTestId == id, cancellationToken);
 
     public Task<bool> CodeExistsAsync(string code, Guid? exceptId, CancellationToken cancellationToken) =>
         db.LabTests.AnyAsync(t => t.Code == code && t.Id != exceptId, cancellationToken);

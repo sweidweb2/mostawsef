@@ -76,6 +76,16 @@ public sealed class RouteTable
             where TViewModel : ViewModelBase
             where TView : Control, new()
         {
+            SubPage<TViewModel, TView>();
+            Pages.Add(new PortalPage(typeof(TViewModel), iconKey, titleKey));
+            return this;
+        }
+
+        /// <summary>A page of this portal that is not in the menu: another page opens it with NavigationService.OpenAsync.</summary>
+        public PortalBuilder SubPage<TViewModel, TView>()
+            where TViewModel : ViewModelBase
+            where TView : Control, new()
+        {
             table.View<TViewModel, TView>();
 
             if (!table._pageRoles.TryGetValue(typeof(TViewModel), out var roles))
@@ -84,7 +94,6 @@ public sealed class RouteTable
             }
 
             roles.Add(role);
-            Pages.Add(new PortalPage(typeof(TViewModel), iconKey, titleKey));
             return this;
         }
     }

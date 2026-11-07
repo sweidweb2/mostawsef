@@ -39,7 +39,8 @@
                           HasError="{Binding HasLoadError}"
                           ErrorTitle="{l:TrKey LoadErrorTitleKey}"
                           ErrorDescription="{l:TrKey LoadErrorDescriptionKey}"
-                          RetryCommand="{Binding RefreshCommand}">
+                          RetryCommand="{Binding RefreshCommand}"
+                          FirstRowNumber="{Binding FirstRowNumber}">
                 <ui:DataTable.Toolbar>
                     <Grid ColumnDefinitions="*,Auto">
                         <ui:SearchBox MaxWidth="360"
@@ -52,6 +53,13 @@
 
                 <DataGrid ItemsSource="{Binding Items}" IsReadOnly="True" CanUserSortColumns="False">
                     <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="{l:Tr Common.RowNumber}" Width="56">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ui:RowNumber Margin="12,0" VerticalAlignment="Center" Classes="muted" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
                         <DataGridTemplateColumn Header="{l:Tr Logs.Col.Time}" Width="150">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate x:DataType="logs:ActivityLogListItemDto">

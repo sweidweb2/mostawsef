@@ -1,0 +1,298 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Mostawsef.Desktop.Components"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:common="using:Mostawsef.Contracts.Common"
+             xmlns:orders="using:Mostawsef.Contracts.Orders"
+             xmlns:patients="using:Mostawsef.Contracts.Patients"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Admin"
+             x:Class="Mostawsef.Desktop.Views.Admin.NewOrderView"
+             x:DataType="vm:NewOrderViewModel">
+    <UserControl.Styles>
+        <!-- Below the Compact breakpoint the three columns become tabs: one column at a time, full width. -->
+        <ContainerQuery Name="AppContent" Query="max-width:899">
+            <Style Selector="ui|Card.order-column">
+                <Setter Property="Grid.Column" Value="0" />
+                <Setter Property="Grid.ColumnSpan" Value="3" />
+                <Setter Property="Grid.RowSpan" Value="1" />
+            </Style>
+            <Style Selector="ui|Card.order-column:not(.current)">
+                <Setter Property="IsVisible" Value="False" />
+            </Style>
+            <Style Selector="ui|Card#OrderFooter">
+                <Setter Property="Grid.Column" Value="0" />
+                <Setter Property="Grid.ColumnSpan" Value="3" />
+            </Style>
+        </ContainerQuery>
+
+        <!-- Filtering hides cards; the catalog list itself never changes. -->
+        <Style Selector="ui|ResponsiveGrid#CatalogGrid > ContentPresenter" x:DataType="vm:CatalogTestItem">
+            <Setter Property="IsVisible" Value="{Binding IsMatch}" />
+        </Style>
+
+        <Style Selector="Button.catalog-card">
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Top" />
+            <Setter Property="Padding" Value="{DynamicResource PaddingCardCompact}" />
+            <Setter Property="FontWeight" Value="Normal" />
+        </Style>
+
+        <Style Selector="Border.order-item">
+            <Setter Property="Background" Value="{DynamicResource BrushSurfaceAlt}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusMd}" />
+            <Setter Property="Padding" Value="{DynamicResource PaddingCardCompact}" />
+        </Style>
+    </UserControl.Styles>
+
+    <DockPanel Classes="page">
+        <ui:PageHeader DockPanel.Dock="Top" Title="{l:Tr NewOrder.Title}" Subtitle="{l:Tr NewOrder.Subtitle}">
+            <ui:PageHeader.Breadcrumb>
+                <Button Name="BackButton" Classes="ghost sm" Command="{Binding BackCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}">
+                        <PathIcon Data="{StaticResource IconChevronStart}" />
+                        <TextBlock Text="{l:Tr OrderDetails.BackToOrders}" />
+                    </StackPanel>
+                </Button>
+            </ui:PageHeader.Breadcrumb>
+        </ui:PageHeader>
+
+        <ui:Alert Name="FormError" DockPanel.Dock="Top" Margin="0,0,0,12" Kind="Danger" Text="{l:TrKey FormErrorKey}" />
+
+        <TabStrip Name="ColumnTabs" DockPanel.Dock="Top" Classes="show-compact" Margin="0,0,0,12" SelectedIndex="{Binding SelectedTab}">
+            <TabStripItem Content="{l:Tr NewOrder.Patient}" />
+            <TabStripItem Content="{l:Tr NewOrder.SelectedTestsCount, Arg=SelectedTests.Count}" />
+            <TabStripItem Content="{l:Tr NewOrder.Catalog}" />
+        </TabStrip>
+
+        <Grid ColumnDefinitions="*,*,1.4*" RowDefinitions="*,Auto"
+              ColumnSpacing="{DynamicResource GapGrid}" RowSpacing="{DynamicResource GapGrid}">
+
+            <!-- Column 1: patient and first payment -->
+            <ui:Card Name="PatientColumn" Grid.Column="0" Grid.RowSpan="2" Padding="0"
+                     Classes="order-column" Classes.current="{Binding IsPatientTab}"
+                     Title="{l:Tr NewOrder.Patient}">
+                <ScrollViewer>
+                    <StackPanel Margin="{DynamicResource PaddingCard}" Spacing="{DynamicResource GapStack}">
+                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}">
+                            <Button Name="ExistingPatientButton" Classes="ghost sm" Classes.selected="{Binding !IsNewPatient}"
+                                    Content="{l:Tr NewOrder.ExistingPatient}" Command="{Binding ChooseExistingPatientCommand}" />
+                            <Button Name="NewPatientButton" Classes="ghost sm" Classes.selected="{Binding IsNewPatient}"
+                                    Content="{l:Tr NewOrder.NewPatient}" Command="{Binding ChooseNewPatientCommand}" />
+                        </StackPanel>
+
+                        <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError PatientId}"
+                                   IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+
+                        <!-- Existing patient -->
+                        <StackPanel Spacing="{DynamicResource GapControls}" IsVisible="{Binding !IsNewPatient}">
+                            <Border Name="SelectedPatientCard" Classes="order-item" IsVisible="{Binding HasSelectedPatient}">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource GapControls}">
+                                    <StackPanel Spacing="{DynamicResource SpaceHalf}">
+                                        <TextBlock Classes="strong" TextWrapping="Wrap" Text="{Binding SelectedPatient.FullName}" />
+                                        <TextBlock Classes="caption muted" FlowDirection="LeftToRight" HorizontalAlignment="Left"
+                                                   Text="{Binding SelectedPatient.Phone}" />
+                                    </StackPanel>
+                                    <Button Name="ChangePatientButton" Grid.Column="1" Classes="link" VerticalAlignment="Center"
+                                            Content="{l:Tr NewOrder.ChangePatient}" Command="{Binding ChangePatientCommand}" />
+                                </Grid>
+                            </Border>
+
+                            <StackPanel Spacing="{DynamicResource GapControls}" IsVisible="{Binding !HasSelectedPatient}">
+                                <ui:SearchBox Name="PatientSearchBox"
+                                              Text="{Binding PatientSearch}"
+                                              MaxLength="{x:Static common:PageQuery.MaxSearchLength}"
+                                              PlaceholderText="{l:Tr NewOrder.PatientSearchPlaceholder}"
+                                              SearchCommand="{Binding SearchPatientsCommand}" />
+                                <ui:Spinner HorizontalAlignment="Center" IsVisible="{Binding IsSearchingPatients}" />
+                                <TextBlock Classes="caption muted" TextWrapping="Wrap" Text="{l:Tr NewOrder.NoPatientsFound}"
+                                           IsVisible="{Binding NoPatientsFound}" />
+                                <ItemsControl Name="PatientResultsList" ItemsSource="{Binding PatientResults}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="patients:PatientDto">
+                                            <Button Classes="ghost" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                                    Command="{Binding $parent[ItemsControl].((vm:NewOrderViewModel)DataContext).SelectPatientCommand}"
+                                                    CommandParameter="{Binding}">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource GapControls}">
+                                                    <TextBlock TextTrimming="CharacterEllipsis" Text="{Binding FullName}" ToolTip.Tip="{Binding FullName}" />
+                                                    <TextBlock Grid.Column="1" Classes="muted" FlowDirection="LeftToRight" Text="{Binding Phone}" />
+                                                </Grid>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <!-- New patient: the patients page form -->
+                        <ContentControl Name="NewPatientForm" Content="{Binding PatientForm}" IsVisible="{Binding IsNewPatient}" />
+
+                        <ui:Divider />
+
+                        <TextBlock Classes="h4" Text="{l:Tr NewOrder.FirstPayment}" />
+                        <TextBlock Classes="caption muted" TextWrapping="Wrap" Text="{l:Tr NewOrder.FirstPaymentHint}" />
+                        <ui:ResponsiveGrid MinColumnWidth="160" MaxColumns="2"
+                                           ColumnSpacing="{DynamicResource GapGrid}" RowSpacing="{DynamicResource GapGrid}">
+                            <ui:FormField Label="{l:Tr NewOrder.PaymentAmount}" Error="{l:FieldError PaymentAmount}">
+                                <NumericUpDown Name="PaymentAmountBox"
+                                               Value="{Binding PaymentAmount}"
+                                               Minimum="0"
+                                               Maximum="{Binding MaxPaymentAmount}"
+                                               ClipValueToMinMax="True"
+                                               FormatString="0.00"
+                                               PlaceholderText="{l:Tr LabTests.Field.AmountPlaceholder}"
+                                               HorizontalAlignment="Stretch" />
+                            </ui:FormField>
+                            <ui:FormField Label="{l:Tr NewOrder.PaymentMethod}" Error="{l:FieldError PaymentMethod}">
+                                <ComboBox Name="PaymentMethodBox"
+                                          ItemsSource="{Binding PaymentMethodOptions}"
+                                          SelectedItem="{Binding PaymentMethod}"
+                                          HorizontalAlignment="Stretch">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="x:String">
+                                            <TextBlock Text="{l:TrKey ., Prefix=PaymentMethod.}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </ui:FormField>
+                            <ui:FormField ui:ResponsiveGrid.ColumnSpan="0" Label="{l:Tr NewOrder.PaymentNotes}" Error="{l:FieldError PaymentNotes}">
+                                <TextBox Name="PaymentNotesBox"
+                                         Text="{Binding PaymentNotes}"
+                                         MaxLength="{x:Static orders:OrderRules.PaymentNotesMaxLength}"
+                                         PlaceholderText="{l:Tr NewOrder.PaymentNotesPlaceholder}" />
+                            </ui:FormField>
+                        </ui:ResponsiveGrid>
+                    </StackPanel>
+                </ScrollViewer>
+            </ui:Card>
+
+            <!-- Column 2: selected tests -->
+            <ui:Card Name="TestsColumn" Grid.Column="1" Padding="0"
+                     Classes="order-column" Classes.current="{Binding IsTestsTab}"
+                     Title="{l:Tr NewOrder.SelectedTestsCount, Arg=SelectedTests.Count}">
+                <Panel>
+                    <ScrollViewer>
+                        <ItemsControl Name="SelectedTestsList" Margin="{DynamicResource PaddingCard}" ItemsSource="{Binding SelectedTests}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Spacing="{DynamicResource GapControls}" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:OrderItemDraft">
+                                    <Border Classes="order-item">
+                                        <StackPanel Spacing="{DynamicResource GapControls}">
+                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource GapControls}">
+                                                <StackPanel Spacing="{DynamicResource SpaceHalf}">
+                                                    <TextBlock Classes="caption muted" Text="{Binding Test.Code}" />
+                                                    <TextBlock Classes="strong" TextWrapping="Wrap" Text="{Binding Test.Name}" />
+                                                </StackPanel>
+                                                <ui:IconButton Grid.Column="1"
+                                                               Classes="ghost destructive sm"
+                                                               VerticalAlignment="Top"
+                                                               Icon="{StaticResource IconClose}"
+                                                               ToolTip.Tip="{l:Tr NewOrder.RemoveTest}"
+                                                               Command="{Binding $parent[ItemsControl].((vm:NewOrderViewModel)DataContext).RemoveTestCommand}"
+                                                               CommandParameter="{Binding}" />
+                                            </Grid>
+                                            <ui:FormField Label="{l:Tr NewOrder.OurPrice}" Hint="{l:Tr NewOrder.OurPriceHint}" Error="{l:FieldError OurPrice}">
+                                                <NumericUpDown Value="{Binding OurPrice}"
+                                                               Minimum="0"
+                                                               Maximum="{Binding MaxPrice}"
+                                                               ClipValueToMinMax="True"
+                                                               FormatString="0.00"
+                                                               PlaceholderText="{l:Money Test.Price}"
+                                                               HorizontalAlignment="Stretch" />
+                                            </ui:FormField>
+                                            <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError LabTestId}"
+                                                       IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                    <ui:EmptyState Name="NoTestsState"
+                                   IsVisible="{Binding !HasSelectedTests}"
+                                   Icon="{StaticResource IconLab}"
+                                   Title="{l:Tr NewOrder.NoTests}"
+                                   Description="{l:Tr NewOrder.NoTestsHint}" />
+                </Panel>
+            </ui:Card>
+
+            <!-- Total and Create, under the selected tests -->
+            <ui:Card Name="OrderFooter" Grid.Column="1" Grid.Row="1" Padding="{DynamicResource PaddingCardCompact}">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource GapGrid}">
+                    <StackPanel VerticalAlignment="Center" Spacing="{DynamicResource SpaceHalf}">
+                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                            <TextBlock Classes="muted" VerticalAlignment="Center" Text="{l:Tr NewOrder.Total}" />
+                            <TextBlock Name="TotalText" Classes="h3" VerticalAlignment="Center" Text="{l:Money Total}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}" IsVisible="{Binding HasPayment}">
+                            <TextBlock Classes="caption muted" Text="{l:Tr NewOrder.Remaining}" />
+                            <TextBlock Name="RemainingText" Classes="caption strong" Text="{l:Money Remaining}" />
+                        </StackPanel>
+                    </StackPanel>
+                    <Button Name="CreateButton" Grid.Column="1" Classes="primary" VerticalAlignment="Center" Command="{Binding SaveCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                            <ui:Spinner IsVisible="{Binding IsBusy}" />
+                            <TextBlock Text="{l:Tr NewOrder.Create}" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </ui:Card>
+
+            <!-- Column 3: lab test catalog -->
+            <ui:Card Name="CatalogColumn" Grid.Column="2" Grid.RowSpan="2" Padding="0"
+                     Classes="order-column" Classes.current="{Binding IsCatalogTab}"
+                     Title="{l:Tr NewOrder.Catalog}">
+                <DockPanel>
+                    <ui:SearchBox Name="CatalogSearchBox"
+                                  DockPanel.Dock="Top"
+                                  Margin="20,12,20,0"
+                                  Text="{Binding CatalogSearch}"
+                                  MaxLength="{x:Static common:PageQuery.MaxSearchLength}"
+                                  PlaceholderText="{l:Tr LabTests.SearchPlaceholder}" />
+                    <Panel>
+                        <ScrollViewer>
+                            <ItemsControl Name="CatalogList" Margin="{DynamicResource PaddingCardCompact}" ItemsSource="{Binding Catalog}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <ui:ResponsiveGrid Name="CatalogGrid" MinColumnWidth="150" MaxColumns="4"
+                                                           ColumnSpacing="{DynamicResource GapControls}" RowSpacing="{DynamicResource GapControls}" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:CatalogTestItem">
+                                        <Button Classes="secondary catalog-card"
+                                                IsEnabled="{Binding !IsSelected}"
+                                                ToolTip.Tip="{Binding Test.Name}"
+                                                Command="{Binding $parent[ItemsControl].((vm:NewOrderViewModel)DataContext).AddTestCommand}"
+                                                CommandParameter="{Binding}">
+                                            <StackPanel Spacing="{DynamicResource SpaceHalf}">
+                                                <TextBlock Classes="caption muted" TextTrimming="CharacterEllipsis" Text="{Binding Test.Code}" />
+                                                <TextBlock FontWeight="Medium" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
+                                                           Text="{Binding Test.Name}" />
+                                                <TextBlock Classes="caption" Text="{l:Money Test.Price}" />
+                                            </StackPanel>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                        <ui:EmptyState Name="CatalogEmptyState"
+                                       IsVisible="{Binding IsCatalogEmpty}"
+                                       Icon="{StaticResource IconSearch}"
+                                       Title="{l:Tr NewOrder.CatalogEmpty}" />
+                        <ui:ErrorState IsVisible="{Binding HasCatalogError}"
+                                       Title="{l:TrKey CatalogErrorTitleKey}"
+                                       Description="{l:TrKey CatalogErrorDescriptionKey}"
+                                       RetryCommand="{Binding RetryCatalogCommand}" />
+                        <ui:LoadingOverlay IsLoading="{Binding IsCatalogLoading}" />
+                    </Panel>
+                </DockPanel>
+            </ui:Card>
+        </Grid>
+    </DockPanel>
+</UserControl>

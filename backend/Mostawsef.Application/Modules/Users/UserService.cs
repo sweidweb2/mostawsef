@@ -50,7 +50,8 @@ public class UserService(
             throw AppException.Conflict(ErrorCodes.UsernameTaken, nameof(CreateUserRequest.Username));
         }
 
-        var user = new User(username, request.FullName, passwordHasher.Hash(request.Password), ParseRole(request.Role));
+        var user = new User(
+            username, request.FullName, SearchText.Normalize(request.FullName), passwordHasher.Hash(request.Password), ParseRole(request.Role));
         users.Add(user);
         await users.SaveChangesAsync(cancellationToken);
 
@@ -72,7 +73,7 @@ public class UserService(
             throw AppException.Conflict(ErrorCodes.OwnAccount);
         }
 
-        user.Rename(request.FullName);
+        user.Rename(request.FullName, SearchText.Normalize(request.FullName));
         user.ChangeRole(role);
         if (request.IsActive)
         {

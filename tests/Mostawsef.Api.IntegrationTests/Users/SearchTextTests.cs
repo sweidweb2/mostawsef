@@ -1,4 +1,4 @@
-using Mostawsef.Domain.Common;
+using Mostawsef.Contracts.Common;
 
 namespace Mostawsef.Api.IntegrationTests.Users;
 

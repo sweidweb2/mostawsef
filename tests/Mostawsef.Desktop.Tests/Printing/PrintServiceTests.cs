@@ -1,6 +1,7 @@
 using Avalonia.Headless.XUnit;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.LabTests;
+using Mostawsef.Contracts.Patients;
 using Mostawsef.Contracts.Settings;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Printing;
@@ -30,6 +31,25 @@ public class PrintServiceTests
 
         Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(pdf, 0, 4));
         Assert.True(pdf.Length > 5_000, $"Only {pdf.Length} bytes");
+    }
+
+    [AvaloniaTheory]
+    [InlineData(AppLanguage.English)]
+    [InlineData(AppLanguage.Arabic)]
+    public void The_patient_list_renders_a_pdf_in_both_languages(AppLanguage language)
+    {
+        using var app = new TestServices(language);
+        var print = app.Get<PrintService>();
+        PatientDto[] patients =
+        [
+            new(Guid.NewGuid(), "منى عادل / Mona Adel", "010 1234 5678", "012 0000 0000", "Private note", true, Genders.Female,
+                new DateOnly(2015, 3, 9), DateTime.UtcNow, null, null, 0),
+            new(Guid.NewGuid(), "Omar Khaled", "011 2222 3333", null, null, false, Genders.Male, null, DateTime.UtcNow, null, null, 0),
+        ];
+
+        var pdf = print.Render(new PatientsDocument(print.CreateContext(), patients));
+
+        Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(pdf, 0, 4));
     }
 
     [AvaloniaFact]

@@ -32,6 +32,8 @@ public static class DependencyInjection
         services.AddSingleton<INumberSequence, NumberSequenceRepository>();
         services.AddScoped<IClinicSettingsRepository, ClinicSettingsRepository>();
         services.AddScoped<ILabTestRepository, LabTestRepository>();
+        services.AddScoped<IPatientRepository, PatientRepository>();
+        services.AddScoped<IOrderRepository, OrderRepository>();
 
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<ITokenService, JwtTokenService>();

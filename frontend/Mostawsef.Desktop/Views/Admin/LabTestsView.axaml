@@ -40,7 +40,8 @@
                           HasError="{Binding HasLoadError}"
                           ErrorTitle="{l:TrKey LoadErrorTitleKey}"
                           ErrorDescription="{l:TrKey LoadErrorDescriptionKey}"
-                          RetryCommand="{Binding RefreshCommand}">
+                          RetryCommand="{Binding RefreshCommand}"
+                          FirstRowNumber="{Binding FirstRowNumber}">
                 <ui:DataTable.Toolbar>
                     <!-- Equal side columns keep the search box centered in the row. -->
                     <Grid ColumnDefinitions="*,2*,*" ColumnSpacing="{DynamicResource GapControls}">
@@ -60,13 +61,13 @@
                                                Classes="ghost sm"
                                                Classes.selected="{Binding !IsGridView}"
                                                Icon="{StaticResource IconList}"
-                                               ToolTip.Tip="{l:Tr LabTests.TableView}"
+                                               ToolTip.Tip="{l:Tr Common.TableView}"
                                                Command="{Binding ShowTableCommand}" />
                                 <ui:IconButton Name="GridViewButton"
                                                Classes="ghost sm"
                                                Classes.selected="{Binding IsGridView}"
                                                Icon="{StaticResource IconGrid}"
-                                               ToolTip.Tip="{l:Tr LabTests.GridView}"
+                                               ToolTip.Tip="{l:Tr Common.GridView}"
                                                Command="{Binding ShowGridCommand}" />
                             </StackPanel>
                         </StackPanel>
@@ -76,19 +77,34 @@
                 <Panel>
                     <DataGrid ItemsSource="{Binding Items}" IsReadOnly="True" CanUserSortColumns="False" IsVisible="{Binding !IsGridView}">
                         <DataGrid.Columns>
-                            <DataGridTemplateColumn Header="{l:Tr LabTests.Col.Code}" Width="110">
+                            <DataGridTemplateColumn Header="{l:Tr Common.RowNumber}" Width="56">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate x:DataType="tests:LabTestDto">
-                                        <TextBlock Margin="12,0" VerticalAlignment="Center" Classes="muted"
-                                                   TextTrimming="CharacterEllipsis" Text="{Binding Code}" ToolTip.Tip="{Binding Code}" />
+                                        <ui:RowNumber Margin="12,0" VerticalAlignment="Center" Classes="muted" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="{l:Tr LabTests.Col.Code}" Width="140">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate x:DataType="tests:LabTestDto">
+                                        <Grid Margin="12,0" ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource Space1}"
+                                              HorizontalAlignment="Left" VerticalAlignment="Center">
+                                            <TextBlock VerticalAlignment="Center" Classes="muted"
+                                                       TextTrimming="CharacterEllipsis" Text="{Binding Code}" ToolTip.Tip="{Binding Code}" />
+                                            <ui:CopyButton Grid.Column="1" Classes="sm" Text="{Binding Code}" />
+                                        </Grid>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
                             <DataGridTemplateColumn Header="{l:Tr LabTests.Col.Name}" Width="*">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate x:DataType="tests:LabTestDto">
-                                        <TextBlock Margin="12,0" VerticalAlignment="Center" FontWeight="Medium"
-                                                   TextTrimming="CharacterEllipsis" Text="{Binding Name}" ToolTip.Tip="{Binding Name}" />
+                                        <Grid Margin="12,0" ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource Space1}"
+                                              HorizontalAlignment="Left" VerticalAlignment="Center">
+                                            <TextBlock VerticalAlignment="Center" FontWeight="Medium"
+                                                       TextTrimming="CharacterEllipsis" Text="{Binding Name}" ToolTip.Tip="{Binding Name}" />
+                                            <ui:CopyButton Grid.Column="1" Classes="sm" Text="{Binding Name}" />
+                                        </Grid>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>

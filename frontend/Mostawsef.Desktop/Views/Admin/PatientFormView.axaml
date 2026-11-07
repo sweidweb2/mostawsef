@@ -1,0 +1,69 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Mostawsef.Desktop.Components"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:conv="using:Mostawsef.Desktop.Converters"
+             xmlns:rules="using:Mostawsef.Contracts.Patients"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Admin"
+             x:Class="Mostawsef.Desktop.Views.Admin.PatientFormView"
+             x:DataType="vm:PatientFormViewModel">
+    <StackPanel Spacing="{DynamicResource GapGrid}">
+        <ui:Alert Kind="Danger" Text="{l:TrKey FormErrorKey}" />
+
+        <ui:ResponsiveGrid MinColumnWidth="220" MaxColumns="2" ColumnSpacing="{DynamicResource GapGrid}" RowSpacing="{DynamicResource GapGrid}">
+            <ui:FormField ui:ResponsiveGrid.ColumnSpan="0" Label="{l:Tr Patients.Col.FullName}" IsRequired="True" Error="{l:FieldError FullName}">
+                <TextBox Name="FullNameBox"
+                         Text="{Binding FullName}"
+                         MaxLength="{x:Static rules:PatientRules.FullNameMaxLength}"
+                         PlaceholderText="{l:Tr Patients.Field.FullNamePlaceholder}" />
+            </ui:FormField>
+
+            <ui:FormField Label="{l:Tr Patients.Col.Phone}" IsRequired="True" Error="{l:FieldError Phone}">
+                <TextBox Name="PhoneBox"
+                         Text="{Binding Phone}"
+                         MaxLength="{x:Static rules:PatientRules.PhoneMaxLength}"
+                         FlowDirection="LeftToRight"
+                         PlaceholderText="{l:Tr Patients.Field.PhonePlaceholder}" />
+            </ui:FormField>
+            <ui:FormField Label="{l:Tr Patients.Col.GuardianPhone}" Error="{l:FieldError GuardianPhone}">
+                <TextBox Name="GuardianPhoneBox"
+                         Text="{Binding GuardianPhone}"
+                         MaxLength="{x:Static rules:PatientRules.PhoneMaxLength}"
+                         FlowDirection="LeftToRight"
+                         PlaceholderText="{l:Tr Patients.Field.GuardianPhonePlaceholder}" />
+            </ui:FormField>
+
+            <ui:FormField Label="{l:Tr Patients.Col.Gender}" IsRequired="True" Error="{l:FieldError Gender}">
+                <ComboBox Name="GenderBox"
+                          ItemsSource="{Binding GenderOptions}"
+                          SelectedItem="{Binding Gender}"
+                          PlaceholderText="{l:Tr Patients.Field.GenderPlaceholder}"
+                          HorizontalAlignment="Stretch">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                            <TextBlock Text="{l:TrKey ., Prefix=Gender.}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </ui:FormField>
+            <ui:FormField Label="{l:Tr Patients.Col.DateOfBirth}" Error="{l:FieldError DateOfBirth}">
+                <CalendarDatePicker Name="DateOfBirthBox"
+                                    SelectedDate="{Binding DateOfBirth, Converter={x:Static conv:ValueConverters.DateOnly}}"
+                                    DisplayDateStart="{Binding MinDateOfBirth}"
+                                    DisplayDateEnd="{Binding MaxDateOfBirth}"
+                                    PlaceholderText="{l:Tr Patients.Field.DateOfBirthPlaceholder}"
+                                    HorizontalAlignment="Stretch" />
+            </ui:FormField>
+
+            <CheckBox Name="IsInsuredBox" ui:ResponsiveGrid.ColumnSpan="0" Content="{l:Tr Patients.Field.IsInsured}" IsChecked="{Binding IsInsured}" />
+
+            <ui:FormField ui:ResponsiveGrid.ColumnSpan="0" Label="{l:Tr Patients.Col.Notes}" Error="{l:FieldError Notes}">
+                <TextBox Name="NotesBox"
+                         Classes="textarea"
+                         Text="{Binding Notes}"
+                         MaxLength="{x:Static rules:PatientRules.NotesMaxLength}"
+                         PlaceholderText="{l:Tr Patients.Field.NotesPlaceholder}" />
+            </ui:FormField>
+        </ui:ResponsiveGrid>
+    </StackPanel>
+</UserControl>
