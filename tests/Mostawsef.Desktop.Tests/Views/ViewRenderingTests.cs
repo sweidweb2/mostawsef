@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
@@ -26,6 +27,43 @@ public class ViewRenderingTests
         Assert.NotNull(window.GetVisualDescendants().OfType<LoginView>().SingleOrDefault());
         Assert.NotNull(window.FindDescendantOfType<PasswordField>());
         Assert.Contains(Texts(window), t => t == "Sign in");
+    }
+
+    [AvaloniaFact]
+    public async Task Long_login_error_wraps_inside_the_card()
+    {
+        using var app = new TestServices();
+        app.Api.FailWithNetworkError();
+        var vm = app.Get<LoginViewModel>();
+        vm.Username = "user@test.local";
+        vm.Password = "secret";
+        var window = Show(vm);
+
+        await vm.LoginCommand.ExecuteAsync(null);
+        window.UpdateLayout();
+
+        var card = window.FindDescendantOfType<Card>()!;
+        var error = window.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == vm.ErrorMessage);
+        var errorRight = error.TranslatePoint(new Point(error.Bounds.Width, 0), card)!.Value.X;
+
+        Assert.True(errorRight <= card.Bounds.Width, $"Error text ends at {errorRight}, card is {card.Bounds.Width} wide");
+    }
+
+    [AvaloniaFact]
+    public void Login_inputs_show_translated_placeholders()
+    {
+        using var app = new TestServices();
+        var window = Show(app.Get<LoginViewModel>());
+        var username = window.GetVisualDescendants().OfType<TextBox>().Single(t => t.Name == "UsernameBox");
+        var password = window.FindDescendantOfType<PasswordField>()!;
+
+        Assert.Equal("Enter your username", username.PlaceholderText);
+        Assert.Equal("Enter your password", password.PlaceholderText);
+
+        LocalizationService.Instance.SetLanguage(AppLanguage.Arabic);
+
+        Assert.Equal("أدخل اسم المستخدم", username.PlaceholderText);
+        Assert.Equal("أدخل كلمة المرور", password.PlaceholderText);
     }
 
     [AvaloniaFact]

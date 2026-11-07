@@ -52,10 +52,14 @@
                     <!-- Form -->
                     <StackPanel Spacing="{DynamicResource GapGrid}">
                         <ui:FormField Label="{l:Tr Login.Username}" IsRequired="True">
-                            <TextBox Name="UsernameBox" Text="{Binding Username}" />
+                            <TextBox Name="UsernameBox"
+                                     Text="{Binding Username}"
+                                     PlaceholderText="{l:Tr Login.UsernamePlaceholder}" />
                         </ui:FormField>
                         <ui:FormField Label="{l:Tr Login.Password}" IsRequired="True">
-                            <ui:PasswordField Text="{Binding Password}" />
+                            <ui:PasswordField Name="PasswordBox"
+                                              Text="{Binding Password}"
+                                              PlaceholderText="{l:Tr Login.PasswordPlaceholder}" />
                         </ui:FormField>
 
                         <Border Background="{DynamicResource BrushDangerSubtle}"
@@ -64,15 +68,18 @@
                                 CornerRadius="{DynamicResource RadiusMd}"
                                 Padding="{DynamicResource PaddingControl}"
                                 IsVisible="{Binding HasError}">
-                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource GapControls}">
                                 <PathIcon Data="{StaticResource IconError}"
                                           Width="{DynamicResource IconSizeSm}"
                                           Height="{DynamicResource IconSizeSm}"
+                                          Margin="0,3,0,0"
+                                          VerticalAlignment="Top"
                                           Foreground="{DynamicResource BrushDanger}" />
-                                <TextBlock Text="{Binding ErrorMessage}"
+                                <TextBlock Grid.Column="1"
+                                           Text="{Binding ErrorMessage}"
                                            Foreground="{DynamicResource BrushDangerText}"
                                            TextWrapping="Wrap" />
-                            </StackPanel>
+                            </Grid>
                         </Border>
 
                         <Button Classes="primary lg"

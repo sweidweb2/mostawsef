@@ -41,8 +41,9 @@ Skip tests only for pure styling/token changes and docs.
 - Keep tests independent: no ordering, no shared mutable state between tests.
 
 ## Commands
+Always use the script (it checks Docker and switches to Release when the app is running):
 ```powershell
-dotnet test Mostawsef.slnx                          # everything (Docker must be running)
-dotnet test tests/Mostawsef.Desktop.Tests           # fast, no Docker
-dotnet test Mostawsef.slnx -c Release               # use when the desktop app is running (Debug output is locked)
+./scripts/test.ps1 [all|api|desktop] [NameFilter] [-Watch] [-Coverage] [-Detailed]
+./scripts/test.ps1 api Login
+./scripts/test.ps1 desktop NavigationGuard -Watch
 ```

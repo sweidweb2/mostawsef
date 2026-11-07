@@ -90,6 +90,8 @@
   <data name="Login.Subtitle" xml:space="preserve"><value>سجّل الدخول للمتابعة</value></data>
   <data name="Login.Username" xml:space="preserve"><value>اسم المستخدم</value></data>
   <data name="Login.Password" xml:space="preserve"><value>كلمة المرور</value></data>
+  <data name="Login.UsernamePlaceholder" xml:space="preserve"><value>أدخل اسم المستخدم</value></data>
+  <data name="Login.PasswordPlaceholder" xml:space="preserve"><value>أدخل كلمة المرور</value></data>
   <data name="Login.Submit" xml:space="preserve"><value>تسجيل الدخول</value></data>
   <data name="Login.Invalid" xml:space="preserve"><value>اسم المستخدم أو كلمة المرور غير صحيحة.</value></data>
   <data name="Login.TooMany" xml:space="preserve"><value>محاولات كثيرة. يرجى الانتظار دقيقة ثم المحاولة مرة أخرى.</value></data>

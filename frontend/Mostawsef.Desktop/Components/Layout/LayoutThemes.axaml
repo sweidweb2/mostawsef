@@ -64,6 +64,8 @@
             <Setter Property="Margin" Value="0" />
         </Style>
         <Style Selector="^:compact /template/ Button#PART_Toggle">
+            <Setter Property="Grid.Column" Value="0" />
+            <Setter Property="Grid.ColumnSpan" Value="2" />
             <Setter Property="HorizontalAlignment" Value="Center" />
         </Style>
     </ControlTheme>
