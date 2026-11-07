@@ -81,6 +81,7 @@
   <data name="Login.TooMany" xml:space="preserve"><value>Too many attempts. Please wait a minute and try again.</value></data>
   <data name="Login.ServerUnreachable" xml:space="preserve"><value>Cannot reach the server. Make sure the Mostawsef service is running.</value></data>
   <data name="Login.Failed" xml:space="preserve"><value>Sign in failed. Please try again.</value></data>
+  <data name="Login.Maintenance" xml:space="preserve"><value>The system is under maintenance. Please try again later.</value></data>
   <data name="Login.SessionExpired" xml:space="preserve"><value>Your session has expired. Please sign in again.</value></data>
   <data name="Login.OpenGallery" xml:space="preserve"><value>Component gallery (development)</value></data>
 
@@ -145,6 +146,7 @@
 
   <data name="Action.auth.signed_in" xml:space="preserve"><value>Signed in</value></data>
   <data name="Action.auth.sign_in_failed" xml:space="preserve"><value>Failed sign-in</value></data>
+  <data name="Action.auth.sign_in_blocked" xml:space="preserve"><value>Sign-in blocked (maintenance mode)</value></data>
   <data name="Action.auth.signed_out" xml:space="preserve"><value>Signed out</value></data>
   <data name="Action.logs.activity_deleted" xml:space="preserve"><value>Deleted activity record</value></data>
   <data name="Action.logs.error_deleted" xml:space="preserve"><value>Deleted error record</value></data>
@@ -155,6 +157,7 @@
   <data name="Action.users.deleted" xml:space="preserve"><value>Deleted a user</value></data>
   <data name="Action.users.password_reset" xml:space="preserve"><value>Reset a user's password</value></data>
   <data name="Action.settings.clinic_updated" xml:space="preserve"><value>Updated the clinic settings</value></data>
+  <data name="Action.settings.system_updated" xml:space="preserve"><value>Updated the system settings</value></data>
   <data name="Action.lab_tests.created" xml:space="preserve"><value>Added a lab test</value></data>
   <data name="Action.lab_tests.updated" xml:space="preserve"><value>Updated a lab test</value></data>
   <data name="Action.lab_tests.deleted" xml:space="preserve"><value>Deleted a lab test</value></data>
@@ -174,6 +177,17 @@
   <data name="Settings.NamePlaceholder" xml:space="preserve"><value>Enter the clinic name</value></data>
   <data name="Settings.AddressPlaceholder" xml:space="preserve"><value>Enter the clinic address</value></data>
   <data name="Settings.PhonePlaceholder" xml:space="preserve"><value>Enter the clinic phone number</value></data>
+  <data name="Nav.SystemSettings" xml:space="preserve"><value>Settings</value></data>
+  <data name="SystemSettings.Subtitle" xml:space="preserve"><value>Where backups are saved, and maintenance mode.</value></data>
+  <data name="SystemSettings.EditTitle" xml:space="preserve"><value>Edit settings</value></data>
+  <data name="SystemSettings.Saved" xml:space="preserve"><value>Settings saved.</value></data>
+  <data name="SystemSettings.Field.BackupPath" xml:space="preserve"><value>Backup folder</value></data>
+  <data name="SystemSettings.Field.MaintenanceMode" xml:space="preserve"><value>Maintenance mode</value></data>
+  <data name="SystemSettings.BackupPathPlaceholder" xml:space="preserve"><value>e.g. D:\Mostawsef\Backups</value></data>
+  <data name="SystemSettings.MaintenanceHint" xml:space="preserve"><value>While on, only Super users can sign in. Users already signed in are not affected.</value></data>
+  <data name="SystemSettings.MaintenanceActive" xml:space="preserve"><value>Maintenance mode is on: only Super users can sign in.</value></data>
+  <data name="SystemSettings.On" xml:space="preserve"><value>On</value></data>
+  <data name="SystemSettings.Off" xml:space="preserve"><value>Off</value></data>
 
   <data name="Currency.EGP" xml:space="preserve"><value>EGP</value></data>
   <data name="Currency.USD" xml:space="preserve"><value>USD</value></data>
@@ -207,6 +221,7 @@
   <data name="ErrorCode.own_account" xml:space="preserve"><value>You can't do this to your own account.</value></data>
   <data name="ErrorCode.wrong_password" xml:space="preserve"><value>The current password is wrong.</value></data>
   <data name="ErrorCode.password_mismatch" xml:space="preserve"><value>The passwords do not match.</value></data>
+  <data name="ErrorCode.maintenance_mode" xml:space="preserve"><value>The system is under maintenance. Please try again later.</value></data>
 
   <data name="Auth.ChangePassword" xml:space="preserve"><value>Change password</value></data>
   <data name="Auth.PasswordChanged" xml:space="preserve"><value>Password changed.</value></data>

@@ -1,0 +1,90 @@
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Mostawsef.Contracts.Settings;
+using Mostawsef.Desktop.Services.Api;
+using Mostawsef.Desktop.Services.Local;
+using Mostawsef.Desktop.Services.Ui;
+using Mostawsef.Desktop.ViewModels.Shell;
+
+namespace Mostawsef.Desktop.ViewModels.Super;
+
+/// <summary>Super portal: the backup folder and maintenance mode, with an edit form.</summary>
+public partial class SystemSettingsViewModel(
+    SystemSettingsApi api,
+    IDialogService dialogs,
+    IToastService toasts,
+    LocalizationService localization) : ViewModelBase, ILoadablePage
+{
+    private CancellationTokenSource? _loadCancellation;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSettings), nameof(MaintenanceModeKey), nameof(MaintenanceNoticeKey))]
+    public partial SystemSettingsDto? Settings { get; private set; }
+
+    public bool HasSettings => Settings is not null;
+
+    public string? MaintenanceModeKey => Settings is null ? null : Settings.MaintenanceMode ? "SystemSettings.On" : "SystemSettings.Off";
+
+    /// <summary>Shown as a warning while maintenance mode is on.</summary>
+    public string? MaintenanceNoticeKey => Settings?.MaintenanceMode == true ? "SystemSettings.MaintenanceActive" : null;
+
+    [ObservableProperty]
+    public partial bool IsLoading { get; private set; }
+
+    [ObservableProperty]
+    public partial bool HasLoadError { get; private set; }
+
+    public Task ActivateAsync() => LoadAsync();
+
+    public void Deactivate() => _loadCancellation?.Cancel();
+
+    [RelayCommand]
+    private Task RefreshAsync() => LoadAsync();
+
+    [RelayCommand]
+    private async Task EditAsync()
+    {
+        if (Settings is not { } settings)
+        {
+            return;
+        }
+
+        var form = new SystemSettingsFormViewModel(api, settings, dialogs, localization);
+        if (await dialogs.ShowFormAsync(form, localization.Get("SystemSettings.EditTitle")))
+        {
+            Settings = form.Saved;
+            toasts.Success(localization.Get("SystemSettings.Saved"));
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        _loadCancellation?.Cancel();
+        using var cancellation = new CancellationTokenSource();
+        _loadCancellation = cancellation;
+
+        IsLoading = true;
+        try
+        {
+            var result = await api.GetAsync(cancellation.Token);
+            cancellation.Token.ThrowIfCancellationRequested();
+            Settings = result.Value ?? Settings;
+            HasLoadError = !result.IsSuccess;
+        }
+        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+        {
+            // The user left the page; the next activation loads again.
+        }
+        finally
+        {
+            if (_loadCancellation == cancellation)
+            {
+                _loadCancellation = null;
+                IsLoading = false;
+            }
+        }
+    }
+}

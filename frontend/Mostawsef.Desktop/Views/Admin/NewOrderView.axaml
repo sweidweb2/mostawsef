@@ -9,6 +9,23 @@
              x:Class="Mostawsef.Desktop.Views.Admin.NewOrderView"
              x:DataType="vm:NewOrderViewModel">
     <UserControl.Styles>
+        <!-- Grid positions live in styles (not on the elements) so the Compact query below can override them. -->
+        <Style Selector="ui|Card#PatientColumn">
+            <Setter Property="Grid.Column" Value="0" />
+            <Setter Property="Grid.RowSpan" Value="2" />
+        </Style>
+        <Style Selector="ui|Card#TestsColumn">
+            <Setter Property="Grid.Column" Value="1" />
+        </Style>
+        <Style Selector="ui|Card#OrderFooter">
+            <Setter Property="Grid.Column" Value="1" />
+            <Setter Property="Grid.Row" Value="1" />
+        </Style>
+        <Style Selector="ui|Card#CatalogColumn">
+            <Setter Property="Grid.Column" Value="2" />
+            <Setter Property="Grid.RowSpan" Value="2" />
+        </Style>
+
         <!-- Below the Compact breakpoint the three columns become tabs: one column at a time, full width. -->
         <ContainerQuery Name="AppContent" Query="max-width:899">
             <Style Selector="ui|Card.order-column">
@@ -26,7 +43,7 @@
         </ContainerQuery>
 
         <!-- Filtering hides cards; the catalog list itself never changes. -->
-        <Style Selector="ui|ResponsiveGrid#CatalogGrid > ContentPresenter" x:DataType="vm:CatalogTestItem">
+        <Style Selector="ItemsControl#CatalogList > ContentPresenter" x:DataType="vm:CatalogTestItem">
             <Setter Property="IsVisible" Value="{Binding IsMatch}" />
         </Style>
 
@@ -70,7 +87,7 @@
               ColumnSpacing="{DynamicResource GapGrid}" RowSpacing="{DynamicResource GapGrid}">
 
             <!-- Column 1: patient and first payment -->
-            <ui:Card Name="PatientColumn" Grid.Column="0" Grid.RowSpan="2" Padding="0"
+            <ui:Card Name="PatientColumn" Padding="0"
                      Classes="order-column" Classes.current="{Binding IsPatientTab}"
                      Title="{l:Tr NewOrder.Patient}">
                 <ScrollViewer>
@@ -168,7 +185,7 @@
             </ui:Card>
 
             <!-- Column 2: selected tests -->
-            <ui:Card Name="TestsColumn" Grid.Column="1" Padding="0"
+            <ui:Card Name="TestsColumn" Padding="0"
                      Classes="order-column" Classes.current="{Binding IsTestsTab}"
                      Title="{l:Tr NewOrder.SelectedTestsCount, Arg=SelectedTests.Count}">
                 <Panel>
@@ -222,7 +239,7 @@
             </ui:Card>
 
             <!-- Total and Create, under the selected tests -->
-            <ui:Card Name="OrderFooter" Grid.Column="1" Grid.Row="1" Padding="{DynamicResource PaddingCardCompact}">
+            <ui:Card Name="OrderFooter" Padding="{DynamicResource PaddingCardCompact}">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource GapGrid}">
                     <StackPanel VerticalAlignment="Center" Spacing="{DynamicResource SpaceHalf}">
                         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
@@ -244,7 +261,7 @@
             </ui:Card>
 
             <!-- Column 3: lab test catalog -->
-            <ui:Card Name="CatalogColumn" Grid.Column="2" Grid.RowSpan="2" Padding="0"
+            <ui:Card Name="CatalogColumn" Padding="0"
                      Classes="order-column" Classes.current="{Binding IsCatalogTab}"
                      Title="{l:Tr NewOrder.Catalog}">
                 <DockPanel>

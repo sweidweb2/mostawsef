@@ -323,11 +323,12 @@ Health check: `GET http://localhost:5270/api/health` returns
 
 | Area | Where | Details |
 | --- | --- | --- |
-| Database | `Infrastructure/Persistence/Context/AppDbContext.cs`, `Configurations/`, `Migrations/` | Entities `User`, `ActivityLog`, `SystemError`, `ClinicSettings`, `NumberSequence` |
-| Startup | `Api/Program.cs`, `Infrastructure/Persistence/DatabaseInitializer.cs` | Applies pending migrations, creates the clinic settings row and seeds `Seed:Users` when the API starts |
+| Database | `Infrastructure/Persistence/Context/AppDbContext.cs`, `Configurations/`, `Migrations/` | Entities `User`, `ActivityLog`, `SystemError`, `ClinicSettings`, `SystemSettings`, `NumberSequence` |
+| Startup | `Api/Program.cs`, `Infrastructure/Persistence/DatabaseInitializer.cs` | Applies pending migrations, creates the clinic and system settings rows and seeds `Seed:Users` when the API starts |
 | Health | `Api/Controllers/HealthController.cs` | `GET /api/health` verifies API + database and reports `apiVersion` (`Contracts/Common/ApiVersion`) |
 | Connection banner | desktop `Services/Api/ConnectionMonitor`, `PortalShellView` | While signed in: health check every 15 s (3 s while offline); banner when the server is unreachable or runs another API version |
 | Clinic settings | `ClinicSettingsController`, `Application/Modules/Settings`, desktop `ClinicContext` + Admin page | Name, address, phone, currency. Everyone reads, Admin edits. No logo yet (storage still to decide) |
+| System settings | `SystemSettingsController`, `Application/Modules/Settings`, desktop Super "Settings" page | Backup folder (used by the backup feature, not built yet) and maintenance mode (only Super can sign in). Super only |
 | Readable numbers | `Application/Interfaces/INumberSequence`, `Domain/Common/DocumentNumber` | `P-000123`-style numbers per sequence name, safe across PCs (gaps possible after a failed save) |
 | Clock, dates, money | `TimeProvider` (Infrastructure DI), `Contracts/Common/Money` + `Currencies`, desktop `{l:Money}` and `ValueConverters.DateOnly` | One injectable clock; money as `long` minor units shown with the clinic currency; `DateOnly` for calendar dates |
 | Printing | desktop `Services/Printing` (QuestPDF) | `ClinicPage` layout (clinic header, page footer, RTL in Arabic); first document: the lab test list exported from the Admin lab tests page |
@@ -339,8 +340,9 @@ Health check: `GET http://localhost:5270/api/health` returns
 | Desktop | `frontend/Mostawsef.Desktop` | Login, one portal shell per role from `AppRoutes`, Super pages for logs/errors, shared components, Light/Dark, Arabic/English. See `ui-foundation.md` |
 | Tests | `tests/` | API integration tests (Testcontainers) and headless desktop tests. See `.cursor/rules/testing.mdc` |
 | Dev database | `docker-compose.yml` | Development PostgreSQL (+ optional pgAdmin) |
-
-No business (clinic) modules exist yet.
+| Lab tests | `LabTestsController`, `Application/Modules/LabTests`, desktop `LabTestsViewModel` + form | The test catalog (Admin): code, name, our price, lab cost, active. A test used by an order cannot be deleted (409 `in_use`) |
+| Patients | `PatientsController`, `Application/Modules/Patients`, desktop `PatientsViewModel` + form | Patient records (Admin), soft delete, Arabic-aware name/phone search |
+| Orders | `OrdersController`, `Application/Modules/Orders`, desktop `OrdersViewModel`, `NewOrderViewModel`, `OrderDetailsViewModel` | Admin: list, new order (existing or new patient, tests with optional own prices, optional first payment; saved in one transaction, `ORD-000123` numbers), read-only details. No edit, cancel, discounts, refunds or printing yet |
 
 ---
 

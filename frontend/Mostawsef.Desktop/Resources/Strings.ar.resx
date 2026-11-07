@@ -81,6 +81,7 @@
   <data name="Login.TooMany" xml:space="preserve"><value>محاولات كثيرة. يرجى الانتظار دقيقة ثم المحاولة مرة أخرى.</value></data>
   <data name="Login.ServerUnreachable" xml:space="preserve"><value>تعذّر الاتصال بالخادم. تأكد من تشغيل خدمة مستوصف.</value></data>
   <data name="Login.Failed" xml:space="preserve"><value>تعذّر تسجيل الدخول. يرجى المحاولة مرة أخرى.</value></data>
+  <data name="Login.Maintenance" xml:space="preserve"><value>النظام تحت الصيانة. يرجى المحاولة لاحقًا.</value></data>
   <data name="Login.SessionExpired" xml:space="preserve"><value>انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.</value></data>
   <data name="Login.OpenGallery" xml:space="preserve"><value>معرض المكونات (للتطوير)</value></data>
 
@@ -145,6 +146,7 @@
 
   <data name="Action.auth.signed_in" xml:space="preserve"><value>تسجيل دخول</value></data>
   <data name="Action.auth.sign_in_failed" xml:space="preserve"><value>محاولة دخول فاشلة</value></data>
+  <data name="Action.auth.sign_in_blocked" xml:space="preserve"><value>منع تسجيل الدخول (وضع الصيانة)</value></data>
   <data name="Action.auth.signed_out" xml:space="preserve"><value>تسجيل خروج</value></data>
   <data name="Action.logs.activity_deleted" xml:space="preserve"><value>حذف سجل نشاط</value></data>
   <data name="Action.logs.error_deleted" xml:space="preserve"><value>حذف سجل خطأ</value></data>
@@ -155,6 +157,7 @@
   <data name="Action.users.deleted" xml:space="preserve"><value>حذف مستخدم</value></data>
   <data name="Action.users.password_reset" xml:space="preserve"><value>إعادة تعيين كلمة مرور مستخدم</value></data>
   <data name="Action.settings.clinic_updated" xml:space="preserve"><value>تعديل إعدادات العيادة</value></data>
+  <data name="Action.settings.system_updated" xml:space="preserve"><value>تعديل إعدادات النظام</value></data>
   <data name="Action.lab_tests.created" xml:space="preserve"><value>إضافة تحليل</value></data>
   <data name="Action.lab_tests.updated" xml:space="preserve"><value>تعديل تحليل</value></data>
   <data name="Action.lab_tests.deleted" xml:space="preserve"><value>حذف تحليل</value></data>
@@ -174,6 +177,17 @@
   <data name="Settings.NamePlaceholder" xml:space="preserve"><value>أدخل اسم العيادة</value></data>
   <data name="Settings.AddressPlaceholder" xml:space="preserve"><value>أدخل عنوان العيادة</value></data>
   <data name="Settings.PhonePlaceholder" xml:space="preserve"><value>أدخل رقم هاتف العيادة</value></data>
+  <data name="Nav.SystemSettings" xml:space="preserve"><value>الإعدادات</value></data>
+  <data name="SystemSettings.Subtitle" xml:space="preserve"><value>مكان حفظ النسخ الاحتياطية، ووضع الصيانة.</value></data>
+  <data name="SystemSettings.EditTitle" xml:space="preserve"><value>تعديل الإعدادات</value></data>
+  <data name="SystemSettings.Saved" xml:space="preserve"><value>تم حفظ الإعدادات.</value></data>
+  <data name="SystemSettings.Field.BackupPath" xml:space="preserve"><value>مجلد النسخ الاحتياطي</value></data>
+  <data name="SystemSettings.Field.MaintenanceMode" xml:space="preserve"><value>وضع الصيانة</value></data>
+  <data name="SystemSettings.BackupPathPlaceholder" xml:space="preserve"><value>مثال: D:\Mostawsef\Backups</value></data>
+  <data name="SystemSettings.MaintenanceHint" xml:space="preserve"><value>عند تشغيله، لا يستطيع تسجيل الدخول إلا مستخدمو Super. المستخدمون المسجّلون حاليًا لا يتأثرون.</value></data>
+  <data name="SystemSettings.MaintenanceActive" xml:space="preserve"><value>وضع الصيانة مُفعّل: لا يستطيع تسجيل الدخول إلا مستخدمو Super.</value></data>
+  <data name="SystemSettings.On" xml:space="preserve"><value>مُفعّل</value></data>
+  <data name="SystemSettings.Off" xml:space="preserve"><value>متوقف</value></data>
 
   <data name="Currency.EGP" xml:space="preserve"><value>ج.م</value></data>
   <data name="Currency.USD" xml:space="preserve"><value>دولار</value></data>
@@ -207,6 +221,7 @@
   <data name="ErrorCode.own_account" xml:space="preserve"><value>لا يمكنك تنفيذ هذا على حسابك.</value></data>
   <data name="ErrorCode.wrong_password" xml:space="preserve"><value>كلمة المرور الحالية غير صحيحة.</value></data>
   <data name="ErrorCode.password_mismatch" xml:space="preserve"><value>كلمتا المرور غير متطابقتين.</value></data>
+  <data name="ErrorCode.maintenance_mode" xml:space="preserve"><value>النظام تحت الصيانة. يرجى المحاولة لاحقًا.</value></data>
 
   <data name="Auth.ChangePassword" xml:space="preserve"><value>تغيير كلمة المرور</value></data>
   <data name="Auth.PasswordChanged" xml:space="preserve"><value>تم تغيير كلمة المرور.</value></data>

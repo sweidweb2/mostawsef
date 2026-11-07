@@ -369,6 +369,23 @@ public class LabTestsPageTests
     }
 
     [AvaloniaFact]
+    public async Task Deleting_a_test_used_by_orders_is_refused_with_a_hint_to_deactivate_it()
+    {
+        using var app = AdminWithTests(Cbc);
+        app.Api.On(HttpMethod.Delete, $"{TestsPath}/{Cbc.Id}", _ => FakeApiHandler.Problem(HttpStatusCode.Conflict, ErrorCodes.InUse));
+        var (page, window) = await ShowPage(app);
+
+        var delete = page.DeleteCommand.ExecuteAsync(Cbc);
+        Dispatcher.UIThread.RunJobs();
+        window.GetVisualDescendants().OfType<ConfirmDialog>().Single().Close(true);
+        await delete;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Contains("This test is used by orders, so it can't be deleted. Deactivate it instead.", Toasts(window));
+        Assert.Single(page.Items);
+    }
+
+    [AvaloniaFact]
     public async Task Editing_a_test_that_was_deleted_meanwhile_says_so()
     {
         using var app = AdminWithTests(Cbc);

@@ -20,6 +20,7 @@ public static class ActivityActions
 {
     public const string SignedIn = "auth.signed_in";
     public const string SignInFailed = "auth.sign_in_failed";
+    public const string SignInBlocked = "auth.sign_in_blocked";
     public const string SignedOut = "auth.signed_out";
     public const string PasswordChanged = "auth.password_changed";
 
@@ -33,6 +34,7 @@ public static class ActivityActions
     public const string UserPasswordReset = "users.password_reset";
 
     public const string ClinicSettingsUpdated = "settings.clinic_updated";
+    public const string SystemSettingsUpdated = "settings.system_updated";
 
     public const string LabTestCreated = "lab_tests.created";
     public const string LabTestUpdated = "lab_tests.updated";

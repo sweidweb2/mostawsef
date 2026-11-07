@@ -161,6 +161,7 @@ Layouts react to the **width of the AppShell content area**, not the window or d
 | `ToastService` | `Show(message, title, kind)`, `Success(...)`, `Error(...)` |
 | `ClinicContext` | The clinic settings (name, address, phone, currency) for money and printouts; loaded when a portal opens |
 | `ConnectionMonitor` | Health checks while signed in; drives the "connection lost" / "update the app" banner in the portal shell |
+| `NavigationService` | Portals and access checks; `OpenAsync<Vm>(setup)` / `BackAsync()` show a sub-page (`AppRoutes` `.SubPage`) inside the portal, e.g. New order and Order details |
 | `PrintService` | Renders QuestPDF documents (`ClinicPage` layout) to a PDF and opens it in the default viewer |
 
 Money: `Text="{l:Money Total}"` (minor units -> "1,250.50 EGP" / "1,250.50 ج.م"). Calendar dates: `ValueConverters.DateOnly` on `CalendarDatePicker`.

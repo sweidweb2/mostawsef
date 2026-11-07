@@ -52,5 +52,8 @@ alwaysApply: true
 
 ## Definition of done
 - Builds with no new warnings; tests added per `testing.mdc` and passing (`./scripts/test.ps1`).
-- New user-visible strings in both `Strings.resx` and `Strings.ar.resx`; layout checked in Arabic (RTL) and Dark theme when it changes.
+- New user-visible strings in both `Strings.resx` and `Strings.ar.resx`; layout changes covered by headless view tests
+ (Arabic/RTL and narrow widths where the layout depends on them).
+- Verify with the build and `./scripts/test.ps1` only. Do not start the app, take screenshots, render frames or run
+ end-to-end/visual simulations unless the user asks for it.
 - Docs/rules updated in the same change when a pattern, component or command changes.

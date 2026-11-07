@@ -43,6 +43,9 @@ public static class ErrorCodes
     public const string OwnAccount = "own_account";
     public const string WrongPassword = "wrong_password";
 
+    /// <summary>Sign-in refused because maintenance mode is on (only Super can sign in).</summary>
+    public const string MaintenanceMode = "maintenance_mode";
+
     /// <summary>Desktop only: a "confirm password" field that does not match.</summary>
     public const string PasswordMismatch = "password_mismatch";
 }

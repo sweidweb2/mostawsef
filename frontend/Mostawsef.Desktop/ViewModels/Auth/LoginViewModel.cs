@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Mostawsef.Contracts.Common;
 using Mostawsef.Desktop.Services.Api;
 using Mostawsef.Desktop.Services.Auth;
 using Mostawsef.Desktop.Services.Navigation;
@@ -82,6 +83,7 @@ public partial class LoginViewModel : ViewModelBase
             {
                 ApiError.Unauthorized => "Login.Invalid",
                 ApiError.TooManyRequests => "Login.TooMany",
+                ApiError.Conflict when result.Problem?.Code == ErrorCodes.MaintenanceMode => "Login.Maintenance",
                 ApiError.Unreachable => "Login.ServerUnreachable",
                 _ => "Login.Failed",
             };

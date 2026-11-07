@@ -32,7 +32,9 @@ public class LogPagesTests
 
         var shell = Assert.IsType<PortalShellViewModel>(app.Navigation.CurrentPage);
 
-        Assert.Equal(["Nav.Dashboard", "Nav.Users", "Nav.ActivityLogs", "Nav.SystemErrors"], shell.MenuItems.Select(i => i.TitleKey));
+        Assert.Equal(
+            ["Nav.Dashboard", "Nav.Users", "Nav.ActivityLogs", "Nav.SystemErrors", "Nav.SystemSettings"],
+            shell.MenuItems.Select(i => i.TitleKey));
     }
 
     [AvaloniaFact]

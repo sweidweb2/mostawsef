@@ -1,0 +1,22 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Mostawsef.Desktop.Components"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Super"
+             x:Class="Mostawsef.Desktop.Views.Super.SystemSettingsFormView"
+             x:DataType="vm:SystemSettingsFormViewModel">
+    <StackPanel Spacing="{DynamicResource GapGrid}">
+        <ui:Alert Kind="Danger" Text="{l:TrKey FormErrorKey}" />
+
+        <ui:FormField Label="{l:Tr SystemSettings.Field.BackupPath}" Error="{l:FieldError BackupPath}">
+            <TextBox Name="BackupPathBox" Text="{Binding BackupPath}" PlaceholderText="{l:Tr SystemSettings.BackupPathPlaceholder}" />
+        </ui:FormField>
+
+        <ui:FormField Label="{l:Tr SystemSettings.Field.MaintenanceMode}" Hint="{l:Tr SystemSettings.MaintenanceHint}">
+            <ToggleSwitch Name="MaintenanceModeSwitch"
+                          IsChecked="{Binding MaintenanceMode}"
+                          OnContent="{l:Tr SystemSettings.On}"
+                          OffContent="{l:Tr SystemSettings.Off}" />
+        </ui:FormField>
+    </StackPanel>
+</UserControl>

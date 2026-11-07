@@ -45,6 +45,19 @@ Table clinic_settings {
   Note: 'Exactly one row, created at startup.'
 }
 
+Table system_settings {
+  Id uuid [pk]
+  BackupPath varchar(260) [note: 'folder for scheduled backups; null until Super sets it']
+  MaintenanceMode boolean [not null, note: 'while true, only Super users can sign in']
+  CreatedAt timestamptz [not null]
+  CreatedBy varchar(50)
+  UpdatedAt timestamptz
+  UpdatedBy varchar(50)
+  Version integer [not null]
+
+  Note: 'Exactly one row, created at startup. Super only.'
+}
+
 Table number_sequences {
   Name varchar(50) [pk]
   NextValue bigint [not null]
@@ -191,8 +204,10 @@ Table lab_tests {
 
 Table orders {
   Id uuid [pk]
+  Number varchar(20) [not null, unique, note: 'ORD-000123 (number_sequences "orders")']
   PatientId uuid [not null]
   PatientName varchar(100) [not null, note: 'snapshot at order time']
+  PatientSearchName varchar(100) [not null, note: 'PatientName normalized for search']
   PatientPhone varchar(30) [not null, note: 'snapshot at order time']
   Status OrderStatus [not null, default: 'Pending', note: 'Paid/PartiallyPaid derived from payments']
   DiscountType DiscountType
@@ -208,9 +223,11 @@ Table orders {
   Indexes {
     PatientId
     (Status, CreatedAt)
+    CreatedAt
+    PatientSearchName
   }
 
-  Note: 'Total = sum(order_items.OurPrice) - discount; computed, not stored.'
+  Note: 'Implemented (migration AddOrders). Total = sum(order_items.OurPrice) - discount; computed, not stored. Discounts not used yet (DiscountValue 0).'
 }
 
 Table order_items {
@@ -218,7 +235,7 @@ Table order_items {
   OrderId uuid [not null]
   LabTestId uuid [not null]
   LabPrice bigint [not null, note: 'copied from lab_tests.LabCost']
-  OurPrice bigint [not null, note: 'copied from lab_tests.Price']
+  OurPrice bigint [not null, note: 'typed for the order, else copied from lab_tests.Price']
   CreatedAt timestamptz [not null]
   CreatedBy varchar(50)
   UpdatedAt timestamptz
@@ -229,6 +246,8 @@ Table order_items {
     OrderId
     LabTestId
   }
+
+  Note: 'Implemented (migration AddOrders). A lab test used here cannot be deleted (409 in_use).'
 }
 
 Table payments {
@@ -252,7 +271,7 @@ Table payments {
     PaidAt
   }
 
-  Note: 'Never edited or deleted; corrections are Refund rows.'
+  Note: 'Implemented (migration AddOrders; only the first payment of a new order so far). Never edited or deleted; corrections are Refund rows.'
 }
 
 Table scheduled_payments {

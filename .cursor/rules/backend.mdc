@@ -67,6 +67,8 @@ alwaysApply: false
 - Writes that are not user edits (e.g. last sign-in time) use `ExecuteUpdateAsync`, so they don't change Version.
 - Searchable names: store `SearchText.Normalize(value)` in its own column (e.g. `User.SearchName`), normalize the term the
   same way and compare with `Contains` (Arabic hamza/ta marbuta/alef maqsura, diacritics and Arabic digits handled).
+  `SearchText` lives in `Contracts/Common` (the desktop filters local lists with it); Domain references nothing, so the
+  Application service passes the normalized value into the entity (e.g. `PatientInput`, `new LabTest(code, name, searchName, ...)`).
 
 ## Time, numbers, money, reference lists
 - **Clock**: inject `TimeProvider` (registered once in Infrastructure); never `DateTime.UtcNow`/`DateTime.Today` in
@@ -84,6 +86,8 @@ alwaysApply: false
   for search). No generic lookup table.
 - **Clinic settings** (`IClinicSettingsService`): name, address, phone, currency. One row, created at startup; everyone
   reads it, Admin edits it.
+- **System settings** (`ISystemSettingsService`): backup folder and maintenance mode. One row, created at startup; Super
+  only. While maintenance mode is on, `AuthService` refuses non-Super sign-ins with `409 maintenance_mode`.
 
 ## Conventions
 - Async all the way with `CancellationToken` on I/O methods.

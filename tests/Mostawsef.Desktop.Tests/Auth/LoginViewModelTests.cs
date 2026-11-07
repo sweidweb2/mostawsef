@@ -1,6 +1,7 @@
 using System.Net;
 using Avalonia.Headless.XUnit;
 using Mostawsef.Contracts.Auth;
+using Mostawsef.Contracts.Common;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Tests.Infrastructure;
 using Mostawsef.Desktop.ViewModels.Auth;
@@ -106,6 +107,20 @@ public class LoginViewModelTests
 
         Assert.Equal("Login.TooMany", vm.ErrorKey);
         Assert.StartsWith("Too many attempts", app.Localization.Get(vm.ErrorKey!));
+    }
+
+    [AvaloniaFact]
+    public async Task Maintenance_mode_shows_a_maintenance_message_and_stays_signed_out()
+    {
+        using var app = new TestServices();
+        app.Api.Respond = _ => FakeApiHandler.Problem(HttpStatusCode.Conflict, ErrorCodes.MaintenanceMode);
+        var vm = Filled(app.Get<LoginViewModel>());
+
+        await vm.LoginCommand.ExecuteAsync(null);
+
+        Assert.Equal("Login.Maintenance", vm.ErrorKey);
+        Assert.Equal("The system is under maintenance. Please try again later.", app.Localization.Get(vm.ErrorKey!));
+        Assert.False(app.Session.IsAuthenticated);
     }
 
     [AvaloniaFact]

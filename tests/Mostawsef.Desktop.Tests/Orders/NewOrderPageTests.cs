@@ -312,6 +312,31 @@ public class NewOrderPageTests
     }
 
     [AvaloniaFact]
+    public async Task Another_menu_page_asks_first_and_keeping_the_changes_keeps_the_menu_on_orders()
+    {
+        using var app = Admin();
+        var (shell, page, window) = await ShowNewOrderAsync(app);
+        var orders = shell.SelectedMenuIndex;
+        AddTests(page, Cbc);
+
+        shell.SelectedMenuIndex = 0;
+        Dispatcher.UIThread.RunJobs();
+        window.GetVisualDescendants().OfType<ConfirmDialog>().Single().Close(false);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Same(page, shell.CurrentPage);
+        Assert.Equal(orders, shell.SelectedMenuIndex);
+
+        shell.SelectedMenuIndex = 0;
+        Dispatcher.UIThread.RunJobs();
+        window.GetVisualDescendants().OfType<ConfirmDialog>().Single().Close(true);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.IsType<ViewModels.Shell.DashboardViewModel>(shell.CurrentPage);
+        Assert.Null(shell.SubPage);
+    }
+
+    [AvaloniaFact]
     public async Task An_untouched_page_closes_without_asking()
     {
         using var app = Admin();
@@ -369,8 +394,7 @@ public class NewOrderPageTests
 
         Assert.Equal([false, false, true], VisibleColumns(window));
         Assert.True(Named<Button>(window, "CreateButton").IsEffectivelyVisible);
-        var catalog = Named<Card>(window, "CatalogColumn");
-        Assert.True(catalog.Bounds.Width > 600, $"{catalog.Bounds.Width}");
+        Assert.Equal(Named<TabStrip>(window, "ColumnTabs").Bounds.Width, Named<Card>(window, "CatalogColumn").Bounds.Width, precision: 0);
     }
 
     private static void AddTests(NewOrderViewModel page, params Contracts.LabTests.LabTestDto[] tests)

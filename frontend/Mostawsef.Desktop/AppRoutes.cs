@@ -29,6 +29,7 @@ public static class AppRoutes
         .View<UserFormViewModel, UserFormView>()
         .View<ResetPasswordFormViewModel, ResetPasswordFormView>()
         .View<ClinicSettingsFormViewModel, ClinicSettingsFormView>()
+        .View<SystemSettingsFormViewModel, SystemSettingsFormView>()
         .View<LabTestFormViewModel, LabTestFormView>()
         .View<PatientFormViewModel, PatientFormView>()
         .Portal(Roles.Admin, "Portal.Admin", portal => portal
@@ -43,5 +44,6 @@ public static class AppRoutes
             .Page<DashboardViewModel, DashboardView>("IconDashboard", "Nav.Dashboard")
             .Page<UsersViewModel, UsersView>("IconUsers", "Nav.Users")
             .Page<ActivityLogsViewModel, ActivityLogsView>("IconClock", "Nav.ActivityLogs")
-            .Page<SystemErrorsViewModel, SystemErrorsView>("IconWarning", "Nav.SystemErrors"));
+            .Page<SystemErrorsViewModel, SystemErrorsView>("IconWarning", "Nav.SystemErrors")
+            .Page<SystemSettingsViewModel, SystemSettingsView>("IconSettings", "Nav.SystemSettings"));
 }

@@ -567,6 +567,42 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                     b.ToTable("system_errors", (string)null);
                 });
 
+            modelBuilder.Entity("Mostawsef.Domain.Entities.SystemSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BackupPath")
+                        .HasMaxLength(260)
+                        .HasColumnType("character varying(260)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<bool>("MaintenanceMode")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("system_settings", (string)null);
+                });
+
             modelBuilder.Entity("Mostawsef.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")

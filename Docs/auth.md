@@ -42,7 +42,7 @@ Unknown usernames take the same hashing time as wrong passwords, so response tim
 
 | Endpoint | Auth | Result |
 | --- | --- | --- |
-| `POST /api/auth/login` `{ username, password }` | Anonymous, max 10 requests/min per IP | `200 { accessToken, expiresAt, user }`, `400` empty fields, `401` invalid, `429` too many |
+| `POST /api/auth/login` `{ username, password }` | Anonymous, max 10 requests/min per IP | `200 { accessToken, expiresAt, user }`, `400` empty fields, `401` invalid, `409 maintenance_mode` (non-Super while maintenance mode is on), `429` too many |
 | `GET /api/auth/me` | Bearer token | `200 { id, username, role, fullName }`, `401` |
 | `POST /api/auth/change-password` `{ currentPassword, newPassword }` | Bearer token | `204`, `400` (`wrong_password` on `CurrentPassword`, `min_length\|8`...) |
 | `GET /api/users?page=&pageSize=&search=` | Super | Paged list sorted by name; search matches the username or the normalized full name |
@@ -53,6 +53,8 @@ Unknown usernames take the same hashing time as wrong passwords, so response tim
 | `DELETE /api/users/{id}` | Super | `204` (soft delete), `404`, `409 own_account` |
 | `GET /api/clinic-settings` | Bearer token (any role) | `200 { name, address, phone, currencyCode, version, updatedAt, updatedBy }` |
 | `PUT /api/clinic-settings` `{ name, address, phone, currencyCode, version }` | Admin | `200`, `400`, `403` for Super, `409 concurrency_conflict` |
+| `GET /api/system-settings` | Super | `200 { backupPath, maintenanceMode, version, updatedAt, updatedBy }` |
+| `PUT /api/system-settings` `{ backupPath, maintenanceMode, version }` | Super | `200`, `400` (`max_length\|260`), `409 concurrency_conflict` |
 | `GET /api/lab-tests?page=&pageSize=&search=` | Admin | Paged list sorted by name; search (cut to 100 characters) matches the normalized name or the code |
 | `GET /api/lab-tests/{id}` | Admin | `200 { id, code, name, price, labCost, isActive, ..., version }`, `404` |
 | `POST /api/lab-tests` `{ code, name, price, labCost }` | Admin | `201`, `400` (`max_length\|20`/`\|150`, `range\|0\|100000000` for a price outside 0 to 1,000,000.00), `409 taken` on `Code` or `Name` |
@@ -68,6 +70,8 @@ Unknown usernames take the same hashing time as wrong passwords, so response tim
 - Tokens: JWT signed with HMAC-SHA256, valid until the next midnight (server local time), so staff sign in once a day, claims `sub`, `unique_name`, `role`.
 - Every request re-checks the token's user: a deactivated, deleted or re-roled user gets `401` at once (the desktop then
   returns to the login screen), not only when the token expires.
+- Maintenance mode (Super portal, Settings page): while on, only Super users can sign in; others get `409 maintenance_mode`
+  after a correct password (logged as `auth.sign_in_blocked`). Users already signed in keep working.
 - A Super cannot deactivate, demote, reset or delete their own account (`409 own_account`); they change their own password
   with `change-password`. Passwords: at least 8 characters.
 - Role policies for future endpoints: `[Authorize(Policy = AuthPolicies.AdminOnly)]`, `[Authorize(Policy = AuthPolicies.SuperOnly)]`.

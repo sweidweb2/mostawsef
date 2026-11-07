@@ -129,7 +129,8 @@ Tests and docs
     Calendar dates use `CalendarDatePicker` with `ValueConverters.DateOnly`; money inputs convert with
     `Money.ToMinor` / `Money.ToMajor` in the view model.
 12. **Routes**: in `frontend/Mostawsef.Desktop/AppRoutes.cs` add `.View<<Entity>FormViewModel, <Entity>FormView>()` and
-    `.Page<<Feature>ViewModel, <Feature>View>("Icon...", "Nav.<Feature>")` in the role's portal. Pick an icon from
+    `.Page<<Feature>ViewModel, <Feature>View>("Icon...", "Nav.<Feature>")` in the role's portal (a full-page form or a
+    details page that is not in the menu is a `.SubPage<...>()`, see `frontend-ui.mdc`). Pick an icon from
     `Styles/Tokens/Icons.axaml`; add one there only if none fits.
 13. **Strings**: add every key to both `Resources/Strings.resx` and `Resources/Strings.ar.resx`. Copy the `Users.*`
     set as a model: `Nav.<Feature>`, `<Feature>.Subtitle`, `.Add`, `.AddTitle`, `.EditTitle`, `.Records` ("{0} ..."),
@@ -165,5 +166,5 @@ user-specific.
 2. `dotnet build Mostawsef.slnx`: warnings are errors; fix the cause instead of switching rules off.
 3. `./scripts/test.ps1 api <Feature>` and `./scripts/test.ps1 desktop <Feature>`, then `./scripts/test.ps1` (API tests
    need Docker). Do not finish with failing tests.
-4. Start the API and the desktop app and look at the new page in Arabic and in the Dark theme
-   (`scripts/capture-window.ps1` takes a screenshot).
+4. Do not start the app, take screenshots or run visual simulations unless the user asks: the headless view tests
+   (English, Arabic, narrow width) are the layout check.

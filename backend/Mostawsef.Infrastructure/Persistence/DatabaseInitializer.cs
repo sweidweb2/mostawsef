@@ -49,6 +49,11 @@ public static class DatabaseInitializer
             db.Add(new ClinicSettings("Mostawsef", Currencies.Egp));
         }
 
+        if (!await db.Set<SystemSettings>().AnyAsync(cancellationToken))
+        {
+            db.Add(new SystemSettings());
+        }
+
         foreach (var seed in seedUsers)
         {
             if (string.IsNullOrWhiteSpace(seed.Username) || string.IsNullOrWhiteSpace(seed.Password))

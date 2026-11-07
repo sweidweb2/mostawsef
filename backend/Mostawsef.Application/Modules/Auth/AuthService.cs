@@ -3,12 +3,16 @@ using Mostawsef.Application.Interfaces;
 using Mostawsef.Contracts.Auth;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Domain.Entities;
+using Mostawsef.Domain.Enums;
 
 namespace Mostawsef.Application.Modules.Auth;
 
 public interface IAuthService
 {
-    /// <summary>Returns null when the credentials are invalid or the user is inactive.</summary>
+    /// <summary>
+    /// Returns null when the credentials are invalid or the user is inactive.
+    /// Throws AppException 409 maintenance_mode for non-Super users while maintenance mode is on.
+    /// </summary>
     Task<LoginResponse?> LoginAsync(LoginRequest request, CancellationToken cancellationToken);
 
     Task<UserDto?> GetUserAsync(Guid userId, CancellationToken cancellationToken);
@@ -22,6 +26,7 @@ public interface IAuthService
 
 public class AuthService(
     IUserRepository users,
+    ISystemSettingsRepository systemSettings,
     IPasswordHasher passwordHasher,
     ITokenService tokens,
     IActivityLogger activity,
@@ -46,6 +51,18 @@ public class AuthService(
         {
             await LogFailedSignInAsync(username, cancellationToken);
             return null;
+        }
+
+        if (user.Role != UserRole.Super && (await systemSettings.GetAsync(cancellationToken)).MaintenanceMode)
+        {
+            await activity.LogAsync(
+                new ActivityEntry(ActivityActions.SignInBlocked, ActivityModules.Auth, "Sign-in blocked by maintenance mode")
+                {
+                    UserId = user.Id,
+                    Username = user.Username,
+                },
+                cancellationToken);
+            throw AppException.Conflict(ErrorCodes.MaintenanceMode);
         }
 
         if (check == PasswordCheck.SuccessRehashNeeded)

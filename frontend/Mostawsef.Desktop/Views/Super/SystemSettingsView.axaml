@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Mostawsef.Desktop.Components"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Super"
+             x:Class="Mostawsef.Desktop.Views.Super.SystemSettingsView"
+             x:DataType="vm:SystemSettingsViewModel">
+    <ScrollViewer>
+        <StackPanel Classes="page">
+            <ui:PageHeader Title="{l:Tr Nav.SystemSettings}" Subtitle="{l:Tr SystemSettings.Subtitle}">
+                <ui:PageHeader.Actions>
+                    <Button Name="EditSettingsButton" Classes="primary" Command="{Binding EditCommand}" IsEnabled="{Binding HasSettings}">
+                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                            <PathIcon Data="{StaticResource IconEdit}" />
+                            <TextBlock Text="{l:Tr Common.Edit}" />
+                        </StackPanel>
+                    </Button>
+                </ui:PageHeader.Actions>
+            </ui:PageHeader>
+
+            <ui:Alert Kind="Warning" Text="{l:TrKey MaintenanceNoticeKey}" />
+
+            <ui:Card>
+                <ui:LoadingOverlay IsLoading="{Binding IsLoading}">
+                    <Panel>
+                        <ui:DetailsView IsVisible="{Binding HasSettings}">
+                            <ui:DetailsItem Label="{l:Tr SystemSettings.Field.BackupPath}" Value="{Binding Settings.BackupPath}" />
+                            <ui:DetailsItem Label="{l:Tr SystemSettings.Field.MaintenanceMode}" Value="{l:TrKey MaintenanceModeKey}" />
+                            <ui:DetailsItem Label="{l:Tr Settings.Field.UpdatedBy}" Value="{Binding Settings.UpdatedBy}" />
+                        </ui:DetailsView>
+                        <ui:ErrorState Margin="0,24"
+                                       RetryCommand="{Binding RefreshCommand}"
+                                       IsVisible="{Binding HasLoadError}" />
+                    </Panel>
+                </ui:LoadingOverlay>
+            </ui:Card>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

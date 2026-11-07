@@ -19,6 +19,7 @@ public static class DependencyInjection
         services.AddScoped<ISystemErrorService, SystemErrorService>();
         services.AddScoped<ILogRetentionService, LogRetentionService>();
         services.AddScoped<IClinicSettingsService, ClinicSettingsService>();
+        services.AddScoped<ISystemSettingsService, SystemSettingsService>();
         services.AddScoped<ILabTestService, LabTestService>();
         services.AddScoped<IPatientService, PatientService>();
         services.AddScoped<IOrderService, OrderService>();
