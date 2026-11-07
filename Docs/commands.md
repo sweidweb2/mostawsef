@@ -68,6 +68,14 @@ dotnet run --project frontend/Mostawsef.Desktop
 
 Dev logins: `admin@example.com` / `password`, `super@example.com` / `password`
 
+Sample data (while the API runs): 36 lab tests, 45 patients (Arabic and English names) and 80 orders with cash, card,
+transfer and insurance first payments. Tests and patients that already exist are skipped; each run adds `-Orders` new
+orders (default 80):
+
+```powershell
+./scripts/seed.ps1
+```
+
 The API applies new migrations when it starts: restart it after pulling changes.
 
 ## Database migrations
