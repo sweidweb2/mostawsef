@@ -22,5 +22,19 @@ public record CursorQuery(
 {
     public const int MaxPageSize = PageQuery.MaxPageSize;
 
+    /// <summary>
+    /// Letters or digits a search term needs: the search index works on groups of three characters,
+    /// so a shorter term would make the database read the whole table.
+    /// </summary>
+    public const int MinSearchLength = 3;
+
     public int SafePageSize => Math.Clamp(PageSize, 1, MaxPageSize);
+
+    /// <summary>
+    /// True for a term with fewer than <see cref="MinSearchLength"/> letters or digits. Blank means "no search", not too short.
+    /// Tatweel (ـ) does not count: the API removes it before searching.
+    /// </summary>
+    public static bool IsSearchTooShort(string? search) =>
+        !string.IsNullOrWhiteSpace(search)
+        && search.Count(c => char.IsLetterOrDigit(c) && c != '\u0640') < MinSearchLength;
 }

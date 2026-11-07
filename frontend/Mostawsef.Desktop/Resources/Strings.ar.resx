@@ -106,6 +106,7 @@
   <data name="Logs.ActivitySubtitle" xml:space="preserve"><value>كل الإجراءات الرئيسية في النظام: من فعل ماذا ومتى.</value></data>
   <data name="Logs.ErrorsSubtitle" xml:space="preserve"><value>الأخطاء غير المتوقعة من الخادم وتطبيق سطح المكتب.</value></data>
   <data name="Logs.Records" xml:space="preserve"><value>{0} سجل</value></data>
+  <data name="Search.TooShort" xml:space="preserve"><value>اكتب {0} أحرف أو أرقام على الأقل للبحث.</value></data>
   <data name="Logs.Stat.Total" xml:space="preserve"><value>إجمالي النشاطات</value></data>
   <data name="Logs.Stat.TotalErrors" xml:space="preserve"><value>إجمالي الأخطاء</value></data>
   <data name="Logs.Stat.Today" xml:space="preserve"><value>اليوم</value></data>
@@ -148,4 +149,54 @@
   <data name="Action.logs.activity_deleted" xml:space="preserve"><value>حذف سجل نشاط</value></data>
   <data name="Action.logs.error_deleted" xml:space="preserve"><value>حذف سجل خطأ</value></data>
   <data name="Action.logs.purged" xml:space="preserve"><value>حذف السجلات القديمة تلقائيًا</value></data>
+  <data name="Action.auth.password_changed" xml:space="preserve"><value>تغيير كلمة المرور الخاصة به</value></data>
+  <data name="Action.users.created" xml:space="preserve"><value>إنشاء مستخدم</value></data>
+  <data name="Action.users.updated" xml:space="preserve"><value>تعديل مستخدم</value></data>
+  <data name="Action.users.deleted" xml:space="preserve"><value>حذف مستخدم</value></data>
+  <data name="Action.users.password_reset" xml:space="preserve"><value>إعادة تعيين كلمة مرور مستخدم</value></data>
+
+  <data name="Form.DiscardTitle" xml:space="preserve"><value>تجاهل التغييرات؟</value></data>
+  <data name="Form.DiscardMessage" xml:space="preserve"><value>لديك تغييرات غير محفوظة. هل تريد الإغلاق دون حفظ؟</value></data>
+  <data name="Form.Discard" xml:space="preserve"><value>تجاهل</value></data>
+  <data name="Form.KeepEditing" xml:space="preserve"><value>متابعة التعديل</value></data>
+
+  <data name="ErrorCode.required" xml:space="preserve"><value>هذا الحقل مطلوب.</value></data>
+  <data name="ErrorCode.max_length" xml:space="preserve"><value>يجب ألا يزيد عن {0} حرفًا.</value></data>
+  <data name="ErrorCode.min_length" xml:space="preserve"><value>يجب ألا يقل عن {0} أحرف.</value></data>
+  <data name="ErrorCode.invalid" xml:space="preserve"><value>هذه القيمة غير صالحة.</value></data>
+  <data name="ErrorCode.validation" xml:space="preserve"><value>بعض الحقول تحتاج إلى مراجعة.</value></data>
+  <data name="ErrorCode.not_found" xml:space="preserve"><value>هذا السجل لم يعد موجودًا.</value></data>
+  <data name="ErrorCode.concurrency_conflict" xml:space="preserve"><value>قام شخص آخر بتعديل هذا السجل أثناء تعديلك. أغلقه وافتحه مرة أخرى لرؤية أحدث نسخة.</value></data>
+  <data name="ErrorCode.username_taken" xml:space="preserve"><value>اسم المستخدم مستخدم بالفعل (المستخدمون المحذوفون يحتفظون بأسمائهم).</value></data>
+  <data name="ErrorCode.own_account" xml:space="preserve"><value>لا يمكنك تنفيذ هذا على حسابك.</value></data>
+  <data name="ErrorCode.wrong_password" xml:space="preserve"><value>كلمة المرور الحالية غير صحيحة.</value></data>
+  <data name="ErrorCode.password_mismatch" xml:space="preserve"><value>كلمتا المرور غير متطابقتين.</value></data>
+
+  <data name="Auth.ChangePassword" xml:space="preserve"><value>تغيير كلمة المرور</value></data>
+  <data name="Auth.PasswordChanged" xml:space="preserve"><value>تم تغيير كلمة المرور.</value></data>
+
+  <data name="Nav.Users" xml:space="preserve"><value>المستخدمون</value></data>
+  <data name="Users.Subtitle" xml:space="preserve"><value>من يمكنه تسجيل الدخول، وما الذي يمكنه فعله.</value></data>
+  <data name="Users.Add" xml:space="preserve"><value>إضافة مستخدم</value></data>
+  <data name="Users.AddTitle" xml:space="preserve"><value>مستخدم جديد</value></data>
+  <data name="Users.EditTitle" xml:space="preserve"><value>تعديل المستخدم</value></data>
+  <data name="Users.ResetPasswordTitle" xml:space="preserve"><value>إعادة تعيين كلمة المرور</value></data>
+  <data name="Users.Records" xml:space="preserve"><value>{0} مستخدم</value></data>
+  <data name="Users.Col.FullName" xml:space="preserve"><value>الاسم الكامل</value></data>
+  <data name="Users.Col.Username" xml:space="preserve"><value>اسم المستخدم</value></data>
+  <data name="Users.Col.Role" xml:space="preserve"><value>الدور</value></data>
+  <data name="Users.Col.Status" xml:space="preserve"><value>الحالة</value></data>
+  <data name="Users.Col.LastLogin" xml:space="preserve"><value>آخر تسجيل دخول</value></data>
+  <data name="Users.Active" xml:space="preserve"><value>نشط</value></data>
+  <data name="Users.Inactive" xml:space="preserve"><value>غير نشط</value></data>
+  <data name="Users.Field.UsernameHint" xml:space="preserve"><value>حروف إنجليزية وأرقام و . _ @ -  ولا يمكن تغييره لاحقًا.</value></data>
+  <data name="Users.Field.Password" xml:space="preserve"><value>كلمة المرور</value></data>
+  <data name="Users.Field.NewPassword" xml:space="preserve"><value>كلمة المرور الجديدة</value></data>
+  <data name="Users.Field.ConfirmPassword" xml:space="preserve"><value>تأكيد كلمة المرور</value></data>
+  <data name="Users.Field.CurrentPassword" xml:space="preserve"><value>كلمة المرور الحالية</value></data>
+  <data name="Users.Field.IsActive" xml:space="preserve"><value>يمكنه تسجيل الدخول</value></data>
+  <data name="Users.Saved" xml:space="preserve"><value>تم حفظ المستخدم.</value></data>
+  <data name="Users.Deleted" xml:space="preserve"><value>تم حذف المستخدم.</value></data>
+  <data name="Users.PasswordReset" xml:space="preserve"><value>تمت إعادة تعيين كلمة المرور.</value></data>
+  <data name="Users.DeleteConfirm" xml:space="preserve"><value>حذف هذا المستخدم؟ لن يتمكن من تسجيل الدخول بعد ذلك.</value></data>
 </root>

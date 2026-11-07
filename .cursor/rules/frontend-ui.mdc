@@ -44,13 +44,20 @@ alwaysApply: false
 - Dialogs: `DialogService.ShowAsync(modal)` / `ConfirmAsync(...)`. Notifications: `ToastService.Show(...)`.
 - API calls go in `Services/Api/` (one `<Feature>Api` class through `ApiClient`) using DTOs from `Mostawsef.Contracts`.
   `ApiClient` never throws for HTTP failures: it returns `ApiResult<T>` with an `ApiError`
-  (`Unreachable|Unauthorized|Forbidden|BadRequest|NotFound|Conflict|TooManyRequests|Server`). View models map each relevant error to a resource key.
+  (`Unreachable|Unauthorized|Forbidden|BadRequest|NotFound|Conflict|TooManyRequests|Server`) and, for 4xx, the parsed
+  `Problem` (`Code`, `FieldErrors`). View models map each relevant error to a resource key.
 
-## Validation (desktop)
-- The server is the source of truth; the desktop only checks what makes a request pointless (empty required fields, obvious format).
-- Disable the submit command via `CanExecute` until required fields are filled; show per-field messages with `ui:FormField Error`
-  (a resource key from the view model) and the server's 400/409 outcome as a form error or toast.
-- Do not duplicate business rules (uniqueness, allowed states) on the desktop.
+## Forms and validation (desktop; reference: `UserFormViewModel` + `UserFormView`)
+- Create/edit forms derive from `ViewModels/Shell/FormViewModel` and open with `IDialogService.ShowFormAsync(form, title)`
+  (a Modal with Cancel / Save; true once saved). Do not build form modals by hand.
+- Name input properties like the Contracts request properties. `BuildRequest()` returns the request (trim text there),
+  `SubmitAsync` sends it. Save first runs the request's DataAnnotations (the same rules as the API), then maps the API
+  problem: field codes go next to their field, anything else becomes `FormErrorKey`. Extra client rules (e.g. confirm
+  password) go in `ValidateMore`.
+- View: `<ui:FormField Error="{l:FieldError FullName}">` per field and `<ui:Alert Kind="Danger" Text="{l:TrKey FormErrorKey}" />` on top.
+- Call `MarkClean()` at the end of the form constructor: editing marks it dirty, and Cancel / X / Esc ask before discarding.
+- Do not duplicate business rules (uniqueness, allowed states) on the desktop; the API answers with a code.
+- Failed actions outside a form (delete): `ShowError(result)` on list pages shows the code's text as a toast.
 
 ## State
 - **Session** (`SessionService`): user, role and token in memory only; cleared on sign-out or a 401.

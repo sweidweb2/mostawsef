@@ -50,10 +50,13 @@ public class AuthService(
         if (check == PasswordCheck.SuccessRehashNeeded)
         {
             user.ChangePasswordHash(passwordHasher.Hash(request.Password));
+            user.RecordLogin(DateTime.UtcNow);
             await users.SaveChangesAsync(cancellationToken);
         }
-
-        await users.RecordLoginAsync(user.Id, DateTime.UtcNow, cancellationToken);
+        else
+        {
+            await users.RecordLoginAsync(user.Id, DateTime.UtcNow, cancellationToken);
+        }
 
         await activity.LogAsync(
             new ActivityEntry(ActivityActions.SignedIn, ActivityModules.Auth, "Signed in")

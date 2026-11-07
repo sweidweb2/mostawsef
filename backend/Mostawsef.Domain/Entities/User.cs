@@ -52,6 +52,8 @@ public class User : SoftDeletableEntity
 
     public void ChangePasswordHash(string passwordHash) => PasswordHash = passwordHash;
 
+    public void RecordLogin(DateTime at) => LastLoginAt = at;
+
     public void Activate() => IsActive = true;
 
     public void Deactivate() => IsActive = false;

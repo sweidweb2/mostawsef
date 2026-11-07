@@ -23,7 +23,7 @@ public class SeedUser
 
 public static class DatabaseInitializer
 {
-    /// <summary>Applies pending migrations, then creates any missing seed users (passwords are hashed).</summary>
+    /// <summary>Applies pending migrations (and their data backfills), then creates any missing seed users (passwords are hashed).</summary>
     public static async Task InitializeDatabaseAsync(
         this IServiceProvider services,
         IEnumerable<SeedUser> seedUsers,
@@ -34,7 +34,14 @@ public static class DatabaseInitializer
         var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
         var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(DatabaseInitializer));
 
+        var pending = await db.Database.GetPendingMigrationsAsync(cancellationToken);
         await db.Database.MigrateAsync(cancellationToken);
+
+        if (pending.Contains(SearchTextBackfill.Migration))
+        {
+            var rebuilt = await SearchTextBackfill.RunAsync(db, cancellationToken);
+            logger.LogInformation("Filled the search text of {Count} existing log rows", rebuilt);
+        }
 
         foreach (var seed in seedUsers)
         {

@@ -29,16 +29,7 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                 nullable: false,
                 defaultValue: "");
 
-            // Rows written before this migration: same fields and separator as Text.SearchKey (lowercase only;
-            // the Arabic normalization of SearchText.Normalize applies to rows written from now on).
-            migrationBuilder.Sql("""
-                UPDATE activity_logs
-                SET "SearchText" = lower(concat_ws(E'\n', "Username", "Action", "Module", "Description"));
-                """);
-            migrationBuilder.Sql("""
-                UPDATE system_errors
-                SET "SearchText" = lower(concat_ws(E'\n', "Message", "Source", "ExceptionType", "RequestPath", "Username"));
-                """);
+            // Rows written before this migration are filled by SearchTextBackfill (DatabaseInitializer), not SQL here.
 
             migrationBuilder.CreateIndex(
                 name: "IX_system_errors_SearchText",

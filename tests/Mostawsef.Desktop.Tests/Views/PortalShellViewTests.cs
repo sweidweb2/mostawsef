@@ -19,7 +19,7 @@ namespace Mostawsef.Desktop.Tests.Views;
 public class PortalShellViewTests
 {
     [AvaloniaFact]
-    public void Clicking_the_avatar_opens_a_menu_with_sign_out()
+    public void Clicking_the_avatar_opens_a_menu_with_change_password_and_sign_out()
     {
         using var app = new TestServices();
         var window = ShowPortal(app, Roles.Admin);
@@ -27,8 +27,7 @@ public class PortalShellViewTests
         var flyout = OpenUserMenu(window);
 
         Assert.True(flyout.IsOpen);
-        var item = Assert.Single(flyout.Items.OfType<MenuItem>());
-        Assert.Equal("Sign out", item.Header);
+        Assert.Equal(["Change password", "Sign out"], flyout.Items.OfType<MenuItem>().Select(i => i.Header));
     }
 
     [AvaloniaFact]
@@ -36,7 +35,7 @@ public class PortalShellViewTests
     {
         using var app = new TestServices();
         var window = ShowPortal(app, Roles.Super);
-        var item = OpenUserMenu(window).Items.OfType<MenuItem>().Single();
+        var item = OpenUserMenu(window).Items.OfType<MenuItem>().Single(i => i.Name == "LogoutMenuItem");
 
         item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
         Dispatcher.UIThread.RunJobs();

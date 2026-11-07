@@ -52,6 +52,7 @@ public class SystemErrorConfiguration : IEntityTypeConfiguration<SystemError>
         builder.Property(e => e.SearchText).HasMaxLength(SystemError.SearchTextMaxLength).IsRequired();
 
         builder.HasIndex(e => new { e.OccurredAt, e.Id });
+        builder.HasIndex(e => new { e.Level, e.OccurredAt });
         builder.HasIndex(e => e.SearchText).HasMethod("gin").HasOperators("gin_trgm_ops");
     }
 }

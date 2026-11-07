@@ -15,11 +15,14 @@ alwaysApply: true
 
 ## Reuse existing patterns
 - Before writing something new, find the closest existing example and copy its shape:
-  - endpoint: `ActivityLogsController` + `ActivityLogService` + repository + Contracts DTOs + integration tests
-  - list page: `PagedListViewModel` subclass + `DataTable` view + `AppRoutes` entry + desktop tests
+  - CRUD feature: the users module (`UsersController` + `UserService` + `UserRepository` + `User : SoftDeletableEntity` +
+    Contracts requests with ErrorCodes + `UsersApi` + `UsersViewModel` + `UserFormViewModel`/`UserFormView` + tests on both sides)
+  - log-style endpoint: `ActivityLogsController` + `ActivityLogService` + repository + Contracts DTOs + integration tests
+  - list page: `NumberedListViewModel` (or `PagedListViewModel` for logs) subclass + `DataTable` view + `AppRoutes` entry + desktop tests
   - UI: components from `Docs/shared-components.md` before writing new XAML
 - One way per concern: `ApiClient` for HTTP, `IActivityLogger` for activity, `ISystemErrorLogger`/`ErrorReporter` for errors,
-  `DialogService`/`ToastService` for feedback, DataAnnotations + service results for validation. Do not add a second mechanism.
+  `DialogService`/`ToastService` for feedback, `FormViewModel` + `ShowFormAsync` for forms, DataAnnotations with `ErrorCodes`
+  + `AppException` for validation and expected errors. Do not add a second mechanism.
 
 ## Dependencies
 - No new NuGet package, project or external tool without asking the user first (say what it replaces and why the

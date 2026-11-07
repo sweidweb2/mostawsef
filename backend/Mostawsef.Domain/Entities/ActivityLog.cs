@@ -41,7 +41,7 @@ public class ActivityLog : IChronological
         IpAddress = Text.Truncate(ipAddress, IpAddressMaxLength);
         UserAgent = Text.Truncate(userAgent, UserAgentMaxLength);
         Details = Text.Truncate(details, DetailsMaxLength);
-        SearchText = Text.SearchKey(Username, Action, Module, Description);
+        RebuildSearchText();
     }
 
     public Guid Id { get; private set; } = Guid.NewGuid();
@@ -72,4 +72,7 @@ public class ActivityLog : IChronological
 
     /// <summary>Username, action, module and description, lowercased (Text.SearchKey). What the list search matches.</summary>
     public string SearchText { get; private set; } = string.Empty;
+
+    /// <summary>Sets SearchText from the searchable fields; also used to fill rows written before the column existed.</summary>
+    public void RebuildSearchText() => SearchText = Text.SearchKey(Username, Action, Module, Description);
 }

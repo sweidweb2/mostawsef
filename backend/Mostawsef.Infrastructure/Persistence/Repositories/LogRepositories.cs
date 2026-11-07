@@ -32,17 +32,22 @@ public class ActivityLogRepository(AppDbContext db) : IActivityLogRepository
         Retention.DeleteInBatchesAsync(
             db.ActivityLogs.Where(l => l.OccurredAt < cutoffUtc).OrderBy(l => l.OccurredAt), cancellationToken);
 
-    /// <summary>One query, one pass over the table: each number is a filtered COUNT of the same scan.</summary>
-    public async Task<LogCounts> GetCountsAsync(DateTime todayStartUtc, DateTime weekStartUtc, CancellationToken cancellationToken) =>
-        await db.ActivityLogs.AsNoTracking()
-            .GroupBy(_ => 1)
-            .Select(g => new LogCounts(
-                g.Count(),
-                g.Count(l => l.OccurredAt >= todayStartUtc),
-                g.Count(l => l.OccurredAt >= weekStartUtc),
-                g.Count(l => l.OccurredAt >= todayStartUtc && l.Action == ActivityActions.SignInFailed)))
+    /// <summary>
+    /// One statement of four COUNT subqueries, each served by an index: the total and the periods by (OccurredAt, Id),
+    /// failed sign-ins by (Action, OccurredAt). An empty table returns no row, which means all zeros.
+    /// </summary>
+    public async Task<LogCounts> GetCountsAsync(DateTime todayStartUtc, DateTime weekStartUtc, CancellationToken cancellationToken)
+    {
+        var logs = db.ActivityLogs.AsNoTracking();
+        return await logs
+            .Select(_ => new LogCounts(
+                logs.Count(),
+                logs.Count(l => l.OccurredAt >= todayStartUtc),
+                logs.Count(l => l.OccurredAt >= weekStartUtc),
+                logs.Count(l => l.Action == ActivityActions.SignInFailed && l.OccurredAt >= todayStartUtc)))
             .FirstOrDefaultAsync(cancellationToken)
-        ?? LogCounts.None;
+            ?? LogCounts.None;
+    }
 }
 
 public class SystemErrorRepository(AppDbContext db) : ISystemErrorRepository
@@ -73,15 +78,20 @@ public class SystemErrorRepository(AppDbContext db) : ISystemErrorRepository
         Retention.DeleteInBatchesAsync(
             db.SystemErrors.Where(e => e.OccurredAt < cutoffUtc).OrderBy(e => e.OccurredAt), cancellationToken);
 
-    /// <summary>One query, one pass over the table: each number is a filtered COUNT of the same scan.</summary>
-    public async Task<LogCounts> GetCountsAsync(DateTime todayStartUtc, DateTime weekStartUtc, CancellationToken cancellationToken) =>
-        await db.SystemErrors.AsNoTracking()
-            .GroupBy(_ => 1)
-            .Select(g => new LogCounts(
-                g.Count(),
-                g.Count(e => e.OccurredAt >= todayStartUtc),
-                g.Count(e => e.OccurredAt >= weekStartUtc),
-                g.Count(e => e.Level == ErrorLevel.Critical)))
+    /// <summary>
+    /// One statement of four COUNT subqueries, each served by an index: the total and the periods by (OccurredAt, Id),
+    /// critical errors by (Level, OccurredAt). An empty table returns no row, which means all zeros.
+    /// </summary>
+    public async Task<LogCounts> GetCountsAsync(DateTime todayStartUtc, DateTime weekStartUtc, CancellationToken cancellationToken)
+    {
+        var errors = db.SystemErrors.AsNoTracking();
+        return await errors
+            .Select(_ => new LogCounts(
+                errors.Count(),
+                errors.Count(e => e.OccurredAt >= todayStartUtc),
+                errors.Count(e => e.OccurredAt >= weekStartUtc),
+                errors.Count(e => e.Level == ErrorLevel.Critical)))
             .FirstOrDefaultAsync(cancellationToken)
-        ?? LogCounts.None;
+            ?? LogCounts.None;
+    }
 }

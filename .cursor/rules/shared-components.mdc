@@ -15,11 +15,11 @@ Before writing UI, use what exists (`xmlns:ui="using:Mostawsef.Desktop.Component
 - Forms: `FormField`, `SearchBox`, `PasswordField` (form grids: `ResponsiveGrid MaxColumns="2"` of `FormField`s)
 - Buttons: `IconButton` (+ styled built-in `Button`, `SplitButton`, `DropDownButton`)
 - Data: `DataTable` (wraps `DataGrid`), `Pagination`, `Badge`, `Avatar`, `StatCard`, `DetailsView`/`DetailsItem`
-- Feedback/overlays: `Spinner`, `LoadingOverlay`, `EmptyState`, `ErrorState`, `Toast` (via `ToastService`), `Modal`, `ConfirmDialog`, `DialogHost`
+- Feedback/overlays: `Spinner`, `LoadingOverlay`, `EmptyState`, `ErrorState`, `Alert`, `Toast` (via `ToastService`), `Modal`, `ConfirmDialog`, `DialogHost`
 - Built-in controls (TextBox, ComboBox, AutoCompleteBox, CalendarDatePicker, TabControl, ...) are already themed: use them directly.
 
 ## Deferred components
-Chart, Timeline, Alert, Skeleton, Drawer, AppointmentCard, PrescriptionItem,
+Chart, Timeline, Skeleton, Drawer, AppointmentCard, PrescriptionItem,
 InvoiceSummary, VitalsDisplay are **not built**. Create one only when a screen needs it, and delete
 components that no screen uses. Scheduler, Wizard/Stepper, Breadcrumb, ButtonGroup, ListDetailsView,
 FormSection, ValidationSummary, DateRangePicker, FileUpload/ImagePicker, PatientCard/PatientHeader and
@@ -27,7 +27,8 @@ PrintPreview were removed while unused: restore from git history (commit `983d1b
 Pages that load data implement `ILoadablePage`: the shell keeps each opened page (and `PageHost` its view), calls
 `ActivateAsync` when it is shown and `Deactivate` when the user leaves, which cancels its API calls. Pass a
 cancellation token to every API read a page makes (`PagedListViewModel.ReadAsync` for one-off reads such as details).
-List pages derive from `ViewModels/Shell/PagedListViewModel`; a failed load shows the `DataTable` error state
+List pages derive from `ViewModels/Shell/NumberedListViewModel` (page numbers; records sorted by a field, e.g. users) or
+`PagedListViewModel` (cursor paging; append-only newest-first logs). Both expose the same bindings. A failed load shows the `DataTable` error state
 (bind `HasError`, `ErrorTitle`/`ErrorDescription` via `{l:TrKey LoadError...Key}` and `RetryCommand="{Binding RefreshCommand}"`).
 Use toasts for failed actions (save, delete), the error state for content that could not load.
 

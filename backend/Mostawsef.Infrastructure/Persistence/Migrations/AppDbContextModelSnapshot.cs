@@ -169,6 +169,8 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SearchText"), "gin");
                     NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("SearchText"), new[] { "gin_trgm_ops" });
 
+                    b.HasIndex("Level", "OccurredAt");
+
                     b.HasIndex("OccurredAt", "Id");
 
                     b.ToTable("system_errors", (string)null);

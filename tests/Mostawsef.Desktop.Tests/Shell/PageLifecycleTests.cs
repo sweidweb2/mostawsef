@@ -19,7 +19,7 @@ public class PageLifecycleTests
 {
     private const string ActivityPath = "/api/activity-logs";
     private const int Dashboard = 0;
-    private const int ActivityLogs = 1;
+    private const int ActivityLogs = 2;
 
     private static readonly ActivityLogListItemDto SignIn =
         new(Guid.NewGuid(), DateTime.UtcNow, "auth.signed_in", "Auth", "Signed in", "admin@test.local");

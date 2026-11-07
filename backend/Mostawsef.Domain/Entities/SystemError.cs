@@ -51,7 +51,7 @@ public class SystemError : IChronological
         TraceId = Text.Truncate(traceId, TraceIdMaxLength);
         IpAddress = Text.Truncate(ipAddress, IpAddressMaxLength);
         Details = Text.Truncate(details, DetailsMaxLength);
-        SearchText = Text.SearchKey(Message, Source, ExceptionType, RequestPath, Username);
+        RebuildSearchText();
     }
 
     public Guid Id { get; private set; } = Guid.NewGuid();
@@ -88,4 +88,7 @@ public class SystemError : IChronological
 
     /// <summary>Message, source, exception type, request path and username, lowercased (Text.SearchKey). What the list search matches.</summary>
     public string SearchText { get; private set; } = string.Empty;
+
+    /// <summary>Sets SearchText from the searchable fields; also used to fill rows written before the column existed.</summary>
+    public void RebuildSearchText() => SearchText = Text.SearchKey(Message, Source, ExceptionType, RequestPath, Username);
 }

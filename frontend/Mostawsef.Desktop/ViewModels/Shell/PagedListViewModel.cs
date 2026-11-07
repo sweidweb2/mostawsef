@@ -111,9 +111,21 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
     [RelayCommand]
     private Task RefreshAsync() => ReloadAsync();
 
-    /// <summary>A new filter: count its matches again, but the extras (stats of the whole table) stay as they are.</summary>
+    /// <summary>
+    /// A new filter: count its matches again, but the extras (stats of the whole table) stay as they are.
+    /// A term the API would reject as too short is not sent; the list stays as it is and a warning explains why.
+    /// </summary>
     [RelayCommand]
-    private Task SearchAsync() => LoadAsync(FirstPage(Search), page: 1, withExtras: false);
+    private Task SearchAsync()
+    {
+        if (CursorQuery.IsSearchTooShort(Search))
+        {
+            Toasts.Show(Localization.Format("Search.TooShort", CursorQuery.MinSearchLength), kind: ToastKind.Warning);
+            return Task.CompletedTask;
+        }
+
+        return LoadAsync(FirstPage(Search), page: 1, withExtras: false);
+    }
 
     /// <summary>
     /// Pagination moves one page at a time (or to the first/last page), so each move is one keyset request from the

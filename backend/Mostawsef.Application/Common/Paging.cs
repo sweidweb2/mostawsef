@@ -72,6 +72,17 @@ public sealed record PageRequest(PageDirection Direction, PageCursor? Cursor, in
         request = new PageRequest(direction, cursor, query.SafePageSize, query.Search, query.IncludeTotal);
         return true;
     }
+
+    /// <summary>Throws AppException (400, "min_length|3" on Search) when the search term is too short for the search index.</summary>
+    public void EnsureSearchable()
+    {
+        if (CursorQuery.IsSearchTooShort(Search))
+        {
+            throw AppException.Validation(
+                nameof(CursorQuery.Search),
+                string.Format(CultureInfo.InvariantCulture, ErrorCodes.MinLength, nameof(CursorQuery.Search), CursorQuery.MinSearchLength));
+        }
+    }
 }
 
 /// <summary>Rows of one page, newest first, with the cursors to the neighbouring pages (null at either end).</summary>

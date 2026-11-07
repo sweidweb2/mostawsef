@@ -51,7 +51,7 @@ Usage namespace: `xmlns:ui="using:Mostawsef.Desktop.Components"`.
 | RadioGroup | Built-in | `RadioButton` with shared `GroupName` |
 | ToggleSwitch | Built-in | `ToggleSwitch` |
 | FileUpload / ImagePicker | Deferred | Removed while unused |
-| FormField (label + input + validation message) | Built | `ui:FormField` (`Label`, `Hint`, `Error`, `IsRequired`) |
+| FormField (label + input + validation message) | Built | `ui:FormField` (`Label`, `Hint`, `Error`, `IsRequired`); in a `FormViewModel` form: `Error="{l:FieldError FullName}"` |
 | FormSection | Deferred | Use `ui:ResponsiveGrid MaxColumns="2"` of `ui:FormField`s inside a `ui:Section` |
 | ValidationSummary | Deferred | Removed while unused; per-field errors via `ui:FormField Error` |
 
@@ -85,7 +85,7 @@ Usage namespace: `xmlns:ui="using:Mostawsef.Desktop.Components"`.
 | Component | Status | Use |
 | --- | --- | --- |
 | Toast / Notification | Built | `ToastService.Show(...)` |
-| Alert / Banner | Deferred | |
+| Alert / Banner | Built | `ui:Alert Kind="Danger" Text="..."` (`Info`, `Success`, `Warning`, `Danger`; hidden while `Text` is empty). Form-level errors: `Text="{l:TrKey FormErrorKey}"` |
 | LoadingSpinner | Built | `ui:Spinner` |
 | LoadingOverlay | Built | `ui:LoadingOverlay IsLoading="..."` |
 | SkeletonLoader | Deferred | |

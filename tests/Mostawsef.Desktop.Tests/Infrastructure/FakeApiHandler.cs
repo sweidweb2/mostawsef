@@ -48,6 +48,18 @@ public class FakeApiHandler : HttpMessageHandler
 
     public static HttpResponseMessage Json<T>(T body) => new(HttpStatusCode.OK) { Content = JsonContent.Create(body) };
 
+    /// <summary>A problem response like the API's: Problem(HttpStatusCode.Conflict, "username_taken", ("Username", "username_taken")).</summary>
+    public static HttpResponseMessage Problem(HttpStatusCode status, string code, params (string Field, string Code)[] errors) =>
+        new(status)
+        {
+            Content = JsonContent.Create(new Dictionary<string, object>
+            {
+                ["status"] = (int)status,
+                ["code"] = code,
+                ["errors"] = errors.ToDictionary(e => e.Field, e => new[] { e.Code }),
+            }),
+        };
+
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         Requests.Add(request);

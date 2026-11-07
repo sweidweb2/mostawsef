@@ -69,6 +69,15 @@
                 </ui:Card>
             </ui:Section>
 
+            <ui:Section Title="Alert">
+                <StackPanel Spacing="8">
+                    <ui:Alert Text="Info: shown above a form or section." />
+                    <ui:Alert Kind="Success" Text="Success: the record was saved." />
+                    <ui:Alert Kind="Warning" Text="Warning: some data could not be checked." />
+                    <ui:Alert Kind="Danger" Text="Danger: someone else changed this record while you were editing." />
+                </StackPanel>
+            </ui:Section>
+
             <ui:Section Title="ErrorState">
                 <ui:Card>
                     <ui:ErrorState Margin="0,24" RetryCommand="{Binding ShowToastCommand}" />

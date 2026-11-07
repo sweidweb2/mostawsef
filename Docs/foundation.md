@@ -58,7 +58,10 @@ platform modules exist: auth, activity logs and system errors.
 
 Keep the option of switching to SQLite open:
 
-- No PostgreSQL-only features: `jsonb`, array columns, `citext`, `EF.Functions.ILike`, raw SQL.
+- No PostgreSQL-only features: `jsonb`, array columns, `citext`, `EF.Functions.ILike`, raw SQL (also not in migrations;
+  fill new columns for existing rows with EF Core code run by `DatabaseInitializer`, e.g. `SearchTextBackfill`).
+- One allowed exception: **index-only** PostgreSQL features, such as the `pg_trgm` GIN indexes on the log `SearchText`
+  columns. The queries they speed up stay plain LINQ (`LIKE`), so they still run on SQLite, only without that index.
 - All database code stays in Infrastructure; switching provider means changing one package and one `Use...()` call.
 - Store money as integers in the smallest unit (e.g. piasters), not `decimal`.
 - Keep column types simple (text, integers, booleans, dates).
@@ -306,11 +309,14 @@ Health check: `GET http://localhost:5270/api/health` returns
 
 | Area | Where | Details |
 | --- | --- | --- |
-| Database | `Infrastructure/Persistence/Context/AppDbContext.cs`, `Configurations/`, `Migrations/` | Entities `User`, `ActivityLog`, `SystemError`; migrations `InitialUsers`, `AddActivityLogsAndSystemErrors` |
+| Database | `Infrastructure/Persistence/Context/AppDbContext.cs`, `Configurations/`, `Migrations/` | Entities `User`, `ActivityLog`, `SystemError` |
 | Startup | `Api/Program.cs`, `Infrastructure/Persistence/DatabaseInitializer.cs` | Applies pending migrations and seeds `Seed:Users` when the API starts |
 | Health | `Api/Controllers/HealthController.cs` | `GET /api/health` verifies API + database |
 | Auth | `AuthController`, `Application/Modules/Auth`, `Infrastructure/Services/Auth` | JWT, roles `Admin`/`Super`, PBKDF2 hashing, login rate limit. See `auth.md` |
 | Logging | `ActivityLogsController`, `SystemErrorsController`, `Application/Modules/Logs`, `ExceptionHandlingMiddleware` | Activity logs and system errors. See `logging.md` |
+| Users | `UsersController`, `Application/Modules/Users`, desktop `UsersViewModel` + forms | User management (Super) and change password (everyone). The reference module to copy for CRUD features. See `auth.md` |
+| Errors and validation | `Contracts/Common/ErrorCodes`, `Application/Common/AppException`, `ExceptionHandlingMiddleware`, desktop `FormViewModel` | One error code per failure, from DataAnnotations or `AppException`; the desktop shows it next to the field or on top of the form, in both languages. See `.cursor/rules/backend.mdc` and `frontend-ui.mdc` |
+| Entity conventions | `Domain/Common/Entity`, `SoftDeletableEntity`, `SearchText`, `Infrastructure/Persistence/AuditInterceptor` | Who/when audit fields, `Version` concurrency token (409 on conflicting edits), soft delete with a global filter, Arabic-aware search normalization |
 | Desktop | `frontend/Mostawsef.Desktop` | Login, one portal shell per role from `AppRoutes`, Super pages for logs/errors, shared components, Light/Dark, Arabic/English. See `ui-foundation.md` |
 | Tests | `tests/` | API integration tests (Testcontainers) and headless desktop tests. See `.cursor/rules/testing.mdc` |
 | Dev database | `docker-compose.yml` | Development PostgreSQL (+ optional pgAdmin) |

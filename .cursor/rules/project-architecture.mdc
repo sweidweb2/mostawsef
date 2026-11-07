@@ -33,7 +33,8 @@ tests/Mostawsef.Desktop.Tests          view models, navigation, headless views
 - Dependency direction: Domain <- Application <- Infrastructure <- Api. Desktop -> Contracts only.
 - EF Core / Npgsql packages live only in Infrastructure (Api has `EntityFrameworkCore.Design` for tooling only).
 - Modular monolith: organize by feature modules (`Application/Modules/<Feature>`), no microservices.
-- Keep SQLite as a possible fallback: no `jsonb`, arrays, `citext`, `EF.Functions.ILike` or raw SQL; store money as integers (smallest unit).
+- Keep SQLite as a possible fallback: no `jsonb`, arrays, `citext`, `EF.Functions.ILike` or raw SQL (also not in migrations); store money as integers (smallest unit).
+  Index-only PostgreSQL features (e.g. `pg_trgm` GIN indexes) are allowed when the queries stay plain LINQ.
 - Auth: username/password users with roles `Admin` and `Super` (JWT); each role has its own desktop portal. Details: `Docs/auth.md`.
 - App-wide engines: activity logs (`IActivityLogger`) and system errors (`ISystemErrorLogger` / desktop `ErrorReporter`). Details: `Docs/logging.md`.
 - Do not add business logic or business modules unless the user asks for them.

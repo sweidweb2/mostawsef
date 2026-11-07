@@ -9,7 +9,11 @@
     <SatelliteResourceLanguages>en;ar</SatelliteResourceLanguages>
   </PropertyGroup>
 
-  <!-- ReadyToRun needs a target runtime: dotnet publish frontend/Mostawsef.Desktop -r win-x64 -->
+  <!-- ReadyToRun needs a target runtime: a publish without -r targets the clinic PCs (win-x64). Build and run stay portable. -->
+  <PropertyGroup Condition="'$(_IsPublishing)' == 'true' And '$(RuntimeIdentifier)' == ''">
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
     <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>

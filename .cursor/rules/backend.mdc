@@ -23,7 +23,9 @@ alwaysApply: false
   seeds users (`Seed:Users`) on startup through `DatabaseInitializer`:
   `dotnet ef migrations add <Name> --project backend/Mostawsef.Infrastructure --startup-project backend/Mostawsef.Api --output-dir Persistence/Migrations`
 - Connection string key: `ConnectionStrings:Default` (dev value in `appsettings.Development.json`, Docker PostgreSQL).
-- Portability (SQLite fallback): no PostgreSQL-only types/functions or raw SQL; money as integer minor units.
+- Portability (SQLite fallback): no PostgreSQL-only types/functions or raw SQL (not in migrations either: backfill
+  existing rows with EF Core code from `DatabaseInitializer`); money as integer minor units. Only exception: index-only
+  PostgreSQL features (the `pg_trgm` GIN indexes on log `SearchText`), as long as the queries stay plain LINQ.
 
 ## Auth (see `Docs/auth.md`)
 - JWT bearer auth is on. Every new controller/endpoint needs `[Authorize]` or a role policy
@@ -39,16 +41,32 @@ alwaysApply: false
   If you catch and handle an exception, record it with `ISystemErrorLogger.LogAsync(ex, ...)`.
 - Never log passwords, tokens or sensitive medical content in `Details`.
 
-## Validation
-- **Shape** (required, length, range) = DataAnnotations on the request record in Contracts
-  (`[Required] string Username`). `[ApiController]` answers 400 `ValidationProblem` automatically; `[Required]` also rejects
-  empty/whitespace strings. Do not repeat these checks by hand in controllers.
-- **Business rules** (exists, unique, allowed state) = Application service. It returns null/false/a result the controller maps:
-  missing -> 404, duplicate or wrong state -> 409, rule broken -> 400 via `ValidationProblem`/`Problem`. Never throw for expected outcomes.
+## Validation and errors (reference: the users module)
+- Every error the client sees carries a stable code from `Contracts/Common/ErrorCodes` (the desktop translates
+  `ErrorCode.<code>`): problem body `{ status, code, errors: { "Field": ["code"] } }`. Add new codes there and their
+  text to both desktop resx files.
+- **Shape** (required, length, format) = DataAnnotations on the request in Contracts with `ErrorMessage = ErrorCodes.X`
+  (`Required`, `MaxLength` -> "max_length|50", `MinLength`, `Invalid`). Requests with validation use init properties, not
+  positional record parameters, so the same attributes also run on the desktop. `[ApiController]` answers 400 automatically.
+- **Business rules** (exists, unique, allowed state, own account) = Application service throws `AppException`:
+  `Validation(field, code)` 400, `NotFound()` 404, `Conflict(code, field?)` 409. `ExceptionHandlingMiddleware` writes the
+  problem response and does not record it as a system error. Controllers stay one-liners (no try/catch, no null checks).
+  The older log endpoints return null/false for "not found"; new code uses `AppException`.
 - **Invariants** (always true for the entity) = Domain constructor/methods (e.g. `User.NormalizeUsername`), plus database
   constraints (unique index, max length, required) in the Fluent configuration.
 - Clamp, don't reject, harmless paging input (`PageQuery.SafePageSize`).
 - No validation library (FluentValidation etc.) unless the user asks for one.
+
+## Entities (Domain/Common)
+- Business entities derive from `Entity` (Guid `Id`, `CreatedAt/By`, `UpdatedAt/By`, `Version`) or `SoftDeletableEntity`
+  (+ `IsDeleted`, `DeletedAt/By`). `AuditInterceptor` fills these on every save; never set them by hand.
+- `Version` is the concurrency token: edit requests carry the Version the client loaded; the service compares it and a
+  race at save time also ends as 409 `concurrency_conflict`.
+- Soft delete: `DbSet.Remove` marks the row deleted and a global filter hides deleted rows. `IgnoreQueryFilters()` only
+  where deleted rows must count (e.g. a username is never reused).
+- Writes that are not user edits (e.g. last sign-in time) use `ExecuteUpdateAsync`, so they don't change Version.
+- Searchable names: store `SearchText.Normalize(value)` in its own column (e.g. `User.SearchName`), normalize the term the
+  same way and compare with `Contains` (Arabic hamza/ta marbuta/alef maqsura, diacritics and Arabic digits handled).
 
 ## Conventions
 - Async all the way with `CancellationToken` on I/O methods.

@@ -52,8 +52,8 @@ Dev logins: `admin@example.com` / `password`, `super@example.com` / `password`
 ## Publish the desktop app
 
 ```powershell
-dotnet publish frontend/Mostawsef.Desktop -r win-x64
+dotnet publish frontend/Mostawsef.Desktop
 ```
 
-Output: `frontend/Mostawsef.Desktop/bin/Release/net10.0/win-x64/publish/`. Publishing for a runtime turns on
-ReadyToRun (precompiled code), so the app starts faster on older clinic PCs.
+Output: `frontend/Mostawsef.Desktop/bin/Release/net10.0/win-x64/publish/`. A publish targets the clinic PCs (`win-x64`)
+unless `-r` says otherwise, and turns on ReadyToRun (precompiled code), so the app starts faster on older clinic PCs.

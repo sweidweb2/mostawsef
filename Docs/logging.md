@@ -16,8 +16,12 @@ Longer values are cut to the column limit automatically (`Domain/Common/Text.Tru
 Each row also stores `SearchText`: the searchable fields lowercased and joined (`Text.SearchKey`, set in the entity constructor).
 Activity logs: username, action, module, description. System errors: message, source, exception type, request path, username.
 The list search is a single `LIKE '%term%'` on that column (`Repositories/LogSearch.Matching`; `%` and `_` in the term are literal),
-served on PostgreSQL by a `pg_trgm` GIN index. Terms of 1–2 characters still work but cannot use the index.
-A new searchable field must be added to `SearchKey` in the entity, plus a migration that rebuilds `SearchText` for existing rows.
+served on PostgreSQL by a `pg_trgm` GIN index (an index-only PostgreSQL feature: the query stays plain `LIKE`, so SQLite still works).
+The index reads groups of three characters, so a term needs at least 3 letters or digits (`CursorQuery.MinSearchLength`):
+shorter terms get a 400 (`errors.Search = ["min_length|3"]`), and the desktop app shows a warning instead of sending them.
+Rows written before `SearchText` existed are filled once by `SearchTextBackfill` (run by `DatabaseInitializer` right after
+the `LogSearchText` migration), with EF Core code, not SQL. A new searchable field goes into the entity's `RebuildSearchText`,
+plus a backfill like that one for existing rows.
 
 ## Retention
 
@@ -49,7 +53,8 @@ await activity.LogAsync(
 - Add the code to `Application/Common/ActivityActions.cs` (`module.verb`, e.g. `patients.created`) and its label to both resx files as `Action.patients.created`.
 - Never put passwords, tokens or full medical notes in `Details`.
 
-Recorded today: `auth.signed_in`, `auth.sign_in_failed`, `auth.signed_out`, `logs.activity_deleted`, `logs.error_deleted`, `logs.purged`.
+Recorded today: `auth.signed_in`, `auth.sign_in_failed`, `auth.signed_out`, `auth.password_changed`, `users.created`,
+`users.updated`, `users.deleted`, `users.password_reset`, `logs.activity_deleted`, `logs.error_deleted`, `logs.purged`.
 
 ## System error engine
 
@@ -67,10 +72,10 @@ Recorded today: `auth.signed_in`, `auth.sign_in_failed`, `auth.signed_out`, `log
 | Endpoint | Purpose |
 | --- | --- |
 | `GET /api/activity-logs?pageSize=&search=&after=\|before=\|last=true&includeTotal=` | Keyset-paged list, newest first (max page size 100); see below |
-| `GET /api/activity-logs/stats` | Total, today, last 7 days, failed sign-ins today (one query) |
+| `GET /api/activity-logs/stats` | Total, today, last 7 days, failed sign-ins today (one statement; each count is read from an index) |
 | `GET /api/activity-logs/{id}` | Full record |
 | `DELETE /api/activity-logs/{id}` | Delete (the deletion itself is logged) |
-| `GET /api/system-errors...` | Same four endpoints for errors (stats: total, today, last 7 days, critical) |
+| `GET /api/system-errors...` | Same four endpoints for errors (stats: total, today, last 7 days, critical; critical uses the `(Level, OccurredAt)` index) |
 | `POST /api/system-errors/report` | Desktop error report (anonymous, 30/min per IP) |
 
 Lists use keyset paging (`CursorQuery` / `CursorPage<T>`), because log tables only grow: each page is read from

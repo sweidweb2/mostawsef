@@ -22,10 +22,15 @@ SessionService (token in memory) ──► NavigationService ──► Admin por
 | `Username` | varchar(50) | Unique, stored trimmed and lower-case |
 | `PasswordHash` | varchar(256) | **Hash only, never the password** |
 | `Role` | varchar(20) | `Admin` or `Super` |
+| `FullName` | varchar(100) | Shown in the top bar and the users list |
+| `SearchName` | varchar(100) | `FullName` normalized for Arabic-aware search (`SearchText.Normalize`) |
 | `IsActive` | boolean | Inactive users cannot sign in |
-| `LastLoginAt`, `CreatedAt`, `UpdatedAt` | timestamptz | |
+| `LastLoginAt`, `CreatedAt`, `UpdatedAt` | timestamptz | `LastLoginAt` is written directly (not an edit) |
+| `CreatedBy`, `UpdatedBy` | varchar(50) | Username of who created / last changed the user (null for seeding) |
+| `Version` | integer | Concurrency token: an edit based on an older version returns 409 |
+| `IsDeleted`, `DeletedAt`, `DeletedBy` | | Soft delete: deleted users are hidden, cannot sign in, and their username is never reused |
 
-Migration: `Persistence/Migrations/*_InitialUsers`. Migrations are applied automatically when the API starts.
+Migrations: `*_InitialUsers`, `*_AuditFieldsAndUserProfile`. Migrations are applied automatically when the API starts.
 
 ## Password hashing
 
@@ -38,9 +43,20 @@ Unknown usernames take the same hashing time as wrong passwords, so response tim
 | Endpoint | Auth | Result |
 | --- | --- | --- |
 | `POST /api/auth/login` `{ username, password }` | Anonymous, max 10 requests/min per IP | `200 { accessToken, expiresAt, user }`, `400` empty fields, `401` invalid, `429` too many |
-| `GET /api/auth/me` | Bearer token | `200 { id, username, role }`, `401` |
+| `GET /api/auth/me` | Bearer token | `200 { id, username, role, fullName }`, `401` |
+| `POST /api/auth/change-password` `{ currentPassword, newPassword }` | Bearer token | `204`, `400` (`wrong_password` on `CurrentPassword`, `min_length\|8`...) |
+| `GET /api/users?page=&pageSize=&search=` | Super | Paged list sorted by name; search matches the username or the normalized full name |
+| `GET /api/users/{id}` | Super | `200` details with audit fields and `version`, `404` |
+| `POST /api/users` `{ fullName, username, password, role }` | Super | `201`, `400`, `409 username_taken` (also for deleted users' usernames) |
+| `PUT /api/users/{id}` `{ fullName, role, isActive, version }` | Super | `200`, `400`, `404`, `409 concurrency_conflict` or `own_account` |
+| `POST /api/users/{id}/reset-password` `{ newPassword }` | Super | `204`, `400`, `404`, `409 own_account` |
+| `DELETE /api/users/{id}` | Super | `204` (soft delete), `404`, `409 own_account` |
 
 - Tokens: JWT signed with HMAC-SHA256, valid 8 hours (`Jwt:ExpiryMinutes`), claims `sub`, `unique_name`, `role`.
+- Every request re-checks the token's user: a deactivated, deleted or re-roled user gets `401` at once (the desktop then
+  returns to the login screen), not only when the token expires.
+- A Super cannot deactivate, demote, reset or delete their own account (`409 own_account`); they change their own password
+  with `change-password`. Passwords: at least 8 characters.
 - Role policies for future endpoints: `[Authorize(Policy = AuthPolicies.AdminOnly)]`, `[Authorize(Policy = AuthPolicies.SuperOnly)]`.
 
 ## Configuration
