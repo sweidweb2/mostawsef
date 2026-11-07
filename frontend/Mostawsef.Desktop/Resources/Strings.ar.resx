@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <data name="App.Title" xml:space="preserve"><value>مستوصف</value></data>
+  <data name="Language.Switch" xml:space="preserve"><value>English</value></data>
+  <data name="Theme.Toggle" xml:space="preserve"><value>تبديل الوضع الفاتح / الداكن</value></data>
+
+  <data name="Common.Ok" xml:space="preserve"><value>حسناً</value></data>
+  <data name="Common.Cancel" xml:space="preserve"><value>إلغاء</value></data>
+  <data name="Common.Confirm" xml:space="preserve"><value>تأكيد</value></data>
+  <data name="Common.Close" xml:space="preserve"><value>إغلاق</value></data>
+  <data name="Common.Save" xml:space="preserve"><value>حفظ</value></data>
+  <data name="Common.Delete" xml:space="preserve"><value>حذف</value></data>
+  <data name="Common.Edit" xml:space="preserve"><value>تعديل</value></data>
+  <data name="Common.Add" xml:space="preserve"><value>إضافة</value></data>
+  <data name="Common.Search" xml:space="preserve"><value>بحث...</value></data>
+  <data name="Common.Clear" xml:space="preserve"><value>مسح</value></data>
+  <data name="Common.Retry" xml:space="preserve"><value>إعادة المحاولة</value></data>
+  <data name="Common.Back" xml:space="preserve"><value>السابق</value></data>
+  <data name="Common.Next" xml:space="preserve"><value>التالي</value></data>
+  <data name="Common.Finish" xml:space="preserve"><value>إنهاء</value></data>
+  <data name="Common.Browse" xml:space="preserve"><value>استعراض</value></data>
+  <data name="Common.Remove" xml:space="preserve"><value>إزالة</value></data>
+  <data name="Common.Loading" xml:space="preserve"><value>جارٍ التحميل...</value></data>
+  <data name="Common.Actions" xml:space="preserve"><value>إجراءات</value></data>
+  <data name="Common.View" xml:space="preserve"><value>عرض</value></data>
+  <data name="Common.Today" xml:space="preserve"><value>اليوم</value></data>
+  <data name="Common.Day" xml:space="preserve"><value>يوم</value></data>
+  <data name="Common.Week" xml:space="preserve"><value>أسبوع</value></data>
+  <data name="Common.Print" xml:space="preserve"><value>طباعة</value></data>
+  <data name="Common.ZoomIn" xml:space="preserve"><value>تكبير</value></data>
+  <data name="Common.ZoomOut" xml:space="preserve"><value>تصغير</value></data>
+  <data name="Common.Filter" xml:space="preserve"><value>تصفية</value></data>
+  <data name="Common.Export" xml:space="preserve"><value>تصدير</value></data>
+  <data name="Common.More" xml:space="preserve"><value>المزيد</value></data>
+
+  <data name="Pagination.Summary" xml:space="preserve"><value>صفحة {0} من {1}</value></data>
+  <data name="Pagination.First" xml:space="preserve"><value>الصفحة الأولى</value></data>
+  <data name="Pagination.Previous" xml:space="preserve"><value>الصفحة السابقة</value></data>
+  <data name="Pagination.Next" xml:space="preserve"><value>الصفحة التالية</value></data>
+  <data name="Pagination.Last" xml:space="preserve"><value>الصفحة الأخيرة</value></data>
+
+  <data name="Empty.Title" xml:space="preserve"><value>لا توجد بيانات بعد</value></data>
+  <data name="Empty.Description" xml:space="preserve"><value>ستظهر العناصر التي تضيفها هنا.</value></data>
+  <data name="Error.Title" xml:space="preserve"><value>حدث خطأ ما</value></data>
+  <data name="Error.Description" xml:space="preserve"><value>تعذّر تحميل البيانات. يرجى المحاولة مرة أخرى.</value></data>
+
+  <data name="FileUpload.Title" xml:space="preserve"><value>اختر ملفاً</value></data>
+  <data name="FileUpload.NoFile" xml:space="preserve"><value>لم يتم اختيار ملف</value></data>
+  <data name="ImagePicker.Title" xml:space="preserve"><value>اختر صورة</value></data>
+  <data name="DateRange.From" xml:space="preserve"><value>من</value></data>
+  <data name="DateRange.To" xml:space="preserve"><value>إلى</value></data>
+  <data name="Validation.Title" xml:space="preserve"><value>يرجى تصحيح ما يلي:</value></data>
+  <data name="Confirm.Title" xml:space="preserve"><value>هل أنت متأكد؟</value></data>
+
+  <data name="Patient.FileNo" xml:space="preserve"><value>رقم الملف</value></data>
+  <data name="Patient.Age" xml:space="preserve"><value>العمر</value></data>
+  <data name="Patient.Gender" xml:space="preserve"><value>النوع</value></data>
+  <data name="Patient.Phone" xml:space="preserve"><value>الهاتف</value></data>
+  <data name="Patient.Allergies" xml:space="preserve"><value>الحساسية</value></data>
+  <data name="Appointment.Doctor" xml:space="preserve"><value>الطبيب</value></data>
+  <data name="Prescription.Dose" xml:space="preserve"><value>الجرعة</value></data>
+  <data name="Prescription.Frequency" xml:space="preserve"><value>التكرار</value></data>
+  <data name="Prescription.Duration" xml:space="preserve"><value>المدة</value></data>
+  <data name="Invoice.Title" xml:space="preserve"><value>ملخص الفاتورة</value></data>
+  <data name="Invoice.Subtotal" xml:space="preserve"><value>المجموع الفرعي</value></data>
+  <data name="Invoice.Discount" xml:space="preserve"><value>الخصم</value></data>
+  <data name="Invoice.Tax" xml:space="preserve"><value>الضريبة</value></data>
+  <data name="Invoice.Total" xml:space="preserve"><value>الإجمالي</value></data>
+  <data name="Invoice.Paid" xml:space="preserve"><value>المدفوع</value></data>
+  <data name="Invoice.Due" xml:space="preserve"><value>المبلغ المتبقي</value></data>
+  <data name="Vitals.Title" xml:space="preserve"><value>العلامات الحيوية</value></data>
+  <data name="Print.Title" xml:space="preserve"><value>معاينة الطباعة</value></data>
+
+  <data name="Gallery.Title" xml:space="preserve"><value>معرض المكونات</value></data>
+  <data name="Gallery.Subtitle" xml:space="preserve"><value>جميع المكونات المشتركة بكل حالاتها.</value></data>
+  <data name="Gallery.Layout" xml:space="preserve"><value>التخطيط</value></data>
+  <data name="Gallery.Forms" xml:space="preserve"><value>النماذج</value></data>
+  <data name="Gallery.Buttons" xml:space="preserve"><value>الأزرار</value></data>
+  <data name="Gallery.Data" xml:space="preserve"><value>عرض البيانات</value></data>
+  <data name="Gallery.Feedback" xml:space="preserve"><value>التنبيهات</value></data>
+  <data name="Gallery.Overlays" xml:space="preserve"><value>النوافذ المنبثقة</value></data>
+  <data name="Gallery.Navigation" xml:space="preserve"><value>التنقل</value></data>
+  <data name="Gallery.Clinic" xml:space="preserve"><value>العيادة</value></data>
+</root>

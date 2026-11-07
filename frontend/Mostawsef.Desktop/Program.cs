@@ -1,4 +1,5 @@
 ﻿using Avalonia;
+using Avalonia.Media;
 using System;
 
 namespace Mostawsef.Desktop;
@@ -19,6 +20,9 @@ sealed class Program
 #if DEBUG
             .WithDeveloperTools()
 #endif
-            .WithInterFont()
+            .With(new FontManagerOptions
+            {
+                DefaultFamilyName = "avares://Mostawsef.Desktop/Assets/Fonts#IBM Plex Sans Arabic",
+            })
             .LogToTrace();
 }

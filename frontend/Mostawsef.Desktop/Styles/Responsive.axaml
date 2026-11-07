@@ -1,0 +1,49 @@
+﻿<!--
+    Responsive utility classes driven by the width of the AppShell content area
+    (container "AppContent"). Values mirror Styles/Tokens/Breakpoints.axaml.
+
+      .hide-compact   hidden below 900
+      .show-compact   visible only below 900
+      .stack-compact  horizontal StackPanel becomes vertical below 900
+      .hide-medium    hidden below 1280
+      .show-medium    visible only below 1280
+-->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="using:Mostawsef.Desktop.Components">
+
+    <ContainerQuery Name="AppContent" Query="max-width:899">
+        <Style Selector=":is(Control).hide-compact">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector="StackPanel.stack-compact">
+            <Setter Property="Orientation" Value="Vertical" />
+        </Style>
+
+        <!-- Page header actions wrap under the title -->
+        <Style Selector="ui|PageHeader /template/ ContentPresenter#PART_Actions">
+            <Setter Property="Grid.Row" Value="1" />
+            <Setter Property="Grid.Column" Value="0" />
+            <Setter Property="Margin" Value="0,12,0,0" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+        </Style>
+    </ContainerQuery>
+
+    <ContainerQuery Name="AppContent" Query="min-width:900">
+        <Style Selector=":is(Control).show-compact">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+    </ContainerQuery>
+
+    <ContainerQuery Name="AppContent" Query="max-width:1279">
+        <Style Selector=":is(Control).hide-medium">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+    </ContainerQuery>
+
+    <ContainerQuery Name="AppContent" Query="min-width:1280">
+        <Style Selector=":is(Control).show-medium">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+    </ContainerQuery>
+</Styles>

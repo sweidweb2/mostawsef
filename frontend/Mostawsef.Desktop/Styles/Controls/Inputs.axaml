@@ -1,0 +1,80 @@
+<!--
+    Inputs and selection controls.
+    TextBox.textarea  multi-line text
+-->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Text inputs -->
+    <Style Selector="TextBox">
+        <Setter Property="MinHeight" Value="{DynamicResource ControlHeight}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusMd}" />
+        <Setter Property="Background" Value="{DynamicResource BrushSurface}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushText}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BrushBorderStrong}" />
+        <Setter Property="Padding" Value="10,6" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="{DynamicResource BrushSurface}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BrushTextMuted}" />
+    </Style>
+    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+        <Setter Property="Background" Value="{DynamicResource BrushSurface}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BrushFocus}" />
+        <Setter Property="BorderThickness" Value="2" />
+    </Style>
+    <Style Selector="TextBox:pointerover, TextBox:focus">
+        <Setter Property="Foreground" Value="{DynamicResource BrushText}" />
+    </Style>
+    <Style Selector="TextBox:error /template/ Border#PART_BorderElement">
+        <Setter Property="BorderBrush" Value="{DynamicResource BrushDanger}" />
+    </Style>
+    <Style Selector="TextBox.textarea">
+        <Setter Property="AcceptsReturn" Value="True" />
+        <Setter Property="TextWrapping" Value="Wrap" />
+        <Setter Property="MinHeight" Value="96" />
+        <Setter Property="VerticalContentAlignment" Value="Top" />
+    </Style>
+
+    <!-- Pickers, combo boxes, numeric -->
+    <Style Selector="ComboBox, CalendarDatePicker, AutoCompleteBox, NumericUpDown, DatePicker, TimePicker">
+        <Setter Property="MinHeight" Value="{DynamicResource ControlHeight}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusMd}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BrushBorderStrong}" />
+    </Style>
+    <Style Selector="ComboBox, CalendarDatePicker">
+        <Setter Property="Background" Value="{DynamicResource BrushSurface}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushText}" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="ComboBox">
+        <Setter Property="Padding" Value="10,6" />
+    </Style>
+
+    <!-- Selection -->
+    <Style Selector="CheckBox, RadioButton">
+        <Setter Property="Foreground" Value="{DynamicResource BrushText}" />
+        <Setter Property="MinHeight" Value="28" />
+    </Style>
+    <Style Selector="ToggleSwitch">
+        <Setter Property="Foreground" Value="{DynamicResource BrushText}" />
+    </Style>
+
+    <!-- Slider / progress -->
+    <Style Selector="ProgressBar">
+        <Setter Property="Foreground" Value="{DynamicResource BrushPrimary}" />
+        <Setter Property="Background" Value="{DynamicResource BrushSurfaceAlt}" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusFull}" />
+        <Setter Property="MinHeight" Value="6" />
+    </Style>
+    <Style Selector="ProgressBar.success">
+        <Setter Property="Foreground" Value="{DynamicResource BrushSuccess}" />
+    </Style>
+    <Style Selector="ProgressBar.warning">
+        <Setter Property="Foreground" Value="{DynamicResource BrushWarning}" />
+    </Style>
+    <Style Selector="ProgressBar.danger">
+        <Setter Property="Foreground" Value="{DynamicResource BrushDanger}" />
+    </Style>
+</Styles>

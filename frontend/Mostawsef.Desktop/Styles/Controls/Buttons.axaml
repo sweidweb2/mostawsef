@@ -1,0 +1,154 @@
+<!--
+    Button variants (Classes): primary, secondary, danger, ghost, link
+    Sizes: sm, lg     Shape: icon (square, icon only)
+    Default (no class) keeps the Fluent neutral button.
+-->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Style Selector="Button, ToggleButton, RepeatButton, SplitButton, DropDownButton">
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusMd}" />
+        <Setter Property="MinHeight" Value="{DynamicResource ControlHeight}" />
+        <Setter Property="Padding" Value="{DynamicResource PaddingControl}" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector=":is(Button) PathIcon">
+        <Setter Property="Width" Value="{DynamicResource IconSizeSm}" />
+        <Setter Property="Height" Value="{DynamicResource IconSizeSm}" />
+    </Style>
+
+    <Style Selector=":is(Button):disabled">
+        <Setter Property="Opacity" Value="0.55" />
+    </Style>
+
+    <!-- primary -->
+    <Style Selector="Button.primary">
+        <Setter Property="Background" Value="{DynamicResource BrushPrimary}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushOnPrimary}" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource BrushPrimaryHover}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushOnPrimary}" />
+    </Style>
+    <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource BrushPrimaryPressed}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushOnPrimary}" />
+    </Style>
+    <Style Selector="Button.primary:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource BrushPrimary}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushOnPrimary}" />
+    </Style>
+
+    <!-- secondary -->
+    <Style Selector="Button.secondary">
+        <Setter Property="Background" Value="{DynamicResource BrushSurface}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushText}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BrushBorderStrong}" />
+        <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="Button.secondary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource BrushSurfaceAlt}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushText}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BrushBorderStrong}" />
+    </Style>
+    <Style Selector="Button.secondary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource BrushBorder}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushText}" />
+    </Style>
+    <Style Selector="Button.secondary:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource BrushSurface}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushText}" />
+    </Style>
+
+    <!-- danger -->
+    <Style Selector="Button.danger">
+        <Setter Property="Background" Value="{DynamicResource BrushDanger}" />
+        <Setter Property="Foreground" Value="#FFFFFF" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource BrushDangerHover}" />
+        <Setter Property="Foreground" Value="#FFFFFF" />
+    </Style>
+    <Style Selector="Button.danger:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource BrushDangerHover}" />
+        <Setter Property="Foreground" Value="#FFFFFF" />
+    </Style>
+    <Style Selector="Button.danger:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource BrushDanger}" />
+        <Setter Property="Foreground" Value="#FFFFFF" />
+    </Style>
+
+    <!-- ghost -->
+    <Style Selector="Button.ghost">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushText}" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource BrushGhostHover}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushText}" />
+    </Style>
+    <Style Selector="Button.ghost:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource BrushGhostHover}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushText}" />
+    </Style>
+    <Style Selector="Button.ghost:disabled /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <!-- link -->
+    <Style Selector="Button.link">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushPrimary}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
+    <Style Selector="Button.link:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushPrimaryHover}" />
+    </Style>
+    <Style Selector="Button.link:pressed /template/ ContentPresenter#PART_ContentPresenter">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushPrimaryPressed}" />
+    </Style>
+
+    <!-- sizes -->
+    <Style Selector=":is(Button).sm">
+        <Setter Property="MinHeight" Value="{DynamicResource ControlHeightSm}" />
+        <Setter Property="Padding" Value="{DynamicResource PaddingControlSm}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeCaption}" />
+    </Style>
+    <Style Selector=":is(Button).lg">
+        <Setter Property="MinHeight" Value="{DynamicResource ControlHeightLg}" />
+        <Setter Property="Padding" Value="{DynamicResource PaddingControlLg}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBodyLarge}" />
+    </Style>
+
+    <!-- icon-only -->
+    <Style Selector=":is(Button).icon">
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Width" Value="{DynamicResource ControlHeight}" />
+        <Setter Property="Height" Value="{DynamicResource ControlHeight}" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector=":is(Button).icon.sm">
+        <Setter Property="Width" Value="{DynamicResource ControlHeightSm}" />
+        <Setter Property="Height" Value="{DynamicResource ControlHeightSm}" />
+    </Style>
+    <Style Selector=":is(Button).icon PathIcon">
+        <Setter Property="Width" Value="{DynamicResource IconSize}" />
+        <Setter Property="Height" Value="{DynamicResource IconSize}" />
+    </Style>
+    <Style Selector=":is(Button).icon.sm PathIcon">
+        <Setter Property="Width" Value="{DynamicResource IconSizeSm}" />
+        <Setter Property="Height" Value="{DynamicResource IconSizeSm}" />
+    </Style>
+</Styles>

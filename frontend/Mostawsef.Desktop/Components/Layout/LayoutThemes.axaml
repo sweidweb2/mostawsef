@@ -1,0 +1,353 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="using:Mostawsef.Desktop.Components">
+
+    <!-- AppShell -->
+    <ControlTheme x:Key="{x:Type ui:AppShell}" TargetType="ui:AppShell">
+        <Setter Property="Background" Value="{DynamicResource BrushBackground}" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid ColumnDefinitions="Auto,*" Background="{TemplateBinding Background}">
+                    <Border Name="PART_Sidebar"
+                            Width="{DynamicResource SidebarWidth}"
+                            Background="{DynamicResource BrushSidebar}"
+                            BorderBrush="{DynamicResource BrushBorder}"
+                            BorderThickness="0,0,1,0">
+                        <Border.Transitions>
+                            <Transitions>
+                                <DoubleTransition Property="Width" Duration="0:0:0.18" />
+                            </Transitions>
+                        </Border.Transitions>
+                        <DockPanel>
+                            <Grid Name="PART_SidebarTop"
+                                  DockPanel.Dock="Top"
+                                  ColumnDefinitions="*,Auto"
+                                  Height="{DynamicResource TopBarHeight}"
+                                  Margin="12,0,8,0">
+                                <ContentPresenter Name="PART_SidebarHeader"
+                                                  Content="{TemplateBinding SidebarHeader}"
+                                                  VerticalAlignment="Center"
+                                                  ClipToBounds="True" />
+                                <Button Name="PART_Toggle"
+                                        Grid.Column="1"
+                                        Classes="ghost icon"
+                                        Command="{TemplateBinding ToggleSidebarCommand}">
+                                    <PathIcon Data="{StaticResource IconMenu}" />
+                                </Button>
+                            </Grid>
+                            <ContentPresenter DockPanel.Dock="Bottom"
+                                              Content="{TemplateBinding SidebarFooter}"
+                                              Margin="8" />
+                            <ContentPresenter Content="{TemplateBinding Sidebar}" Margin="8,4" />
+                        </DockPanel>
+                    </Border>
+
+                    <DockPanel Grid.Column="1">
+                        <ContentPresenter DockPanel.Dock="Top" Content="{TemplateBinding TopBar}" />
+                        <Border Name="PART_Content" Container.Name="AppContent" Container.Sizing="Width">
+                            <ContentPresenter Content="{TemplateBinding Content}"
+                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              Padding="{TemplateBinding Padding}" />
+                        </Border>
+                    </DockPanel>
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:compact /template/ Border#PART_Sidebar">
+            <Setter Property="Width" Value="{DynamicResource SidebarCompactWidth}" />
+        </Style>
+        <Style Selector="^:compact /template/ ContentPresenter#PART_SidebarHeader">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector="^:compact /template/ Grid#PART_SidebarTop">
+            <Setter Property="Margin" Value="0" />
+        </Style>
+        <Style Selector="^:compact /template/ Button#PART_Toggle">
+            <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
+    </ControlTheme>
+
+    <!-- NavMenu -->
+    <ControlTheme x:Key="{x:Type ui:NavMenu}" TargetType="ui:NavMenu">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="SelectionMode" Value="Single,AlwaysSelected" />
+        <Setter Property="ItemsPanel">
+            <ItemsPanelTemplate>
+                <StackPanel Spacing="2" />
+            </ItemsPanelTemplate>
+        </Setter>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <ItemsPresenter Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}" />
+                </ScrollViewer>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    <!-- NavMenuItem -->
+    <ControlTheme x:Key="{x:Type ui:NavMenuItem}" TargetType="ui:NavMenuItem">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushTextMuted}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Name="PART_Root"
+                        Height="40"
+                        Padding="12,0"
+                        Background="{TemplateBinding Background}"
+                        CornerRadius="{DynamicResource RadiusMd}">
+                    <Grid Name="PART_Grid" ColumnDefinitions="Auto,*">
+                        <PathIcon Data="{TemplateBinding Icon}"
+                                  Width="{DynamicResource IconSize}"
+                                  Height="{DynamicResource IconSize}"
+                                  Foreground="{TemplateBinding Foreground}"
+                                  VerticalAlignment="Center" />
+                        <TextBlock Name="PART_Text"
+                                   Grid.Column="1"
+                                   Margin="12,0,0,0"
+                                   Text="{TemplateBinding Text}"
+                                   Foreground="{TemplateBinding Foreground}"
+                                   FontWeight="{TemplateBinding FontWeight}"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" />
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:pointerover">
+            <Setter Property="Background" Value="{DynamicResource BrushSidebarItemHover}" />
+            <Setter Property="Foreground" Value="{DynamicResource BrushText}" />
+        </Style>
+        <Style Selector="^:selected">
+            <Setter Property="Background" Value="{DynamicResource BrushSidebarItemActive}" />
+            <Setter Property="Foreground" Value="{DynamicResource BrushSidebarItemActiveText}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="^[IsCompact=True] /template/ TextBlock#PART_Text">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector="^[IsCompact=True] /template/ Border#PART_Root">
+            <Setter Property="Padding" Value="0" />
+        </Style>
+        <Style Selector="^[IsCompact=True] /template/ Grid#PART_Grid">
+            <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
+    </ControlTheme>
+
+    <!-- TopBar -->
+    <ControlTheme x:Key="{x:Type ui:TopBar}" TargetType="ui:TopBar">
+        <Setter Property="Background" Value="{DynamicResource BrushSurface}" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Height="{DynamicResource TopBarHeight}"
+                        Padding="16,0"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{DynamicResource BrushBorder}"
+                        BorderThickness="0,0,0,1">
+                    <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                        <ContentPresenter Content="{TemplateBinding Leading}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1"
+                                   Classes="h4"
+                                   Margin="4,0,16,0"
+                                   Text="{TemplateBinding Title}"
+                                   VerticalAlignment="Center" />
+                        <ContentPresenter Grid.Column="2"
+                                          Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          VerticalAlignment="Center" />
+                        <ContentPresenter Grid.Column="3"
+                                          Margin="16,0,0,0"
+                                          Content="{TemplateBinding Actions}"
+                                          VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    <!-- PageHeader -->
+    <ControlTheme x:Key="{x:Type ui:PageHeader}" TargetType="ui:PageHeader">
+        <Setter Property="Margin" Value="0,0,0,24" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <StackPanel Spacing="8">
+                    <ContentPresenter Content="{TemplateBinding Breadcrumb}"
+                                      IsVisible="{TemplateBinding Breadcrumb, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                    <Grid Name="PART_Grid" ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                        <StackPanel Spacing="4" VerticalAlignment="Center">
+                            <TextBlock Classes="h2" Text="{TemplateBinding Title}" TextWrapping="Wrap" />
+                            <TextBlock Classes="muted"
+                                       Text="{TemplateBinding Subtitle}"
+                                       TextWrapping="Wrap"
+                                       IsVisible="{TemplateBinding Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        </StackPanel>
+                        <ContentPresenter Name="PART_Actions"
+                                          Grid.Column="1"
+                                          Margin="16,0,0,0"
+                                          Content="{TemplateBinding Actions}"
+                                          VerticalAlignment="Center" />
+                    </Grid>
+                </StackPanel>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    <!-- Card -->
+    <ControlTheme x:Key="{x:Type ui:Card}" TargetType="ui:Card">
+        <Setter Property="Background" Value="{DynamicResource BrushSurface}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource BrushBorder}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{DynamicResource RadiusLg}" />
+        <Setter Property="Padding" Value="{DynamicResource PaddingCard}" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Border Name="PART_Root"
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}"
+                        CornerRadius="{TemplateBinding CornerRadius}"
+                        BoxShadow="{DynamicResource ShadowSm}">
+                    <DockPanel>
+                        <Grid DockPanel.Dock="Top"
+                              ColumnDefinitions="*,Auto"
+                              Margin="20,16,20,0"
+                              IsVisible="{TemplateBinding Title, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                <TextBlock Classes="h4" Text="{TemplateBinding Title}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption muted"
+                                           Text="{TemplateBinding Subtitle}"
+                                           TextWrapping="Wrap"
+                                           IsVisible="{TemplateBinding Subtitle, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                            </StackPanel>
+                            <ContentPresenter Grid.Column="1"
+                                              Content="{TemplateBinding HeaderActions}"
+                                              VerticalAlignment="Center" />
+                        </Grid>
+                        <Border DockPanel.Dock="Bottom"
+                                Padding="20,12"
+                                BorderBrush="{DynamicResource BrushDivider}"
+                                BorderThickness="0,1,0,0"
+                                IsVisible="{TemplateBinding Footer, Converter={x:Static ObjectConverters.IsNotNull}}">
+                            <ContentPresenter Content="{TemplateBinding Footer}" />
+                        </Border>
+                        <ContentPresenter Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          Padding="{TemplateBinding Padding}"
+                                          HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                    </DockPanel>
+                </Border>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^.outlined /template/ Border#PART_Root">
+            <Setter Property="BoxShadow" Value="{DynamicResource ShadowNone}" />
+        </Style>
+        <Style Selector="^.flat">
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Background" Value="{DynamicResource BrushSurfaceAlt}" />
+        </Style>
+        <Style Selector="^.flat /template/ Border#PART_Root">
+            <Setter Property="BoxShadow" Value="{DynamicResource ShadowNone}" />
+        </Style>
+        <Style Selector="^.interactive">
+            <Setter Property="Cursor" Value="Hand" />
+        </Style>
+        <Style Selector="^.interactive:pointerover /template/ Border#PART_Root">
+            <Setter Property="BoxShadow" Value="{DynamicResource ShadowMd}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushBorderStrong}" />
+        </Style>
+    </ControlTheme>
+
+    <!-- Section -->
+    <ControlTheme x:Key="{x:Type ui:Section}" TargetType="ui:Section">
+        <Setter Property="Margin" Value="0,0,0,32" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <DockPanel>
+                    <Grid DockPanel.Dock="Top"
+                          ColumnDefinitions="*,Auto"
+                          Margin="0,0,0,12"
+                          IsVisible="{TemplateBinding Title, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                        <StackPanel Spacing="2">
+                            <TextBlock Classes="h3" Text="{TemplateBinding Title}" />
+                            <TextBlock Classes="muted"
+                                       Text="{TemplateBinding Description}"
+                                       TextWrapping="Wrap"
+                                       IsVisible="{TemplateBinding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        </StackPanel>
+                        <ContentPresenter Grid.Column="1" Content="{TemplateBinding Actions}" VerticalAlignment="Center" />
+                    </Grid>
+                    <ContentPresenter Content="{TemplateBinding Content}"
+                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                      Padding="{TemplateBinding Padding}" />
+                </DockPanel>
+            </ControlTemplate>
+        </Setter>
+    </ControlTheme>
+
+    <!-- ListDetailsView -->
+    <ControlTheme x:Key="{x:Type ui:ListDetailsView}" TargetType="ui:ListDetailsView">
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid Name="PART_Grid" ColumnDefinitions="Auto,*">
+                    <Border Name="PART_List"
+                            Width="{TemplateBinding ListWidth}"
+                            BorderBrush="{DynamicResource BrushBorder}"
+                            BorderThickness="0,0,1,0">
+                        <ContentPresenter Content="{TemplateBinding List}" />
+                    </Border>
+                    <ContentPresenter Name="PART_Details" Grid.Column="1" Content="{TemplateBinding Details}" />
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^:stacked /template/ Border#PART_List">
+            <Setter Property="Width" Value="NaN" />
+            <Setter Property="Grid.ColumnSpan" Value="2" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+        <Style Selector="^:stacked /template/ ContentPresenter#PART_Details">
+            <Setter Property="Grid.Column" Value="0" />
+            <Setter Property="Grid.ColumnSpan" Value="2" />
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector="^:stacked:details-open /template/ Border#PART_List">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector="^:stacked:details-open /template/ ContentPresenter#PART_Details">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+    </ControlTheme>
+
+    <!-- Divider -->
+    <ControlTheme x:Key="{x:Type ui:Divider}" TargetType="ui:Divider">
+        <Setter Property="Margin" Value="0,12" />
+        <Setter Property="Template">
+            <ControlTemplate>
+                <Grid ColumnDefinitions="*,Auto,*">
+                    <Border Height="1" Background="{DynamicResource BrushDivider}" VerticalAlignment="Center" />
+                    <TextBlock Name="PART_Text"
+                               Grid.Column="1"
+                               Margin="12,0"
+                               Classes="caption muted"
+                               Text="{TemplateBinding Text}"
+                               IsVisible="{TemplateBinding Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    <Border Grid.Column="2" Height="1" Background="{DynamicResource BrushDivider}" VerticalAlignment="Center" />
+                </Grid>
+            </ControlTemplate>
+        </Setter>
+
+        <Style Selector="^[Orientation=Vertical]">
+            <Setter Property="Margin" Value="12,0" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Width="1" Background="{DynamicResource BrushDivider}" HorizontalAlignment="Center" />
+                </ControlTemplate>
+            </Setter>
+        </Style>
+    </ControlTheme>
+</ResourceDictionary>

@@ -1,0 +1,60 @@
+<!-- Typography classes: <TextBlock Classes="h2" />, <TextBlock Classes="caption muted" /> -->
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Style Selector=":is(Window)">
+        <Setter Property="Background" Value="{DynamicResource BrushBackground}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushText}" />
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyBase}" />
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+    </Style>
+
+    <Style Selector="TextBlock.display">
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeDisplay}" />
+        <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+    <Style Selector="TextBlock.h1">
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeH1}" />
+        <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+    <Style Selector="TextBlock.h2">
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeH2}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="TextBlock.h3">
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeH3}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="TextBlock.h4">
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeH4}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="TextBlock.body">
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+    </Style>
+    <Style Selector="TextBlock.body-lg">
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeBodyLarge}" />
+    </Style>
+    <Style Selector="TextBlock.caption">
+        <Setter Property="FontSize" Value="{DynamicResource FontSizeCaption}" />
+    </Style>
+
+    <Style Selector="TextBlock.muted">
+        <Setter Property="Foreground" Value="{DynamicResource BrushTextMuted}" />
+    </Style>
+    <Style Selector="TextBlock.strong">
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="TextBlock.primary">
+        <Setter Property="Foreground" Value="{DynamicResource BrushPrimary}" />
+    </Style>
+    <Style Selector="TextBlock.success">
+        <Setter Property="Foreground" Value="{DynamicResource BrushSuccess}" />
+    </Style>
+    <Style Selector="TextBlock.warning">
+        <Setter Property="Foreground" Value="{DynamicResource BrushWarning}" />
+    </Style>
+    <Style Selector="TextBlock.danger">
+        <Setter Property="Foreground" Value="{DynamicResource BrushDanger}" />
+    </Style>
+</Styles>
