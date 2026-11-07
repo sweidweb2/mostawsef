@@ -20,9 +20,6 @@ public class JwtOptions
     [MinLength(32, ErrorMessage = "Jwt:Key must be at least 32 characters long.")]
     public string Key { get; set; } = string.Empty;
 
-    [Range(1, int.MaxValue)]
-    public int ExpiryMinutes { get; set; } = 480;
-
     /// <summary>
     /// The key that signs tokens (JwtTokenService) and validates them (JWT bearer authentication).
     /// A method, not a property: options validation reads every property and an empty Key would throw here.

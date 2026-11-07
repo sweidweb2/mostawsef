@@ -9,16 +9,20 @@ public static class ErrorCodes
 {
     public const char ArgumentSeparator = '|';
 
-    // Validation attributes. {1} is the attribute's length argument.
+    // Validation attributes. {1} is the attribute's length argument (Range: minimum, {2} maximum).
     public const string Required = "required";
     public const string MaxLength = "max_length|{1}";
     public const string MinLength = "min_length|{1}";
+    public const string Range = "range|{1}|{2}";
     public const string Invalid = "invalid";
 
     // Problem codes
     public const string Validation = "validation";
     public const string NotFound = "not_found";
     public const string ConcurrencyConflict = "concurrency_conflict";
+
+    /// <summary>Another record already has this value (e.g. a lab test code); set on that field.</summary>
+    public const string Taken = "taken";
 
     // Users and passwords
     public const string UsernameTaken = "username_taken";

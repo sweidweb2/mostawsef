@@ -110,6 +110,12 @@
         <Setter Property="Foreground" Value="{DynamicResource BrushDanger}" />
     </Style>
 
+    <!-- ghost.selected: the chosen option of a small switch (e.g. table / grid view) -->
+    <Style Selector="Button.ghost.selected">
+        <Setter Property="Background" Value="{DynamicResource BrushPrimarySubtle}" />
+        <Setter Property="Foreground" Value="{DynamicResource BrushPrimary}" />
+    </Style>
+
     <!-- link -->
     <Style Selector="Button.link">
         <Setter Property="Background" Value="Transparent" />

@@ -31,6 +31,7 @@ public static class DependencyInjection
         services.AddScoped<ISystemErrorRepository, SystemErrorRepository>();
         services.AddSingleton<INumberSequence, NumberSequenceRepository>();
         services.AddScoped<IClinicSettingsRepository, ClinicSettingsRepository>();
+        services.AddScoped<ILabTestRepository, LabTestRepository>();
 
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<ITokenService, JwtTokenService>();

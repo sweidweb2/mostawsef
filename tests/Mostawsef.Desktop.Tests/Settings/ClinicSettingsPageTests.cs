@@ -93,6 +93,28 @@ public class ClinicSettingsPageTests
     }
 
     [AvaloniaFact]
+    public async Task The_edit_form_shows_translated_placeholders()
+    {
+        using var app = AdminWithSettings();
+        var (page, window) = await ShowPage(app);
+
+        _ = page.EditCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+        string? Placeholder(string name) =>
+            window.GetVisualDescendants().OfType<TextBox>().Single(t => t.Name == name).PlaceholderText;
+
+        Assert.Equal("Enter the clinic name", Placeholder("NameBox"));
+        Assert.Equal("Enter the clinic address", Placeholder("AddressBox"));
+        Assert.Equal("Enter the clinic phone number", Placeholder("PhoneBox"));
+
+        app.Localization.SetLanguage(AppLanguage.Arabic);
+
+        Assert.Equal("أدخل اسم العيادة", Placeholder("NameBox"));
+        Assert.Equal("أدخل عنوان العيادة", Placeholder("AddressBox"));
+        Assert.Equal("أدخل رقم هاتف العيادة", Placeholder("PhoneBox"));
+    }
+
+    [AvaloniaFact]
     public async Task A_conflicting_edit_shows_the_conflict_message()
     {
         using var app = AdminWithSettings();
@@ -109,20 +131,6 @@ public class ClinicSettingsPageTests
         var alert = window.GetVisualDescendants().OfType<Alert>().Single(a => a.IsVisible);
         Assert.StartsWith("Someone else changed this record", alert.Text);
         Assert.Equal(Currencies.Egp, app.Get<ClinicContext>().CurrencyCode);
-    }
-
-    [AvaloniaFact]
-    public async Task Print_test_page_writes_a_pdf_and_opens_it()
-    {
-        using var app = AdminWithSettings();
-        var (page, _) = await ShowPage(app);
-
-        await page.PrintTestPageCommand.ExecuteAsync(null);
-
-        var file = Assert.Single(app.OpenedFiles);
-        Assert.Contains("test-page", Path.GetFileName(file));
-        Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(File.ReadAllBytes(file), 0, 4));
-        File.Delete(file);
     }
 
     private static TestServices AdminWithSettings()

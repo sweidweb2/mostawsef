@@ -1,0 +1,49 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Mostawsef.Desktop.Components"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:rules="using:Mostawsef.Contracts.LabTests"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Admin"
+             x:Class="Mostawsef.Desktop.Views.Admin.LabTestFormView"
+             x:DataType="vm:LabTestFormViewModel">
+    <StackPanel Spacing="{DynamicResource GapGrid}">
+        <ui:Alert Kind="Danger" Text="{l:TrKey FormErrorKey}" />
+
+        <ui:FormField Label="{l:Tr LabTests.Col.Name}" IsRequired="True" Error="{l:FieldError Name}">
+            <TextBox Name="NameBox"
+                     Text="{Binding Name}"
+                     MaxLength="{x:Static rules:LabTestRules.NameMaxLength}"
+                     PlaceholderText="{l:Tr LabTests.Field.NamePlaceholder}" />
+        </ui:FormField>
+
+        <ui:FormField Label="{l:Tr LabTests.Col.Code}" IsRequired="True" Hint="{l:Tr LabTests.Field.CodeHint}" Error="{l:FieldError Code}">
+            <TextBox Name="CodeBox"
+                     Text="{Binding Code}"
+                     MaxLength="{x:Static rules:LabTestRules.CodeMaxLength}"
+                     PlaceholderText="{l:Tr LabTests.Field.CodePlaceholder}" />
+        </ui:FormField>
+
+        <ui:ResponsiveGrid MinColumnWidth="180" MaxColumns="2" ColumnSpacing="{DynamicResource GapGrid}" RowSpacing="{DynamicResource GapGrid}">
+            <ui:FormField Label="{l:Tr LabTests.Col.Price}" IsRequired="True" Hint="{l:Tr LabTests.Field.PriceHint, Arg=MaxAmount}" Error="{l:FieldError Price}">
+                <NumericUpDown Name="PriceBox"
+                               Value="{Binding Price}"
+                               Minimum="0"
+                               Maximum="{Binding MaxAmount}"
+                               FormatString="0.00"
+                               PlaceholderText="{l:Tr LabTests.Field.AmountPlaceholder}"
+                               HorizontalAlignment="Stretch" />
+            </ui:FormField>
+            <ui:FormField Label="{l:Tr LabTests.Col.LabCost}" IsRequired="True" Hint="{l:Tr LabTests.Field.LabCostHint}" Error="{l:FieldError LabCost}">
+                <NumericUpDown Name="LabCostBox"
+                               Value="{Binding LabCost}"
+                               Minimum="0"
+                               Maximum="{Binding MaxAmount}"
+                               FormatString="0.00"
+                               PlaceholderText="{l:Tr LabTests.Field.AmountPlaceholder}"
+                               HorizontalAlignment="Stretch" />
+            </ui:FormField>
+        </ui:ResponsiveGrid>
+
+        <CheckBox Name="IsActiveBox" Content="{l:Tr LabTests.Field.IsActive}" IsChecked="{Binding IsActive}" IsVisible="{Binding !IsNew}" />
+    </StackPanel>
+</UserControl>

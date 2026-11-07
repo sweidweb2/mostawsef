@@ -155,6 +155,9 @@
   <data name="Action.users.deleted" xml:space="preserve"><value>Deleted a user</value></data>
   <data name="Action.users.password_reset" xml:space="preserve"><value>Reset a user's password</value></data>
   <data name="Action.settings.clinic_updated" xml:space="preserve"><value>Updated the clinic settings</value></data>
+  <data name="Action.lab_tests.created" xml:space="preserve"><value>Added a lab test</value></data>
+  <data name="Action.lab_tests.updated" xml:space="preserve"><value>Updated a lab test</value></data>
+  <data name="Action.lab_tests.deleted" xml:space="preserve"><value>Deleted a lab test</value></data>
 
   <data name="Nav.ClinicSettings" xml:space="preserve"><value>Clinic settings</value></data>
   <data name="Settings.Subtitle" xml:space="preserve"><value>The clinic details shown on printouts, and the currency for all amounts.</value></data>
@@ -166,6 +169,9 @@
   <data name="Settings.Field.Phone" xml:space="preserve"><value>Phone</value></data>
   <data name="Settings.Field.Currency" xml:space="preserve"><value>Currency</value></data>
   <data name="Settings.Field.UpdatedBy" xml:space="preserve"><value>Last changed by</value></data>
+  <data name="Settings.NamePlaceholder" xml:space="preserve"><value>Enter the clinic name</value></data>
+  <data name="Settings.AddressPlaceholder" xml:space="preserve"><value>Enter the clinic address</value></data>
+  <data name="Settings.PhonePlaceholder" xml:space="preserve"><value>Enter the clinic phone number</value></data>
 
   <data name="Currency.EGP" xml:space="preserve"><value>EGP</value></data>
   <data name="Currency.USD" xml:space="preserve"><value>USD</value></data>
@@ -195,10 +201,12 @@
   <data name="ErrorCode.required" xml:space="preserve"><value>This field is required.</value></data>
   <data name="ErrorCode.max_length" xml:space="preserve"><value>Must be at most {0} characters.</value></data>
   <data name="ErrorCode.min_length" xml:space="preserve"><value>Must be at least {0} characters.</value></data>
+  <data name="ErrorCode.min_value" xml:space="preserve"><value>Must be {0} or more.</value></data>
   <data name="ErrorCode.invalid" xml:space="preserve"><value>This value is not valid.</value></data>
   <data name="ErrorCode.validation" xml:space="preserve"><value>Some fields need attention.</value></data>
   <data name="ErrorCode.not_found" xml:space="preserve"><value>This record no longer exists.</value></data>
   <data name="ErrorCode.concurrency_conflict" xml:space="preserve"><value>Someone else changed this record while you were editing. Close it and open it again to see the latest version.</value></data>
+  <data name="ErrorCode.taken" xml:space="preserve"><value>Another record already uses this value.</value></data>
   <data name="ErrorCode.username_taken" xml:space="preserve"><value>This username is already used (deleted users keep theirs).</value></data>
   <data name="ErrorCode.own_account" xml:space="preserve"><value>You can't do this to your own account.</value></data>
   <data name="ErrorCode.wrong_password" xml:space="preserve"><value>The current password is wrong.</value></data>
@@ -231,4 +239,26 @@
   <data name="Users.Deleted" xml:space="preserve"><value>User deleted.</value></data>
   <data name="Users.PasswordReset" xml:space="preserve"><value>Password reset.</value></data>
   <data name="Users.DeleteConfirm" xml:space="preserve"><value>Delete this user? They will no longer be able to sign in.</value></data>
+
+  <data name="Nav.LabTests" xml:space="preserve"><value>Lab tests</value></data>
+  <data name="LabTests.Subtitle" xml:space="preserve"><value>The tests the clinic offers, with the patient price and what the lab charges.</value></data>
+  <data name="LabTests.Add" xml:space="preserve"><value>Add test</value></data>
+  <data name="LabTests.AddTitle" xml:space="preserve"><value>New lab test</value></data>
+  <data name="LabTests.EditTitle" xml:space="preserve"><value>Edit lab test</value></data>
+  <data name="LabTests.Records" xml:space="preserve"><value>{0} tests</value></data>
+  <data name="LabTests.TableView" xml:space="preserve"><value>Show as table</value></data>
+  <data name="LabTests.GridView" xml:space="preserve"><value>Show as cards</value></data>
+  <data name="LabTests.Col.Code" xml:space="preserve"><value>Code</value></data>
+  <data name="LabTests.Col.Name" xml:space="preserve"><value>Test name</value></data>
+  <data name="LabTests.Col.Price" xml:space="preserve"><value>Price</value></data>
+  <data name="LabTests.Col.LabCost" xml:space="preserve"><value>Lab cost</value></data>
+  <data name="LabTests.Col.Status" xml:space="preserve"><value>Status</value></data>
+  <data name="LabTests.Active" xml:space="preserve"><value>Available</value></data>
+  <data name="LabTests.Inactive" xml:space="preserve"><value>Unavailable</value></data>
+  <data name="LabTests.Field.CodeHint" xml:space="preserve"><value>A short code, e.g. CBC. Saved in capital letters.</value></data>
+  <data name="LabTests.Field.LabCostHint" xml:space="preserve"><value>What the lab charges the clinic.</value></data>
+  <data name="LabTests.Field.IsActive" xml:space="preserve"><value>Available for new orders</value></data>
+  <data name="LabTests.Saved" xml:space="preserve"><value>Lab test saved.</value></data>
+  <data name="LabTests.Deleted" xml:space="preserve"><value>Lab test deleted.</value></data>
+  <data name="LabTests.DeleteConfirm" xml:space="preserve"><value>Delete the test "{0}"?</value></data>
 </root>

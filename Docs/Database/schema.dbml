@@ -1,5 +1,5 @@
 // Mostawsef database schema (PostgreSQL 17, EF Core).
-// Existing tables mirror AppDbContextModelSnapshot; business tables are the agreed design (not implemented yet).
+// Existing tables mirror AppDbContextModelSnapshot; business tables are the agreed design (implemented ones say so in their note).
 // Conventions: snake_case tables, PascalCase columns, enums stored as strings,
 // money as bigint minor units (SQLite fallback), currencies as ISO 4217 codes.
 
@@ -170,8 +170,9 @@ Table patients {
 
 Table lab_tests {
   Id uuid [pk]
-  Code varchar(20) [not null, unique]
-  Name varchar(150) [not null, unique]
+  Code varchar(20) [not null, unique, note: 'trimmed, upper-case']
+  Name varchar(150) [not null]
+  SearchName varchar(150) [not null, unique, note: 'Name normalized for search; unique so names cannot differ only in spelling']
   Price bigint [not null, note: 'our price, minor units']
   LabCost bigint [not null, note: 'what the lab charges us, minor units']
   IsActive boolean [not null, default: true]
@@ -180,6 +181,8 @@ Table lab_tests {
   UpdatedAt timestamptz [note: 'last price/name change']
   UpdatedBy varchar(50)
   Version integer [not null]
+
+  Note: 'Implemented (migration AddLabTests).'
 }
 
 Table orders {

@@ -59,7 +59,7 @@ Usage namespace: `xmlns:ui="using:Mostawsef.Desktop.Components"`.
 
 | Component | Status | Use |
 | --- | --- | --- |
-| Button (primary / secondary / danger / ghost) | Built-in | `Button Classes="primary"` (also `secondary`, `danger`, `ghost`, `link`, sizes `sm`, `lg`) |
+| Button (primary / secondary / danger / ghost) | Built-in | `Button Classes="primary"` (also `secondary`, `danger`, `ghost`, `link`, sizes `sm`, `lg`); `ghost` + `Classes.selected="{Binding ...}"` marks the chosen option of a small switch (lab tests table / grid) |
 | IconButton | Built | `ui:IconButton Icon="{StaticResource IconEdit}"` |
 | SplitButton / DropdownButton | Built-in | `SplitButton`, `DropDownButton` |
 | ButtonGroup | Deferred | Removed while unused |

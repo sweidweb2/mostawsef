@@ -60,6 +60,7 @@ public static class ServiceRegistration
         services.AddSingleton<LogsApi>();
         services.AddSingleton<UsersApi>();
         services.AddSingleton<ClinicSettingsApi>();
+        services.AddSingleton<LabTestsApi>();
         services.AddSingleton<ConnectionMonitor>();
 
         // Clinic details + printing

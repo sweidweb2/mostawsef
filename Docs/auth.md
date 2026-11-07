@@ -53,9 +53,14 @@ Unknown usernames take the same hashing time as wrong passwords, so response tim
 | `DELETE /api/users/{id}` | Super | `204` (soft delete), `404`, `409 own_account` |
 | `GET /api/clinic-settings` | Bearer token (any role) | `200 { name, address, phone, currencyCode, version, updatedAt, updatedBy }` |
 | `PUT /api/clinic-settings` `{ name, address, phone, currencyCode, version }` | Admin | `200`, `400`, `403` for Super, `409 concurrency_conflict` |
+| `GET /api/lab-tests?page=&pageSize=&search=` | Admin | Paged list sorted by name; search matches the normalized name or the code |
+| `GET /api/lab-tests/{id}` | Admin | `200 { id, code, name, price, labCost, isActive, ..., version }`, `404` |
+| `POST /api/lab-tests` `{ code, name, price, labCost }` | Admin | `201`, `400` (`min_value\|0` for a negative price), `409 taken` on `Code` or `Name` |
+| `PUT /api/lab-tests/{id}` `{ code, name, price, labCost, isActive, version }` | Admin | `200`, `400`, `404`, `409 taken` or `concurrency_conflict` |
+| `DELETE /api/lab-tests/{id}` | Admin | `204`, `404` |
 | `GET /api/health` | Anonymous | `200 { status, database, apiVersion }`, `503` when the database is down |
 
-- Tokens: JWT signed with HMAC-SHA256, valid 8 hours (`Jwt:ExpiryMinutes`), claims `sub`, `unique_name`, `role`.
+- Tokens: JWT signed with HMAC-SHA256, valid until the next midnight (server local time), so staff sign in once a day, claims `sub`, `unique_name`, `role`.
 - Every request re-checks the token's user: a deactivated, deleted or re-roled user gets `401` at once (the desktop then
   returns to the login screen), not only when the token expires.
 - A Super cannot deactivate, demote, reset or delete their own account (`409 own_account`); they change their own password
@@ -67,7 +72,7 @@ Unknown usernames take the same hashing time as wrong passwords, so response tim
 | Key | Where | Notes |
 | --- | --- | --- |
 | `Jwt:Key` | `appsettings.json` (empty) / `appsettings.Development.json` (dev key) | **Required, at least 32 characters, unique per installation.** The API refuses to start without it. |
-| `Jwt:Issuer`, `Jwt:Audience`, `Jwt:ExpiryMinutes` | `appsettings.json` | |
+| `Jwt:Issuer`, `Jwt:Audience` | `appsettings.json` | |
 | `Seed:Users` | `appsettings.Development.json` | Users created at startup if missing (passwords hashed) |
 
 ### Development accounts

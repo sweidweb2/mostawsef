@@ -10,7 +10,12 @@ public record PageQuery(int Page = 1, int PageSize = 20, string? Search = null)
 {
     public const int MaxPageSize = 100;
 
+    public const int MaxSearchLength = 100;
+
     public int SafePage => Math.Max(1, Page);
 
     public int SafePageSize => Math.Clamp(PageSize, 1, MaxPageSize);
+
+    /// <summary>Search cut to <see cref="MaxSearchLength"/> characters.</summary>
+    public string? SafeSearch => Search is { Length: > MaxSearchLength } ? Search[..MaxSearchLength] : Search;
 }

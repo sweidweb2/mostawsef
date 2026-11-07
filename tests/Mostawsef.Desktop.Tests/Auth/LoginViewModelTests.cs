@@ -15,6 +15,8 @@ public class LoginViewModelTests
     {
         using var app = new TestServices();
         var vm = app.Get<LoginViewModel>();
+        vm.Username = string.Empty;
+        vm.Password = string.Empty;
 
         Assert.False(vm.LoginCommand.CanExecute(null));
 
@@ -23,6 +25,16 @@ public class LoginViewModelTests
 
         vm.Password = "secret";
         Assert.True(vm.LoginCommand.CanExecute(null));
+    }
+
+    [AvaloniaFact]
+    public void Only_debug_builds_prefill_the_development_admin_login()
+    {
+        using var app = new TestServices();
+        var vm = app.Get<LoginViewModel>();
+
+        Assert.Equal(vm.IsDevBuild ? "admin@example.com" : string.Empty, vm.Username);
+        Assert.Equal(vm.IsDevBuild ? "password" : string.Empty, vm.Password);
     }
 
     [AvaloniaFact]

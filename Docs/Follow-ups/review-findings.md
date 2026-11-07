@@ -19,7 +19,7 @@ Code review from November 2026. All 274 tests passed at the time; no memory leak
 ## Security issues in the code
 
 5. **Password changes keep old sessions alive.** Changing or resetting a password does not sign out existing
-   sessions: whoever holds an old token keeps access for up to 8 hours. `RejectStaleUserAsync` only checks "active"
+   sessions: whoever holds an old token keeps access until midnight. `RejectStaleUserAsync` only checks "active"
    and "role". Fix: a token-version number on `User`, put in the token and compared there (that check already loads
    the user, so it costs nothing extra). Until then, deactivating the user is the only immediate cut-off.
 6. **Activity logs can be erased.** Super can delete single activity log entries. The deletion is logged, but that
@@ -29,8 +29,8 @@ Code review from November 2026. All 274 tests passed at the time; no memory leak
 ## Smaller correctness issues
 
 7. **Wrong PC clock breaks sign-in.** `SessionService` compares the server's expiry time with the PC's own clock. A
-   clinic PC whose clock is more than 8 hours ahead (dead motherboard battery, wrong time zone) shows "session expired"
-   right after every sign-in. Base the expiry on the token's lifetime instead of an absolute time.
+   clinic PC whose clock is ahead of the server's next midnight (dead motherboard battery, wrong time zone) shows
+   "session expired" right after every sign-in. Base the expiry on the token's lifetime instead of an absolute time.
 8. **A wrong server address stops the connection monitor.** If the address points at another device that answers
    with a web page, `ApiClient` throws while reading the reply, although it is designed never to throw. During a
    health check this stops the check for good; during sign-in it shows the generic "unexpected error".

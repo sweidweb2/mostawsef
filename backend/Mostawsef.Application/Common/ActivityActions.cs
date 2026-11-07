@@ -7,6 +7,7 @@ public static class ActivityModules
     public const string Logs = "Logs";
     public const string Users = "Users";
     public const string Settings = "Settings";
+    public const string LabTests = "LabTests";
 }
 
 /// <summary>
@@ -30,4 +31,8 @@ public static class ActivityActions
     public const string UserPasswordReset = "users.password_reset";
 
     public const string ClinicSettingsUpdated = "settings.clinic_updated";
+
+    public const string LabTestCreated = "lab_tests.created";
+    public const string LabTestUpdated = "lab_tests.updated";
+    public const string LabTestDeleted = "lab_tests.deleted";
 }

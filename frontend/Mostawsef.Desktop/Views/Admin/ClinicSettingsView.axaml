@@ -9,21 +9,13 @@
         <StackPanel Classes="page">
             <ui:PageHeader Title="{l:Tr Nav.ClinicSettings}" Subtitle="{l:Tr Settings.Subtitle}">
                 <ui:PageHeader.Actions>
-                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
-                        <Button Name="PrintTestPageButton" Classes="secondary" Command="{Binding PrintTestPageCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
-                                <PathIcon Data="{StaticResource IconPrinter}" />
-                                <TextBlock Text="{l:Tr Settings.PrintTestPage}" />
-                            </StackPanel>
-                        </Button>
-                        <Button Name="EditSettingsButton" Classes="primary" Command="{Binding EditCommand}"
-                                IsEnabled="{Binding Clinic.Settings, Converter={x:Static ObjectConverters.IsNotNull}}">
-                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
-                                <PathIcon Data="{StaticResource IconEdit}" />
-                                <TextBlock Text="{l:Tr Common.Edit}" />
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
+                    <Button Name="EditSettingsButton" Classes="primary" Command="{Binding EditCommand}"
+                            IsEnabled="{Binding Clinic.Settings, Converter={x:Static ObjectConverters.IsNotNull}}">
+                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                            <PathIcon Data="{StaticResource IconEdit}" />
+                            <TextBlock Text="{l:Tr Common.Edit}" />
+                        </StackPanel>
+                    </Button>
                 </ui:PageHeader.Actions>
             </ui:PageHeader>
 

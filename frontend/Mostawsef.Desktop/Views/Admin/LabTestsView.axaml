@@ -1,0 +1,183 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Mostawsef.Desktop.Components"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:tests="using:Mostawsef.Contracts.LabTests"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Admin"
+             x:Class="Mostawsef.Desktop.Views.Admin.LabTestsView"
+             x:DataType="vm:LabTestsViewModel">
+    <ScrollViewer>
+        <StackPanel Classes="page">
+            <ui:PageHeader Title="{l:Tr Nav.LabTests}" Subtitle="{l:Tr LabTests.Subtitle}">
+                <ui:PageHeader.Actions>
+                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                        <Button Classes="secondary" Command="{Binding RefreshCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                                <PathIcon Data="{StaticResource IconRefresh}" />
+                                <TextBlock Text="{l:Tr Common.Refresh}" />
+                            </StackPanel>
+                        </Button>
+                        <Button Name="ExportButton" Classes="secondary" Command="{Binding ExportCommand}" ToolTip.Tip="{l:Tr LabTests.ExportHint}">
+                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                                <PathIcon Data="{StaticResource IconDownload}" />
+                                <TextBlock Text="{l:Tr Common.Export}" />
+                            </StackPanel>
+                        </Button>
+                        <Button Name="AddTestButton" Classes="primary" Command="{Binding AddCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                                <PathIcon Data="{StaticResource IconPlus}" />
+                                <TextBlock Text="{l:Tr LabTests.Add}" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </ui:PageHeader.Actions>
+            </ui:PageHeader>
+
+            <ui:DataTable Height="560"
+                          IsLoading="{Binding IsLoading}"
+                          IsEmpty="{Binding IsEmpty}"
+                          HasError="{Binding HasLoadError}"
+                          ErrorTitle="{l:TrKey LoadErrorTitleKey}"
+                          ErrorDescription="{l:TrKey LoadErrorDescriptionKey}"
+                          RetryCommand="{Binding RefreshCommand}">
+                <ui:DataTable.Toolbar>
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{DynamicResource GapControls}">
+                        <ui:SearchBox MaxWidth="360"
+                                      HorizontalAlignment="Left"
+                                      Text="{Binding Search}"
+                                      SearchCommand="{Binding SearchCommand}" />
+                        <TextBlock Grid.Column="1" Classes="caption muted" Text="{l:Tr LabTests.Records, Arg=TotalCount}" VerticalAlignment="Center" />
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource Space1}">
+                            <ui:IconButton Name="TableViewButton"
+                                           Classes="ghost sm"
+                                           Classes.selected="{Binding !IsGridView}"
+                                           Icon="{StaticResource IconList}"
+                                           ToolTip.Tip="{l:Tr LabTests.TableView}"
+                                           Command="{Binding ShowTableCommand}" />
+                            <ui:IconButton Name="GridViewButton"
+                                           Classes="ghost sm"
+                                           Classes.selected="{Binding IsGridView}"
+                                           Icon="{StaticResource IconGrid}"
+                                           ToolTip.Tip="{l:Tr LabTests.GridView}"
+                                           Command="{Binding ShowGridCommand}" />
+                        </StackPanel>
+                    </Grid>
+                </ui:DataTable.Toolbar>
+
+                <Panel>
+                    <DataGrid ItemsSource="{Binding Items}" IsReadOnly="True" CanUserSortColumns="False" IsVisible="{Binding !IsGridView}">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="{l:Tr LabTests.Col.Code}" Width="110">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate x:DataType="tests:LabTestDto">
+                                        <TextBlock Margin="12,0" VerticalAlignment="Center" Classes="muted"
+                                                   TextTrimming="CharacterEllipsis" Text="{Binding Code}" ToolTip.Tip="{Binding Code}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="{l:Tr LabTests.Col.Name}" Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate x:DataType="tests:LabTestDto">
+                                        <TextBlock Margin="12,0" VerticalAlignment="Center" FontWeight="Medium"
+                                                   TextTrimming="CharacterEllipsis" Text="{Binding Name}" ToolTip.Tip="{Binding Name}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="{l:Tr LabTests.Col.Price}" Width="140">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate x:DataType="tests:LabTestDto">
+                                        <TextBlock Margin="12,0" VerticalAlignment="Center" Text="{l:Money Price}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="{l:Tr LabTests.Col.LabCost}" Width="140">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate x:DataType="tests:LabTestDto">
+                                        <TextBlock Margin="12,0" VerticalAlignment="Center" Classes="muted" Text="{l:Money LabCost}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="{l:Tr LabTests.Col.Status}" Width="110">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate x:DataType="tests:LabTestDto">
+                                        <Panel Margin="12,0" VerticalAlignment="Center">
+                                            <ui:Badge Kind="Success" Text="{l:Tr LabTests.Active}" IsVisible="{Binding IsActive}" />
+                                            <ui:Badge Text="{l:Tr LabTests.Inactive}" IsVisible="{Binding !IsActive}" />
+                                        </Panel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="{l:Tr Common.Actions}" Width="100">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate x:DataType="tests:LabTestDto">
+                                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}" Margin="8,0" VerticalAlignment="Center">
+                                            <ui:IconButton Classes="ghost sm"
+                                                           Icon="{StaticResource IconEdit}"
+                                                           ToolTip.Tip="{l:Tr Common.Edit}"
+                                                           Command="{Binding $parent[DataGrid].((vm:LabTestsViewModel)DataContext).EditCommand}"
+                                                           CommandParameter="{Binding}" />
+                                            <ui:IconButton Classes="ghost destructive sm"
+                                                           Icon="{StaticResource IconDelete}"
+                                                           ToolTip.Tip="{l:Tr Common.Delete}"
+                                                           Command="{Binding $parent[DataGrid].((vm:LabTestsViewModel)DataContext).DeleteCommand}"
+                                                           CommandParameter="{Binding}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <ScrollViewer IsVisible="{Binding IsGridView}">
+                        <ItemsControl Margin="{DynamicResource PaddingCardCompact}" ItemsSource="{Binding Items}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <ui:ResponsiveGrid MinColumnWidth="200" MaxColumns="6" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="tests:LabTestDto">
+                                    <!-- At least as tall as it is wide: square unless the content needs more room. -->
+                                    <ui:Card Classes="outlined"
+                                             Title="{Binding Name}"
+                                             Subtitle="{Binding Code}"
+                                             MinHeight="{Binding $self.Bounds.Width}">
+                                        <ui:Card.HeaderActions>
+                                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}" VerticalAlignment="Top">
+                                                <ui:IconButton Classes="ghost sm"
+                                                               Icon="{StaticResource IconEdit}"
+                                                               ToolTip.Tip="{l:Tr Common.Edit}"
+                                                               Command="{Binding $parent[ItemsControl].((vm:LabTestsViewModel)DataContext).EditCommand}"
+                                                               CommandParameter="{Binding}" />
+                                                <ui:IconButton Classes="ghost destructive sm"
+                                                               Icon="{StaticResource IconDelete}"
+                                                               ToolTip.Tip="{l:Tr Common.Delete}"
+                                                               Command="{Binding $parent[ItemsControl].((vm:LabTestsViewModel)DataContext).DeleteCommand}"
+                                                               CommandParameter="{Binding}" />
+                                            </StackPanel>
+                                        </ui:Card.HeaderActions>
+                                        <DockPanel>
+                                            <Panel DockPanel.Dock="Bottom">
+                                                <ui:Badge Kind="Success" Text="{l:Tr LabTests.Active}" IsVisible="{Binding IsActive}" />
+                                                <ui:Badge Text="{l:Tr LabTests.Inactive}" IsVisible="{Binding !IsActive}" />
+                                            </Panel>
+                                            <StackPanel Spacing="{DynamicResource Space1}" VerticalAlignment="Center">
+                                                <TextBlock Classes="h3" Text="{l:Money Price}" TextWrapping="Wrap" />
+                                                <TextBlock Classes="caption muted" Text="{l:Tr LabTests.Col.LabCost}" />
+                                                <TextBlock Classes="muted" Text="{l:Money LabCost}" TextWrapping="Wrap" />
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </ui:Card>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Panel>
+
+                <ui:DataTable.Footer>
+                    <ui:Pagination CurrentPage="{Binding CurrentPage}" PageCount="{Binding PageCount}" IsEnabled="{Binding !IsLoading}" />
+                </ui:DataTable.Footer>
+            </ui:DataTable>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

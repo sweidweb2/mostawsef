@@ -29,8 +29,10 @@ public static class AppRoutes
         .View<UserFormViewModel, UserFormView>()
         .View<ResetPasswordFormViewModel, ResetPasswordFormView>()
         .View<ClinicSettingsFormViewModel, ClinicSettingsFormView>()
+        .View<LabTestFormViewModel, LabTestFormView>()
         .Portal(Roles.Admin, "Portal.Admin", portal => portal
             .Page<DashboardViewModel, DashboardView>("IconDashboard", "Nav.Dashboard")
+            .Page<LabTestsViewModel, LabTestsView>("IconLab", "Nav.LabTests")
             .Page<ClinicSettingsViewModel, ClinicSettingsView>("IconSettings", "Nav.ClinicSettings"))
         .Portal(Roles.Super, "Portal.Super", portal => portal
             .Page<DashboardViewModel, DashboardView>("IconDashboard", "Nav.Dashboard")

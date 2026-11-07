@@ -15,6 +15,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     public DbSet<SystemError> SystemErrors => Set<SystemError>();
 
+    public DbSet<LabTest> LabTests => Set<LabTest>();
+
     /// <summary>A save that hits a stale Version throws AppException (409 concurrency_conflict).</summary>
     public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
