@@ -80,10 +80,17 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         };
         SelectedTests.CollectionChanged += (_, _) => InputChanged(nameof(SelectedTests));
         Closed += OnClosed;
+        _patientStep = new NewOrderPatientStep(this);
+        _testsStep = new NewOrderTestsStep(this);
+        _reviewStep = new NewOrderReviewStep(this);
         RefreshStepContent();
 
         MarkClean();
     }
+
+    private readonly NewOrderPatientStep _patientStep;
+    private readonly NewOrderTestsStep _testsStep;
+    private readonly NewOrderReviewStep _reviewStep;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(
@@ -628,9 +635,9 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
     private void RefreshStepContent() =>
         StepContent = SelectedStep switch
         {
-            PatientStep => new NewOrderPatientStep(this),
-            TestsStep => new NewOrderTestsStep(this),
-            _ => new NewOrderReviewStep(this),
+            PatientStep => _patientStep,
+            TestsStep => _testsStep,
+            _ => _reviewStep,
         };
 
     private void JumpToErrorStep(FormErrors errors)
@@ -650,23 +657,20 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
 
     private void JumpToFieldStep(string field)
     {
-        if (field.StartsWith(nameof(CreateOrderRequest.NewPatient), StringComparison.OrdinalIgnoreCase)
-            || field.Equals(nameof(CreateOrderRequest.PatientId), StringComparison.OrdinalIgnoreCase))
-        {
-            SelectedStep = PatientStep;
-            return;
-        }
+        // Prefer the earliest step when several server field errors arrive together.
+        var step = field.StartsWith(nameof(CreateOrderRequest.NewPatient), StringComparison.OrdinalIgnoreCase)
+            || field.Equals(nameof(CreateOrderRequest.PatientId), StringComparison.OrdinalIgnoreCase)
+            ? PatientStep
+            : field.StartsWith(nameof(CreateOrderRequest.Items), StringComparison.OrdinalIgnoreCase)
+                ? TestsStep
+                : field.StartsWith(nameof(CreateOrderRequest.FirstPayment), StringComparison.OrdinalIgnoreCase)
+                    || field is nameof(PaymentAmount) or nameof(PaymentMethod) or nameof(PaymentNotes) or nameof(OurPrice)
+                    ? ReviewStep
+                    : SelectedStep;
 
-        if (field.StartsWith(nameof(CreateOrderRequest.Items), StringComparison.OrdinalIgnoreCase))
+        if (step < SelectedStep)
         {
-            SelectedStep = TestsStep;
-            return;
-        }
-
-        if (field.StartsWith(nameof(CreateOrderRequest.FirstPayment), StringComparison.OrdinalIgnoreCase)
-            || field is nameof(PaymentAmount) or nameof(PaymentMethod) or nameof(PaymentNotes) or nameof(OurPrice))
-        {
-            SelectedStep = ReviewStep;
+            SelectedStep = step;
         }
     }
 

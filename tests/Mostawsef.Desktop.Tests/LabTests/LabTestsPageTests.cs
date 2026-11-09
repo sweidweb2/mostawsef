@@ -379,7 +379,8 @@ public class LabTestsPageTests
         app.Api.On(HttpMethod.Put, $"{TestsPath}/{Cbc.Id}", _ => FakeApiHandler.Problem(HttpStatusCode.NotFound, ErrorCodes.NotFound));
         var (page, window) = await ShowPage(app);
 
-        await page.EditCommand.ExecuteAsync(Cbc);
+        // Do not await EditCommand: ShowFormAsync stays open until the form closes.
+        _ = page.EditCommand.ExecuteAsync(Cbc);
         Dispatcher.UIThread.RunJobs();
         var form = CurrentForm(window);
         await form.SaveCommand.ExecuteAsync(null);
