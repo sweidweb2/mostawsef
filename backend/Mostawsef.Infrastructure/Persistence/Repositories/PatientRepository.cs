@@ -11,23 +11,27 @@ public class PatientRepository(AppDbContext db) : IPatientRepository
     public Task<Patient?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
         db.Patients.FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
 
-    public async Task<(IReadOnlyList<Patient> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<PatientListRow> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken)
     {
         var patients = db.Patients.AsNoTracking();
 
         var term = SearchText.Normalize(query.SafeSearch);
         if (term.Length > 0)
         {
-            patients = patients.Where(p =>
-                p.SearchName.Contains(term) || p.Phone.Contains(term) || (p.GuardianPhone != null && p.GuardianPhone.Contains(term)));
+            patients = patients.Where(p => p.SearchText.Contains(term));
         }
 
-        var total = await patients.CountAsync(cancellationToken);
+        var total = query.IncludeTotal
+            ? await patients.CountAsync(cancellationToken)
+            : PageQuery.TotalNotComputed;
         var items = await patients
             .OrderBy(p => p.FullName)
             .ThenBy(p => p.Id)
             .Skip((query.SafePage - 1) * query.SafePageSize)
             .Take(query.SafePageSize)
+            .Select(p => new PatientListRow(
+                p.Id, p.FullName, p.Phone, p.GuardianPhone, p.IsInsured, p.Gender, p.DateOfBirth,
+                p.CreatedAt, p.UpdatedAt, p.UpdatedBy, p.Version))
             .ToListAsync(cancellationToken);
 
         return (items, total);

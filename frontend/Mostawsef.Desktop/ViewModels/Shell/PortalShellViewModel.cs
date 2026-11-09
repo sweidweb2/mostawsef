@@ -24,11 +24,11 @@ public partial class PortalShellViewModel : ViewModelBase
     private readonly AuthApi _authApi;
     private readonly IToastService _toasts;
 
-    /// <summary>Pages already opened, by menu index: switching back reuses them instead of creating and loading them again.</summary>
-    private readonly ViewModelBase?[] _pages;
-
     /// <summary>Set while the menu goes back to its entry because the user kept a sub-page's changes.</summary>
     private bool _restoringMenu;
+
+    /// <summary>The menu page under an open sub-page; kept so Back restores it without recreating (or reloading unless stale).</summary>
+    private ViewModelBase? _menuPage;
 
     public PortalShellViewModel(
         PortalDefinition portal,
@@ -51,7 +51,6 @@ public partial class PortalShellViewModel : ViewModelBase
 
         PortalTitleKey = portal.TitleKey;
         MenuItems = portal.Pages;
-        _pages = new ViewModelBase?[MenuItems.Count];
 
         connection.Start();
         _ = clinic.LoadAsync();
@@ -108,6 +107,7 @@ public partial class PortalShellViewModel : ViewModelBase
             return false;
         }
 
+        _menuPage ??= CurrentPage;
         Show(page);
         SubPage = page;
         return true;
@@ -126,7 +126,7 @@ public partial class PortalShellViewModel : ViewModelBase
             return false;
         }
 
-        ShowMenuPage(SelectedMenuIndex);
+        RestoreMenuPage();
         return true;
     }
 
@@ -146,10 +146,25 @@ public partial class PortalShellViewModel : ViewModelBase
     private void ShowMenuPage(int index)
     {
         var pageType = MenuItems[index].PageType;
-        var page = _navigation.CanAccess(pageType) ? _pages[index] ??= _navigation.CreatePage(pageType) : null;
+        // Fresh page each menu visit: keeps memory and language-switch work on the visible page only.
+        var page = _navigation.CanAccess(pageType) ? _navigation.CreatePage(pageType) : null;
         if (page is null)
         {
             _session.SignOut(SignOutReason.Expired);
+            return;
+        }
+
+        _menuPage = page;
+        SubPage = null;
+        Show(page);
+    }
+
+    private void RestoreMenuPage()
+    {
+        var page = _menuPage;
+        if (page is null)
+        {
+            ShowMenuPage(SelectedMenuIndex);
             return;
         }
 

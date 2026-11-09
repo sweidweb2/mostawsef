@@ -94,5 +94,5 @@ If the list cannot load, the table shows an error state with a Retry button (a s
 Both pages derive from `ViewModels/Shell/PagedListViewModel`, which a new list page can reuse as well.
 Page moves send one cursor request without the total; a search counts again; the stat cards load only on the
 first load, Refresh and after a delete (they cover the whole table, not the shown page or search).
-The shell keeps a page once opened: returning to it shows the loaded data without a new request (Refresh reloads).
+Each menu visit creates a fresh page: returning to a list loads it again (Refresh also reloads).
 Leaving a page cancels its requests still running; if that interrupted the first load, returning loads it again.

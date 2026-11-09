@@ -11,16 +11,21 @@ namespace Mostawsef.Desktop.Services.Api;
 public class LabTestsApi(ApiClient api)
 {
     public Task<ApiResult<PagedResult<LabTestDto>>> GetTestsAsync(
-        int page, int pageSize, string? search, bool? active = null, CancellationToken cancellationToken = default) =>
+        int page,
+        int pageSize,
+        string? search,
+        bool? active = null,
+        bool includeTotal = true,
+        CancellationToken cancellationToken = default) =>
         api.GetAsync<PagedResult<LabTestDto>>(
-            $"api/lab-tests?page={page}&pageSize={pageSize}" +
+            $"api/lab-tests?page={page}&pageSize={pageSize}&includeTotal={includeTotal.ToString().ToLowerInvariant()}" +
             (string.IsNullOrWhiteSpace(search) ? string.Empty : $"&search={Uri.EscapeDataString(search.Trim())}") +
             (active is { } isActive ? $"&active={isActive.ToString().ToLowerInvariant()}" : string.Empty),
             cancellationToken);
 
     /// <summary>Active tests for the new-order catalog (one page, up to MaxPageSize), optionally filtered by search.</summary>
     public Task<ApiResult<PagedResult<LabTestDto>>> GetCatalogAsync(string? search, CancellationToken cancellationToken = default) =>
-        GetTestsAsync(1, PageQuery.MaxPageSize, search, active: true, cancellationToken);
+        GetTestsAsync(1, PageQuery.MaxPageSize, search, active: true, cancellationToken: cancellationToken);
 
     /// <summary>Every test, sorted by name.</summary>
     public Task<ApiResult<IReadOnlyList<LabTestDto>>> GetAllTestsAsync(CancellationToken cancellationToken = default) =>

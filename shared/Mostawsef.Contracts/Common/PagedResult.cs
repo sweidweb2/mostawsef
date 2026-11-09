@@ -5,12 +5,19 @@ public record PagedResult<T>(IReadOnlyList<T> Items, int Page, int PageSize, int
     public int TotalPages => PageSize <= 0 ? 0 : (int)Math.Ceiling(TotalCount / (double)PageSize);
 }
 
-/// <summary>Query string for list endpoints: ?page=1&amp;pageSize=20&amp;search=...</summary>
-public record PageQuery(int Page = 1, int PageSize = 20, string? Search = null)
+/// <summary>
+/// Query string for list endpoints: ?page=1&amp;pageSize=20&amp;search=...&amp;includeTotal=false.
+/// Counting the filtered total is the expensive part on large tables, so ask for it only when the filter changes
+/// (first load, search, refresh). Page flips can set IncludeTotal=false; the total then comes back as -1.
+/// </summary>
+public record PageQuery(int Page = 1, int PageSize = 20, string? Search = null, bool IncludeTotal = true)
 {
     public const int MaxPageSize = 100;
 
     public const int MaxSearchLength = 100;
+
+    /// <summary>Sentinel when <see cref="IncludeTotal"/> is false: the client keeps its previous total.</summary>
+    public const int TotalNotComputed = -1;
 
     public int SafePage => Math.Max(1, Page);
 

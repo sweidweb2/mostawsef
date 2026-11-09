@@ -15,8 +15,8 @@ public partial class UsersViewModel(UsersApi users, IDialogService dialogs, IToa
     : NumberedListViewModel<UserListItemDto>(toasts, localization)
 {
     protected override Task<ApiResult<PagedResult<UserListItemDto>>> FetchPageAsync(
-        int page, int pageSize, string? search, CancellationToken cancellationToken) =>
-        users.GetUsersAsync(page, pageSize, search, cancellationToken);
+        int page, int pageSize, string? search, bool includeTotal, CancellationToken cancellationToken) =>
+        users.GetUsersAsync(page, pageSize, search, includeTotal, cancellationToken);
 
     [RelayCommand]
     private async Task AddAsync()

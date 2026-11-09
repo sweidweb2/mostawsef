@@ -209,6 +209,31 @@ public class PatientsTests(ApiFactory factory)
         var page = await admin.GetJsonAsync<PagedResult<PatientDto>>($"{Url}?search={Uri.EscapeDataString(arabicDigits)}");
 
         Assert.Equal(new[] { byGuardian.Id, byPhone.Id }.Order(), page.Items.Select(p => p.Id).Order());
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var searchText = await scope.ServiceProvider.GetRequiredService<AppDbContext>().Patients
+            .Where(p => p.Id == byPhone.Id).Select(p => p.SearchText).SingleAsync(Ct);
+        Assert.Contains(SearchText.Normalize(byPhone.Phone), searchText);
+    }
+
+    [Fact]
+    public async Task The_list_omits_notes_and_skips_the_total_when_asked()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var created = await CreateAsync(admin);
+        await admin.PutAsJsonAsync($"{Url}/{created.Id}", Update(Valid() with
+        {
+            FullName = created.FullName, Phone = created.Phone, Notes = "Secret medical note",
+        }, created.Version), Ct);
+
+        var listed = (await admin.GetJsonAsync<PagedResult<PatientDto>>($"{Url}?search={Uri.EscapeDataString(created.FullName)}")).Items.Single();
+        var withoutTotal = await admin.GetJsonAsync<PagedResult<PatientDto>>(
+            $"{Url}?search={Uri.EscapeDataString(created.FullName)}&includeTotal=false");
+        var details = await admin.GetJsonAsync<PatientDto>($"{Url}/{created.Id}");
+
+        Assert.Null(listed.Notes);
+        Assert.Equal(PageQuery.TotalNotComputed, withoutTotal.TotalCount);
+        Assert.Equal("Secret medical note", details.Notes);
     }
 
     [Fact]

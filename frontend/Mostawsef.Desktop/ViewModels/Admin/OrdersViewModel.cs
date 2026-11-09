@@ -16,8 +16,8 @@ public partial class OrdersViewModel(OrdersApi orders, NavigationService navigat
     : NumberedListViewModel<OrderListItemDto>(toasts, localization)
 {
     protected override Task<ApiResult<PagedResult<OrderListItemDto>>> FetchPageAsync(
-        int page, int pageSize, string? search, CancellationToken cancellationToken) =>
-        orders.GetOrdersAsync(page, pageSize, search, cancellationToken);
+        int page, int pageSize, string? search, bool includeTotal, CancellationToken cancellationToken) =>
+        orders.GetOrdersAsync(page, pageSize, search, includeTotal, cancellationToken);
 
     [RelayCommand]
     private async Task NewOrderAsync()

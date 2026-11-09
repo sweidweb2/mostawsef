@@ -53,7 +53,7 @@ public class ConnectionBannerTests
         var window = ShowPortal(app);
 
         app.Api.On(HttpMethod.Get, "/api/users", _ => throw new HttpRequestException("Connection refused"));
-        await app.Get<UsersApi>().GetUsersAsync(1, 20, null, TestContext.Current.CancellationToken);
+        await app.Get<UsersApi>().GetUsersAsync(1, 20, null, cancellationToken: TestContext.Current.CancellationToken);
         Dispatcher.UIThread.RunJobs();
 
         Assert.True(Banner(window).IsVisible);

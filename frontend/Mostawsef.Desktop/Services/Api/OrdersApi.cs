@@ -9,9 +9,10 @@ namespace Mostawsef.Desktop.Services.Api;
 /// <summary>Lab test orders (Admin only).</summary>
 public class OrdersApi(ApiClient api)
 {
-    public Task<ApiResult<PagedResult<OrderListItemDto>>> GetOrdersAsync(int page, int pageSize, string? search, CancellationToken cancellationToken = default) =>
+    public Task<ApiResult<PagedResult<OrderListItemDto>>> GetOrdersAsync(
+        int page, int pageSize, string? search, bool includeTotal = true, CancellationToken cancellationToken = default) =>
         api.GetAsync<PagedResult<OrderListItemDto>>(
-            $"api/orders?page={page}&pageSize={pageSize}" +
+            $"api/orders?page={page}&pageSize={pageSize}&includeTotal={includeTotal.ToString().ToLowerInvariant()}" +
             (string.IsNullOrWhiteSpace(search) ? string.Empty : $"&search={Uri.EscapeDataString(search.Trim())}"),
             cancellationToken);
 

@@ -32,16 +32,25 @@ public class ApiClient(HttpClient http)
     public async Task<ApiResult<IReadOnlyList<T>>> GetAllPagesAsync<T>(string path, CancellationToken cancellationToken = default)
     {
         var all = new List<T>();
+        var totalPages = 1;
         for (var page = 1; ; page++)
         {
-            var result = await GetAsync<PagedResult<T>>($"{path}?page={page}&pageSize={PageQuery.MaxPageSize}", cancellationToken);
+            // Only the first page needs the filtered total; later pages reuse it.
+            var result = await GetAsync<PagedResult<T>>(
+                $"{path}?page={page}&pageSize={PageQuery.MaxPageSize}&includeTotal={(page == 1).ToString().ToLowerInvariant()}",
+                cancellationToken);
             if (!result.IsSuccess)
             {
                 return ApiResult<IReadOnlyList<T>>.Fail(result.Error, result.StatusCode, result.Problem);
             }
 
+            if (page == 1)
+            {
+                totalPages = Math.Max(1, result.Value!.TotalPages);
+            }
+
             all.AddRange(result.Value!.Items);
-            if (result.Value.Items.Count == 0 || page >= result.Value.TotalPages)
+            if (result.Value.Items.Count == 0 || page >= totalPages)
             {
                 return ApiResult<IReadOnlyList<T>>.Ok(all);
             }

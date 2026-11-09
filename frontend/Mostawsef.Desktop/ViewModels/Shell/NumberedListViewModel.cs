@@ -15,7 +15,7 @@ namespace Mostawsef.Desktop.ViewModels.Shell;
 /// Base for list pages paged by page number (PageQuery / PagedResult): records sorted by name or another field, e.g. users.
 /// Same bindings as <see cref="PagedListViewModel{TItem}"/>, which is for append-only, newest-first logs (cursor paging).
 /// The portal shell activates the page when it is shown (first load) and deactivates it when the user leaves,
-/// which cancels its API calls.
+/// which cancels its API calls. Page flips skip the filtered total; search and refresh ask for it again.
 /// </summary>
 public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoadablePage
 {
@@ -109,26 +109,27 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
     protected void MarkStale() => _loaded = false;
 
     [RelayCommand]
-    private Task RefreshAsync() => ReloadAsync();
+    private Task RefreshAsync() => LoadAsync(CurrentPage, includeTotal: true);
 
     [RelayCommand]
-    private Task SearchAsync() => LoadAsync(page: 1);
+    private Task SearchAsync() => LoadAsync(page: 1, includeTotal: true);
 
     partial void OnCurrentPageChanged(int value)
     {
         if (!_suppressPageReload)
         {
-            _ = LoadAsync(value);
+            _ = LoadAsync(value, includeTotal: false);
         }
     }
 
-    protected abstract Task<ApiResult<PagedResult<TItem>>> FetchPageAsync(int page, int pageSize, string? search, CancellationToken cancellationToken);
+    protected abstract Task<ApiResult<PagedResult<TItem>>> FetchPageAsync(
+        int page, int pageSize, string? search, bool includeTotal, CancellationToken cancellationToken);
 
-    /// <summary>Loads the shown page again, e.g. after a row was added, edited or deleted.</summary>
-    protected Task ReloadAsync() => LoadAsync(CurrentPage);
+    /// <summary>Loads the shown page again with a fresh total, e.g. after a row was added, edited or deleted.</summary>
+    protected Task ReloadAsync() => LoadAsync(CurrentPage, includeTotal: true);
 
     /// <summary>Starting a load cancels the one still running, so only the newest page and search are shown.</summary>
-    private async Task LoadAsync(int page)
+    private async Task LoadAsync(int page, bool includeTotal)
     {
         _loadCancellation?.Cancel();
         var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_pageCancellation.Token);
@@ -138,20 +139,30 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
         IsLoading = true;
         try
         {
-            var result = await FetchPageAsync(Math.Max(1, page), PageSize, Search, cancellationToken);
+            var result = await FetchPageAsync(Math.Max(1, page), PageSize, Search, includeTotal, cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
 
             // Nothing is left on this page (e.g. its last row was deleted): show the new last page.
-            if (result.IsSuccess && result.Value!.Items.Count == 0 && page > 1 && result.Value.TotalPages > 0)
+            if (result.IsSuccess && result.Value!.Items.Count == 0 && page > 1)
             {
-                page = result.Value.TotalPages;
-                result = await FetchPageAsync(page, PageSize, Search, cancellationToken);
-                cancellationToken.ThrowIfCancellationRequested();
+                if (!includeTotal || result.Value.TotalCount == PageQuery.TotalNotComputed)
+                {
+                    result = await FetchPageAsync(page, PageSize, Search, includeTotal: true, cancellationToken);
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+
+                if (result.IsSuccess && result.Value!.TotalCount > 0)
+                {
+                    page = Math.Max(1, result.Value.TotalPages);
+                    result = await FetchPageAsync(page, PageSize, Search, includeTotal: false, cancellationToken);
+                    cancellationToken.ThrowIfCancellationRequested();
+                    includeTotal = false;
+                }
             }
 
             if (result.IsSuccess)
             {
-                Show(result.Value!);
+                Show(result.Value!, includeTotal);
             }
             else
             {
@@ -178,15 +189,18 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
         }
     }
 
-    private void Show(PagedResult<TItem> result)
+    private void Show(PagedResult<TItem> result, bool includeTotal)
     {
         LoadError = null;
         Items = result.Items;
-        TotalCount = result.TotalCount;
+        if (includeTotal && result.TotalCount != PageQuery.TotalNotComputed)
+        {
+            TotalCount = result.TotalCount;
+        }
 
         // PageCount first: Pagination clamps CurrentPage to it and writes the clamped value back.
         _suppressPageReload = true;
-        PageCount = Math.Max(1, result.TotalPages);
+        PageCount = Math.Max(1, (int)Math.Ceiling(TotalCount / (double)PageSize));
         CurrentPage = result.Page;
         _suppressPageReload = false;
         FirstRowNumber = (result.Page - 1) * PageSize + 1;

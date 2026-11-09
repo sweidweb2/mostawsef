@@ -25,7 +25,7 @@ public class PatientService(IPatientRepository patients, IActivityLogger activit
     public async Task<PagedResult<PatientDto>> GetPageAsync(PageQuery query, CancellationToken cancellationToken)
     {
         var (items, total) = await patients.GetPageAsync(query, cancellationToken);
-        return new PagedResult<PatientDto>(items.Select(ToDto).ToList(), query.SafePage, query.SafePageSize, total);
+        return new PagedResult<PatientDto>(items.Select(ToListDto).ToList(), query.SafePage, query.SafePageSize, total);
     }
 
     public async Task<PatientDto> GetAsync(Guid id, CancellationToken cancellationToken) =>
@@ -82,6 +82,10 @@ public class PatientService(IPatientRepository patients, IActivityLogger activit
                 Details = new { patient.FullName },
             },
             cancellationToken);
+
+    private static PatientDto ToListDto(PatientListRow p) => new(
+        p.Id, p.FullName, p.Phone, p.GuardianPhone, Notes: null, p.IsInsured, p.Gender.ToString(), p.DateOfBirth,
+        p.CreatedAt, p.UpdatedAt, p.UpdatedBy, p.Version);
 
     private static PatientDto ToDto(Patient p) => new(
         p.Id, p.FullName, p.Phone, p.GuardianPhone, p.Notes, p.IsInsured, p.Gender.ToString(), p.DateOfBirth,

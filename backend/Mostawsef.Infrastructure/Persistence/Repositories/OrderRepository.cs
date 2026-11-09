@@ -26,7 +26,9 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
             orders = orders.Where(o => o.SearchText.Contains(term));
         }
 
-        var total = await orders.CountAsync(cancellationToken);
+        var total = query.IncludeTotal
+            ? await orders.CountAsync(cancellationToken)
+            : PageQuery.TotalNotComputed;
         var items = await orders
             .OrderByDescending(o => o.CreatedAt)
             .ThenByDescending(o => o.Id)

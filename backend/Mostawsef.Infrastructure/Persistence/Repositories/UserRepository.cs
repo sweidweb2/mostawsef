@@ -28,7 +28,9 @@ public class UserRepository(AppDbContext db) : IUserRepository
             users = users.Where(u => u.SearchName.Contains(term) || u.Username.Contains(term));
         }
 
-        var total = await users.CountAsync(cancellationToken);
+        var total = query.IncludeTotal
+            ? await users.CountAsync(cancellationToken)
+            : PageQuery.TotalNotComputed;
         var items = await users
             .OrderBy(u => u.FullName)
             .ThenBy(u => u.Username)

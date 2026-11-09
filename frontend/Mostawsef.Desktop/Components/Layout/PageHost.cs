@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
@@ -6,16 +5,14 @@ using Avalonia.Controls.Templates;
 namespace Mostawsef.Desktop.Components;
 
 /// <summary>
-/// Shows the view of <see cref="Page"/> (a view model, resolved by the app's data templates) and keeps the view
-/// of every page it has shown, so returning to a page reuses its view (scroll position, grid state) instead of building a new one.
-/// The views live as long as their page view models.
+/// Shows the view of <see cref="Page"/> (a view model, resolved by the app's data templates).
+/// A new view is built each time the page changes so off-screen menu pages are not kept alive
+/// (memory and language-switch cost stay with the visible page only).
 /// </summary>
 public class PageHost : Decorator
 {
     public static readonly StyledProperty<object?> PageProperty =
         AvaloniaProperty.Register<PageHost, object?>(nameof(Page));
-
-    private readonly ConditionalWeakTable<object, Control> _views = new();
 
     public object? Page
     {
@@ -29,7 +26,7 @@ public class PageHost : Decorator
 
         if (change.Property == PageProperty)
         {
-            Child = change.NewValue is { } page ? _views.GetValue(page, BuildView) : null;
+            Child = change.NewValue is { } page ? BuildView(page) : null;
         }
     }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -20,16 +21,22 @@ public enum ConnectionState
 }
 
 /// <summary>
-/// Watches the API while someone is signed in: checks GET /api/health every 15 s (every 3 s while offline),
-/// and goes offline at once when any API call cannot reach the server. The portal shell shows the banner it describes.
+/// Watches the API while someone is signed in: checks GET /api/health every 15 s (every 3 s at the start of an
+/// outage, backing off to 15 s), and goes offline at once when any API call cannot reach the server.
+/// The portal shell shows the banner it describes. Stop cancels any in-flight check.
 /// </summary>
 public partial class ConnectionMonitor : ObservableObject
 {
     public static readonly TimeSpan OnlineInterval = TimeSpan.FromSeconds(15);
     public static readonly TimeSpan OfflineInterval = TimeSpan.FromSeconds(3);
 
+    /// <summary>After this many consecutive offline checks, poll at <see cref="OnlineInterval"/> instead of 3 s.</summary>
+    public const int FastOfflineChecks = 5;
+
     private readonly ApiClient _api;
     private readonly DispatcherTimer _timer = new();
+    private CancellationTokenSource? _checkCancellation;
+    private int _consecutiveOffline;
 
     public ConnectionMonitor(ApiClient api, SessionService session)
     {
@@ -76,6 +83,7 @@ public partial class ConnectionMonitor : ObservableObject
         }
 
         IsRunning = true;
+        _consecutiveOffline = 0;
         _ = CheckNowAsync();
     }
 
@@ -83,32 +91,78 @@ public partial class ConnectionMonitor : ObservableObject
     {
         IsRunning = false;
         _timer.Stop();
+        _checkCancellation?.Cancel();
+        _checkCancellation = null;
+        _consecutiveOffline = 0;
         State = ConnectionState.Online;
     }
 
     public async Task CheckNowAsync()
     {
         _timer.Stop();
-        var result = await _api.GetAsync<HealthDto>("api/health");
+        _checkCancellation?.Cancel();
+        var check = new CancellationTokenSource();
+        _checkCancellation = check;
+        var cancellationToken = check.Token;
+
+        try
+        {
+            var result = await _api.GetAsync<HealthDto>("api/health", cancellationToken);
+            if (!IsRunning || cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            State = result switch
+            {
+                { IsSuccess: true } => result.Value!.ApiVersion == ApiVersion.Current ? ConnectionState.Online : ConnectionState.VersionMismatch,
+                { Error: ApiError.Unreachable or ApiError.Server } => ConnectionState.Offline,
+                _ => ConnectionState.Online,
+            };
+
+            if (State == ConnectionState.Offline)
+            {
+                _consecutiveOffline++;
+            }
+            else
+            {
+                _consecutiveOffline = 0;
+            }
+
+            ScheduleNext();
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Stopped or replaced by a newer check.
+        }
+        finally
+        {
+            if (_checkCancellation == check)
+            {
+                _checkCancellation = null;
+            }
+
+            check.Dispose();
+        }
+    }
+
+    private void ScheduleNext()
+    {
         if (!IsRunning)
         {
             return;
         }
 
-        State = result switch
-        {
-            { IsSuccess: true } => result.Value!.ApiVersion == ApiVersion.Current ? ConnectionState.Online : ConnectionState.VersionMismatch,
-            { Error: ApiError.Unreachable or ApiError.Server } => ConnectionState.Offline,
-            _ => ConnectionState.Online,
-        };
-
-        _timer.Interval = State == ConnectionState.Offline ? OfflineInterval : OnlineInterval;
+        _timer.Interval = State == ConnectionState.Offline && _consecutiveOffline <= FastOfflineChecks
+            ? OfflineInterval
+            : OnlineInterval;
         _timer.Start();
     }
 
     partial void OnStateChanged(ConnectionState value)
     {
-        if (value == ConnectionState.Offline && IsRunning && _timer.Interval != OfflineInterval)
+        if (value == ConnectionState.Offline && IsRunning && _timer.IsEnabled
+            && _timer.Interval != OfflineInterval && _consecutiveOffline <= FastOfflineChecks)
         {
             _timer.Stop();
             _timer.Interval = OfflineInterval;

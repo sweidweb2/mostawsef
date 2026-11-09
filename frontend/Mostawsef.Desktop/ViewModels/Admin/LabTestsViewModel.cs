@@ -47,8 +47,8 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
     public partial bool IsGridView { get; private set; }
 
     protected override Task<ApiResult<PagedResult<LabTestDto>>> FetchPageAsync(
-        int page, int pageSize, string? search, CancellationToken cancellationToken) =>
-        _tests.GetTestsAsync(page, pageSize, search, cancellationToken: cancellationToken);
+        int page, int pageSize, string? search, bool includeTotal, CancellationToken cancellationToken) =>
+        _tests.GetTestsAsync(page, pageSize, search, includeTotal: includeTotal, cancellationToken: cancellationToken);
 
     [RelayCommand]
     private void ShowGrid() => IsGridView = true;

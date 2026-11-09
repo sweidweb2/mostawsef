@@ -414,6 +414,11 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("SearchText")
+                        .IsRequired()
+                        .HasMaxLength(162)
+                        .HasColumnType("character varying(162)");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -430,6 +435,11 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                     b.HasIndex("Phone");
 
                     b.HasIndex("SearchName");
+
+                    b.HasIndex("SearchText");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SearchText"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("SearchText"), new[] { "gin_trgm_ops" });
 
                     b.ToTable("patients", (string)null);
                 });

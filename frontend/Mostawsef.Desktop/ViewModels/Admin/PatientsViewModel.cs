@@ -47,8 +47,8 @@ public partial class PatientsViewModel : NumberedListViewModel<PatientDto>
     public partial bool IsGridView { get; private set; }
 
     protected override Task<ApiResult<PagedResult<PatientDto>>> FetchPageAsync(
-        int page, int pageSize, string? search, CancellationToken cancellationToken) =>
-        _patients.GetPatientsAsync(page, pageSize, search, cancellationToken);
+        int page, int pageSize, string? search, bool includeTotal, CancellationToken cancellationToken) =>
+        _patients.GetPatientsAsync(page, pageSize, search, includeTotal, cancellationToken);
 
     [RelayCommand]
     private void ShowGrid() => IsGridView = true;

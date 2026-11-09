@@ -25,7 +25,7 @@ public class PageLifecycleTests
         new(Guid.NewGuid(), DateTime.UtcNow, "auth.signed_in", "Auth", "Signed in", "admin@test.local");
 
     [AvaloniaFact]
-    public void Returning_to_a_page_reuses_it_without_loading_it_again()
+    public void Returning_to_a_page_creates_a_fresh_one_and_loads_again()
     {
         using var app = new TestServices();
         _ = new SlowServer(app) { Answers = true };
@@ -38,12 +38,12 @@ public class PageLifecycleTests
         shell.SelectedMenuIndex = Dashboard;
         shell.SelectedMenuIndex = ActivityLogs;
 
-        Assert.Same(page, shell.CurrentPage);
-        Assert.Equal(requests, app.Api.Requests.Count);
+        Assert.NotSame(page, shell.CurrentPage);
+        Assert.True(app.Api.Requests.Count > requests);
     }
 
     [AvaloniaFact]
-    public void Returning_to_a_page_shows_the_same_view()
+    public void Returning_to_a_page_builds_a_new_view()
     {
         using var app = new TestServices();
         _ = new SlowServer(app) { Answers = true };
@@ -60,11 +60,11 @@ public class PageLifecycleTests
 
         shell.SelectedMenuIndex = ActivityLogs;
         Dispatcher.UIThread.RunJobs();
-        Assert.Same(view, window.GetVisualDescendants().OfType<ActivityLogsView>().Single());
+        Assert.NotSame(view, window.GetVisualDescendants().OfType<ActivityLogsView>().Single());
     }
 
     [AvaloniaFact]
-    public async Task Leaving_a_page_cancels_its_requests_and_coming_back_loads_it_again()
+    public async Task Leaving_a_page_cancels_its_requests_and_coming_back_loads_a_new_one()
     {
         using var app = new TestServices();
         var server = new SlowServer(app);
@@ -82,12 +82,14 @@ public class PageLifecycleTests
         Assert.False(page.HasLoadError);
 
         server.Answers = true;
+        server.Waiting.Clear();
         shell.SelectedMenuIndex = ActivityLogs;
-        await WaitUntil(() => !page.IsLoading);
+        var next = Assert.IsType<ActivityLogsViewModel>(shell.CurrentPage);
+        await WaitUntil(() => !next.IsLoading);
 
-        Assert.Same(page, shell.CurrentPage);
-        Assert.Single(page.Items);
-        Assert.Equal(1, page.Stats!.Total);
+        Assert.NotSame(page, next);
+        Assert.Single(next.Items);
+        Assert.Equal(1, next.Stats!.Total);
     }
 
     [AvaloniaFact]

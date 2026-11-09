@@ -164,7 +164,8 @@ Table patients {
   SearchName varchar(100) [not null, note: 'FullName normalized for search']
   Phone varchar(30) [not null, note: 'normalized: Latin digits, single spaces']
   GuardianPhone varchar(30)
-  Notes varchar(2000) [note: 'medical data: never logged or exported']
+  SearchText varchar(162) [not null, note: 'SearchName + phones, normalized; list search']
+  Notes varchar(2000) [note: 'medical data: never logged or exported; omitted from list DTOs']
   IsInsured boolean [not null, default: false]
   Gender Gender [not null, note: 'stored as varchar(10)']
   DateOfBirth date [note: 'between 1900-01-01 and today']
@@ -180,9 +181,10 @@ Table patients {
   Indexes {
     Phone [note: 'not unique: siblings share a guardian phone']
     SearchName
+    SearchText [type: gin, note: 'gin_trgm_ops']
   }
 
-  Note: 'Implemented (migration AddPatients).'
+  Note: 'Implemented (migration AddPatients; SearchText on AddPatientSearchText).'
 }
 
 Table lab_tests {

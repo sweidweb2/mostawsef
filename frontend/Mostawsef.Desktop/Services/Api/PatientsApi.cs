@@ -10,9 +10,10 @@ namespace Mostawsef.Desktop.Services.Api;
 /// <summary>Patient records (Admin only).</summary>
 public class PatientsApi(ApiClient api)
 {
-    public Task<ApiResult<PagedResult<PatientDto>>> GetPatientsAsync(int page, int pageSize, string? search, CancellationToken cancellationToken = default) =>
+    public Task<ApiResult<PagedResult<PatientDto>>> GetPatientsAsync(
+        int page, int pageSize, string? search, bool includeTotal = true, CancellationToken cancellationToken = default) =>
         api.GetAsync<PagedResult<PatientDto>>(
-            $"api/patients?page={page}&pageSize={pageSize}" +
+            $"api/patients?page={page}&pageSize={pageSize}&includeTotal={includeTotal.ToString().ToLowerInvariant()}" +
             (string.IsNullOrWhiteSpace(search) ? string.Empty : $"&search={Uri.EscapeDataString(search.Trim())}"),
             cancellationToken);
 

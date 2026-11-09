@@ -12,6 +12,7 @@ public class Patient : SoftDeletableEntity
     public const int FullNameMaxLength = 100;
     public const int PhoneMaxLength = 30;
     public const int NotesMaxLength = 2000;
+    public const int SearchTextMaxLength = FullNameMaxLength + PhoneMaxLength + PhoneMaxLength + 2;
 
     private Patient()
     {
@@ -30,6 +31,9 @@ public class Patient : SoftDeletableEntity
     public string Phone { get; private set; } = string.Empty;
 
     public string? GuardianPhone { get; private set; }
+
+    /// <summary>SearchName, phone and guardian phone joined for list search.</summary>
+    public string SearchText { get; private set; } = string.Empty;
 
     public string? Notes { get; private set; }
 
@@ -50,5 +54,6 @@ public class Patient : SoftDeletableEntity
         IsInsured = isInsured;
         Gender = gender;
         DateOfBirth = dateOfBirth;
+        SearchText = string.Join('\n', new[] { searchName, phone, GuardianPhone }.Where(s => !string.IsNullOrEmpty(s)));
     }
 }

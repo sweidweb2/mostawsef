@@ -15,11 +15,14 @@ public class PatientConfiguration : IEntityTypeConfiguration<Patient>
         builder.Property(p => p.SearchName).HasMaxLength(Patient.FullNameMaxLength).IsRequired();
         builder.Property(p => p.Phone).HasMaxLength(Patient.PhoneMaxLength).IsRequired();
         builder.Property(p => p.GuardianPhone).HasMaxLength(Patient.PhoneMaxLength);
+        builder.Property(p => p.SearchText).HasMaxLength(Patient.SearchTextMaxLength).IsRequired();
         builder.Property(p => p.Notes).HasMaxLength(Patient.NotesMaxLength);
         builder.Property(p => p.IsInsured).IsRequired();
         builder.Property(p => p.Gender).HasConversion<string>().HasMaxLength(10).IsRequired();
 
         builder.HasIndex(p => p.SearchName);
         builder.HasIndex(p => p.Phone);
+        // Index-only PostgreSQL exception (SQLite ignores it): substring search stays plain Contains/LIKE.
+        builder.HasIndex(p => p.SearchText).HasMethod("gin").HasOperators("gin_trgm_ops");
     }
 }

@@ -38,7 +38,9 @@ public class LabTestRepository(AppDbContext db) : ILabTestRepository
             tests = tests.Where(t => t.SearchName.Contains(term) || t.Code.Contains(code));
         }
 
-        var total = await tests.CountAsync(cancellationToken);
+        var total = query.IncludeTotal
+            ? await tests.CountAsync(cancellationToken)
+            : PageQuery.TotalNotComputed;
         var items = await tests
             .OrderBy(t => t.Name)
             .ThenBy(t => t.Code)
