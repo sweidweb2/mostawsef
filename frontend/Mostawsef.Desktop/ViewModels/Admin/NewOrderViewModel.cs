@@ -22,15 +22,13 @@ using Mostawsef.Desktop.ViewModels.Shell;
 namespace Mostawsef.Desktop.ViewModels.Admin;
 
 /// <summary>
-/// Admin portal sub-page: a new order in three columns. Column 1 picks an existing patient (search) or fills a new one,
-/// plus an optional first payment; column 2 holds the selected tests and the live total (with an optional our-price
-/// override); column 3 is the active lab test catalog, loaded once and filtered locally. Saving sends one request;
-/// the API saves it all or nothing.
+/// Admin portal sub-page: a new order in three columns. Column 1 picks an existing patient (live local autocomplete)
+/// or fills a new one, plus an optional first payment; column 2 holds the selected tests and the live total (with an
+/// optional our-price override); column 3 is the active lab test catalog. Saving sends one request; the API saves it
+/// all or nothing.
 /// </summary>
 public partial class NewOrderViewModel : FormViewModel, ILoadablePage
 {
-    public const int PatientResultsLimit = 10;
-
     public const int PatientTab = 0;
     public const int TestsTab = 1;
     public const int CatalogTab = 2;
@@ -42,8 +40,14 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
     private readonly IToastService _toasts;
 
     private CancellationTokenSource _pageCancellation = new();
+    private CancellationTokenSource? _catalogSearchDelay;
+    private CancellationTokenSource? _catalogLoadCancellation;
     private bool _catalogLoaded;
+    private string? _loadedCatalogSearch;
+    private bool _patientsLoaded;
     private OrderDetailsDto? _created;
+
+    public static readonly TimeSpan CatalogSearchDelay = TimeSpan.FromMilliseconds(250);
 
     public NewOrderViewModel(
         OrdersApi orders,
@@ -84,24 +88,32 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
     [ObservableProperty]
     public partial bool IsNewPatient { get; set; }
 
+    /// <summary>Every patient, loaded once for the autocomplete. Filtered locally as the admin types.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(NoPatientsFound))]
+    public partial IReadOnlyList<PatientDto> Patients { get; private set; } = [];
+
+    [ObservableProperty]
+    public partial bool IsLoadingPatients { get; private set; }
+
+    /// <summary>Text in the patient autocomplete; drives the empty-results caption.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(NoPatientsFound))]
     public partial string? PatientSearch { get; set; }
 
+    /// <summary>Bound to the autocomplete selection; picking one fills <see cref="SelectedPatient"/>.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(NoPatientsFound))]
-    public partial IReadOnlyList<PatientDto> PatientResults { get; private set; } = [];
+    public partial PatientDto? PatientPick { get; set; }
+
+    public bool NoPatientsFound =>
+        !IsLoadingPatients
+        && SelectedPatient is null
+        && Patients.Count > 0
+        && !string.IsNullOrWhiteSpace(PatientSearch)
+        && !Patients.Any(p => MatchesPatient(PatientSearch!, p));
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(NoPatientsFound))]
-    public partial bool HasSearchedPatients { get; private set; }
-
-    [ObservableProperty]
-    public partial bool IsSearchingPatients { get; private set; }
-
-    public bool NoPatientsFound => HasSearchedPatients && PatientResults.Count == 0;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasSelectedPatient))]
+    [NotifyPropertyChangedFor(nameof(HasSelectedPatient), nameof(NoPatientsFound))]
     public partial PatientDto? SelectedPatient { get; private set; }
 
     public bool HasSelectedPatient => SelectedPatient is not null;
@@ -181,8 +193,8 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         _ => "Error.Description",
     };
 
-    /// <summary>Nothing to show: no active tests, or none matches the search.</summary>
-    public bool IsCatalogEmpty => !IsCatalogLoading && !HasCatalogError && !Catalog.Any(t => t.IsMatch);
+    /// <summary>Nothing to show: no active tests match the current search.</summary>
+    public bool IsCatalogEmpty => !IsCatalogLoading && !HasCatalogError && Catalog.Count == 0;
 
     /// <summary>The visible column below the Compact breakpoint (PatientTab, TestsTab, CatalogTab).</summary>
     [ObservableProperty]
@@ -197,15 +209,26 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
 
     public Task ActivateAsync()
     {
+        EnsureLifetime();
         if (_pageCancellation.IsCancellationRequested)
         {
             _pageCancellation = new CancellationTokenSource();
         }
 
-        return _catalogLoaded ? Task.CompletedTask : LoadCatalogAsync();
+        var catalog = _catalogLoaded && _loadedCatalogSearch == CatalogSearch
+            ? Task.CompletedTask
+            : LoadCatalogAsync();
+        var patients = _patientsLoaded ? Task.CompletedTask : LoadPatientsAsync();
+        return Task.WhenAll(catalog, patients);
     }
 
-    public void Deactivate() => _pageCancellation.Cancel();
+    public void Deactivate()
+    {
+        CancelLifetime();
+        _catalogSearchDelay?.Cancel();
+        _catalogLoadCancellation?.Cancel();
+        _pageCancellation.Cancel();
+    }
 
     protected override bool CanSave() => base.CanSave() && HasPatient && HasSelectedTests;
 
@@ -335,7 +358,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
                 OnPropertyChanged(nameof(Remaining));
                 break;
             case nameof(CatalogSearch):
-                FilterCatalog();
+                ScheduleCatalogSearch();
                 break;
         }
     }
@@ -343,22 +366,55 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
     [RelayCommand]
     private Task<bool> BackAsync() => _navigation.BackAsync();
 
-    [RelayCommand]
-    private async Task SearchPatientsAsync()
+    /// <summary>Name or phone match using the same normalization as the patients API.</summary>
+    public static bool MatchesPatient(string? search, object? item)
     {
-        var term = PatientSearch?.Trim();
-        if (string.IsNullOrEmpty(term))
+        if (item is not PatientDto patient)
         {
-            PatientResults = [];
-            HasSearchedPatients = false;
-            return;
+            return false;
         }
 
+        var term = SearchText.Normalize(search);
+        return term.Length > 0
+            && (SearchText.Normalize(patient.FullName).Contains(term, StringComparison.Ordinal)
+                || SearchText.Normalize(patient.Phone).Contains(term, StringComparison.Ordinal)
+                || SearchText.Normalize(patient.GuardianPhone).Contains(term, StringComparison.Ordinal));
+    }
+
+    partial void OnPatientPickChanged(PatientDto? value)
+    {
+        if (value is not null)
+        {
+            SelectPatient(value);
+        }
+    }
+
+    [RelayCommand]
+    private void SelectPatient(PatientDto? patient)
+    {
+        if (patient is not null)
+        {
+            SelectedPatient = patient;
+            PatientSearch = null;
+            Errors.Clear(nameof(CreateOrderRequest.PatientId));
+        }
+    }
+
+    [RelayCommand]
+    private void ChangePatient()
+    {
+        SelectedPatient = null;
+        PatientPick = null;
+        PatientSearch = null;
+    }
+
+    private async Task LoadPatientsAsync()
+    {
         var cancellationToken = _pageCancellation.Token;
-        IsSearchingPatients = true;
+        IsLoadingPatients = true;
         try
         {
-            var result = await _patients.GetPatientsAsync(1, PatientResultsLimit, term, cancellationToken);
+            var result = await _patients.GetAllPatientsAsync(cancellationToken);
             if (cancellationToken.IsCancellationRequested)
             {
                 return;
@@ -370,31 +426,18 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
                 return;
             }
 
-            PatientResults = result.Value!.Items;
-            HasSearchedPatients = true;
+            Patients = result.Value!;
+            _patientsLoaded = true;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            // The user left the page.
+            // The user left the page; the next activation loads again.
         }
         finally
         {
-            IsSearchingPatients = false;
+            IsLoadingPatients = false;
         }
     }
-
-    [RelayCommand]
-    private void SelectPatient(PatientDto? patient)
-    {
-        if (patient is not null)
-        {
-            SelectedPatient = patient;
-            Errors.Clear(nameof(CreateOrderRequest.PatientId));
-        }
-    }
-
-    [RelayCommand]
-    private void ChangePatient() => SelectedPatient = null;
 
     [RelayCommand]
     private void ChooseExistingPatient() => IsNewPatient = false;
@@ -426,13 +469,41 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
     [RelayCommand]
     private Task RetryCatalogAsync() => LoadCatalogAsync();
 
+    /// <summary>Waits briefly so typing does not hit the API on every keystroke, then reloads the visible catalog.</summary>
+    private void ScheduleCatalogSearch()
+    {
+        _catalogSearchDelay?.Cancel();
+        var delay = new CancellationTokenSource();
+        _catalogSearchDelay = delay;
+        _ = DebouncedCatalogSearchAsync(delay.Token);
+    }
+
+    private async Task DebouncedCatalogSearchAsync(CancellationToken delayToken)
+    {
+        try
+        {
+            await Task.Delay(CatalogSearchDelay, delayToken);
+        }
+        catch (OperationCanceledException) when (delayToken.IsCancellationRequested)
+        {
+            return;
+        }
+
+        await LoadCatalogAsync();
+    }
+
     private async Task LoadCatalogAsync()
     {
-        var cancellationToken = _pageCancellation.Token;
+        var search = CatalogSearch;
+        _catalogLoadCancellation?.Cancel();
+        var load = CancellationTokenSource.CreateLinkedTokenSource(_pageCancellation.Token);
+        _catalogLoadCancellation = load;
+        var cancellationToken = load.Token;
+
         IsCatalogLoading = true;
         try
         {
-            var result = await _tests.GetAllTestsAsync(cancellationToken);
+            var result = await _tests.GetCatalogAsync(search, cancellationToken);
             if (cancellationToken.IsCancellationRequested)
             {
                 return;
@@ -445,34 +516,25 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
             }
 
             var selected = SelectedTests.Select(t => t.Test.Id).ToHashSet();
-            Catalog = result.Value!
-                .Where(t => t.IsActive)
+            Catalog = result.Value!.Items
                 .Select(t => new CatalogTestItem(t) { IsSelected = selected.Contains(t.Id) })
                 .ToList();
             CatalogLoadError = null;
             _catalogLoaded = true;
-            FilterCatalog();
+            _loadedCatalogSearch = search;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            // The user left the page; the next activation loads again.
+            // A newer search started, or the user left the page.
         }
         finally
         {
-            IsCatalogLoading = false;
+            if (_catalogLoadCancellation == load)
+            {
+                _catalogLoadCancellation = null;
+                IsCatalogLoading = false;
+            }
         }
-    }
-
-    /// <summary>Local and instant: only toggles each card's visibility, the list itself stays the same.</summary>
-    private void FilterCatalog()
-    {
-        var term = SearchText.Normalize(CatalogSearch);
-        foreach (var item in Catalog)
-        {
-            item.IsMatch = term.Length == 0 || item.SearchKey.Contains(term, StringComparison.Ordinal);
-        }
-
-        OnPropertyChanged(nameof(IsCatalogEmpty));
     }
 
     private void InputChanged(string propertyName)
@@ -518,14 +580,8 @@ public partial class CatalogTestItem(LabTestDto test) : ObservableObject
 {
     public LabTestDto Test { get; } = test;
 
-    /// <summary>Code and name normalized for the local search.</summary>
-    public string SearchKey { get; } = SearchText.Key(test.Code, test.Name);
-
     [ObservableProperty]
     public partial bool IsSelected { get; set; }
-
-    [ObservableProperty]
-    public partial bool IsMatch { get; set; } = true;
 }
 
 /// <summary>A selected test; its catalog price contributes to the order total.</summary>

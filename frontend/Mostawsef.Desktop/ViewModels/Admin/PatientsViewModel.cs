@@ -98,7 +98,11 @@ public partial class PatientsViewModel : NumberedListViewModel<PatientDto>
             return;
         }
 
-        var result = await _patients.DeletePatientAsync(item.Id);
+        if (await ReadAsync(ct => _patients.DeletePatientAsync(item.Id, ct)) is not { } result)
+        {
+            return;
+        }
+
         if (!result.IsSuccess)
         {
             ShowError(result);

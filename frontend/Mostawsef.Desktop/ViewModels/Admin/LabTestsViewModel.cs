@@ -48,7 +48,7 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
 
     protected override Task<ApiResult<PagedResult<LabTestDto>>> FetchPageAsync(
         int page, int pageSize, string? search, CancellationToken cancellationToken) =>
-        _tests.GetTestsAsync(page, pageSize, search, cancellationToken);
+        _tests.GetTestsAsync(page, pageSize, search, cancellationToken: cancellationToken);
 
     [RelayCommand]
     private void ShowGrid() => IsGridView = true;
@@ -97,7 +97,11 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
             return;
         }
 
-        var result = await _tests.DeleteTestAsync(item.Id);
+        if (await ReadAsync(ct => _tests.DeleteTestAsync(item.Id, ct)) is not { } result)
+        {
+            return;
+        }
+
         if (!result.IsSuccess)
         {
             ShowError(result);

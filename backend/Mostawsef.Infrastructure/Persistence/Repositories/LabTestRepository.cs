@@ -23,9 +23,13 @@ public class LabTestRepository(AppDbContext db) : ILabTestRepository
     public Task<bool> NameExistsAsync(string searchName, Guid? exceptId, CancellationToken cancellationToken) =>
         db.LabTests.AnyAsync(t => t.SearchName == searchName && t.Id != exceptId, cancellationToken);
 
-    public async Task<(IReadOnlyList<LabTest> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<LabTest> Items, int Total)> GetPageAsync(PageQuery query, bool? active, CancellationToken cancellationToken)
     {
         var tests = db.LabTests.AsNoTracking();
+        if (active is { } isActive)
+        {
+            tests = tests.Where(t => t.IsActive == isActive);
+        }
 
         var term = SearchText.Normalize(query.SafeSearch);
         if (term.Length > 0)

@@ -209,6 +209,7 @@ Table orders {
   PatientName varchar(100) [not null, note: 'snapshot at order time']
   PatientSearchName varchar(100) [not null, note: 'PatientName normalized for search']
   PatientPhone varchar(30) [not null, note: 'snapshot at order time']
+  SearchText varchar(152) [not null, note: 'PatientSearchName + phone + number, normalized; list search']
   Status OrderStatus [not null, default: 'Pending', note: 'Paid/PartiallyPaid derived from payments']
   DiscountType DiscountType
   DiscountValue bigint [not null, default: 0, note: 'Percent: 0-100; Fixed: minor units']
@@ -226,9 +227,10 @@ Table orders {
     (Status, CreatedAt)
     CreatedAt
     PatientSearchName
+    SearchText [type: gin, note: 'gin_trgm_ops']
   }
 
-  Note: 'Implemented (migration AddOrders; OurPrice on AddOrderOurPrice). Total = OurPrice - discount; Discounts not used yet (DiscountValue 0).'
+  Note: 'Implemented (migration AddOrders; OurPrice on AddOrderOurPrice; SearchText on AddOrderSearchText). Total = OurPrice - discount; Discounts not used yet (DiscountValue 0).'
 }
 
 Table order_items {

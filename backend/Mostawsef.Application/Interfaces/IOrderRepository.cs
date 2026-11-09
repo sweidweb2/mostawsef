@@ -1,15 +1,28 @@
 using Mostawsef.Contracts.Common;
 using Mostawsef.Domain.Entities;
+using Mostawsef.Domain.Enums;
 
 namespace Mostawsef.Application.Interfaces;
+
+/// <summary>One row of the orders list: no item or payment entities loaded.</summary>
+public record OrderListRow(
+    Guid Id,
+    string Number,
+    DateTime CreatedAt,
+    string PatientName,
+    string PatientPhone,
+    int TestsCount,
+    long Total,
+    long Paid,
+    OrderStatus Status);
 
 public interface IOrderRepository
 {
     /// <summary>With its items (and their lab tests) and payments.</summary>
     Task<Order?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
-    /// <summary>Newest first, with items and payments. Search matches the patient's normalized name, the phone or the number.</summary>
-    Task<(IReadOnlyList<Order> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken);
+    /// <summary>Newest first. Search matches the order SearchText (name, phone, number).</summary>
+    Task<(IReadOnlyList<OrderListRow> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken);
 
     void Add(Order order);
 

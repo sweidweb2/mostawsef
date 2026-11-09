@@ -25,7 +25,7 @@ alwaysApply: false
 - Connection string key: `ConnectionStrings:Default` (dev value in `appsettings.Development.json`, Docker PostgreSQL).
 - Portability (SQLite fallback): no PostgreSQL-only types/functions or raw SQL (not in migrations either: backfill
   existing rows with EF Core code from `DatabaseInitializer`); money as integer minor units. Only exception: index-only
-  PostgreSQL features (the `pg_trgm` GIN indexes on log `SearchText`), as long as the queries stay plain LINQ.
+  PostgreSQL features (the `pg_trgm` GIN indexes on log and order `SearchText`), as long as the queries stay plain LINQ.
 
 ## Auth (see `Docs/auth.md`)
 - JWT bearer auth is on. Every new controller/endpoint needs `[Authorize]` or a role policy

@@ -42,11 +42,6 @@
             </Style>
         </ContainerQuery>
 
-        <!-- Filtering hides cards; the catalog list itself never changes. -->
-        <Style Selector="ItemsControl#CatalogList > ContentPresenter" x:DataType="vm:CatalogTestItem">
-            <Setter Property="IsVisible" Value="{Binding IsMatch}" />
-        </Style>
-
         <Style Selector="Button.catalog-card">
             <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="VerticalAlignment" Value="Stretch" />
@@ -117,28 +112,29 @@
                             </Border>
 
                             <StackPanel Spacing="{DynamicResource GapControls}" IsVisible="{Binding !HasSelectedPatient}">
-                                <ui:SearchBox Name="PatientSearchBox"
-                                              Text="{Binding PatientSearch}"
-                                              MaxLength="{x:Static common:PageQuery.MaxSearchLength}"
-                                              PlaceholderText="{l:Tr NewOrder.PatientSearchPlaceholder}"
-                                              SearchCommand="{Binding SearchPatientsCommand}" />
-                                <ui:Spinner HorizontalAlignment="Center" IsVisible="{Binding IsSearchingPatients}" />
+                                <AutoCompleteBox Name="PatientSearchBox"
+                                                 ItemsSource="{Binding Patients}"
+                                                 SelectedItem="{Binding PatientPick}"
+                                                 Text="{Binding PatientSearch}"
+                                                 ValueMemberBinding="{Binding FullName}"
+                                                 MaxLength="{x:Static common:PageQuery.MaxSearchLength}"
+                                                 PlaceholderText="{l:Tr NewOrder.PatientSearchPlaceholder}"
+                                                 MinimumPrefixLength="1"
+                                                 MinimumPopulateDelay="0"
+                                                 FilterMode="Custom"
+                                                 HorizontalAlignment="Stretch">
+                                    <AutoCompleteBox.ItemTemplate>
+                                        <DataTemplate x:DataType="patients:PatientDto">
+                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource GapControls}">
+                                                <TextBlock TextTrimming="CharacterEllipsis" Text="{Binding FullName}" ToolTip.Tip="{Binding FullName}" />
+                                                <TextBlock Grid.Column="1" Classes="muted" FlowDirection="LeftToRight" Text="{Binding Phone}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </AutoCompleteBox.ItemTemplate>
+                                </AutoCompleteBox>
+                                <ui:Spinner HorizontalAlignment="Center" IsVisible="{Binding IsLoadingPatients}" />
                                 <TextBlock Classes="caption muted" TextWrapping="Wrap" Text="{l:Tr NewOrder.NoPatientsFound}"
                                            IsVisible="{Binding NoPatientsFound}" />
-                                <ItemsControl Name="PatientResultsList" ItemsSource="{Binding PatientResults}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="patients:PatientDto">
-                                            <Button Classes="ghost" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                                                    Command="{Binding $parent[ItemsControl].((vm:NewOrderViewModel)DataContext).SelectPatientCommand}"
-                                                    CommandParameter="{Binding}">
-                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource GapControls}">
-                                                    <TextBlock TextTrimming="CharacterEllipsis" Text="{Binding FullName}" ToolTip.Tip="{Binding FullName}" />
-                                                    <TextBlock Grid.Column="1" Classes="muted" FlowDirection="LeftToRight" Text="{Binding Phone}" />
-                                                </Grid>
-                                            </Button>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
                             </StackPanel>
                         </StackPanel>
 
@@ -231,29 +227,33 @@
 
             <!-- Total / our price and Create, under the selected tests -->
             <ui:Card Name="OrderFooter" Padding="{DynamicResource PaddingCardCompact}">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource GapGrid}">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource GapGrid}">
                     <StackPanel VerticalAlignment="Center" Spacing="{DynamicResource SpaceHalf}">
                         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
                             <TextBlock Classes="muted" VerticalAlignment="Center" Text="{l:Tr NewOrder.Total}" />
                             <TextBlock Name="TotalText" Classes="h3" VerticalAlignment="Center" Text="{l:Money CatalogTotal}" />
-                            <NumericUpDown Name="OurPriceBox"
-                                           Value="{Binding OurPrice}"
-                                           Minimum="0"
-                                           Maximum="{Binding MaxOurPrice}"
-                                           ClipValueToMinMax="True"
-                                           FormatString="0.00"
-                                           PlaceholderText="{l:Money CatalogTotal}"
-                                           ToolTip.Tip="{l:Tr NewOrder.OurPriceHint}"
-                                           VerticalAlignment="Center" />
                         </StackPanel>
-                        <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError OurPrice}"
-                                   IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}" IsVisible="{Binding HasPayment}">
                             <TextBlock Classes="caption muted" Text="{l:Tr NewOrder.Remaining}" />
                             <TextBlock Name="RemainingText" Classes="caption strong" Text="{l:Money Remaining}" />
                         </StackPanel>
                     </StackPanel>
-                    <Button Name="CreateButton" Grid.Column="1" Classes="primary" VerticalAlignment="Center" Command="{Binding SaveCommand}">
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="{DynamicResource SpaceHalf}">
+                        <TextBlock Classes="caption muted" Text="{l:Tr NewOrder.OurPrice}" />
+                        <NumericUpDown Name="OurPriceBox"
+                                       Value="{Binding OurPrice}"
+                                       Minimum="0"
+                                       Maximum="{Binding MaxOurPrice}"
+                                       ClipValueToMinMax="True"
+                                       ShowButtonSpinner="False"
+                                       FormatString="0.00"
+                                       PlaceholderText="{l:Money CatalogTotal}"
+                                       ToolTip.Tip="{l:Tr NewOrder.OurPriceHint}"
+                                       HorizontalAlignment="Stretch" />
+                        <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError OurPrice}"
+                                   IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                    </StackPanel>
+                    <Button Name="CreateButton" Grid.Column="2" Classes="primary" VerticalAlignment="Center" Command="{Binding SaveCommand}">
                         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
                             <ui:Spinner IsVisible="{Binding IsBusy}" />
                             <TextBlock Text="{l:Tr NewOrder.Create}" />

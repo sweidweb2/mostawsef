@@ -37,7 +37,7 @@ public class OrderService(
         var (items, total) = await orders.GetPageAsync(query, cancellationToken);
         return new PagedResult<OrderListItemDto>(
             items.Select(o => new OrderListItemDto(
-                o.Id, o.Number, o.CreatedAt, o.PatientName, o.PatientPhone, o.Items.Count, o.Total, o.Paid, o.Status.ToString())).ToList(),
+                o.Id, o.Number, o.CreatedAt, o.PatientName, o.PatientPhone, o.TestsCount, o.Total, o.Paid, o.Status.ToString())).ToList(),
             query.SafePage,
             query.SafePageSize,
             total);
@@ -62,6 +62,7 @@ public class OrderService(
         // Every check passed: only now take a number, so refused requests leave no gap.
         var currency = (await settings.GetAsync(cancellationToken)).CurrencyCode;
         var order = new Order(DocumentNumber.Format(NumberPrefix, await numbers.NextAsync(NumberSequence, cancellationToken)), patient, currency);
+        order.SetSearchText(SearchText.Key(patient.SearchName, patient.Phone, order.Number));
         foreach (var test in lines)
         {
             order.AddItem(test);

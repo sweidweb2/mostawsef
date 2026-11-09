@@ -68,7 +68,11 @@ public partial class ActivityLogsViewModel(LogsApi logs, IDialogService dialogs,
             return;
         }
 
-        var result = await logs.DeleteActivityLogAsync(item.Id);
+        if (await ReadAsync(ct => logs.DeleteActivityLogAsync(item.Id, ct)) is not { } result)
+        {
+            return;
+        }
+
         if (!result.IsSuccess)
         {
             ShowError(result.Error);

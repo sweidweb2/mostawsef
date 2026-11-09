@@ -31,6 +31,7 @@ public abstract partial class FormViewModel : ViewModelBase
         [nameof(IsBusy), nameof(IsDirty), nameof(FormErrorKey), nameof(HasFormError)];
 
     private object? _savedRequest;
+    private CancellationTokenSource _lifetime = new();
 
     protected FormViewModel(IDialogService dialogs, LocalizationService localization)
     {
@@ -77,6 +78,21 @@ public abstract partial class FormViewModel : ViewModelBase
         _savedRequest = BuildRequest();
         IsDirty = false;
     }
+
+    /// <summary>Cancels an in-flight save (and any override work that uses <see cref="LifetimeToken"/>).</summary>
+    public void CancelLifetime() => _lifetime.Cancel();
+
+    /// <summary>Call when a page form is shown again after <see cref="CancelLifetime"/>.</summary>
+    protected void EnsureLifetime()
+    {
+        if (_lifetime.IsCancellationRequested)
+        {
+            _lifetime = new CancellationTokenSource();
+        }
+    }
+
+    /// <summary>Tied to the form's lifetime: cancelled when the dialog closes or the page is left.</summary>
+    protected CancellationToken LifetimeToken => _lifetime.Token;
 
     /// <summary>Checks the fields as Save does, without sending: for a form embedded in another one (e.g. a new patient in an order).</summary>
     public bool ValidateInput()
@@ -141,9 +157,15 @@ public abstract partial class FormViewModel : ViewModelBase
         }
 
         IsBusy = true;
+        var cancellationToken = LifetimeToken;
         try
         {
-            var result = await SubmitAsync(request, CancellationToken.None);
+            var result = await SubmitAsync(request, cancellationToken);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
             if (result.IsSuccess)
             {
                 _savedRequest = request;
@@ -153,6 +175,10 @@ public abstract partial class FormViewModel : ViewModelBase
             }
 
             ShowFailure(result);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // The dialog closed or the page was left.
         }
         finally
         {

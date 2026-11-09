@@ -96,6 +96,7 @@ public class DialogService : IDialogService
         finally
         {
             form.Closed -= OnClosed;
+            form.CancelLifetime();
         }
     }
 

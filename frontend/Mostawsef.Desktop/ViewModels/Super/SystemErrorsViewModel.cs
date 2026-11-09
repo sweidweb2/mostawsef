@@ -68,7 +68,11 @@ public partial class SystemErrorsViewModel(LogsApi logs, IDialogService dialogs,
             return;
         }
 
-        var result = await logs.DeleteSystemErrorAsync(item.Id);
+        if (await ReadAsync(ct => logs.DeleteSystemErrorAsync(item.Id, ct)) is not { } result)
+        {
+            return;
+        }
+
         if (!result.IsSuccess)
         {
             ShowError(result.Error);

@@ -1,3 +1,4 @@
+using System.Net.Http;
 using Avalonia.Controls;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -31,6 +32,9 @@ internal static class OrderPages
     public static readonly PatientDto Mona = new(
         Guid.NewGuid(), "Mona Adel", "010 1234 5678", null, null, false, Genders.Female, null, DateTime.UtcNow, null, null, 0);
 
+    public static readonly PatientDto Omar = new(
+        Guid.NewGuid(), "عمر خالد", "011 2222 3333", null, null, false, Genders.Male, null, DateTime.UtcNow, null, null, 0);
+
     public static readonly OrderListItemDto PartlyPaid = new(
         Guid.NewGuid(), "ORD-000007", DateTime.UtcNow, Mona.FullName, Mona.Phone, 2, 20000, 5000, OrderStatuses.PartiallyPaid);
 
@@ -48,8 +52,31 @@ internal static class OrderPages
         var app = new TestServices(language);
         app.SignInAs(Roles.Admin);
         app.Api.OnGet(OrdersPath, new PagedResult<OrderListItemDto>([PartlyPaid, Unpaid], 1, 20, 2));
-        app.Api.OnGet(TestsPath, new PagedResult<LabTestDto>([Cbc, Sugar, Retired], 1, PageQuery.MaxPageSize, 3));
+        app.Api.On(HttpMethod.Get, TestsPath, request => CatalogResponse(request));
+        app.Api.OnGet(PatientsPath, new PagedResult<PatientDto>([Mona, Omar], 1, PageQuery.MaxPageSize, 2));
         return app;
+    }
+
+    /// <summary>Mirrors the API: optional active filter and SearchText-style name/code search.</summary>
+    public static HttpResponseMessage CatalogResponse(HttpRequestMessage request)
+    {
+        var query = System.Web.HttpUtility.ParseQueryString(request.RequestUri!.Query);
+        IEnumerable<LabTestDto> tests = [Cbc, Sugar, Retired];
+        if (bool.TryParse(query["active"], out var active))
+        {
+            tests = tests.Where(t => t.IsActive == active);
+        }
+
+        var term = SearchText.Normalize(query["search"]);
+        if (term.Length > 0)
+        {
+            tests = tests.Where(t =>
+                SearchText.Normalize(t.Name).Contains(term, StringComparison.Ordinal)
+                || t.Code.Contains(term, StringComparison.OrdinalIgnoreCase));
+        }
+
+        var items = tests.ToList();
+        return FakeApiHandler.Json(new PagedResult<LabTestDto>(items, 1, PageQuery.MaxPageSize, items.Count));
     }
 
     /// <summary>The admin portal (with dialogs and toasts) showing the Orders page.</summary>
@@ -78,7 +105,7 @@ internal static class OrderPages
         var (shell, orders, window) = await ShowOrdersPageAsync(app, width, height);
         await orders.NewOrderCommand.ExecuteAsync(null);
         var page = Assert.IsType<NewOrderViewModel>(shell.CurrentPage);
-        await WaitUntil(() => !page.IsCatalogLoading);
+        await WaitUntil(() => !page.IsCatalogLoading && !page.IsLoadingPatients);
         return (shell, page, window);
     }
 

@@ -14,8 +14,11 @@ namespace Mostawsef.Api.Controllers;
 public class LabTestsController(ILabTestService tests) : ControllerBase
 {
     [HttpGet]
-    public Task<PagedResult<LabTestDto>> List([FromQuery] PageQuery query, CancellationToken cancellationToken) =>
-        tests.GetPageAsync(query, cancellationToken);
+    public Task<PagedResult<LabTestDto>> List(
+        [FromQuery] PageQuery query,
+        [FromQuery] bool? active,
+        CancellationToken cancellationToken) =>
+        tests.GetPageAsync(query, active, cancellationToken);
 
     [HttpGet("{id:guid}")]
     [ProducesResponseType<LabTestDto>(StatusCodes.Status200OK)]

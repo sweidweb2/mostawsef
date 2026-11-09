@@ -343,7 +343,7 @@
   <data name="NewOrder.ExistingPatient" xml:space="preserve"><value>مريض مسجل</value></data>
   <data name="NewOrder.NewPatient" xml:space="preserve"><value>مريض جديد</value></data>
   <data name="NewOrder.ChangePatient" xml:space="preserve"><value>تغيير</value></data>
-  <data name="NewOrder.PatientSearchPlaceholder" xml:space="preserve"><value>الاسم أو الهاتف، ثم Enter...</value></data>
+  <data name="NewOrder.PatientSearchPlaceholder" xml:space="preserve"><value>الاسم أو الهاتف...</value></data>
   <data name="NewOrder.NoPatientsFound" xml:space="preserve"><value>لا يوجد مريض مطابق. راجع الكتابة أو أضف مريضاً جديداً.</value></data>
   <data name="NewOrder.FirstPayment" xml:space="preserve"><value>الدفعة الأولى</value></data>
   <data name="NewOrder.FirstPaymentHint" xml:space="preserve"><value>اختيارية. لا تزيد عن إجمالي الطلب.</value></data>

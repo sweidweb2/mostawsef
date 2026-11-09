@@ -69,7 +69,11 @@ public partial class UsersViewModel(UsersApi users, IDialogService dialogs, IToa
             return;
         }
 
-        var result = await users.DeleteUserAsync(item.Id);
+        if (await ReadAsync(ct => users.DeleteUserAsync(item.Id, ct)) is not { } result)
+        {
+            return;
+        }
+
         if (!result.IsSuccess)
         {
             ShowError(result);

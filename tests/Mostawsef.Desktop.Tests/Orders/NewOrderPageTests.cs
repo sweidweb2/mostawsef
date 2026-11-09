@@ -32,35 +32,35 @@ public class NewOrderPageTests
         await page.ActivateAsync();
 
         Assert.Single(app.Api.RequestsTo(HttpMethod.Get, TestsPath));
+        Assert.Contains("active=true", app.Api.RequestsTo(HttpMethod.Get, TestsPath).Single().RequestUri!.Query);
         Assert.Equal([Cbc.Id, Sugar.Id], page.Catalog.Select(t => t.Test.Id));
         Assert.Equal(2, CatalogCards(window).Count());
         Assert.Same(page, shell.CurrentPage);
     }
 
     [AvaloniaFact]
-    public async Task Searching_the_catalog_filters_locally_whatever_the_arabic_spelling()
+    public async Task Searching_the_catalog_asks_the_server_after_a_short_delay()
     {
         using var app = Admin();
         var (_, page, window) = await ShowNewOrderAsync(app);
-        var requests = app.Api.Requests.Count;
 
         page.CatalogSearch = "سُكَّر";
-        Dispatcher.UIThread.RunJobs();
-        Assert.Equal([Sugar.Id], VisibleCatalogCards(window).Select(c => ((CatalogTestItem)c.DataContext!).Test.Id));
+        await WaitUntil(() => page.Catalog.Count == 1 && page.Catalog[0].Test.Id == Sugar.Id);
+        Assert.Equal([Sugar.Id], CatalogCards(window).Select(c => ((CatalogTestItem)c.DataContext!).Test.Id));
 
         page.CatalogSearch = "cbc";
-        Dispatcher.UIThread.RunJobs();
-        Assert.Equal([Cbc.Id], VisibleCatalogCards(window).Select(c => ((CatalogTestItem)c.DataContext!).Test.Id));
+        await WaitUntil(() => page.Catalog.Count == 1 && page.Catalog[0].Test.Id == Cbc.Id);
+        Assert.Equal([Cbc.Id], CatalogCards(window).Select(c => ((CatalogTestItem)c.DataContext!).Test.Id));
 
         page.CatalogSearch = "nothing like it";
-        Dispatcher.UIThread.RunJobs();
-        Assert.Empty(VisibleCatalogCards(window));
+        await WaitUntil(() => page.IsCatalogEmpty);
+        Assert.Empty(CatalogCards(window));
         Assert.True(Named<EmptyState>(window, "CatalogEmptyState").IsEffectivelyVisible);
 
         page.CatalogSearch = "";
-        Dispatcher.UIThread.RunJobs();
-        Assert.Equal(2, VisibleCatalogCards(window).Count());
-        Assert.Equal(requests, app.Api.Requests.Count);
+        await WaitUntil(() => page.Catalog.Count == 2);
+        Assert.Equal(2, CatalogCards(window).Count());
+        Assert.True(app.Api.RequestsTo(HttpMethod.Get, TestsPath).Count() >= 4);
     }
 
     [AvaloniaFact]
@@ -116,15 +116,12 @@ public class NewOrderPageTests
     {
         using var app = Admin();
         var (_, page, _) = await ShowNewOrderAsync(app);
-        app.Api.OnGet(PatientsPath, new PagedResult<PatientDto>([Mona], 1, 10, 1));
 
         Assert.False(page.SaveCommand.CanExecute(null));
         AddTests(page, Cbc);
         Assert.False(page.SaveCommand.CanExecute(null));
 
-        page.PatientSearch = "mona";
-        await page.SearchPatientsCommand.ExecuteAsync(null);
-        page.SelectPatientCommand.Execute(page.PatientResults.Single());
+        page.SelectPatientCommand.Execute(Mona);
         Assert.True(page.SaveCommand.CanExecute(null));
 
         page.ChooseNewPatientCommand.Execute(null);
@@ -139,30 +136,34 @@ public class NewOrderPageTests
     }
 
     [AvaloniaFact]
-    public async Task Patient_search_asks_the_patients_api_and_shows_the_chosen_patient()
+    public async Task Patients_are_loaded_once_and_filter_locally_as_the_admin_types()
     {
         using var app = Admin();
         var (_, page, window) = await ShowNewOrderAsync(app);
-        app.Api.OnGet(PatientsPath, new PagedResult<PatientDto>([Mona], 1, 10, 1));
 
-        page.PatientSearch = " ٠١٠ ";
-        await page.SearchPatientsCommand.ExecuteAsync(null);
+        Assert.Equal([Mona.Id, Omar.Id], page.Patients.Select(p => p.Id));
+        Assert.Single(app.Api.RequestsTo(HttpMethod.Get, PatientsPath));
+        Assert.Contains($"pageSize={PageQuery.MaxPageSize}", app.Api.RequestsTo(HttpMethod.Get, PatientsPath).Single().RequestUri!.Query, StringComparison.Ordinal);
+
+        Assert.True(NewOrderViewModel.MatchesPatient("٠١٠", Mona));
+        Assert.True(NewOrderViewModel.MatchesPatient("عمر", Omar));
+        Assert.False(NewOrderViewModel.MatchesPatient("٠١٠", Omar));
+        Assert.False(NewOrderViewModel.MatchesPatient("nobody", Mona));
+
+        page.PatientSearch = "mona";
         Dispatcher.UIThread.RunJobs();
+        Assert.False(page.NoPatientsFound);
 
-        var query = app.Api.RequestsTo(HttpMethod.Get, PatientsPath).Single().RequestUri!.Query;
-        Assert.Contains("pageSize=10", query, StringComparison.Ordinal);
-        Assert.Contains($"search={Uri.EscapeDataString("٠١٠")}", query, StringComparison.Ordinal);
-        Assert.Contains("Mona Adel", Texts(window));
-
-        page.SelectPatientCommand.Execute(Mona);
+        page.PatientPick = Mona;
         Dispatcher.UIThread.RunJobs();
 
         Assert.True(Named<Border>(window, "SelectedPatientCard").IsEffectivelyVisible);
-        Assert.False(Named<SearchBox>(window, "PatientSearchBox").IsEffectivelyVisible);
+        Assert.False(Named<AutoCompleteBox>(window, "PatientSearchBox").IsEffectivelyVisible);
+        Assert.Single(app.Api.RequestsTo(HttpMethod.Get, PatientsPath));
 
         page.ChangePatientCommand.Execute(null);
         Dispatcher.UIThread.RunJobs();
-        Assert.True(Named<SearchBox>(window, "PatientSearchBox").IsEffectivelyVisible);
+        Assert.True(Named<AutoCompleteBox>(window, "PatientSearchBox").IsEffectivelyVisible);
     }
 
     [AvaloniaFact]
@@ -170,13 +171,13 @@ public class NewOrderPageTests
     {
         using var app = Admin();
         var (_, page, window) = await ShowNewOrderAsync(app);
-        app.Api.OnGet(PatientsPath, new PagedResult<PatientDto>([], 1, 10, 0));
 
         page.PatientSearch = "nobody";
-        await page.SearchPatientsCommand.ExecuteAsync(null);
         Dispatcher.UIThread.RunJobs();
 
+        Assert.True(page.NoPatientsFound);
         Assert.Contains("No patient matches. Check the spelling or add a new patient.", Texts(window));
+        Assert.Single(app.Api.RequestsTo(HttpMethod.Get, PatientsPath));
     }
 
     [AvaloniaFact]
@@ -410,8 +411,6 @@ public class NewOrderPageTests
 
     private static IEnumerable<Button> CatalogCards(Window window) =>
         window.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("catalog-card"));
-
-    private static IEnumerable<Button> VisibleCatalogCards(Window window) => CatalogCards(window).Where(b => b.IsEffectivelyVisible);
 
     private static Button Card(Window window, Guid testId) =>
         CatalogCards(window).Single(b => ((CatalogTestItem)b.DataContext!).Test.Id == testId);

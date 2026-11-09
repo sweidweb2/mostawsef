@@ -259,6 +259,24 @@ public class LabTestsTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task Active_filter_hides_inactive_tests()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var active = await CreateAsync(admin);
+        var retired = await CreateAsync(admin);
+        (await admin.PutAsJsonAsync($"{Url}/{retired.Id}", new UpdateLabTestRequest
+        {
+            Code = retired.Code, Name = retired.Name, Price = retired.Price, LabCost = retired.LabCost, IsActive = false, Version = retired.Version,
+        }, Ct)).EnsureSuccessStatusCode();
+
+        var onlyActive = await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?active=true&pageSize=100&search={active.Code}");
+        var onlyInactive = await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?active=false&pageSize=100&search={retired.Code}");
+
+        Assert.Equal(active.Id, Assert.Single(onlyActive.Items).Id);
+        Assert.Equal(retired.Id, Assert.Single(onlyInactive.Items).Id);
+    }
+
+    [Fact]
     public async Task Lab_test_actions_are_recorded_in_the_activity_log()
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);

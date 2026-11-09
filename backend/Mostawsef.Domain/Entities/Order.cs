@@ -12,6 +12,8 @@ public class Order : Entity
     public const int NumberMaxLength = 20;
     public const int CurrencyMaxLength = 3;
     public const int NotesMaxLength = 2000;
+    public const int SearchTextMaxLength =
+        Patient.FullNameMaxLength + Patient.PhoneMaxLength + NumberMaxLength + 2;
 
     private readonly List<OrderItem> _items = [];
     private readonly List<Payment> _payments = [];
@@ -41,6 +43,9 @@ public class Order : Entity
     public string PatientSearchName { get; private set; } = string.Empty;
 
     public string PatientPhone { get; private set; } = string.Empty;
+
+    /// <summary>Patient search name, phone and number, normalized (OrderService). What the list search matches.</summary>
+    public string SearchText { get; private set; } = string.Empty;
 
     /// <summary>Set from the payments by <see cref="UpdateStatus"/>.</summary>
     public OrderStatus Status { get; private set; } = OrderStatus.Pending;
@@ -86,4 +91,6 @@ public class Order : Entity
         Status = Paid >= Total ? OrderStatus.Paid
             : Paid > 0 ? OrderStatus.PartiallyPaid
             : OrderStatus.Pending;
+
+    public void SetSearchText(string searchText) => SearchText = searchText;
 }

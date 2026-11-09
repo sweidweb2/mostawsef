@@ -365,6 +365,12 @@ public class OrdersTests(ApiFactory factory)
 
         Assert.Equal(order.Id, byPhone.Items.Single().Id);
         Assert.Equal(order.Id, byNumber.Items.Single().Id);
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var searchText = await scope.ServiceProvider.GetRequiredService<AppDbContext>().Orders
+            .Where(o => o.Id == order.Id).Select(o => o.SearchText).SingleAsync(Ct);
+        Assert.Contains(SearchText.Normalize(patient.Phone), searchText);
+        Assert.Contains(SearchText.Normalize(order.Number), searchText);
     }
 
     private static CreatePatientRequest NewPatient() => new()

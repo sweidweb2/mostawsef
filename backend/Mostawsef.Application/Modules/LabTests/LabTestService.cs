@@ -9,7 +9,7 @@ namespace Mostawsef.Application.Modules.LabTests;
 /// <summary>The clinic's test catalog (Admin portal). Failures throw <see cref="AppException"/>.</summary>
 public interface ILabTestService
 {
-    Task<PagedResult<LabTestDto>> GetPageAsync(PageQuery query, CancellationToken cancellationToken);
+    Task<PagedResult<LabTestDto>> GetPageAsync(PageQuery query, bool? active, CancellationToken cancellationToken);
 
     Task<LabTestDto> GetAsync(Guid id, CancellationToken cancellationToken);
 
@@ -22,9 +22,9 @@ public interface ILabTestService
 
 public class LabTestService(ILabTestRepository tests, IActivityLogger activity) : ILabTestService
 {
-    public async Task<PagedResult<LabTestDto>> GetPageAsync(PageQuery query, CancellationToken cancellationToken)
+    public async Task<PagedResult<LabTestDto>> GetPageAsync(PageQuery query, bool? active, CancellationToken cancellationToken)
     {
-        var (items, total) = await tests.GetPageAsync(query, cancellationToken);
+        var (items, total) = await tests.GetPageAsync(query, active, cancellationToken);
         return new PagedResult<LabTestDto>(items.Select(ToDto).ToList(), query.SafePage, query.SafePageSize, total);
     }
 

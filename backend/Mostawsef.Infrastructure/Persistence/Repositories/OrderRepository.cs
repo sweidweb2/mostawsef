@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Domain.Entities;
+using Mostawsef.Domain.Enums;
 using Mostawsef.Infrastructure.Persistence.Context;
 
 namespace Mostawsef.Infrastructure.Persistence.Repositories;
@@ -15,15 +16,14 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
             .AsSplitQuery()
             .FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
 
-    public async Task<(IReadOnlyList<Order> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<OrderListRow> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken)
     {
         var orders = db.Orders.AsNoTracking();
 
         var term = SearchText.Normalize(query.SafeSearch);
         if (term.Length > 0)
         {
-            var number = term.ToUpperInvariant();
-            orders = orders.Where(o => o.PatientSearchName.Contains(term) || o.PatientPhone.Contains(term) || o.Number.Contains(number));
+            orders = orders.Where(o => o.SearchText.Contains(term));
         }
 
         var total = await orders.CountAsync(cancellationToken);
@@ -32,9 +32,16 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
             .ThenByDescending(o => o.Id)
             .Skip((query.SafePage - 1) * query.SafePageSize)
             .Take(query.SafePageSize)
-            .Include(o => o.Items)
-            .Include(o => o.Payments)
-            .AsSplitQuery()
+            .Select(o => new OrderListRow(
+                o.Id,
+                o.Number,
+                o.CreatedAt,
+                o.PatientName,
+                o.PatientPhone,
+                o.Items.Count,
+                o.OurPrice,
+                o.Payments.Sum(p => p.Type == PaymentType.Refund ? -p.Amount : p.Amount),
+                o.Status))
             .ToListAsync(cancellationToken);
 
         return (items, total);

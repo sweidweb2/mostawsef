@@ -343,7 +343,7 @@
   <data name="NewOrder.ExistingPatient" xml:space="preserve"><value>Existing patient</value></data>
   <data name="NewOrder.NewPatient" xml:space="preserve"><value>New patient</value></data>
   <data name="NewOrder.ChangePatient" xml:space="preserve"><value>Change</value></data>
-  <data name="NewOrder.PatientSearchPlaceholder" xml:space="preserve"><value>Name or phone, then Enter...</value></data>
+  <data name="NewOrder.PatientSearchPlaceholder" xml:space="preserve"><value>Name or phone...</value></data>
   <data name="NewOrder.NoPatientsFound" xml:space="preserve"><value>No patient matches. Check the spelling or add a new patient.</value></data>
   <data name="NewOrder.FirstPayment" xml:space="preserve"><value>First payment</value></data>
   <data name="NewOrder.FirstPaymentHint" xml:space="preserve"><value>Optional. At most the order total.</value></data>

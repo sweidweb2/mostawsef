@@ -270,6 +270,11 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("SearchText")
+                        .IsRequired()
+                        .HasMaxLength(152)
+                        .HasColumnType("character varying(152)");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -296,6 +301,11 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                     b.HasIndex("PatientId");
 
                     b.HasIndex("PatientSearchName");
+
+                    b.HasIndex("SearchText");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SearchText"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("SearchText"), new[] { "gin_trgm_ops" });
 
                     b.HasIndex("Status", "CreatedAt");
 
