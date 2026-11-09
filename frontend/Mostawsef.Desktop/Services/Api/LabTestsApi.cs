@@ -23,9 +23,9 @@ public class LabTestsApi(ApiClient api)
             (active is { } isActive ? $"&active={isActive.ToString().ToLowerInvariant()}" : string.Empty),
             cancellationToken);
 
-    /// <summary>Active tests for the new-order catalog (one page, up to MaxPageSize), optionally filtered by search.</summary>
+    /// <summary>Active tests for the new-order catalog (one page, up to MaxPageSize), optionally filtered by search. Total is unused.</summary>
     public Task<ApiResult<PagedResult<LabTestDto>>> GetCatalogAsync(string? search, CancellationToken cancellationToken = default) =>
-        GetTestsAsync(1, PageQuery.MaxPageSize, search, active: true, cancellationToken: cancellationToken);
+        GetTestsAsync(1, PageQuery.MaxPageSize, search, active: true, includeTotal: false, cancellationToken: cancellationToken);
 
     /// <summary>Every test, sorted by name.</summary>
     public Task<ApiResult<IReadOnlyList<LabTestDto>>> GetAllTestsAsync(CancellationToken cancellationToken = default) =>

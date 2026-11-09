@@ -84,6 +84,24 @@ public class OrdersTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task Order_details_are_read_in_one_statement()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var patient = await CreatePatientAsync(admin);
+        var test = await CreateTestAsync(admin);
+        var order = await CreateOrderAsync(admin, new CreateOrderRequest
+        {
+            PatientId = patient.Id,
+            Items = [new() { LabTestId = test.Id }],
+        });
+
+        factory.Sql.Clear();
+        await admin.GetJsonAsync<OrderDetailsDto>($"{Url}/{order.Id}");
+
+        Assert.Single(factory.Sql.Queries, q => q.Contains("FROM orders", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public async Task A_new_patient_is_created_with_the_order_and_both_actions_are_logged()
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);

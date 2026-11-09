@@ -48,7 +48,7 @@ public partial class ClinicSettingsViewModel(
     }
 
     [RelayCommand]
-    private Task RefreshAsync() => LoadAsync();
+    private Task RefreshAsync() => LoadAsync(force: true);
 
     [RelayCommand]
     private async Task EditAsync()
@@ -61,10 +61,10 @@ public partial class ClinicSettingsViewModel(
         }
     }
 
-    private async Task LoadAsync()
+    private async Task LoadAsync(bool force = false)
     {
         IsLoading = true;
-        HasLoadError = !await clinic.LoadAsync();
+        HasLoadError = !await clinic.LoadAsync(force);
         _loaded = clinic.Settings is not null;
         IsLoading = false;
     }

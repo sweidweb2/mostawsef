@@ -84,7 +84,7 @@ public partial class PatientsViewModel : NumberedListViewModel<PatientDto>
                 new PatientFormViewModel(_patients, _dialogs, Localization, result.Value), Localization.Get("Patients.EditTitle"), 640))
         {
             Toasts.Success(Localization.Get("Patients.Saved"));
-            await ReloadAsync();
+            await ReloadAsync(includeTotal: false);
         }
     }
 

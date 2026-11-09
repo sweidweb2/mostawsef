@@ -24,7 +24,7 @@ public class OrderService(
     IOrderRepository orders,
     IPatientRepository patients,
     ILabTestRepository tests,
-    IClinicCurrency currency,
+    IClinicSettingsCache clinic,
     INumberSequence numbers,
     IActivityLogger activity,
     TimeProvider time) : IOrderService
@@ -55,8 +55,8 @@ public class OrderService(
 
     public async Task<OrderDetailsDto> CreateAsync(CreateOrderRequest request, CancellationToken cancellationToken)
     {
-        // Currency uses its own context; patient and tests share the request DbContext so they stay sequential.
-        var currencyTask = currency.GetCodeAsync(cancellationToken);
+        // Clinic currency is cached (own context); patient and tests share the request DbContext so they stay sequential.
+        var currencyTask = clinic.GetCurrencyCodeAsync(cancellationToken);
         var (patient, isNewPatient) = await ResolvePatientAsync(request, cancellationToken);
         var lines = await LoadTestsAsync(request.Items, cancellationToken);
         var currencyCode = await currencyTask;

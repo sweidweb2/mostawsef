@@ -134,12 +134,11 @@ public class LabTestsPageTests
     {
         using var app = new TestServices();
         app.SignInAs(Roles.Admin);
-        var catalog = Enumerable.Range(1, 150)
+        var catalog = Enumerable.Range(1, 3)
             .Select(i => Cbc with { Id = Guid.NewGuid(), Code = $"T{i:000}", Name = $"Test {i:000}" })
             .ToList();
-        app.Api
-            .OnGet(TestsPath, new PagedResult<LabTestDto>(catalog.Take(40).ToList(), 1, 40, catalog.Count))
-            .OnGet($"{TestsPath}/all", (IReadOnlyList<LabTestDto>)catalog);
+        app.Api.OnGet(TestsPath, new PagedResult<LabTestDto>([Cbc], 1, 40, 1));
+        app.Api.OnGet($"{TestsPath}/all", (IReadOnlyList<LabTestDto>)catalog);
         var (page, _) = await ShowPage(app);
         page.Search = "T001";
 
@@ -157,9 +156,8 @@ public class LabTestsPageTests
     {
         using var app = new TestServices();
         app.SignInAs(Roles.Admin);
-        app.Api
-            .OnGet(TestsPath, new PagedResult<LabTestDto>([Cbc], 1, 40, 1))
-            .On(HttpMethod.Get, $"{TestsPath}/all", _ => throw new HttpRequestException("Connection refused"));
+        app.Api.OnGet(TestsPath, new PagedResult<LabTestDto>([Cbc], 1, 40, 1));
+        app.Api.On(HttpMethod.Get, $"{TestsPath}/all", _ => throw new HttpRequestException("Connection refused"));
         var (page, window) = await ShowPage(app);
 
         await page.ExportCommand.ExecuteAsync(null);
@@ -173,7 +171,6 @@ public class LabTestsPageTests
     public async Task Edit_on_a_card_opens_the_form_filled_in_and_saves_prices_in_minor_units()
     {
         using var app = AdminWithTests(Cbc);
-        app.Api.OnGet($"{TestsPath}/{Cbc.Id}", Cbc);
         UpdateLabTestRequest? sent = null;
         app.Api.On(HttpMethod.Put, $"{TestsPath}/{Cbc.Id}", request =>
         {
@@ -192,6 +189,7 @@ public class LabTestsPageTests
         Assert.False(form.IsNew);
         Assert.Equal(("CBC", "Complete blood count", 150.50m, 90.00m, true), (form.Code, form.Name, form.Price, form.LabCost, form.IsActive));
         Assert.Equal("Edit lab test", window.GetVisualDescendants().OfType<Modal>().Single().Title);
+        Assert.Empty(app.Api.RequestsTo(HttpMethod.Get, $"{TestsPath}/{Cbc.Id}"));
 
         form.Price = 200.25m;
         form.IsActive = false;
@@ -202,7 +200,8 @@ public class LabTestsPageTests
             new UpdateLabTestRequest { Code = "CBC", Name = "Complete blood count", Price = 20025, LabCost = 9000, IsActive = false, Version = Cbc.Version },
             sent);
         Assert.Empty(window.GetVisualDescendants().OfType<Modal>());
-        Assert.True(app.Api.RequestsTo(HttpMethod.Get, TestsPath).Count() > listRequests + 1);
+        var reload = Assert.Single(app.Api.RequestsTo(HttpMethod.Get, TestsPath).Skip(listRequests));
+        Assert.Contains("includeTotal=false", reload.RequestUri!.Query, StringComparison.Ordinal);
         Assert.Contains("Lab test saved.", Toasts(window));
     }
 
@@ -374,17 +373,20 @@ public class LabTestsPageTests
     }
 
     [AvaloniaFact]
-    public async Task Editing_a_test_that_was_deleted_meanwhile_says_so()
+    public async Task Saving_an_edit_of_a_test_that_was_deleted_meanwhile_says_so()
     {
         using var app = AdminWithTests(Cbc);
-        app.Api.On(HttpMethod.Get, $"{TestsPath}/{Cbc.Id}", _ => FakeApiHandler.Problem(HttpStatusCode.NotFound, ErrorCodes.NotFound));
+        app.Api.On(HttpMethod.Put, $"{TestsPath}/{Cbc.Id}", _ => FakeApiHandler.Problem(HttpStatusCode.NotFound, ErrorCodes.NotFound));
         var (page, window) = await ShowPage(app);
 
         await page.EditCommand.ExecuteAsync(Cbc);
         Dispatcher.UIThread.RunJobs();
+        var form = CurrentForm(window);
+        await form.SaveCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
 
-        Assert.Empty(window.GetVisualDescendants().OfType<Modal>());
-        Assert.Contains("This record no longer exists.", Toasts(window));
+        Assert.Equal("ErrorCode.not_found", form.FormErrorKey);
+        Assert.Equal("This record no longer exists.", app.Localization.Get(form.FormErrorKey!));
     }
 
     [AvaloniaFact]

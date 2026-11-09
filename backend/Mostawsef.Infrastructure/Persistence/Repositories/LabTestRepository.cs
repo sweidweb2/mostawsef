@@ -11,17 +11,34 @@ public class LabTestRepository(AppDbContext db) : ILabTestRepository
     public Task<LabTest?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
         db.LabTests.FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
 
+    public Task<LabTestListRow?> GetRowByIdAsync(Guid id, CancellationToken cancellationToken) =>
+        db.LabTests.AsNoTracking()
+            .Where(t => t.Id == id)
+            .Select(t => new LabTestListRow(
+                t.Id, t.Code, t.Name, t.Price, t.LabCost, t.IsActive, t.CreatedAt, t.UpdatedAt, t.UpdatedBy, t.Version))
+            .FirstOrDefaultAsync(cancellationToken);
+
+    public async Task<(LabTest? Test, bool IsUsed)> GetWithUsageAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var row = await db.LabTests
+            .Where(t => t.Id == id)
+            .Select(t => new { Test = t, IsUsed = db.OrderItems.Any(i => i.LabTestId == t.Id) })
+            .FirstOrDefaultAsync(cancellationToken);
+        return row is null ? (null, false) : (row.Test, row.IsUsed);
+    }
+
     public async Task<IReadOnlyList<LabTest>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken) =>
         await db.LabTests.Where(t => ids.Contains(t.Id)).ToListAsync(cancellationToken);
 
-    public Task<bool> IsUsedAsync(Guid id, CancellationToken cancellationToken) =>
-        db.OrderItems.AnyAsync(i => i.LabTestId == id, cancellationToken);
-
-    public Task<bool> CodeExistsAsync(string code, Guid? exceptId, CancellationToken cancellationToken) =>
-        db.LabTests.AnyAsync(t => t.Code == code && t.Id != exceptId, cancellationToken);
-
-    public Task<bool> NameExistsAsync(string searchName, Guid? exceptId, CancellationToken cancellationToken) =>
-        db.LabTests.AnyAsync(t => t.SearchName == searchName && t.Id != exceptId, cancellationToken);
+    public async Task<(bool CodeTaken, bool NameTaken)> FindDuplicatesAsync(
+        string code, string searchName, Guid? exceptId, CancellationToken cancellationToken)
+    {
+        var hits = await db.LabTests.AsNoTracking()
+            .Where(t => t.Id != exceptId && (t.Code == code || t.SearchName == searchName))
+            .Select(t => new { CodeHit = t.Code == code, NameHit = t.SearchName == searchName })
+            .ToListAsync(cancellationToken);
+        return (hits.Exists(h => h.CodeHit), hits.Exists(h => h.NameHit));
+    }
 
     public async Task<(IReadOnlyList<LabTestListRow> Items, int Total)> GetPageAsync(PageQuery query, bool? active, CancellationToken cancellationToken)
     {

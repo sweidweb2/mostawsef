@@ -309,12 +309,11 @@ public class PatientsPageTests
     {
         using var app = new TestServices();
         app.SignInAs(Roles.Admin);
-        var everyone = Enumerable.Range(1, 130)
+        var everyone = Enumerable.Range(1, 3)
             .Select(i => Omar with { Id = Guid.NewGuid(), FullName = $"Patient {i:000}" })
             .ToList();
-        app.Api
-            .OnGet(PatientsPath, new PagedResult<PatientDto>(everyone.Take(20).ToList(), 1, 20, everyone.Count))
-            .OnGet($"{PatientsPath}/all", (IReadOnlyList<PatientDto>)everyone);
+        app.Api.OnGet(PatientsPath, new PagedResult<PatientDto>([Omar], 1, 40, 1));
+        app.Api.OnGet($"{PatientsPath}/all", (IReadOnlyList<PatientDto>)everyone);
         var (page, _) = await ShowPage(app);
         page.Search = "Patient 001";
 

@@ -22,16 +22,14 @@ using Mostawsef.Desktop.ViewModels.Shell;
 namespace Mostawsef.Desktop.ViewModels.Admin;
 
 /// <summary>
-/// Admin portal sub-page: a new order in three columns. Column 1 picks an existing patient (server-backed autocomplete)
-/// or fills a new one, plus an optional first payment; column 2 holds the selected tests and the live total (with an
-/// optional our-price override); column 3 is the active lab test catalog. Saving sends one request; the API saves it
-/// all or nothing.
+/// Admin portal sub-page: a new order in three steps (patient, tests, review). Saving sends one request;
+/// the API saves it all or nothing. The lab-test catalog loads only when the tests step is opened.
 /// </summary>
 public partial class NewOrderViewModel : FormViewModel, ILoadablePage
 {
-    public const int PatientTab = 0;
-    public const int TestsTab = 1;
-    public const int CatalogTab = 2;
+    public const int PatientStep = 0;
+    public const int TestsStep = 1;
+    public const int ReviewStep = 2;
 
     private readonly OrdersApi _orders;
     private readonly PatientsApi _patients;
@@ -82,20 +80,46 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         };
         SelectedTests.CollectionChanged += (_, _) => InputChanged(nameof(SelectedTests));
         Closed += OnClosed;
+        RefreshStepContent();
 
         MarkClean();
     }
 
-    // ---- Patient (column 1) ----
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(
+        nameof(IsPatientStep), nameof(IsTestsStep), nameof(IsReviewStep),
+        nameof(CanGoNext), nameof(CanGoBack), nameof(ShowNext), nameof(ShowSave))]
+    [NotifyCanExecuteChangedFor(nameof(NextStepCommand), nameof(PreviousStepCommand))]
+    public partial int SelectedStep { get; set; }
 
-    /// <summary>The new patient's fields, the same form as on the patients page.</summary>
+    /// <summary>Marker for the ContentControl so only the active step's visual tree is built.</summary>
+    [ObservableProperty]
+    public partial object? StepContent { get; private set; }
+
+    public bool IsPatientStep => SelectedStep == PatientStep;
+
+    public bool IsTestsStep => SelectedStep == TestsStep;
+
+    public bool IsReviewStep => SelectedStep == ReviewStep;
+
+    public bool CanGoBack => SelectedStep > PatientStep;
+
+    public bool CanGoNext => SelectedStep switch
+    {
+        PatientStep => HasPatient,
+        TestsStep => HasSelectedTests,
+        _ => false,
+    };
+
+    public bool ShowNext => SelectedStep < ReviewStep;
+
+    public bool ShowSave => SelectedStep == ReviewStep;
+
     public PatientFormViewModel PatientForm { get; }
 
-    /// <summary>False: pick an existing patient; true: fill in a new one.</summary>
     [ObservableProperty]
     public partial bool IsNewPatient { get; set; }
 
-    /// <summary>Patients matching the current search (one API page). The autocomplete shows this list as-is.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(NoPatientsFound))]
     public partial IReadOnlyList<PatientDto> Patients { get; private set; } = [];
@@ -104,12 +128,10 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
     [NotifyPropertyChangedFor(nameof(NoPatientsFound))]
     public partial bool IsLoadingPatients { get; private set; }
 
-    /// <summary>Text in the patient autocomplete; debounced search against the API.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(NoPatientsFound))]
     public partial string? PatientSearch { get; set; }
 
-    /// <summary>Bound to the autocomplete selection; picking one fills <see cref="SelectedPatient"/>.</summary>
     [ObservableProperty]
     public partial PatientDto? PatientPick { get; set; }
 
@@ -127,10 +149,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
 
     public bool HasSelectedPatient => SelectedPatient is not null;
 
-    /// <summary>An existing patient is picked, or the new patient's required fields are filled in.</summary>
     public bool HasPatient => IsNewPatient ? PatientForm.HasRequiredFields : SelectedPatient is not null;
-
-    // ---- First payment (column 1) ----
 
     public IReadOnlyList<string> PaymentMethodOptions => PaymentMethods.All;
 
@@ -145,31 +164,22 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
 
     public bool HasPayment => PaymentAmount is > 0;
 
-    // ---- Selected tests (column 2) ----
-
     public ObservableCollection<OrderItemDraft> SelectedTests { get; } = [];
 
     public bool HasSelectedTests => SelectedTests.Count > 0;
 
-    /// <summary>Highest our-price addon the input accepts, in currency units.</summary>
     public decimal MaxOurPrice { get; } = Money.ToMajor(OrderRules.MaxOurPrice);
 
-    /// <summary>Sum of the selected tests' catalog prices, in minor units.</summary>
     public long CatalogTotal => SelectedTests.Sum(t => t.Test.Price);
 
-    /// <summary>Optional amount added on top of the catalog total.</summary>
     [ObservableProperty]
     public partial decimal? OurPrice { get; set; }
 
-    /// <summary>Catalog total plus our-price addon — what the patient can be charged, in minor units.</summary>
     public long Total => CatalogTotal + (OurPrice is { } price ? Money.ToMinor(price) : 0);
 
-    /// <summary>Highest first payment allowed right now (the live total), in currency units.</summary>
     public decimal MaxPayableAmount => Money.ToMajor(Math.Min(Total, OrderRules.MaxPaymentAmount));
 
     public long Remaining => Total - (PaymentAmount is { } amount ? Money.ToMinor(amount) : 0);
-
-    // ---- Catalog (column 3) ----
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCatalogEmpty))]
@@ -202,19 +212,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         _ => "Error.Description",
     };
 
-    /// <summary>Nothing to show: no active tests match the current search.</summary>
     public bool IsCatalogEmpty => !IsCatalogLoading && !HasCatalogError && Catalog.Count == 0;
-
-    /// <summary>The visible column below the Compact breakpoint (PatientTab, TestsTab, CatalogTab).</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsPatientTab), nameof(IsTestsTab), nameof(IsCatalogTab))]
-    public partial int SelectedTab { get; set; }
-
-    public bool IsPatientTab => SelectedTab == PatientTab;
-
-    public bool IsTestsTab => SelectedTab == TestsTab;
-
-    public bool IsCatalogTab => SelectedTab == CatalogTab;
 
     public Task ActivateAsync()
     {
@@ -224,9 +222,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
             _pageCancellation = new CancellationTokenSource();
         }
 
-        return _catalogLoaded && _loadedCatalogSearch == CatalogSearch
-            ? Task.CompletedTask
-            : LoadCatalogAsync();
+        return SelectedStep == TestsStep ? EnsureCatalogAsync() : Task.CompletedTask;
     }
 
     public void Deactivate()
@@ -239,7 +235,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         _pageCancellation.Cancel();
     }
 
-    protected override bool CanSave() => base.CanSave() && HasPatient && HasSelectedTests;
+    protected override bool CanSave() => base.CanSave() && IsReviewStep && HasPatient && HasSelectedTests;
 
     protected override object BuildRequest() => new CreateOrderRequest
     {
@@ -260,7 +256,6 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
     protected override bool HasChanges(object request, object savedRequest) =>
         JsonSerializer.Serialize(request) != JsonSerializer.Serialize(savedRequest);
 
-    /// <summary>The request's nested values: the attributes on the request itself do not look inside them.</summary>
     protected override void ValidateMore(FormErrors errors)
     {
         if (IsNewPatient && !PatientForm.ValidateInput())
@@ -292,14 +287,13 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
             }
         }
 
-        // Below the Compact breakpoint the field with the error may be on another tab.
         if (errors.HasErrors)
         {
             FormErrorKey = "ErrorCode.validation";
+            JumpToErrorStep(errors);
         }
     }
 
-    /// <summary>"NewPatient.Phone" goes to the patient form, "Items[1].LabTestId" to that test, "FirstPayment.Amount" to the payment.</summary>
     protected override bool TrySetFieldError(string field, string code)
     {
         if (!SetFieldError(field, code))
@@ -308,6 +302,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         }
 
         FormErrorKey = "ErrorCode.validation";
+        JumpToFieldStep(field);
         return true;
     }
 
@@ -373,11 +368,38 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
             case nameof(PatientSearch):
                 SchedulePatientSearch();
                 break;
+            case nameof(SelectedStep):
+                RefreshStepContent();
+                if (SelectedStep == TestsStep)
+                {
+                    _ = EnsureCatalogAsync();
+                }
+
+                SaveCommand.NotifyCanExecuteChanged();
+                break;
         }
     }
 
     [RelayCommand]
     private Task<bool> BackAsync() => _navigation.BackAsync();
+
+    [RelayCommand(CanExecute = nameof(CanGoNext))]
+    private void NextStep()
+    {
+        if (SelectedStep < ReviewStep && CanGoNext)
+        {
+            SelectedStep++;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanGoBack))]
+    private void PreviousStep()
+    {
+        if (SelectedStep > PatientStep)
+        {
+            SelectedStep--;
+        }
+    }
 
     partial void OnPatientPickChanged(PatientDto? value)
     {
@@ -410,7 +432,6 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         _loadedPatientSearch = null;
     }
 
-    /// <summary>Waits briefly so typing does not hit the API on every keystroke, then searches patients.</summary>
     private void SchedulePatientSearch()
     {
         _patientSearchDelay?.Cancel();
@@ -473,7 +494,6 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            // A newer search started, or the user left the page.
         }
         finally
         {
@@ -515,9 +535,13 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
     [RelayCommand]
     private Task RetryCatalogAsync() => LoadCatalogAsync();
 
-    /// <summary>Waits briefly so typing does not hit the API on every keystroke, then reloads the visible catalog.</summary>
     private void ScheduleCatalogSearch()
     {
+        if (SelectedStep != TestsStep)
+        {
+            return;
+        }
+
         _catalogSearchDelay?.Cancel();
         var delay = new CancellationTokenSource();
         _catalogSearchDelay = delay;
@@ -537,6 +561,11 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
 
         await LoadCatalogAsync();
     }
+
+    private Task EnsureCatalogAsync() =>
+        _catalogLoaded && _loadedCatalogSearch == CatalogSearch
+            ? Task.CompletedTask
+            : LoadCatalogAsync();
 
     private async Task LoadCatalogAsync()
     {
@@ -571,7 +600,6 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            // A newer search started, or the user left the page.
         }
         finally
         {
@@ -591,8 +619,55 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         OnPropertyChanged(nameof(Total));
         OnPropertyChanged(nameof(MaxPayableAmount));
         OnPropertyChanged(nameof(Remaining));
+        OnPropertyChanged(nameof(CanGoNext));
+        NextStepCommand.NotifyCanExecuteChanged();
         Errors.Clear(propertyName);
         SaveCommand.NotifyCanExecuteChanged();
+    }
+
+    private void RefreshStepContent() =>
+        StepContent = SelectedStep switch
+        {
+            PatientStep => new NewOrderPatientStep(this),
+            TestsStep => new NewOrderTestsStep(this),
+            _ => new NewOrderReviewStep(this),
+        };
+
+    private void JumpToErrorStep(FormErrors errors)
+    {
+        if (errors[nameof(CreateOrderRequest.NewPatient)] is not null
+            || errors[nameof(CreateOrderRequest.PatientId)] is not null)
+        {
+            SelectedStep = PatientStep;
+            return;
+        }
+
+        if (errors[nameof(CreateOrderRequest.Items)] is not null)
+        {
+            SelectedStep = TestsStep;
+        }
+    }
+
+    private void JumpToFieldStep(string field)
+    {
+        if (field.StartsWith(nameof(CreateOrderRequest.NewPatient), StringComparison.OrdinalIgnoreCase)
+            || field.Equals(nameof(CreateOrderRequest.PatientId), StringComparison.OrdinalIgnoreCase))
+        {
+            SelectedStep = PatientStep;
+            return;
+        }
+
+        if (field.StartsWith(nameof(CreateOrderRequest.Items), StringComparison.OrdinalIgnoreCase))
+        {
+            SelectedStep = TestsStep;
+            return;
+        }
+
+        if (field.StartsWith(nameof(CreateOrderRequest.FirstPayment), StringComparison.OrdinalIgnoreCase)
+            || field is nameof(PaymentAmount) or nameof(PaymentMethod) or nameof(PaymentNotes) or nameof(OurPrice))
+        {
+            SelectedStep = ReviewStep;
+        }
     }
 
     private async void OnClosed(object? sender, bool saved)
@@ -623,7 +698,25 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
     }
 }
 
-/// <summary>A card of the catalog column. Selected tests stay in the grid as a disabled ghost.</summary>
+/// <summary>ContentControl marker for the patient step (keeps only that visual tree alive).</summary>
+public sealed class NewOrderPatientStep(NewOrderViewModel order)
+{
+    public NewOrderViewModel Order { get; } = order;
+}
+
+/// <summary>ContentControl marker for the tests step.</summary>
+public sealed class NewOrderTestsStep(NewOrderViewModel order)
+{
+    public NewOrderViewModel Order { get; } = order;
+}
+
+/// <summary>ContentControl marker for the review step.</summary>
+public sealed class NewOrderReviewStep(NewOrderViewModel order)
+{
+    public NewOrderViewModel Order { get; } = order;
+}
+
+/// <summary>A card of the catalog. Selected tests stay in the grid as a disabled ghost.</summary>
 public partial class CatalogTestItem(LabTestDto test) : ObservableObject
 {
     public LabTestDto Test { get; } = test;
@@ -639,6 +732,5 @@ public partial class OrderItemDraft(CatalogTestItem item) : ObservableObject
 
     public LabTestDto Test => Item.Test;
 
-    /// <summary>Errors of this item, keyed like CreateOrderRequest item fields (LabTestId).</summary>
     public FormErrors Errors { get; } = new();
 }

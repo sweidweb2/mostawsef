@@ -41,8 +41,13 @@ public class UserService(
             total);
     }
 
-    public async Task<UserDetailsDto> GetAsync(Guid id, CancellationToken cancellationToken) =>
-        ToDetails(await FindAsync(id, cancellationToken));
+    public async Task<UserDetailsDto> GetAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var user = await users.GetDetailsAsync(id, cancellationToken) ?? throw AppException.NotFound();
+        return new UserDetailsDto(
+            user.Id, user.Username, user.FullName, user.Role.ToString(), user.IsActive, user.LastLoginAt,
+            user.CreatedAt, user.CreatedBy, user.UpdatedAt, user.UpdatedBy, user.Version);
+    }
 
     public async Task<UserDetailsDto> CreateAsync(CreateUserRequest request, CancellationToken cancellationToken)
     {

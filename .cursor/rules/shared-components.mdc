@@ -25,7 +25,7 @@ components that no screen uses. Scheduler, Wizard/Stepper, Breadcrumb, ButtonGro
 FormSection, ValidationSummary, DateRangePicker, FileUpload/ImagePicker, PatientCard/PatientHeader and
 PrintPreview were removed while unused: restore from git history (commit `983d1b9`) when a screen needs one.
 Pages that load data implement `ILoadablePage`: the shell reuses each menu page's view model for the portal lifetime
-(`PageHost` still builds a new view when the page is shown), calls `ActivateAsync` when it is shown and `Deactivate`
+(`PageHost` caches the view per page instance so returning to a reused menu page reattaches it), calls `ActivateAsync` when it is shown and `Deactivate`
 when the user leaves (cancels in-flight API calls; a cancelled first load marks the page stale so the next visit reloads).
 Pass a cancellation token to every API read a page makes (`PagedListViewModel.ReadAsync` for one-off reads such as details).
 List pages derive from `ViewModels/Shell/NumberedListViewModel` (page numbers; records sorted by a field, e.g. users) or

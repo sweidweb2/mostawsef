@@ -11,6 +11,14 @@ public class PatientRepository(AppDbContext db) : IPatientRepository
     public Task<Patient?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
         db.Patients.FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
 
+    public Task<PatientDetailsRow?> GetDetailsAsync(Guid id, CancellationToken cancellationToken) =>
+        db.Patients.AsNoTracking()
+            .Where(p => p.Id == id)
+            .Select(p => new PatientDetailsRow(
+                p.Id, p.FullName, p.Phone, p.GuardianPhone, p.Notes, p.IsInsured, p.Gender, p.DateOfBirth,
+                p.CreatedAt, p.UpdatedAt, p.UpdatedBy, p.Version))
+            .FirstOrDefaultAsync(cancellationToken);
+
     public async Task<(IReadOnlyList<PatientListRow> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken)
     {
         var patients = db.Patients.AsNoTracking();

@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Domain.Entities;
-using Mostawsef.Domain.Enums;
 using Mostawsef.Infrastructure.Persistence.Context;
 
 namespace Mostawsef.Infrastructure.Persistence.Repositories;
@@ -23,7 +22,7 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
                 o.Status,
                 o.Currency,
                 o.OurPrice,
-                o.Payments.Sum(p => p.Type == PaymentType.Refund ? -p.Amount : p.Amount),
+                o.Paid,
                 o.Items.Select(i => new OrderItemRow(
                     i.LabTestId,
                     i.LabTest != null ? i.LabTest.Code : string.Empty,
@@ -49,9 +48,9 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
                 o.CreatedAt,
                 o.PatientName,
                 o.PatientPhone,
-                o.Items.Count,
+                o.TestsCount,
                 o.OurPrice,
-                o.Payments.Sum(p => p.Type == PaymentType.Refund ? -p.Amount : p.Amount),
+                o.Paid,
                 o.Status));
 
         return await rows.ToPageAsync(query, cancellationToken);

@@ -336,8 +336,14 @@
   <data name="PaymentMethod.Transfer" xml:space="preserve"><value>Transfer</value></data>
   <data name="PaymentMethod.Insurance" xml:space="preserve"><value>Insurance</value></data>
   <data name="NewOrder.Title" xml:space="preserve"><value>New order</value></data>
-  <data name="NewOrder.Subtitle" xml:space="preserve"><value>Pick the patient, then click the tests to add them.</value></data>
+  <data name="NewOrder.Subtitle" xml:space="preserve"><value>Patient, then tests, then review and create.</value></data>
   <data name="NewOrder.Patient" xml:space="preserve"><value>Patient</value></data>
+  <data name="NewOrder.StepPatient" xml:space="preserve"><value>1. Patient</value></data>
+  <data name="NewOrder.StepTests" xml:space="preserve"><value>2. Tests</value></data>
+  <data name="NewOrder.StepReview" xml:space="preserve"><value>3. Review</value></data>
+  <data name="NewOrder.Next" xml:space="preserve"><value>Next</value></data>
+  <data name="NewOrder.Previous" xml:space="preserve"><value>Back</value></data>
+  <data name="NewOrder.Review" xml:space="preserve"><value>Review</value></data>
   <data name="NewOrder.SelectedTestsCount" xml:space="preserve"><value>Selected tests ({0})</value></data>
   <data name="NewOrder.Catalog" xml:space="preserve"><value>Lab tests</value></data>
   <data name="NewOrder.ExistingPatient" xml:space="preserve"><value>Existing patient</value></data>

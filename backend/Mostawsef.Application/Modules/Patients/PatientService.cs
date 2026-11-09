@@ -35,8 +35,13 @@ public class PatientService(IPatientRepository patients, IActivityLogger activit
     public async Task<IReadOnlyList<PatientDto>> ListAllAsync(CancellationToken cancellationToken) =>
         (await patients.ListAllAsync(cancellationToken)).Select(ToListDto).ToList();
 
-    public async Task<PatientDto> GetAsync(Guid id, CancellationToken cancellationToken) =>
-        ToDto(await FindAsync(id, cancellationToken));
+    public async Task<PatientDto> GetAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var patient = await patients.GetDetailsAsync(id, cancellationToken) ?? throw AppException.NotFound();
+        return new PatientDto(
+            patient.Id, patient.FullName, patient.Phone, patient.GuardianPhone, patient.Notes, patient.IsInsured,
+            patient.Gender.ToString(), patient.DateOfBirth, patient.CreatedAt, patient.UpdatedAt, patient.UpdatedBy, patient.Version);
+    }
 
     public async Task<PatientDto> CreateAsync(CreatePatientRequest request, CancellationToken cancellationToken)
     {

@@ -14,10 +14,27 @@ public record UserListRow(
     DateTime? LastLoginAt,
     DateTime CreatedAt);
 
+/// <summary>User details for a read-only GET (no password hash, no tracking).</summary>
+public record UserDetailsRow(
+    Guid Id,
+    string Username,
+    string FullName,
+    UserRole Role,
+    bool IsActive,
+    DateTime? LastLoginAt,
+    DateTime CreatedAt,
+    string? CreatedBy,
+    DateTime? UpdatedAt,
+    string? UpdatedBy,
+    int Version);
+
 /// <summary>Deleted users are invisible to every method except <see cref="UsernameExistsAsync"/>.</summary>
 public interface IUserRepository
 {
     Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>Details projection without PasswordHash (no tracking). Null when missing.</summary>
+    Task<UserDetailsRow?> GetDetailsAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>Active flag and role only (no tracking). Null when the user is missing or soft-deleted.</summary>
     Task<UserAuthStatus?> GetAuthStatusAsync(Guid id, CancellationToken cancellationToken);

@@ -35,7 +35,7 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
         (await tests.ListAllAsync(cancellationToken)).Select(t => ToListDto(t)).ToList();
 
     public async Task<LabTestDto> GetAsync(Guid id, CancellationToken cancellationToken) =>
-        ToDto(await FindAsync(id, cancellationToken));
+        ToListDto(await tests.GetRowByIdAsync(id, cancellationToken) ?? throw AppException.NotFound());
 
     public async Task<LabTestDto> CreateAsync(CreateLabTestRequest request, CancellationToken cancellationToken)
     {
@@ -69,8 +69,13 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
-        var test = await FindAsync(id, cancellationToken);
-        if (await tests.IsUsedAsync(test.Id, cancellationToken))
+        var (test, isUsed) = await tests.GetWithUsageAsync(id, cancellationToken);
+        if (test is null)
+        {
+            throw AppException.NotFound();
+        }
+
+        if (isUsed)
         {
             throw AppException.Conflict(ErrorCodes.InUse);
         }
@@ -86,12 +91,14 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
 
     private async Task EnsureUniqueAsync(string code, string name, Guid? exceptId, CancellationToken cancellationToken)
     {
-        if (await tests.CodeExistsAsync(LabTest.NormalizeCode(code), exceptId, cancellationToken))
+        var (codeTaken, nameTaken) = await tests.FindDuplicatesAsync(
+            LabTest.NormalizeCode(code), SearchText.Normalize(name), exceptId, cancellationToken);
+        if (codeTaken)
         {
             throw AppException.Conflict(ErrorCodes.Taken, nameof(CreateLabTestRequest.Code));
         }
 
-        if (await tests.NameExistsAsync(SearchText.Normalize(name), exceptId, cancellationToken))
+        if (nameTaken)
         {
             throw AppException.Conflict(ErrorCodes.Taken, nameof(CreateLabTestRequest.Name));
         }

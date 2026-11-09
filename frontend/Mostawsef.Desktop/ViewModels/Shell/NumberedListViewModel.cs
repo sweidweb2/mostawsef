@@ -137,8 +137,11 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
     protected abstract Task<ApiResult<PagedResult<TItem>>> FetchPageAsync(
         int page, int pageSize, string? search, bool includeTotal, CancellationToken cancellationToken);
 
-    /// <summary>Loads the shown page again with a fresh total, e.g. after a row was added, edited or deleted.</summary>
-    protected Task ReloadAsync() => LoadAsync(CurrentPage, includeTotal: true);
+    /// <summary>
+    /// Loads the shown page again. Pass <paramref name="includeTotal"/> false after an edit (the count is unchanged);
+    /// keep true after add/delete.
+    /// </summary>
+    protected Task ReloadAsync(bool includeTotal = true) => LoadAsync(CurrentPage, includeTotal);
 
     /// <summary>Starting a load cancels the one still running, so only the newest page and search are shown.</summary>
     private async Task LoadAsync(int page, bool includeTotal)
@@ -157,15 +160,24 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
             // Nothing is left on this page (e.g. its last row was deleted): show the new last page.
             if (result.IsSuccess && result.Value!.Items.Count == 0 && page > 1)
             {
-                if (!includeTotal || result.Value.TotalCount == PageQuery.TotalNotComputed)
+                var total = includeTotal && result.Value.TotalCount != PageQuery.TotalNotComputed
+                    ? result.Value.TotalCount
+                    : TotalCount;
+
+                // Page flips skip the total; reuse the cached count instead of a middle GET.
+                if (total <= 0)
                 {
                     result = await FetchPageAsync(page, PageSize, Search, includeTotal: true, cancellationToken);
                     cancellationToken.ThrowIfCancellationRequested();
+                    if (result.IsSuccess)
+                    {
+                        total = result.Value!.TotalCount;
+                    }
                 }
 
-                if (result.IsSuccess && result.Value!.TotalCount > 0)
+                if (result.IsSuccess && total > 0)
                 {
-                    page = Math.Max(1, result.Value.TotalPages);
+                    page = Math.Max(1, (int)Math.Ceiling(total / (double)PageSize));
                     result = await FetchPageAsync(page, PageSize, Search, includeTotal: false, cancellationToken);
                     cancellationToken.ThrowIfCancellationRequested();
                     includeTotal = false;

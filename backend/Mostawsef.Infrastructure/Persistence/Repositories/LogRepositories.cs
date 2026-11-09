@@ -22,15 +22,8 @@ public class ActivityLogRepository(AppDbContext db) : IActivityLogRepository
     public Task<ActivityLog?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
         db.ActivityLogs.AsNoTracking().FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
 
-    public async Task<DeletedActivityLog?> DeleteAsync(Guid id, CancellationToken cancellationToken)
-    {
-        var record = db.ActivityLogs.Where(l => l.Id == id);
-        var deleted = await record
-            .Select(l => new DeletedActivityLog(l.Action, l.Username, l.OccurredAt))
-            .FirstOrDefaultAsync(cancellationToken);
-
-        return deleted is not null && await record.ExecuteDeleteAsync(cancellationToken) > 0 ? deleted : null;
-    }
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken) =>
+        await db.ActivityLogs.Where(l => l.Id == id).ExecuteDeleteAsync(cancellationToken) > 0;
 
     public Task<int> DeleteOlderThanAsync(DateTime cutoffUtc, CancellationToken cancellationToken) =>
         Retention.DeleteInBatchesAsync(
@@ -68,15 +61,8 @@ public class SystemErrorRepository(AppDbContext db) : ISystemErrorRepository
     public Task<SystemError?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
         db.SystemErrors.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
 
-    public async Task<DeletedSystemError?> DeleteAsync(Guid id, CancellationToken cancellationToken)
-    {
-        var record = db.SystemErrors.Where(e => e.Id == id);
-        var deleted = await record
-            .Select(e => new DeletedSystemError(e.Source, e.Level, e.OccurredAt))
-            .FirstOrDefaultAsync(cancellationToken);
-
-        return deleted is not null && await record.ExecuteDeleteAsync(cancellationToken) > 0 ? deleted : null;
-    }
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken) =>
+        await db.SystemErrors.Where(e => e.Id == id).ExecuteDeleteAsync(cancellationToken) > 0;
 
     public Task<int> DeleteOlderThanAsync(DateTime cutoffUtc, CancellationToken cancellationToken) =>
         Retention.DeleteInBatchesAsync(

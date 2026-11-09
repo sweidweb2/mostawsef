@@ -47,7 +47,7 @@ public class AuthService(
         }
 
         // Overlap the settings read with PBKDF2 for non-Super users (Super skips maintenance).
-        var settingsTask = user.Role == UserRole.Super ? null : systemSettings.GetAsync(cancellationToken);
+        var settingsTask = user.Role == UserRole.Super ? null : systemSettings.GetSnapshotAsync(cancellationToken);
 
         var check = passwordHasher.Verify(user.PasswordHash, request.Password);
         if (check == PasswordCheck.Failed)

@@ -37,6 +37,20 @@ public class ClinicSettingsTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task A_second_read_reuses_the_cached_settings_row()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        await admin.GetJsonAsync<ClinicSettingsDto>(Url);
+
+        factory.Sql.Clear();
+        await admin.GetJsonAsync<ClinicSettingsDto>(Url);
+
+        Assert.DoesNotContain(
+            factory.Sql.Queries,
+            q => q.Contains("clinic_settings", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public async Task Admin_updates_the_settings_and_the_change_is_audited()
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);

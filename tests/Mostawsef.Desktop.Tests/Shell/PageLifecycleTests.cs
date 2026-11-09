@@ -43,7 +43,7 @@ public class PageLifecycleTests
     }
 
     [AvaloniaFact]
-    public void Returning_to_a_page_builds_a_new_view()
+    public void Returning_to_a_page_reuses_the_view()
     {
         using var app = new TestServices();
         _ = new SlowServer(app) { Answers = true };
@@ -60,7 +60,7 @@ public class PageLifecycleTests
 
         shell.SelectedMenuIndex = ActivityLogs;
         Dispatcher.UIThread.RunJobs();
-        Assert.NotSame(view, window.GetVisualDescendants().OfType<ActivityLogsView>().Single());
+        Assert.Same(view, window.GetVisualDescendants().OfType<ActivityLogsView>().Single());
     }
 
     [AvaloniaFact]

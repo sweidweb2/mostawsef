@@ -252,6 +252,9 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                     b.Property<long>("OurPrice")
                         .HasColumnType("bigint");
 
+                    b.Property<long>("Paid")
+                        .HasColumnType("bigint");
+
                     b.Property<Guid>("PatientId")
                         .HasColumnType("uuid");
 
@@ -280,6 +283,9 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<int>("TestsCount")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -293,8 +299,6 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedAt");
-
                     b.HasIndex("Number")
                         .IsUnique();
 
@@ -306,6 +310,8 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
 
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SearchText"), "gin");
                     NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("SearchText"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex("CreatedAt", "Id");
 
                     b.HasIndex("Status", "CreatedAt");
 

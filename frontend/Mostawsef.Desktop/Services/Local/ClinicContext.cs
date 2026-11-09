@@ -32,9 +32,17 @@ public partial class ClinicContext : ObservableObject
 
     public string? CurrencyCode => Settings?.CurrencyCode;
 
-    /// <summary>Reads the settings from the API. Returns false (keeping the last values) when that fails.</summary>
-    public async Task<bool> LoadAsync(CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Reads the settings from the API. Skips the GET when a value is already cached unless <paramref name="force"/>
+    /// is true (Refresh). Returns false (keeping the last values) when the call fails.
+    /// </summary>
+    public async Task<bool> LoadAsync(bool force = false, CancellationToken cancellationToken = default)
     {
+        if (!force && Settings is not null)
+        {
+            return true;
+        }
+
         var result = await _api.GetAsync(cancellationToken);
         if (result.IsSuccess)
         {

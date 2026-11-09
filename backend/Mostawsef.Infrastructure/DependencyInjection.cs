@@ -40,7 +40,7 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<ITokenService, JwtTokenService>();
         services.AddSingleton<IUserAuthCache, UserAuthCache>();
-        services.AddSingleton<IClinicCurrency, ClinicCurrency>();
+        services.AddSingleton<IClinicSettingsCache, ClinicSettingsCache>();
 
         // Same instance for IActivityLogger and the flush middleware.
         services.AddScoped<ActivityLogger>();

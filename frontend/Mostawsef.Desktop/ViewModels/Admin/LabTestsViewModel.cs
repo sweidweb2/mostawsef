@@ -69,21 +69,16 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
     [RelayCommand]
     private async Task EditAsync(LabTestDto? item)
     {
-        if (item is null || await ReadAsync(ct => _tests.GetTestAsync(item.Id, ct)) is not { } result)
+        // List rows are already full LabTestDto (including Version); no GET needed.
+        if (item is null)
         {
             return;
         }
 
-        if (!result.IsSuccess)
-        {
-            ShowError(result);
-            return;
-        }
-
-        if (await _dialogs.ShowFormAsync(new LabTestFormViewModel(_tests, _dialogs, Localization, result.Value), Localization.Get("LabTests.EditTitle")))
+        if (await _dialogs.ShowFormAsync(new LabTestFormViewModel(_tests, _dialogs, Localization, item), Localization.Get("LabTests.EditTitle")))
         {
             Toasts.Success(Localization.Get("LabTests.Saved"));
-            await ReloadAsync();
+            await ReloadAsync(includeTotal: false);
         }
     }
 

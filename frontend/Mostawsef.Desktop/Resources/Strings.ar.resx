@@ -336,8 +336,14 @@
   <data name="PaymentMethod.Transfer" xml:space="preserve"><value>تحويل</value></data>
   <data name="PaymentMethod.Insurance" xml:space="preserve"><value>تأمين</value></data>
   <data name="NewOrder.Title" xml:space="preserve"><value>طلب جديد</value></data>
-  <data name="NewOrder.Subtitle" xml:space="preserve"><value>اختر المريض، ثم اضغط على التحاليل لإضافتها.</value></data>
+  <data name="NewOrder.Subtitle" xml:space="preserve"><value>المريض، ثم التحاليل، ثم المراجعة والإنشاء.</value></data>
   <data name="NewOrder.Patient" xml:space="preserve"><value>المريض</value></data>
+  <data name="NewOrder.StepPatient" xml:space="preserve"><value>١. المريض</value></data>
+  <data name="NewOrder.StepTests" xml:space="preserve"><value>٢. التحاليل</value></data>
+  <data name="NewOrder.StepReview" xml:space="preserve"><value>٣. المراجعة</value></data>
+  <data name="NewOrder.Next" xml:space="preserve"><value>التالي</value></data>
+  <data name="NewOrder.Previous" xml:space="preserve"><value>رجوع</value></data>
+  <data name="NewOrder.Review" xml:space="preserve"><value>المراجعة</value></data>
   <data name="NewOrder.SelectedTestsCount" xml:space="preserve"><value>التحاليل المختارة ({0})</value></data>
   <data name="NewOrder.Catalog" xml:space="preserve"><value>التحاليل</value></data>
   <data name="NewOrder.ExistingPatient" xml:space="preserve"><value>مريض مسجل</value></data>

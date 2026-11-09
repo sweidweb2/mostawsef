@@ -45,7 +45,7 @@ public partial class UsersViewModel(UsersApi users, IDialogService dialogs, IToa
         if (await dialogs.ShowFormAsync(new UserFormViewModel(users, dialogs, Localization, result.Value), Localization.Get("Users.EditTitle")))
         {
             Toasts.Success(Localization.Get("Users.Saved"));
-            await ReloadAsync();
+            await ReloadAsync(includeTotal: false);
         }
     }
 

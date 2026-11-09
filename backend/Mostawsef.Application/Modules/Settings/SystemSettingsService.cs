@@ -16,12 +16,12 @@ public interface ISystemSettingsService
 
 public class SystemSettingsService(ISystemSettingsRepository settings, IActivityLogger activity) : ISystemSettingsService
 {
-    public async Task<SystemSettingsDto> GetAsync(CancellationToken cancellationToken) =>
-        ToDto(await settings.GetAsync(cancellationToken));
+    public Task<SystemSettingsDto> GetAsync(CancellationToken cancellationToken) =>
+        settings.GetSnapshotAsync(cancellationToken);
 
     public async Task<SystemSettingsDto> UpdateAsync(UpdateSystemSettingsRequest request, CancellationToken cancellationToken)
     {
-        var current = await settings.GetAsync(cancellationToken);
+        var current = await settings.GetForUpdateAsync(cancellationToken);
         if (current.Version != request.Version)
         {
             throw AppException.Conflict(ErrorCodes.ConcurrencyConflict);
@@ -39,9 +39,6 @@ public class SystemSettingsService(ISystemSettingsRepository settings, IActivity
             },
             cancellationToken);
 
-        return ToDto(current);
+        return new SystemSettingsDto(current.BackupPath, current.MaintenanceMode, current.Version, current.UpdatedAt, current.UpdatedBy);
     }
-
-    private static SystemSettingsDto ToDto(SystemSettings s) =>
-        new(s.BackupPath, s.MaintenanceMode, s.Version, s.UpdatedAt, s.UpdatedBy);
 }

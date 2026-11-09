@@ -16,7 +16,7 @@ public record OrderListRow(
     long Paid,
     OrderStatus Status);
 
-/// <summary>Order details without loading payment entities; Paid is summed in SQL.</summary>
+/// <summary>Order details without loading payment entities; Paid and TestsCount are stored on the order.</summary>
 public record OrderDetailsRow(
     Guid Id,
     string Number,
@@ -35,7 +35,7 @@ public record OrderItemRow(Guid LabTestId, string Code, string Name, long OurPri
 
 public interface IOrderRepository
 {
-    /// <summary>Details projection: items + lab-test labels and Paid sum; payments are not materialised.</summary>
+    /// <summary>Details projection: items + lab-test labels; payments are not materialised.</summary>
     Task<OrderDetailsRow?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>Newest first. Search is LIKE on SearchText (trigram; name, phone, number).</summary>

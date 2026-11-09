@@ -141,7 +141,7 @@ public class SystemErrorTests(ApiFactory factory)
 
         var auditDetails = await super.GetJsonAsync<ActivityLogDto>($"api/activity-logs/{audit.Items[0].Id}");
         Assert.Equal(item.Id.ToString(), auditDetails.EntityId);
-        Assert.Contains("\"source\":\"Api\"", auditDetails.Details);
+        Assert.Null(auditDetails.Details);
     }
 
     [Fact]

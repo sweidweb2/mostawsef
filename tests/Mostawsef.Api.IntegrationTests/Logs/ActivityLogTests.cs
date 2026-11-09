@@ -199,8 +199,7 @@ public class ActivityLogTests(ApiFactory factory)
 
         var auditDetails = await super.GetJsonAsync<ActivityLogDto>($"api/activity-logs/{audit.Items[0].Id}");
         Assert.Equal(target.Id.ToString(), auditDetails.EntityId);
-        Assert.Contains(attempted, auditDetails.Details);
-        Assert.Contains("auth.sign_in_failed", auditDetails.Details);
+        Assert.Null(auditDetails.Details);
     }
 
     [Fact]

@@ -31,7 +31,7 @@ Usage namespace: `xmlns:ui="using:Mostawsef.Desktop.Components"`.
 | TabView | Built-in | `TabControl` / `TabItem` |
 | Divider | Built | `ui:Divider` (optional `Text`, `Orientation`) |
 | ResponsiveGrid (layout helper) | Built | `ui:ResponsiveGrid` (auto 1-4 columns) |
-| PageHost (shell content area) | Built | `ui:PageHost Page="{Binding CurrentPage}"`: shows a page view model's view; a new view is built when the page changes |
+| PageHost (shell content area) | Built | `ui:PageHost Page="{Binding CurrentPage}"`: shows a page view model's view; caches the view per page instance so returning to a reused menu page reattaches the same view |
 
 ## Forms
 

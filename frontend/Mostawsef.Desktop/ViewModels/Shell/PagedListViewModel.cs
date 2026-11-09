@@ -186,7 +186,8 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
     /// <summary>
     /// Starting a load cancels the one still running, so only the newest page and search are shown.
     /// Leaving the page cancels it too; the next activation loads again.
-    /// When extras cover the unfiltered total and there is no search, stats load first so the list skips COUNT.
+    /// When extras cover the unfiltered total and there is no search, stats and the page load in parallel
+    /// so the list skips COUNT without waiting for stats first.
     /// </summary>
     private async Task LoadAsync(CursorQuery query, int page, bool withExtras)
     {
@@ -199,25 +200,24 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
         try
         {
             var useExtrasTotal = withExtras && string.IsNullOrWhiteSpace(query.Search);
-            Task? extras = null;
+            Task? extras = withExtras ? LoadExtrasAsync(cancellationToken) : null;
             if (useExtrasTotal)
             {
-                await LoadExtrasAsync(cancellationToken);
-                cancellationToken.ThrowIfCancellationRequested();
-                if (ExtrasTotalCount is { } extrasTotal)
-                {
-                    TotalCount = extrasTotal;
-                }
-
                 query = query with { IncludeTotal = false };
-            }
-            else if (withExtras)
-            {
-                extras = LoadExtrasAsync(cancellationToken);
             }
 
             var result = await FetchPageAsync(query, cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
+
+            if (extras is not null)
+            {
+                await extras;
+                cancellationToken.ThrowIfCancellationRequested();
+                if (useExtrasTotal && ExtrasTotalCount is { } extrasTotal)
+                {
+                    TotalCount = extrasTotal;
+                }
+            }
 
             // Nothing is left on this page (e.g. its last row was deleted): show the new last page.
             if (result.IsSuccess && result.Value!.Items.Count == 0 && page > 1)
@@ -242,11 +242,6 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
                 Items = [];
                 TotalCount = 0;
                 LoadError = result.Error;
-            }
-
-            if (extras is not null)
-            {
-                await extras;
             }
 
             _loaded = true;

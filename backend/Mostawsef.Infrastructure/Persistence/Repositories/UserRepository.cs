@@ -12,6 +12,14 @@ public class UserRepository(AppDbContext db) : IUserRepository
     public Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
         db.Users.FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
 
+    public Task<UserDetailsRow?> GetDetailsAsync(Guid id, CancellationToken cancellationToken) =>
+        db.Users.AsNoTracking()
+            .Where(u => u.Id == id)
+            .Select(u => new UserDetailsRow(
+                u.Id, u.Username, u.FullName, u.Role, u.IsActive, u.LastLoginAt,
+                u.CreatedAt, u.CreatedBy, u.UpdatedAt, u.UpdatedBy, u.Version))
+            .FirstOrDefaultAsync(cancellationToken);
+
     public async Task<UserAuthStatus?> GetAuthStatusAsync(Guid id, CancellationToken cancellationToken)
     {
         var row = await db.Users.AsNoTracking()

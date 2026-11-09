@@ -58,6 +58,12 @@ public class Order : Entity
     /// <summary>What the patient is charged for the whole order (minor units).</summary>
     public long OurPrice { get; private set; }
 
+    /// <summary>How many tests are on the order. Kept in sync by <see cref="AddItem"/> for the list page.</summary>
+    public int TestsCount { get; private set; }
+
+    /// <summary>Payments minus refunds (minor units). Kept in sync by <see cref="AddPayment"/> for the list page.</summary>
+    public long Paid { get; private set; }
+
     public string Currency { get; private set; } = string.Empty;
 
     public string? Notes { get; private set; }
@@ -72,19 +78,23 @@ public class Order : Entity
     /// <summary>What the patient owes (no discounts yet).</summary>
     public long Total => OurPrice;
 
-    /// <summary>Payments minus refunds.</summary>
-    public long Paid => _payments.Sum(p => p.Type == PaymentType.Refund ? -p.Amount : p.Amount);
-
     public long Balance => Total - Paid;
 
-    public void AddItem(LabTest test) => _items.Add(new OrderItem(test));
+    public void AddItem(LabTest test)
+    {
+        _items.Add(new OrderItem(test));
+        TestsCount = _items.Count;
+    }
 
     /// <summary>Sets the chargeable total. Call after the items are added.</summary>
     public void SetOurPrice(long ourPrice) => OurPrice = ourPrice;
 
     /// <summary>A payment in the order currency (exchange rate 1).</summary>
-    public void AddPayment(PaymentMethod method, long amount, DateTime paidAt, string? notes) =>
+    public void AddPayment(PaymentMethod method, long amount, DateTime paidAt, string? notes)
+    {
         _payments.Add(new Payment(PaymentType.Payment, method, Currency, amount, 1m, paidAt, notes));
+        Paid = SumPayments();
+    }
 
     /// <summary>Paid once nothing is owed, PartiallyPaid after a first payment, Pending before.</summary>
     public void UpdateStatus() =>
@@ -93,4 +103,14 @@ public class Order : Entity
             : OrderStatus.Pending;
 
     public void SetSearchText(string searchText) => SearchText = searchText;
+
+    /// <summary>Used by the one-time data backfill after TestsCount/Paid columns were added.</summary>
+    public void SetListAggregates(int testsCount, long paid)
+    {
+        TestsCount = testsCount;
+        Paid = paid;
+    }
+
+    private long SumPayments() =>
+        _payments.Sum(p => p.Type == PaymentType.Refund ? -p.Amount : p.Amount);
 }

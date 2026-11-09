@@ -16,11 +16,11 @@ public interface IClinicSettingsService
 
 public class ClinicSettingsService(
     IClinicSettingsRepository settings,
-    IClinicCurrency currency,
+    IClinicSettingsCache cache,
     IActivityLogger activity) : IClinicSettingsService
 {
-    public async Task<ClinicSettingsDto> GetAsync(CancellationToken cancellationToken) =>
-        ToDto(await settings.GetAsync(cancellationToken));
+    public Task<ClinicSettingsDto> GetAsync(CancellationToken cancellationToken) =>
+        cache.GetAsync(cancellationToken);
 
     public async Task<ClinicSettingsDto> UpdateAsync(UpdateClinicSettingsRequest request, CancellationToken cancellationToken)
     {
@@ -32,7 +32,7 @@ public class ClinicSettingsService(
 
         current.Update(request.Name, request.Address, request.Phone, request.CurrencyCode);
         await settings.SaveChangesAsync(cancellationToken);
-        currency.Invalidate();
+        cache.Invalidate();
 
         await activity.LogAsync(
             new ActivityEntry(ActivityActions.ClinicSettingsUpdated, ActivityModules.Settings, "Updated the clinic settings")

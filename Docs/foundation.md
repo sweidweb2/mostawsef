@@ -326,7 +326,7 @@ Health check: `GET http://localhost:5270/api/health` returns
 | Database | `Infrastructure/Persistence/Context/AppDbContext.cs`, `Configurations/`, `Migrations/` | Entities `User`, `ActivityLog`, `SystemError`, `ClinicSettings`, `SystemSettings`, `NumberSequence` |
 | Startup | `Api/Program.cs`, `Infrastructure/Persistence/DatabaseInitializer.cs` | Applies pending migrations, creates the clinic and system settings rows and seeds `Seed:Users` when the API starts |
 | Health | `Api/Controllers/HealthController.cs` | `GET /api/health` verifies API + database and reports `apiVersion` (`Contracts/Common/ApiVersion`) |
-| Connection banner | desktop `Services/Api/ConnectionMonitor`, `PortalShellView` | While signed in: health check every 15 s (3 s while offline); banner when the server is unreachable or runs another API version |
+| Connection banner | desktop `Services/Api/ConnectionMonitor`, `PortalShellView` | While signed in: health check every 60 s (3 s while offline); banner when the server is unreachable or runs another API version |
 | Clinic settings | `ClinicSettingsController`, `Application/Modules/Settings`, desktop `ClinicContext` + Admin page | Name, address, phone, currency. Everyone reads, Admin edits. No logo yet (storage still to decide) |
 | System settings | `SystemSettingsController`, `Application/Modules/Settings`, desktop Super "Settings" page | Backup folder (used by the backup feature, not built yet) and maintenance mode (only Super can sign in). Super only |
 | Readable numbers | `Application/Interfaces/INumberSequence`, `Domain/Common/DocumentNumber` | `P-000123`-style numbers per sequence name, safe across PCs (gaps possible after a failed save) |
@@ -342,7 +342,7 @@ Health check: `GET http://localhost:5270/api/health` returns
 | Dev database | `docker-compose.yml` | Development PostgreSQL (+ optional pgAdmin) |
 | Lab tests | `LabTestsController`, `Application/Modules/LabTests`, desktop `LabTestsViewModel` + form | The test catalog (Admin): code, name, our price, lab cost, active. A test used by an order cannot be deleted (409 `in_use`) |
 | Patients | `PatientsController`, `Application/Modules/Patients`, desktop `PatientsViewModel` + form | Patient records (Admin), soft delete, Arabic-aware name/phone search |
-| Orders | `OrdersController`, `Application/Modules/Orders`, desktop `OrdersViewModel`, `NewOrderViewModel`, `OrderDetailsViewModel` | Admin: list, new order (existing or new patient, tests with optional own prices, optional first payment; saved in one transaction, `ORD-000123` numbers), read-only details. No edit, cancel, discounts, refunds or printing yet |
+| Orders | `OrdersController`, `Application/Modules/Orders`, desktop `OrdersViewModel`, `NewOrderViewModel`, `OrderDetailsViewModel` | Admin: list (reads denormalized `TestsCount`/`Paid`), new order as a three-step flow (patient → tests catalog → review with optional first payment; catalog loads on the tests step; saved in one transaction, `ORD-000123` numbers), read-only details. No edit, cancel, discounts, refunds or printing yet |
 
 ---
 

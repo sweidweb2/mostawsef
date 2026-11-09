@@ -20,6 +20,8 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(o => o.DiscountType).HasConversion<string>().HasMaxLength(10);
         builder.Property(o => o.DiscountValue).IsRequired();
         builder.Property(o => o.OurPrice).IsRequired();
+        builder.Property(o => o.TestsCount).IsRequired();
+        builder.Property(o => o.Paid).IsRequired();
         builder.Property(o => o.Currency).HasMaxLength(Order.CurrencyMaxLength).IsRequired();
         builder.Property(o => o.Notes).HasMaxLength(Order.NotesMaxLength);
 
@@ -35,7 +37,7 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.HasIndex(o => o.PatientId);
         builder.HasIndex(o => new { o.Status, o.CreatedAt });
         builder.HasIndex(o => o.PatientSearchName);
-        builder.HasIndex(o => o.CreatedAt);
+        builder.HasIndex(o => new { o.CreatedAt, o.Id });
         // Index-only PostgreSQL exception (SQLite ignores it): substring search stays plain Contains/LIKE.
         builder.HasIndex(o => o.SearchText).HasMethod("gin").HasOperators("gin_trgm_ops");
     }

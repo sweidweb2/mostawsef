@@ -1,8 +1,7 @@
 using System.Net;
+using System.Net.Http;
 using System.Net.Http.Json;
-using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.Primitives;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -20,22 +19,41 @@ namespace Mostawsef.Desktop.Tests.Orders;
 
 public class NewOrderPageTests
 {
-    private static readonly string[] Columns = ["PatientColumn", "TestsColumn", "CatalogColumn"];
-
     [AvaloniaFact]
-    public async Task The_catalog_is_read_once_and_offers_only_active_tests()
+    public async Task Opening_the_page_does_not_load_the_catalog_until_the_tests_step()
     {
         using var app = Admin();
-        var (shell, page, window) = await ShowNewOrderAsync(app);
+        var (shell, page, _) = await ShowNewOrderAsync(app);
 
-        page.Deactivate();
-        await page.ActivateAsync();
+        Assert.Empty(app.Api.RequestsTo(HttpMethod.Get, TestsPath));
+        Assert.Equal(NewOrderViewModel.PatientStep, page.SelectedStep);
+        Assert.Same(page, shell.CurrentPage);
+
+        page.SelectPatientCommand.Execute(Mona);
+        page.NextStepCommand.Execute(null);
+        await WaitUntil(() => !page.IsCatalogLoading && page.Catalog.Count > 0);
+
+        var catalog = Assert.Single(app.Api.RequestsTo(HttpMethod.Get, TestsPath));
+        Assert.Contains("active=true", catalog.RequestUri!.Query, StringComparison.Ordinal);
+        Assert.Contains("includeTotal=false", catalog.RequestUri.Query, StringComparison.Ordinal);
+        Assert.Equal([Cbc.Id, Sugar.Id], page.Catalog.Select(t => t.Test.Id));
+    }
+
+    [AvaloniaFact]
+    public async Task Returning_to_the_tests_step_reuses_the_loaded_catalog()
+    {
+        using var app = Admin();
+        var (_, page, _) = await ShowNewOrderAsync(app);
+        await GoToTestsAsync(page);
+        AddTests(page, Cbc);
+
+        page.NextStepCommand.Execute(null);
+        Assert.Equal(NewOrderViewModel.ReviewStep, page.SelectedStep);
+        page.PreviousStepCommand.Execute(null);
+        await WaitUntil(() => page.SelectedStep == NewOrderViewModel.TestsStep);
 
         Assert.Single(app.Api.RequestsTo(HttpMethod.Get, TestsPath));
-        Assert.Contains("active=true", app.Api.RequestsTo(HttpMethod.Get, TestsPath).Single().RequestUri!.Query);
-        Assert.Equal([Cbc.Id, Sugar.Id], page.Catalog.Select(t => t.Test.Id));
-        Assert.Equal(2, CatalogCards(window).Count());
-        Assert.Same(page, shell.CurrentPage);
+        Assert.Equal(2, page.Catalog.Count);
     }
 
     [AvaloniaFact]
@@ -43,6 +61,7 @@ public class NewOrderPageTests
     {
         using var app = Admin();
         var (_, page, window) = await ShowNewOrderAsync(app);
+        await GoToTestsAsync(page);
 
         page.CatalogSearch = "سُكَّر";
         await WaitUntil(() => page.Catalog.Count == 1 && page.Catalog[0].Test.Id == Sugar.Id);
@@ -68,6 +87,7 @@ public class NewOrderPageTests
     {
         using var app = Admin();
         var (_, page, window) = await ShowNewOrderAsync(app);
+        await GoToTestsAsync(page);
         var cbc = page.Catalog.Single(t => t.Test.Id == Cbc.Id);
 
         Card(window, Cbc.Id).Command!.Execute(cbc);
@@ -92,7 +112,7 @@ public class NewOrderPageTests
     {
         using var app = Admin();
         var (_, page, window) = await ShowNewOrderAsync(app);
-        AddTests(page, Cbc, Sugar);
+        await GoToReviewAsync(page, Cbc, Sugar);
         Dispatcher.UIThread.RunJobs();
 
         Assert.Equal(20000, page.CatalogTotal);
@@ -115,27 +135,36 @@ public class NewOrderPageTests
     }
 
     [AvaloniaFact]
-    public async Task Create_needs_a_patient_and_at_least_one_test()
+    public async Task Create_needs_a_patient_and_at_least_one_test_on_the_review_step()
     {
         using var app = Admin();
         var (_, page, _) = await ShowNewOrderAsync(app);
 
         Assert.False(page.SaveCommand.CanExecute(null));
-        AddTests(page, Cbc);
-        Assert.False(page.SaveCommand.CanExecute(null));
+        Assert.False(page.NextStepCommand.CanExecute(null));
 
         page.SelectPatientCommand.Execute(Mona);
+        Assert.True(page.NextStepCommand.CanExecute(null));
+        Assert.False(page.SaveCommand.CanExecute(null));
+
+        await GoToTestsAsync(page);
+        AddTests(page, Cbc);
+        Assert.True(page.NextStepCommand.CanExecute(null));
+        page.NextStepCommand.Execute(null);
         Assert.True(page.SaveCommand.CanExecute(null));
 
+        page.PreviousStepCommand.Execute(null);
+        page.PreviousStepCommand.Execute(null);
         page.ChooseNewPatientCommand.Execute(null);
-        Assert.False(page.SaveCommand.CanExecute(null));
+        Assert.False(page.NextStepCommand.CanExecute(null));
         page.PatientForm.FullName = "Omar";
         page.PatientForm.Phone = "0111";
         page.PatientForm.Gender = Genders.Male;
-        Assert.True(page.SaveCommand.CanExecute(null));
+        Assert.True(page.NextStepCommand.CanExecute(null));
 
+        await GoToTestsAsync(page);
         page.RemoveTestCommand.Execute(page.SelectedTests.Single());
-        Assert.False(page.SaveCommand.CanExecute(null));
+        Assert.False(page.NextStepCommand.CanExecute(null));
     }
 
     [AvaloniaFact]
@@ -217,11 +246,14 @@ public class NewOrderPageTests
     {
         using var app = Admin();
         var (_, page, window) = await ShowNewOrderAsync(app);
-        AddTests(page, Sugar);
         page.ChooseNewPatientCommand.Execute(null);
         page.PatientForm.FullName = "Omar";
         page.PatientForm.Phone = "call me";
         page.PatientForm.Gender = Genders.Male;
+        await GoToTestsAsync(page);
+        AddTests(page, Sugar);
+        page.NextStepCommand.Execute(null);
+        await WaitUntil(() => page.SelectedStep == NewOrderViewModel.ReviewStep);
         page.PaymentAmount = 60m;
 
         await page.SaveCommand.ExecuteAsync(null);
@@ -229,7 +261,7 @@ public class NewOrderPageTests
 
         Assert.Equal(ErrorCodes.Invalid, page.PatientForm.Errors[nameof(PatientFormViewModel.Phone)]);
         Assert.Equal(ErrorCodes.ExceedsTotal, page.Errors[nameof(page.PaymentAmount)]);
-        Assert.Equal("The payment can't be more than the order total.", FieldError(window, "Amount"));
+        Assert.Equal(NewOrderViewModel.PatientStep, page.SelectedStep);
         Assert.Equal("Some fields need attention.", Named<Alert>(window, "FormError").Text);
         Assert.Empty(app.Api.RequestsTo(HttpMethod.Post, OrdersPath));
     }
@@ -246,12 +278,12 @@ public class NewOrderPageTests
             return FakeApiHandler.Json(created);
         });
         var (shell, page, window) = await ShowNewOrderAsync(app);
-        AddTests(page, Cbc, Sugar);
-        page.OurPrice = 5m;
         page.ChooseNewPatientCommand.Execute(null);
         page.PatientForm.FullName = "  Omar Khaled ";
         page.PatientForm.Phone = " 0111 ";
         page.PatientForm.Gender = Genders.Male;
+        await GoToReviewAsync(page, Cbc, Sugar);
+        page.OurPrice = 5m;
         page.PaymentAmount = 50m;
         page.PaymentMethod = PaymentMethods.Card;
         page.PaymentNotes = "  ";
@@ -286,11 +318,11 @@ public class NewOrderPageTests
             ("Items[1].LabTestId", ErrorCodes.Inactive),
             ("FirstPayment.Amount", ErrorCodes.ExceedsTotal)));
         var (_, page, window) = await ShowNewOrderAsync(app);
-        AddTests(page, Cbc, Sugar);
         page.ChooseNewPatientCommand.Execute(null);
         page.PatientForm.FullName = "Omar";
         page.PatientForm.Phone = "0111";
         page.PatientForm.Gender = Genders.Male;
+        await GoToReviewAsync(page, Cbc, Sugar);
         page.PaymentAmount = 10m;
 
         await page.SaveCommand.ExecuteAsync(null);
@@ -299,9 +331,10 @@ public class NewOrderPageTests
         Assert.Equal(ErrorCodes.Invalid, page.PatientForm.Errors[nameof(PatientFormViewModel.Phone)]);
         Assert.Null(page.SelectedTests[0].Errors[nameof(CreateOrderItemRequest.LabTestId)]);
         Assert.Equal(ErrorCodes.Inactive, page.SelectedTests[1].Errors[nameof(CreateOrderItemRequest.LabTestId)]);
-        Assert.Contains("This test is no longer offered.", Texts(window));
         Assert.Equal(ErrorCodes.ExceedsTotal, page.Errors[nameof(page.PaymentAmount)]);
         Assert.Equal("ErrorCode.validation", page.FormErrorKey);
+        Assert.Equal(NewOrderViewModel.PatientStep, page.SelectedStep);
+        Assert.Contains("Some fields need attention.", Texts(window));
     }
 
     [AvaloniaTheory]
@@ -320,8 +353,7 @@ public class NewOrderPageTests
             app.Api.On(HttpMethod.Post, OrdersPath, _ => throw new HttpRequestException("Connection refused"));
         }
 
-        AddTests(page, Cbc);
-        page.SelectPatientCommand.Execute(Mona);
+        await GoToReviewAsync(page, Cbc);
 
         await page.SaveCommand.ExecuteAsync(null);
 
@@ -333,6 +365,7 @@ public class NewOrderPageTests
     {
         using var app = Admin();
         var (shell, page, window) = await ShowNewOrderAsync(app);
+        await GoToTestsAsync(page);
         AddTests(page, Cbc);
         Assert.True(page.IsDirty);
 
@@ -355,6 +388,7 @@ public class NewOrderPageTests
         using var app = Admin();
         var (shell, page, window) = await ShowNewOrderAsync(app);
         var orders = shell.SelectedMenuIndex;
+        await GoToTestsAsync(page);
         AddTests(page, Cbc);
 
         shell.SelectedMenuIndex = 0;
@@ -379,6 +413,9 @@ public class NewOrderPageTests
     {
         using var app = Admin();
         var (shell, page, window) = await ShowNewOrderAsync(app);
+        page.SelectPatientCommand.Execute(Mona);
+        page.NextStepCommand.Execute(null);
+        await WaitUntil(() => page.SelectedStep == NewOrderViewModel.TestsStep && !page.IsCatalogLoading);
         page.CatalogSearch = "cbc";
 
         await page.BackCommand.ExecuteAsync(null);
@@ -390,49 +427,66 @@ public class NewOrderPageTests
     }
 
     [AvaloniaTheory]
-    [InlineData(AppLanguage.English, "New order", "Selected tests (1)")]
-    [InlineData(AppLanguage.Arabic, "طلب جديد", "التحاليل المختارة (1)")]
-    public async Task The_three_columns_render_side_by_side_in_both_languages(AppLanguage language, string title, string testsTitle)
+    [InlineData(AppLanguage.English, "New order", "1. Patient", "2. Tests", "3. Review")]
+    [InlineData(AppLanguage.Arabic, "طلب جديد", "١. المريض", "٢. التحاليل", "٣. المراجعة")]
+    public async Task The_step_indicator_renders_in_both_languages(
+        AppLanguage language, string title, string patient, string tests, string review)
     {
         using var app = Admin(language);
         var (_, page, window) = await ShowNewOrderAsync(app);
-        AddTests(page, Cbc);
         Dispatcher.UIThread.RunJobs();
 
         var texts = Texts(window);
         Assert.Contains(title, texts);
-        Assert.Contains(testsTitle, texts);
-        Assert.False(Named<TabStrip>(window, "ColumnTabs").IsEffectivelyVisible);
-        var columns = Columns.Select(name => Named<Card>(window, name)).ToList();
-        Assert.All(columns, c => Assert.True(c.IsEffectivelyVisible));
-        var x = columns.Select(c => c.TranslatePoint(default, window)!.Value.X).ToList();
-        if (language == AppLanguage.Arabic)
-        {
-            Assert.True(x[0] > x[1] && x[1] > x[2], string.Join(", ", x));
-        }
-        else
-        {
-            Assert.True(x[0] < x[1] && x[1] < x[2], string.Join(", ", x));
-        }
+        Assert.Contains(patient, texts);
+        Assert.Contains(tests, texts);
+        Assert.Contains(review, texts);
+        Assert.True(Named<ContentControl>(window, "StepHost").IsEffectivelyVisible);
+        Assert.True(Named<Card>(window, "PatientColumn").IsEffectivelyVisible);
+        Assert.Equal(NewOrderViewModel.PatientStep, page.SelectedStep);
     }
 
     [AvaloniaFact]
-    public async Task At_the_minimum_window_size_the_columns_become_tabs()
+    public async Task At_the_minimum_window_size_only_the_active_step_is_built()
     {
         using var app = Admin();
         var (_, page, window) = await ShowNewOrderAsync(app, width: 720, height: 520);
         Dispatcher.UIThread.RunJobs();
 
-        Assert.True(Named<TabStrip>(window, "ColumnTabs").IsEffectivelyVisible);
-        Assert.Equal([true, false, false], VisibleColumns(window));
-        Assert.True(Named<Button>(window, "CreateButton").IsEffectivelyVisible);
+        Assert.True(Named<Card>(window, "PatientColumn").IsEffectivelyVisible);
+        Assert.DoesNotContain(window.GetVisualDescendants().OfType<Card>(), c => c.Name is "TestsColumn" or "CatalogColumn" or "ReviewColumn");
+        Assert.True(Named<Button>(window, "NextStepButton").IsEffectivelyVisible);
+        Assert.False(Named<Button>(window, "CreateButton").IsEffectivelyVisible);
 
-        page.SelectedTab = NewOrderViewModel.CatalogTab;
+        await GoToTestsAsync(page);
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal([false, false, true], VisibleColumns(window));
-        Assert.True(Named<Button>(window, "CreateButton").IsEffectivelyVisible);
-        Assert.Equal(Named<TabStrip>(window, "ColumnTabs").Bounds.Width, Named<Card>(window, "CatalogColumn").Bounds.Width, precision: 0);
+        Assert.DoesNotContain(window.GetVisualDescendants().OfType<Card>(), c => c.Name == "PatientColumn");
+        Assert.True(Named<Card>(window, "CatalogColumn").IsEffectivelyVisible);
+        Assert.True(Named<Button>(window, "NextStepButton").IsEffectivelyVisible);
+    }
+
+    private static async Task GoToTestsAsync(NewOrderViewModel page)
+    {
+        if (!page.HasPatient)
+        {
+            page.SelectPatientCommand.Execute(Mona);
+        }
+
+        if (page.SelectedStep < NewOrderViewModel.TestsStep)
+        {
+            page.NextStepCommand.Execute(null);
+        }
+
+        await WaitUntil(() => page.SelectedStep == NewOrderViewModel.TestsStep && !page.IsCatalogLoading);
+    }
+
+    private static async Task GoToReviewAsync(NewOrderViewModel page, params Contracts.LabTests.LabTestDto[] tests)
+    {
+        await GoToTestsAsync(page);
+        AddTests(page, tests);
+        page.NextStepCommand.Execute(null);
+        await WaitUntil(() => page.SelectedStep == NewOrderViewModel.ReviewStep);
     }
 
     private static void AddTests(NewOrderViewModel page, params Contracts.LabTests.LabTestDto[] tests)
@@ -448,10 +502,4 @@ public class NewOrderPageTests
 
     private static Button Card(Window window, Guid testId) =>
         CatalogCards(window).Single(b => ((CatalogTestItem)b.DataContext!).Test.Id == testId);
-
-    private static bool[] VisibleColumns(Window window) =>
-        Columns.Select(name => Named<Card>(window, name).IsEffectivelyVisible).ToArray();
-
-    private static string? FieldError(Window window, string label) =>
-        window.GetVisualDescendants().OfType<FormField>().Single(f => f.Label == label && f.IsEffectivelyVisible).Error;
 }

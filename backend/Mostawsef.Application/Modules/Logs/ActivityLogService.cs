@@ -42,8 +42,7 @@ public class ActivityLogService(IActivityLogRepository logs, IActivityLogger act
 
     public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
-        var log = await logs.DeleteAsync(id, cancellationToken);
-        if (log is null)
+        if (!await logs.DeleteAsync(id, cancellationToken))
         {
             return false;
         }
@@ -53,7 +52,6 @@ public class ActivityLogService(IActivityLogRepository logs, IActivityLogger act
             {
                 EntityType = nameof(ActivityLog),
                 EntityId = id.ToString(),
-                Details = new { log.Action, log.Username, log.OccurredAt },
             },
             cancellationToken);
 

@@ -20,17 +20,21 @@ public interface ILabTestRepository
 {
     Task<LabTest?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
+    /// <summary>List-row projection (no tracking). Null when missing.</summary>
+    Task<LabTestListRow?> GetRowByIdAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>Tracked test plus whether any order item references it. Null test when missing.</summary>
+    Task<(LabTest? Test, bool IsUsed)> GetWithUsageAsync(Guid id, CancellationToken cancellationToken);
+
     /// <summary>The tests with these ids that exist (tracked, so order items can reference them).</summary>
     Task<IReadOnlyList<LabTest>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
 
-    /// <summary>True if an order item references the test.</summary>
-    Task<bool> IsUsedAsync(Guid id, CancellationToken cancellationToken);
-
-    /// <summary>True if another test (not <paramref name="exceptId"/>) has this normalized code.</summary>
-    Task<bool> CodeExistsAsync(string code, Guid? exceptId, CancellationToken cancellationToken);
-
-    /// <summary>True if another test (not <paramref name="exceptId"/>) has this normalized name (SearchName).</summary>
-    Task<bool> NameExistsAsync(string searchName, Guid? exceptId, CancellationToken cancellationToken);
+    /// <summary>
+    /// Whether another test (not <paramref name="exceptId"/>) already has this code and/or SearchName.
+    /// One statement; both flags can be true.
+    /// </summary>
+    Task<(bool CodeTaken, bool NameTaken)> FindDuplicatesAsync(
+        string code, string searchName, Guid? exceptId, CancellationToken cancellationToken);
 
     /// <summary>Ordered by SearchName then Code (unique indexes). Search is a prefix on SearchName or Code. <paramref name="active"/> filters IsActive when set.</summary>
     Task<(IReadOnlyList<LabTestListRow> Items, int Total)> GetPageAsync(PageQuery query, bool? active, CancellationToken cancellationToken);

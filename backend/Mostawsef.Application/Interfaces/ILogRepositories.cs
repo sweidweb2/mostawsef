@@ -9,12 +9,6 @@ public record LogCounts(int Total, int Today, int Last7Days, int Extra)
     public static readonly LogCounts None = new(0, 0, 0, 0);
 }
 
-/// <summary>What the deletion audit entry keeps about a removed activity log.</summary>
-public record DeletedActivityLog(string Action, string? Username, DateTime OccurredAt);
-
-/// <summary>What the deletion audit entry keeps about a removed system error.</summary>
-public record DeletedSystemError(string Source, ErrorLevel Level, DateTime OccurredAt);
-
 /// <summary>The columns the activity logs list shows; Details and UserAgent are loaded only for one record.</summary>
 public record ActivityLogSummary(
     Guid Id, DateTime OccurredAt, string Action, string Module, string Description, string? Username);
@@ -30,8 +24,8 @@ public interface IActivityLogRepository
 
     Task<ActivityLog?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
-    /// <summary>Returns null when the record does not exist.</summary>
-    Task<DeletedActivityLog?> DeleteAsync(Guid id, CancellationToken cancellationToken);
+    /// <summary>True when a row was deleted.</summary>
+    Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>Deletes every record that occurred before <paramref name="cutoffUtc"/>, in batches. Returns how many.</summary>
     Task<int> DeleteOlderThanAsync(DateTime cutoffUtc, CancellationToken cancellationToken);
@@ -47,8 +41,8 @@ public interface ISystemErrorRepository
 
     Task<SystemError?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
-    /// <summary>Returns null when the record does not exist.</summary>
-    Task<DeletedSystemError?> DeleteAsync(Guid id, CancellationToken cancellationToken);
+    /// <summary>True when a row was deleted.</summary>
+    Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>Deletes every error that occurred before <paramref name="cutoffUtc"/>, in batches. Returns how many.</summary>
     Task<int> DeleteOlderThanAsync(DateTime cutoffUtc, CancellationToken cancellationToken);

@@ -76,11 +76,11 @@ alwaysApply: false
 - **Theme** (`ThemeService`) and **language** (`LocalizationService`) are app-wide singletons that save to settings; change them only through `ui:PreferencesBar`.
 - **Clinic** (`ClinicContext`): the clinic settings (name, address, phone, currency), loaded when a portal opens and
   replaced after an edit. Read it for money and printouts; never call the settings API from other pages.
-- **Connection** (`ConnectionMonitor`): runs while signed in (health check every 15 s, 3 s while offline, offline at once
+- **Connection** (`ConnectionMonitor`): runs while signed in (health check every 60 s, 3 s while offline, offline at once
   when any call is unreachable); the portal shell shows its banner. Pages do not show their own "server down" banners.
 - **Page state** lives in its view model. Services are singletons; menu page view models are created once per portal
-  visit and reused when returning to that menu entry (reload only when stale or on Refresh). Sub-pages opened with
-  `OpenAsync` stay transient. No static mutable state.
+  visit and reused when returning to that menu entry (reload only when stale or on Refresh). `PageHost` caches the view
+  per page instance the same way. Sub-pages opened with `OpenAsync` stay transient. No static mutable state.
 
 ## Auth + navigation (see `Docs/auth.md`)
 - Every screen is listed in `AppRoutes` (view, access, portal menus); open pages only via `NavigationService` or the shell menu.

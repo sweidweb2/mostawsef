@@ -21,13 +21,13 @@ public enum ConnectionState
 }
 
 /// <summary>
-/// Watches the API while someone is signed in: checks GET /api/health every 15 s (every 3 s at the start of an
-/// outage, backing off to 15 s), and goes offline at once when any API call cannot reach the server.
+/// Watches the API while someone is signed in: checks GET /api/health every 60 s (every 3 s at the start of an
+/// outage, backing off to 60 s), and goes offline at once when any API call cannot reach the server.
 /// The portal shell shows the banner it describes. Stop cancels any in-flight check.
 /// </summary>
 public partial class ConnectionMonitor : ObservableObject
 {
-    public static readonly TimeSpan OnlineInterval = TimeSpan.FromSeconds(15);
+    public static readonly TimeSpan OnlineInterval = TimeSpan.FromSeconds(60);
     public static readonly TimeSpan OfflineInterval = TimeSpan.FromSeconds(3);
 
     /// <summary>After this many consecutive offline checks, poll at <see cref="OnlineInterval"/> instead of 3 s.</summary>

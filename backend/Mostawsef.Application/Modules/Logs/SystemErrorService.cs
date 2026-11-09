@@ -53,8 +53,7 @@ public class SystemErrorService(ISystemErrorRepository errors, ISystemErrorLogge
 
     public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
-        var error = await errors.DeleteAsync(id, cancellationToken);
-        if (error is null)
+        if (!await errors.DeleteAsync(id, cancellationToken))
         {
             return false;
         }
@@ -64,7 +63,6 @@ public class SystemErrorService(ISystemErrorRepository errors, ISystemErrorLogge
             {
                 EntityType = nameof(SystemError),
                 EntityId = id.ToString(),
-                Details = new { error.Source, error.Level, error.OccurredAt },
             },
             cancellationToken);
 

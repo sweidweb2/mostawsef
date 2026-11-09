@@ -216,6 +216,8 @@ Table orders {
   DiscountType DiscountType
   DiscountValue bigint [not null, default: 0, note: 'Percent: 0-100; Fixed: minor units']
   OurPrice bigint [not null, note: 'what the patient is charged: sum(order_items.OurPrice) + optional addon from create']
+  TestsCount integer [not null, note: 'denormalized item count for the list page']
+  Paid bigint [not null, note: 'denormalized payments minus refunds for the list page']
   Currency varchar(3) [not null]
   Notes varchar(2000)
   CreatedAt timestamptz [not null]
@@ -227,12 +229,12 @@ Table orders {
   Indexes {
     PatientId
     (Status, CreatedAt)
-    CreatedAt
+    (CreatedAt, Id)
     PatientSearchName
     SearchText [type: gin, note: 'gin_trgm_ops']
   }
 
-  Note: 'Implemented (migration AddOrders; OurPrice on AddOrderOurPrice; SearchText on AddOrderSearchText). List search is LIKE on SearchText (trigram; min 3 letters/digits). Total = OurPrice (catalog sum + addon) - discount; Discounts not used yet (DiscountValue 0).'
+  Note: 'Implemented (migration AddOrders; OurPrice on AddOrderOurPrice; SearchText on AddOrderSearchText; TestsCount/Paid on AddOrderListAggregates). List search is LIKE on SearchText (trigram; min 3 letters/digits). List reads TestsCount and Paid from the row. Total = OurPrice (catalog sum + addon) - discount; Discounts not used yet (DiscountValue 0).'
 }
 
 Table order_items {
