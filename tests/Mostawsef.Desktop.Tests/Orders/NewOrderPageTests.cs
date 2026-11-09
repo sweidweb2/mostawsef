@@ -88,23 +88,25 @@ public class NewOrderPageTests
     }
 
     [AvaloniaFact]
-    public async Task The_total_uses_the_catalog_price_until_a_price_is_typed_and_shows_the_balance_after_a_payment()
+    public async Task The_total_uses_the_catalog_sum_until_our_price_is_typed_and_shows_the_balance_after_a_payment()
     {
         using var app = Admin();
         var (_, page, window) = await ShowNewOrderAsync(app);
         AddTests(page, Cbc, Sugar);
         Dispatcher.UIThread.RunJobs();
 
+        Assert.Equal(20000, page.CatalogTotal);
         Assert.Equal(20000, page.Total);
         Assert.Equal("200.00", Named<TextBlock>(window, "TotalText").Text);
         Assert.False(Named<TextBlock>(window, "RemainingText").IsEffectivelyVisible);
 
-        page.SelectedTests[0].OurPrice = 120m;
+        page.OurPrice = 170m;
         page.PaymentAmount = 50m;
         Dispatcher.UIThread.RunJobs();
 
+        Assert.Equal(20000, page.CatalogTotal);
         Assert.Equal(17000, page.Total);
-        Assert.Equal("170.00", Named<TextBlock>(window, "TotalText").Text);
+        Assert.Equal("200.00", Named<TextBlock>(window, "TotalText").Text);
         Assert.Equal("120.00", Named<TextBlock>(window, "RemainingText").Text);
         Assert.True(Named<TextBlock>(window, "RemainingText").IsEffectivelyVisible);
     }
@@ -200,7 +202,7 @@ public class NewOrderPageTests
     }
 
     [AvaloniaFact]
-    public async Task A_valid_order_is_sent_with_empty_prices_as_null_then_its_details_open()
+    public async Task A_valid_order_is_sent_with_empty_our_price_as_null_then_its_details_open()
     {
         using var app = Admin();
         var created = Details(Guid.NewGuid());
@@ -213,7 +215,7 @@ public class NewOrderPageTests
         app.Api.OnGet($"{OrdersPath}/{created.Id}", created);
         var (shell, page, window) = await ShowNewOrderAsync(app);
         AddTests(page, Cbc, Sugar);
-        page.SelectedTests[1].OurPrice = 40m;
+        page.OurPrice = 180m;
         page.ChooseNewPatientCommand.Execute(null);
         page.PatientForm.FullName = "  Omar Khaled ";
         page.PatientForm.Phone = " 0111 ";
@@ -230,8 +232,9 @@ public class NewOrderPageTests
         Assert.Null(sent.PatientId);
         Assert.Equal(("Omar Khaled", "0111", Genders.Male), (sent.NewPatient!.FullName, sent.NewPatient.Phone, sent.NewPatient.Gender));
         Assert.Equal(
-            [new CreateOrderItemRequest { LabTestId = Cbc.Id }, new CreateOrderItemRequest { LabTestId = Sugar.Id, OurPrice = 4000 }],
+            [new CreateOrderItemRequest { LabTestId = Cbc.Id }, new CreateOrderItemRequest { LabTestId = Sugar.Id }],
             sent.Items);
+        Assert.Equal(18000, sent.OurPrice);
         Assert.Equal(new CreateFirstPaymentRequest { Amount = 5000, Method = PaymentMethods.Card, Notes = null }, sent.FirstPayment);
         Assert.Equal(created.Id, details.OrderId);
         Assert.Contains("Order ORD-000007 created.", Toasts(window));

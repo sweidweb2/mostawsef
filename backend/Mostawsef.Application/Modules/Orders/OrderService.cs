@@ -49,12 +49,11 @@ public class OrderService(
     public async Task<OrderDetailsDto> CreateAsync(CreateOrderRequest request, CancellationToken cancellationToken)
     {
         var (patient, isNewPatient) = await ResolvePatientAsync(request, cancellationToken);
-        var lines = (await LoadTestsAsync(request.Items, cancellationToken))
-            .Zip(request.Items, (test, item) => (Test: test, Price: item.OurPrice ?? test.Price))
-            .ToList();
+        var lines = await LoadTestsAsync(request.Items, cancellationToken);
+        var ourPrice = request.OurPrice ?? lines.Sum(t => t.Price);
 
         var payment = request.FirstPayment;
-        if (payment?.Amount > lines.Sum(l => l.Price))
+        if (payment?.Amount > ourPrice)
         {
             throw AppException.Validation(
                 $"{nameof(CreateOrderRequest.FirstPayment)}.{nameof(CreateFirstPaymentRequest.Amount)}", ErrorCodes.ExceedsTotal);
@@ -63,10 +62,12 @@ public class OrderService(
         // Every check passed: only now take a number, so refused requests leave no gap.
         var currency = (await settings.GetAsync(cancellationToken)).CurrencyCode;
         var order = new Order(DocumentNumber.Format(NumberPrefix, await numbers.NextAsync(NumberSequence, cancellationToken)), patient, currency);
-        foreach (var (test, price) in lines)
+        foreach (var test in lines)
         {
-            order.AddItem(test, price);
+            order.AddItem(test);
         }
+
+        order.SetOurPrice(ourPrice);
 
         if (payment is not null)
         {

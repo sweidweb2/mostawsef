@@ -34,7 +34,8 @@ public class OrdersTests(ApiFactory factory)
         var response = await admin.PostAsJsonAsync(Url, new CreateOrderRequest
         {
             PatientId = patient.Id,
-            Items = [new() { LabTestId = cbc.Id }, new() { LabTestId = sugar.Id, OurPrice = 4000 }],
+            Items = [new() { LabTestId = cbc.Id }, new() { LabTestId = sugar.Id }],
+            OurPrice = 18000,
         }, Ct);
         var order = await response.Content.ReadFromJsonAsync<OrderDetailsDto>(Ct);
 
@@ -42,17 +43,19 @@ public class OrdersTests(ApiFactory factory)
         Assert.EndsWith($"{Url}/{order!.Id}", response.Headers.Location!.ToString());
         Assert.Matches(@"^ORD-\d{6,}$", order.Number);
         Assert.Equal((patient.Id, patient.FullName, patient.Phone), (order.PatientId, order.PatientName, order.PatientPhone));
-        Assert.Equal((OrderStatuses.Pending, currency, 19000L, 0L, 19000L), (order.Status, order.Currency, order.Total, order.Paid, order.Balance));
+        Assert.Equal((OrderStatuses.Pending, currency, 18000L, 0L, 18000L), (order.Status, order.Currency, order.Total, order.Paid, order.Balance));
         Assert.Equal(TestUsers.Admin.Username, order.CreatedBy);
         Assert.Equal(
-            [new OrderItemDto(cbc.Id, cbc.Code, cbc.Name, 15000), new OrderItemDto(sugar.Id, sugar.Code, sugar.Name, 4000)],
+            [new OrderItemDto(cbc.Id, cbc.Code, cbc.Name, 15000), new OrderItemDto(sugar.Id, sugar.Code, sugar.Name, 5000)],
             order.Items);
         Assert.Equal(order, await admin.GetJsonAsync<OrderDetailsDto>($"{Url}/{order.Id}") with { CreatedAt = order.CreatedAt, Items = order.Items });
 
         await using var scope = factory.Services.CreateAsyncScope();
-        var labPrices = await scope.ServiceProvider.GetRequiredService<AppDbContext>().OrderItems
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var labPrices = await db.OrderItems
             .Where(i => i.OrderId == order.Id).OrderByDescending(i => i.OurPrice).Select(i => i.LabPrice).ToListAsync(Ct);
         Assert.Equal([9000L, 2000L], labPrices);
+        Assert.Equal(18000L, await db.Orders.Where(o => o.Id == order.Id).Select(o => o.OurPrice).SingleAsync(Ct));
     }
 
     [Theory]
@@ -138,7 +141,8 @@ public class OrdersTests(ApiFactory factory)
         var problem = await ProblemResponse.ReadAsync(await admin.PostAsJsonAsync(Url, new CreateOrderRequest
         {
             NewPatient = new() { FullName = " ", Phone = "call me", Gender = "Other" },
-            Items = [new() { LabTestId = null, OurPrice = -1 }],
+            Items = [new() { LabTestId = null }],
+            OurPrice = -1,
             FirstPayment = new() { Amount = 0, Method = "Cheque", Notes = new string('n', 501) },
         }, Ct));
 
@@ -147,7 +151,7 @@ public class OrdersTests(ApiFactory factory)
         Assert.Equal([ErrorCodes.Invalid], problem.Errors["NewPatient.Phone"]);
         Assert.Equal([ErrorCodes.Invalid], problem.Errors["NewPatient.Gender"]);
         Assert.Equal([ErrorCodes.Required], problem.Errors["Items[0].LabTestId"]);
-        Assert.Equal([$"range|0|{LabTestRules.MaxAmount}"], problem.Errors["Items[0].OurPrice"]);
+        Assert.Equal([$"range|0|{OrderRules.MaxOurPrice}"], problem.Errors["OurPrice"]);
         Assert.Equal([$"range|1|{OrderRules.MaxPaymentAmount}"], problem.Errors["FirstPayment.Amount"]);
         Assert.Equal([ErrorCodes.Invalid], problem.Errors["FirstPayment.Method"]);
         Assert.Equal([$"max_length|{OrderRules.PaymentNotesMaxLength}"], problem.Errors["FirstPayment.Notes"]);

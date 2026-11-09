@@ -23,8 +23,9 @@ namespace Mostawsef.Desktop.ViewModels.Admin;
 
 /// <summary>
 /// Admin portal sub-page: a new order in three columns. Column 1 picks an existing patient (search) or fills a new one,
-/// plus an optional first payment; column 2 holds the selected tests with their prices and the live total; column 3 is
-/// the active lab test catalog, loaded once and filtered locally. Saving sends one request; the API saves it all or nothing.
+/// plus an optional first payment; column 2 holds the selected tests and the live total (with an optional our-price
+/// override); column 3 is the active lab test catalog, loaded once and filtered locally. Saving sends one request;
+/// the API saves it all or nothing.
 /// </summary>
 public partial class NewOrderViewModel : FormViewModel, ILoadablePage
 {
@@ -132,8 +133,18 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
 
     public bool HasSelectedTests => SelectedTests.Count > 0;
 
-    /// <summary>Sum of the prices (typed, or the catalog price when left empty), in minor units.</summary>
-    public long Total => SelectedTests.Sum(t => t.EffectivePrice);
+    /// <summary>Highest our-price the input accepts, in currency units.</summary>
+    public decimal MaxOurPrice { get; } = Money.ToMajor(OrderRules.MaxOurPrice);
+
+    /// <summary>Sum of the selected tests' catalog prices, in minor units.</summary>
+    public long CatalogTotal => SelectedTests.Sum(t => t.Test.Price);
+
+    /// <summary>Typed our price for the order, or the catalog total when left empty.</summary>
+    [ObservableProperty]
+    public partial decimal? OurPrice { get; set; }
+
+    /// <summary>What the patient will be charged (typed our price, else the catalog total), in minor units.</summary>
+    public long Total => OurPrice is { } price ? Money.ToMinor(price) : CatalogTotal;
 
     public long Remaining => Total - (PaymentAmount is { } amount ? Money.ToMinor(amount) : 0);
 
@@ -202,9 +213,8 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
     {
         PatientId = IsNewPatient ? null : SelectedPatient?.Id,
         NewPatient = IsNewPatient ? PatientForm.ToCreateRequest() : null,
-        Items = SelectedTests
-            .Select(t => new CreateOrderItemRequest { LabTestId = t.Test.Id, OurPrice = t.OurPrice is { } price ? Money.ToMinor(price) : null })
-            .ToList(),
+        Items = SelectedTests.Select(t => new CreateOrderItemRequest { LabTestId = t.Test.Id }).ToList(),
+        OurPrice = OurPrice is { } price ? Money.ToMinor(price) : null,
         FirstPayment = PaymentAmount is { } amount
             ? new CreateFirstPaymentRequest
             {
@@ -229,7 +239,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         foreach (var test in SelectedTests)
         {
             test.Errors.Clear();
-            var item = new CreateOrderItemRequest { LabTestId = test.Test.Id, OurPrice = test.OurPrice is { } price ? Money.ToMinor(price) : null };
+            var item = new CreateOrderItemRequest { LabTestId = test.Test.Id };
             foreach (var (field, code) in Check(item))
             {
                 test.Errors.Set(field, code);
@@ -257,7 +267,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         }
     }
 
-    /// <summary>"NewPatient.Phone" goes to the patient form, "Items[1].OurPrice" to that test, "FirstPayment.Amount" to the payment.</summary>
+    /// <summary>"NewPatient.Phone" goes to the patient form, "Items[1].LabTestId" to that test, "FirstPayment.Amount" to the payment.</summary>
     protected override bool TrySetFieldError(string field, string code)
     {
         if (!SetFieldError(field, code))
@@ -315,6 +325,10 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         {
             case nameof(IsNewPatient) or nameof(SelectedPatient):
                 InputChanged(e.PropertyName);
+                break;
+            case nameof(OurPrice):
+                OnPropertyChanged(nameof(Total));
+                OnPropertyChanged(nameof(Remaining));
                 break;
             case nameof(PaymentAmount):
                 OnPropertyChanged(nameof(HasPayment));
@@ -397,15 +411,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         }
 
         item.IsSelected = true;
-        var draft = new OrderItemDraft(item);
-        draft.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(OrderItemDraft.OurPrice))
-            {
-                InputChanged(nameof(Total));
-            }
-        };
-        SelectedTests.Add(draft);
+        SelectedTests.Add(new OrderItemDraft(item));
     }
 
     [RelayCommand]
@@ -473,6 +479,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
     {
         OnPropertyChanged(nameof(HasPatient));
         OnPropertyChanged(nameof(HasSelectedTests));
+        OnPropertyChanged(nameof(CatalogTotal));
         OnPropertyChanged(nameof(Total));
         OnPropertyChanged(nameof(Remaining));
         Errors.Clear(propertyName);
@@ -521,23 +528,13 @@ public partial class CatalogTestItem(LabTestDto test) : ObservableObject
     public partial bool IsMatch { get; set; } = true;
 }
 
-/// <summary>A selected test with its price for this order: empty uses the catalog price.</summary>
+/// <summary>A selected test; its catalog price contributes to the order total.</summary>
 public partial class OrderItemDraft(CatalogTestItem item) : ObservableObject
 {
     public CatalogTestItem Item { get; } = item;
 
     public LabTestDto Test => Item.Test;
 
-    /// <summary>Highest price the input accepts, in currency units.</summary>
-    public decimal MaxPrice { get; } = Money.ToMajor(LabTestRules.MaxAmount);
-
-    /// <summary>Errors of this item, keyed like CreateOrderRequest item fields (OurPrice, LabTestId).</summary>
+    /// <summary>Errors of this item, keyed like CreateOrderRequest item fields (LabTestId).</summary>
     public FormErrors Errors { get; } = new();
-
-    [ObservableProperty]
-    public partial decimal? OurPrice { get; set; }
-
-    public long EffectivePrice => OurPrice is { } price ? Money.ToMinor(price) : Test.Price;
-
-    partial void OnOurPriceChanged(decimal? value) => Errors.Clear(nameof(OurPrice));
 }

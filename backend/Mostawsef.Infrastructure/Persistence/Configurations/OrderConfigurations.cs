@@ -18,6 +18,7 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(o => o.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
         builder.Property(o => o.DiscountType).HasConversion<string>().HasMaxLength(10);
         builder.Property(o => o.DiscountValue).IsRequired();
+        builder.Property(o => o.OurPrice).IsRequired();
         builder.Property(o => o.Currency).HasMaxLength(Order.CurrencyMaxLength).IsRequired();
         builder.Property(o => o.Notes).HasMaxLength(Order.NotesMaxLength);
 

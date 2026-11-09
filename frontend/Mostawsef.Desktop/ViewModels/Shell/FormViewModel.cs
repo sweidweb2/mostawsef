@@ -115,7 +115,7 @@ public abstract partial class FormViewModel : ViewModelBase
 
     /// <summary>
     /// Puts an API field error next to its input; false sends it to the form-level message. Override to map nested
-    /// fields such as "NewPatient.Phone" or "Items[0].OurPrice".
+    /// fields such as "NewPatient.Phone" or "Items[0].LabTestId".
     /// </summary>
     protected virtual bool TrySetFieldError(string field, string code)
     {

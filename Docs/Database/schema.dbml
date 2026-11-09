@@ -212,6 +212,7 @@ Table orders {
   Status OrderStatus [not null, default: 'Pending', note: 'Paid/PartiallyPaid derived from payments']
   DiscountType DiscountType
   DiscountValue bigint [not null, default: 0, note: 'Percent: 0-100; Fixed: minor units']
+  OurPrice bigint [not null, note: 'what the patient is charged; defaults to sum(order_items.OurPrice)']
   Currency varchar(3) [not null]
   Notes varchar(2000)
   CreatedAt timestamptz [not null]
@@ -227,7 +228,7 @@ Table orders {
     PatientSearchName
   }
 
-  Note: 'Implemented (migration AddOrders). Total = sum(order_items.OurPrice) - discount; computed, not stored. Discounts not used yet (DiscountValue 0).'
+  Note: 'Implemented (migration AddOrders; OurPrice on AddOrderOurPrice). Total = OurPrice - discount; Discounts not used yet (DiscountValue 0).'
 }
 
 Table order_items {
@@ -235,7 +236,7 @@ Table order_items {
   OrderId uuid [not null]
   LabTestId uuid [not null]
   LabPrice bigint [not null, note: 'copied from lab_tests.LabCost']
-  OurPrice bigint [not null, note: 'typed for the order, else copied from lab_tests.Price']
+  OurPrice bigint [not null, note: 'catalog price snapshot from lab_tests.Price']
   CreatedAt timestamptz [not null]
   CreatedBy varchar(50)
   UpdatedAt timestamptz

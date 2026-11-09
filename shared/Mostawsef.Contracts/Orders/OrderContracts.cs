@@ -12,6 +12,9 @@ public static class OrderRules
 
     /// <summary>10,000,000.00 in the clinic currency.</summary>
     public const long MaxPaymentAmount = 1_000_000_000;
+
+    /// <summary>Same ceiling as a payment: the chargeable total of an order.</summary>
+    public const long MaxOurPrice = MaxPaymentAmount;
 }
 
 /// <summary>Order status values. The desktop shows "OrderStatus.&lt;value&gt;".</summary>
@@ -79,6 +82,10 @@ public record CreateOrderRequest
     [MinLength(1, ErrorMessage = ErrorCodes.Required)]
     public IReadOnlyList<CreateOrderItemRequest> Items { get; init; } = [];
 
+    /// <summary>What the patient is charged; null uses the sum of the selected tests' catalog prices.</summary>
+    [Range(0, OrderRules.MaxOurPrice, ErrorMessage = ErrorCodes.Range)]
+    public long? OurPrice { get; init; }
+
     /// <summary>Optional; at most the order total.</summary>
     public CreateFirstPaymentRequest? FirstPayment { get; init; }
 }
@@ -87,10 +94,6 @@ public record CreateOrderItemRequest
 {
     [Required(ErrorMessage = ErrorCodes.Required)]
     public Guid? LabTestId { get; init; }
-
-    /// <summary>Our price for this order; null uses the test's catalog price.</summary>
-    [Range(0, LabTestRules.MaxAmount, ErrorMessage = ErrorCodes.Range)]
-    public long? OurPrice { get; init; }
 }
 
 /// <summary>Paid in the clinic currency when the order is created.</summary>

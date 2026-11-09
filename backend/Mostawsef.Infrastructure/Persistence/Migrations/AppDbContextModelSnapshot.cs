@@ -249,6 +249,9 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<long>("OurPrice")
+                        .HasColumnType("bigint");
+
                     b.Property<Guid>("PatientId")
                         .HasColumnType("uuid");
 

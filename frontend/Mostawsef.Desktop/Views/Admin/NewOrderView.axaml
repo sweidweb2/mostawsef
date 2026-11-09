@@ -199,32 +199,23 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:OrderItemDraft">
                                     <Border Classes="order-item">
-                                        <StackPanel Spacing="{DynamicResource GapControls}">
-                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource GapControls}">
-                                                <StackPanel Spacing="{DynamicResource SpaceHalf}">
-                                                    <TextBlock Classes="caption muted" Text="{Binding Test.Code}" />
-                                                    <TextBlock Classes="strong" TextWrapping="Wrap" Text="{Binding Test.Name}" />
-                                                </StackPanel>
-                                                <ui:IconButton Grid.Column="1"
-                                                               Classes="ghost destructive sm"
-                                                               VerticalAlignment="Top"
-                                                               Icon="{StaticResource IconClose}"
-                                                               ToolTip.Tip="{l:Tr NewOrder.RemoveTest}"
-                                                               Command="{Binding $parent[ItemsControl].((vm:NewOrderViewModel)DataContext).RemoveTestCommand}"
-                                                               CommandParameter="{Binding}" />
-                                            </Grid>
-                                            <ui:FormField Label="{l:Tr NewOrder.OurPrice}" Hint="{l:Tr NewOrder.OurPriceHint}" Error="{l:FieldError OurPrice}">
-                                                <NumericUpDown Value="{Binding OurPrice}"
-                                                               Minimum="0"
-                                                               Maximum="{Binding MaxPrice}"
-                                                               ClipValueToMinMax="True"
-                                                               FormatString="0.00"
-                                                               PlaceholderText="{l:Money Test.Price}"
-                                                               HorizontalAlignment="Stretch" />
-                                            </ui:FormField>
-                                            <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError LabTestId}"
-                                                       IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                                        </StackPanel>
+                                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{DynamicResource GapControls}">
+                                            <StackPanel Spacing="{DynamicResource SpaceHalf}">
+                                                <TextBlock Classes="caption muted" Text="{Binding Test.Code}" />
+                                                <TextBlock Classes="strong" TextWrapping="Wrap" Text="{Binding Test.Name}" />
+                                                <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError LabTestId}"
+                                                           IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1" Classes="strong" VerticalAlignment="Center"
+                                                       Text="{l:Money Test.Price}" />
+                                            <ui:IconButton Grid.Column="2"
+                                                           Classes="ghost destructive sm"
+                                                           VerticalAlignment="Center"
+                                                           Icon="{StaticResource IconClose}"
+                                                           ToolTip.Tip="{l:Tr NewOrder.RemoveTest}"
+                                                           Command="{Binding $parent[ItemsControl].((vm:NewOrderViewModel)DataContext).RemoveTestCommand}"
+                                                           CommandParameter="{Binding}" />
+                                        </Grid>
                                     </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -238,14 +229,25 @@
                 </Panel>
             </ui:Card>
 
-            <!-- Total and Create, under the selected tests -->
+            <!-- Total / our price and Create, under the selected tests -->
             <ui:Card Name="OrderFooter" Padding="{DynamicResource PaddingCardCompact}">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource GapGrid}">
                     <StackPanel VerticalAlignment="Center" Spacing="{DynamicResource SpaceHalf}">
                         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
                             <TextBlock Classes="muted" VerticalAlignment="Center" Text="{l:Tr NewOrder.Total}" />
-                            <TextBlock Name="TotalText" Classes="h3" VerticalAlignment="Center" Text="{l:Money Total}" />
+                            <TextBlock Name="TotalText" Classes="h3" VerticalAlignment="Center" Text="{l:Money CatalogTotal}" />
+                            <NumericUpDown Name="OurPriceBox"
+                                           Value="{Binding OurPrice}"
+                                           Minimum="0"
+                                           Maximum="{Binding MaxOurPrice}"
+                                           ClipValueToMinMax="True"
+                                           FormatString="0.00"
+                                           PlaceholderText="{l:Money CatalogTotal}"
+                                           ToolTip.Tip="{l:Tr NewOrder.OurPriceHint}"
+                                           VerticalAlignment="Center" />
                         </StackPanel>
+                        <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError OurPrice}"
+                                   IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}" IsVisible="{Binding HasPayment}">
                             <TextBlock Classes="caption muted" Text="{l:Tr NewOrder.Remaining}" />
                             <TextBlock Name="RemainingText" Classes="caption strong" Text="{l:Money Remaining}" />

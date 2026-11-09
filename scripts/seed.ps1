@@ -161,15 +161,19 @@ $statusCounts = @{}
 for ($i = 0; $i -lt $Orders; $i++) {
     $count = Pick @(1, 1, 2, 2, 3, 3, 4, 5, 6)
     $chosen = @($tests | Sort-Object { $random.Next() } | Select-Object -First $count)
-    $total = 0L
+    $catalogTotal = 0L
     $items = @(foreach ($test in $chosen) {
-            # One item in eight gets a discounted price typed for the order.
-            $price = if ($random.Next(8) -eq 0) { [long]([Math]::Floor($test.price * 0.9 / 500) * 500) } else { $null }
-            $total += if ($null -ne $price) { $price } else { $test.price }
-            @{ labTestId = $test.id; ourPrice = $price }
+            $catalogTotal += $test.price
+            @{ labTestId = $test.id }
         })
 
     $order = @{ items = $items }
+    # One order in eight gets a typed our-price below the catalog total.
+    $total = $catalogTotal
+    if ($catalogTotal -gt 0 -and $random.Next(8) -eq 0) {
+        $total = [long]([Math]::Max(100, [Math]::Floor($catalogTotal * 0.9 / 500) * 500))
+        $order.ourPrice = $total
+    }
     $insured = $false
     if ($random.Next(10) -eq 0) {
         $order.newPatient = New-PatientRequest

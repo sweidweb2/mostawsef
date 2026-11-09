@@ -50,6 +50,9 @@ public class Order : Entity
     /// <summary>Not used yet: stays 0.</summary>
     public long DiscountValue { get; private set; }
 
+    /// <summary>What the patient is charged for the whole order (minor units).</summary>
+    public long OurPrice { get; private set; }
+
     public string Currency { get; private set; } = string.Empty;
 
     public string? Notes { get; private set; }
@@ -58,15 +61,21 @@ public class Order : Entity
 
     public IReadOnlyList<Payment> Payments => _payments;
 
-    /// <summary>Sum of the items' prices (no discounts yet).</summary>
-    public long Total => _items.Sum(i => i.OurPrice);
+    /// <summary>Sum of the items' catalog prices (before an order-level our-price override).</summary>
+    public long CatalogTotal => _items.Sum(i => i.OurPrice);
+
+    /// <summary>What the patient owes (no discounts yet).</summary>
+    public long Total => OurPrice;
 
     /// <summary>Payments minus refunds.</summary>
     public long Paid => _payments.Sum(p => p.Type == PaymentType.Refund ? -p.Amount : p.Amount);
 
     public long Balance => Total - Paid;
 
-    public void AddItem(LabTest test, long ourPrice) => _items.Add(new OrderItem(test, ourPrice));
+    public void AddItem(LabTest test) => _items.Add(new OrderItem(test));
+
+    /// <summary>Sets the chargeable total. Call after the items are added.</summary>
+    public void SetOurPrice(long ourPrice) => OurPrice = ourPrice;
 
     /// <summary>A payment in the order currency (exchange rate 1).</summary>
     public void AddPayment(PaymentMethod method, long amount, DateTime paidAt, string? notes) =>

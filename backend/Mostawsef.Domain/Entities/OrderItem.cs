@@ -9,12 +9,12 @@ public class OrderItem : Entity
     {
     }
 
-    internal OrderItem(LabTest test, long ourPrice)
+    internal OrderItem(LabTest test)
     {
         LabTest = test;
         LabTestId = test.Id;
         LabPrice = test.LabCost;
-        OurPrice = ourPrice;
+        OurPrice = test.Price;
     }
 
     public Guid OrderId { get; private set; }
@@ -26,6 +26,6 @@ public class OrderItem : Entity
     /// <summary>What the lab charges the clinic (the test's LabCost at order time).</summary>
     public long LabPrice { get; private set; }
 
-    /// <summary>What the patient is charged.</summary>
+    /// <summary>The test's catalog price at order time (not editable per item).</summary>
     public long OurPrice { get; private set; }
 }
