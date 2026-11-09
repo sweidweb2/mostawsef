@@ -24,5 +24,9 @@ public record ActivityEntry(string Action, string Module, string Description)
 /// </summary>
 public interface IActivityLogger
 {
+    /// <summary>Buffers the entry for this request/scope. Call <see cref="FlushAsync"/> (or let the API middleware) to write.</summary>
     Task LogAsync(ActivityEntry entry, CancellationToken cancellationToken = default);
+
+    /// <summary>Writes every buffered entry in one insert. Safe to call when the buffer is empty.</summary>
+    Task FlushAsync(CancellationToken cancellationToken = default);
 }

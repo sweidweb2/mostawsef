@@ -53,6 +53,7 @@ public class LogRetentionService(
                     Details = new { result.ActivityLogs, result.SystemErrors, retention.ActivityLogDays, retention.SystemErrorDays },
                 },
                 cancellationToken);
+            await activity.FlushAsync(cancellationToken);
         }
 
         return result;

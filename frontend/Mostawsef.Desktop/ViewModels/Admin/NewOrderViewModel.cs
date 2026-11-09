@@ -49,6 +49,9 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
     private string? _loadedPatientSearch;
     private OrderDetailsDto? _created;
 
+    /// <summary>Called after a successful create so the orders list reloads when the user returns.</summary>
+    public Action? OnOrderCreated { get; set; }
+
     public static readonly TimeSpan CatalogSearchDelay = TimeSpan.FromMilliseconds(250);
 
     public static readonly TimeSpan PatientSearchDelay = CatalogSearchDelay;
@@ -131,9 +134,6 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
 
     public IReadOnlyList<string> PaymentMethodOptions => PaymentMethods.All;
 
-    /// <summary>Highest amount the payment input accepts, in currency units.</summary>
-    public decimal MaxPaymentAmount { get; } = Money.ToMajor(OrderRules.MaxPaymentAmount);
-
     [ObservableProperty]
     public partial decimal? PaymentAmount { get; set; }
 
@@ -151,18 +151,21 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
 
     public bool HasSelectedTests => SelectedTests.Count > 0;
 
-    /// <summary>Highest our-price the input accepts, in currency units.</summary>
+    /// <summary>Highest our-price addon the input accepts, in currency units.</summary>
     public decimal MaxOurPrice { get; } = Money.ToMajor(OrderRules.MaxOurPrice);
 
     /// <summary>Sum of the selected tests' catalog prices, in minor units.</summary>
     public long CatalogTotal => SelectedTests.Sum(t => t.Test.Price);
 
-    /// <summary>Typed our price for the order, or the catalog total when left empty.</summary>
+    /// <summary>Optional amount added on top of the catalog total.</summary>
     [ObservableProperty]
     public partial decimal? OurPrice { get; set; }
 
-    /// <summary>What the patient will be charged (typed our price, else the catalog total), in minor units.</summary>
-    public long Total => OurPrice is { } price ? Money.ToMinor(price) : CatalogTotal;
+    /// <summary>Catalog total plus our-price addon — what the patient can be charged, in minor units.</summary>
+    public long Total => CatalogTotal + (OurPrice is { } price ? Money.ToMinor(price) : 0);
+
+    /// <summary>Highest first payment allowed right now (the live total), in currency units.</summary>
+    public decimal MaxPayableAmount => Money.ToMajor(Math.Min(Total, OrderRules.MaxPaymentAmount));
 
     public long Remaining => Total - (PaymentAmount is { } amount ? Money.ToMinor(amount) : 0);
 
@@ -357,6 +360,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
                 break;
             case nameof(OurPrice):
                 OnPropertyChanged(nameof(Total));
+                OnPropertyChanged(nameof(MaxPayableAmount));
                 OnPropertyChanged(nameof(Remaining));
                 break;
             case nameof(PaymentAmount):
@@ -585,6 +589,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         OnPropertyChanged(nameof(HasSelectedTests));
         OnPropertyChanged(nameof(CatalogTotal));
         OnPropertyChanged(nameof(Total));
+        OnPropertyChanged(nameof(MaxPayableAmount));
         OnPropertyChanged(nameof(Remaining));
         Errors.Clear(propertyName);
         SaveCommand.NotifyCanExecuteChanged();
@@ -597,8 +602,9 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
             return;
         }
 
+        OnOrderCreated?.Invoke();
         _toasts.Success(Localization.Format("Orders.Created", order.Number));
-        await _navigation.OpenAsync<OrderDetailsViewModel>(page => page.OrderId = order.Id);
+        await _navigation.OpenAsync<OrderDetailsViewModel>(page => page.Seed(order));
     }
 
     private static string PaymentField(string requestField) => requestField switch

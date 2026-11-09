@@ -20,13 +20,8 @@ public partial class OrdersViewModel(OrdersApi orders, NavigationService navigat
         orders.GetOrdersAsync(page, pageSize, search, includeTotal, cancellationToken);
 
     [RelayCommand]
-    private async Task NewOrderAsync()
-    {
-        if (await navigation.OpenAsync<NewOrderViewModel>())
-        {
-            MarkStale();
-        }
-    }
+    private Task<bool> NewOrderAsync() =>
+        navigation.OpenAsync<NewOrderViewModel>(page => page.OnOrderCreated = MarkStale);
 
     [RelayCommand]
     private Task ViewAsync(OrderListItemDto? item) =>

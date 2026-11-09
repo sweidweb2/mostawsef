@@ -252,10 +252,12 @@ public class LabTestsTests(ApiFactory factory)
 
         var byCode = await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?search={test.Code.ToLowerInvariant()}");
         var firstPage = await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?page=1&pageSize=1");
+        var withoutTotal = await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?page=1&pageSize=1&includeTotal=false");
 
         Assert.Equal(test.Id, Assert.Single(byCode.Items).Id);
         Assert.Single(firstPage.Items);
         Assert.True(firstPage.TotalCount >= 2);
+        Assert.Equal(PageQuery.TotalNotComputed, withoutTotal.TotalCount);
     }
 
     [Fact]
@@ -274,6 +276,19 @@ public class LabTestsTests(ApiFactory factory)
 
         Assert.Equal(active.Id, Assert.Single(onlyActive.Items).Id);
         Assert.Equal(retired.Id, Assert.Single(onlyInactive.Items).Id);
+    }
+
+    [Fact]
+    public async Task All_returns_every_test_in_one_response()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var first = await CreateAsync(admin, name: $"Export A {Guid.NewGuid():N}");
+        var second = await CreateAsync(admin, name: $"Export B {Guid.NewGuid():N}");
+
+        var all = await admin.GetJsonAsync<IReadOnlyList<LabTestDto>>($"{Url}/all");
+
+        Assert.Contains(all, t => t.Id == first.Id);
+        Assert.Contains(all, t => t.Id == second.Id);
     }
 
     [Fact]

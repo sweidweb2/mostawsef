@@ -29,7 +29,7 @@ public class LabTestsApi(ApiClient api)
 
     /// <summary>Every test, sorted by name.</summary>
     public Task<ApiResult<IReadOnlyList<LabTestDto>>> GetAllTestsAsync(CancellationToken cancellationToken = default) =>
-        api.GetAllPagesAsync<LabTestDto>("api/lab-tests", cancellationToken);
+        api.GetAsync<IReadOnlyList<LabTestDto>>("api/lab-tests/all", cancellationToken);
 
     public Task<ApiResult<LabTestDto>> GetTestAsync(Guid id, CancellationToken cancellationToken = default) =>
         api.GetAsync<LabTestDto>($"api/lab-tests/{id}", cancellationToken);

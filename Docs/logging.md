@@ -50,6 +50,7 @@ await activity.LogAsync(
 ```
 
 - User, IP address and client are filled in from the current request.
+- Entries are buffered for the request and written once after the action (several logs share a single insert; callers of `LogAsync` return before the DB write).
 - Add the code to `Application/Common/ActivityActions.cs` (`module.verb`, e.g. `patients.created`) and its label to both resx files as `Action.patients.created`.
 - Never put passwords, tokens or full medical notes in `Details`.
 
@@ -94,6 +95,7 @@ The activity-log list loads only the columns it shows (same idea as system-error
 If the list cannot load, the table shows an error state with a Retry button (a specific message when the server is unreachable).
 Both pages derive from `ViewModels/Shell/PagedListViewModel`, which a new list page can reuse as well.
 Page moves send one cursor request without the total; a search counts again; the stat cards load only on the
-first load, Refresh and after a delete (they cover the whole table, not the shown page or search).
-Each menu visit creates a fresh page: returning to a list loads it again (Refresh also reloads).
+first load, Refresh and after a delete (they cover the whole table, not the shown page or search). When there is no
+search, the list skips its own `COUNT` and uses `stats.Total` instead.
+The shell reuses each menu page's view model: returning to a list keeps its data (Refresh reloads).
 Leaving a page cancels its requests still running; if that interrupted the first load, returning loads it again.

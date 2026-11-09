@@ -18,6 +18,7 @@ public partial class SystemSettingsViewModel(
     IToastService toasts,
     LocalizationService localization) : ViewModelBase, ILoadablePage
 {
+    private bool _loaded;
     private CancellationTokenSource? _loadCancellation;
 
     [ObservableProperty]
@@ -37,9 +38,17 @@ public partial class SystemSettingsViewModel(
     [ObservableProperty]
     public partial bool HasLoadError { get; private set; }
 
-    public Task ActivateAsync() => LoadAsync();
+    public Task ActivateAsync() => _loaded ? Task.CompletedTask : LoadAsync();
 
-    public void Deactivate() => _loadCancellation?.Cancel();
+    public void Deactivate()
+    {
+        if (_loadCancellation is not null)
+        {
+            _loaded = false;
+        }
+
+        _loadCancellation?.Cancel();
+    }
 
     [RelayCommand]
     private Task RefreshAsync() => LoadAsync();
@@ -73,10 +82,11 @@ public partial class SystemSettingsViewModel(
             cancellation.Token.ThrowIfCancellationRequested();
             Settings = result.Value ?? Settings;
             HasLoadError = !result.IsSuccess;
+            _loaded = result.IsSuccess;
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {
-            // The user left the page; the next activation loads again.
+            // The user left the page; the next activation loads again when the interrupted load marked it stale.
         }
         finally
         {

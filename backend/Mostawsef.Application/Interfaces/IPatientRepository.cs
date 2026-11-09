@@ -26,6 +26,9 @@ public interface IPatientRepository
     /// <summary>Ordered by SearchName. Search is LIKE on SearchText (trigram). Notes are not loaded.</summary>
     Task<(IReadOnlyList<PatientListRow> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken);
 
+    /// <summary>Every patient, ordered by SearchName. Notes are not loaded (print/export).</summary>
+    Task<IReadOnlyList<PatientListRow>> ListAllAsync(CancellationToken cancellationToken);
+
     void Add(Patient patient);
 
     /// <summary>Soft delete, applied on save.</summary>

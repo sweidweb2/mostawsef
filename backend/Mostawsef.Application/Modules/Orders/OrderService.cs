@@ -24,7 +24,7 @@ public class OrderService(
     IOrderRepository orders,
     IPatientRepository patients,
     ILabTestRepository tests,
-    IClinicSettingsRepository settings,
+    IClinicCurrency currency,
     INumberSequence numbers,
     IActivityLogger activity,
     TimeProvider time) : IOrderService
@@ -44,32 +44,42 @@ public class OrderService(
             total);
     }
 
-    public async Task<OrderDetailsDto> GetAsync(Guid id, CancellationToken cancellationToken) =>
-        ToDetails(await orders.GetByIdAsync(id, cancellationToken) ?? throw AppException.NotFound());
+    public async Task<OrderDetailsDto> GetAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var order = await orders.GetByIdAsync(id, cancellationToken) ?? throw AppException.NotFound();
+        return new OrderDetailsDto(
+            order.Id, order.Number, order.CreatedAt, order.CreatedBy, order.PatientId, order.PatientName, order.PatientPhone,
+            order.Status.ToString(), order.Currency, order.Total, order.Paid, order.Total - order.Paid,
+            order.Items.Select(i => new OrderItemDto(i.LabTestId, i.Code, i.Name, i.OurPrice)).ToList());
+    }
 
     public async Task<OrderDetailsDto> CreateAsync(CreateOrderRequest request, CancellationToken cancellationToken)
     {
+        // Currency uses its own context; patient and tests share the request DbContext so they stay sequential.
+        var currencyTask = currency.GetCodeAsync(cancellationToken);
         var (patient, isNewPatient) = await ResolvePatientAsync(request, cancellationToken);
         var lines = await LoadTestsAsync(request.Items, cancellationToken);
-        var ourPrice = request.OurPrice ?? lines.Sum(t => t.Price);
+        var currencyCode = await currencyTask;
+        var total = lines.Sum(t => t.Price) + (request.OurPrice ?? 0);
 
         var payment = request.FirstPayment;
-        if (payment?.Amount > ourPrice)
+        if (payment?.Amount > total)
         {
             throw AppException.Validation(
                 $"{nameof(CreateOrderRequest.FirstPayment)}.{nameof(CreateFirstPaymentRequest.Amount)}", ErrorCodes.ExceedsTotal);
         }
 
-        // Every check passed: only now take a number, so refused requests leave no gap.
-        var currency = (await settings.GetAsync(cancellationToken)).CurrencyCode;
-        var order = new Order(DocumentNumber.Format(NumberPrefix, await numbers.NextAsync(NumberSequence, cancellationToken)), patient, currency);
+        var order = new Order(
+            DocumentNumber.Format(NumberPrefix, await numbers.NextAsync(NumberSequence, cancellationToken)),
+            patient,
+            currencyCode);
         order.SetSearchText(SearchText.Key(patient.SearchName, patient.Phone, order.Number));
         foreach (var test in lines)
         {
             order.AddItem(test);
         }
 
-        order.SetOurPrice(ourPrice);
+        order.SetOurPrice(total);
 
         if (payment is not null)
         {

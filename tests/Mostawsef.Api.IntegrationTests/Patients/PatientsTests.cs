@@ -252,6 +252,23 @@ public class PatientsTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task All_returns_every_patient_without_notes_in_one_response()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var first = await CreateAsync(admin, $"Export A {Guid.NewGuid():N}");
+        var second = await CreateAsync(admin, $"Export B {Guid.NewGuid():N}");
+        await admin.PutAsJsonAsync($"{Url}/{first.Id}", Update(Valid() with
+        {
+            FullName = first.FullName, Phone = first.Phone, Notes = "Hidden",
+        }, first.Version), Ct);
+
+        var all = await admin.GetJsonAsync<IReadOnlyList<PatientDto>>($"{Url}/all");
+
+        Assert.Contains(all, p => p.Id == first.Id && p.Notes is null);
+        Assert.Contains(all, p => p.Id == second.Id);
+    }
+
+    [Fact]
     public async Task Patient_actions_are_logged_without_medical_notes()
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);

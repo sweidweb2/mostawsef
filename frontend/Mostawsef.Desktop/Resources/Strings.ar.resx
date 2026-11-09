@@ -353,7 +353,7 @@
   <data name="NewOrder.PaymentNotesPlaceholder" xml:space="preserve"><value>اختياري، مثل رقم الإيصال</value></data>
   <data name="NewOrder.RemoveTest" xml:space="preserve"><value>إزالة</value></data>
   <data name="NewOrder.OurPrice" xml:space="preserve"><value>سعرنا</value></data>
-  <data name="NewOrder.OurPriceHint" xml:space="preserve"><value>اتركه فارغاً لاحتساب مجموع أسعار القائمة.</value></data>
+  <data name="NewOrder.OurPriceHint" xml:space="preserve"><value>يُضاف فوق مجموع أسعار التحاليل. اتركه فارغاً إن لم يكن هناك مبلغ إضافي.</value></data>
   <data name="NewOrder.NoTests" xml:space="preserve"><value>لا توجد تحاليل بعد</value></data>
   <data name="NewOrder.NoTestsHint" xml:space="preserve"><value>اضغط على تحليل من القائمة لإضافته.</value></data>
   <data name="NewOrder.Total" xml:space="preserve"><value>الإجمالي</value></data>

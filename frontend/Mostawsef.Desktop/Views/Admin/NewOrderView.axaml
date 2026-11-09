@@ -151,7 +151,7 @@
                                 <NumericUpDown Name="PaymentAmountBox"
                                                Value="{Binding PaymentAmount}"
                                                Minimum="0"
-                                               Maximum="{Binding MaxPaymentAmount}"
+                                               Maximum="{Binding MaxPayableAmount}"
                                                ClipValueToMinMax="True"
                                                FormatString="0.00"
                                                PlaceholderText="{l:Tr LabTests.Field.AmountPlaceholder}"
@@ -227,38 +227,37 @@
 
             <!-- Total / our price and Create, under the selected tests -->
             <ui:Card Name="OrderFooter" Padding="{DynamicResource PaddingCardCompact}">
-                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource GapGrid}">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource GapGrid}">
                     <StackPanel VerticalAlignment="Center" Spacing="{DynamicResource SpaceHalf}">
-                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
-                            <TextBlock Classes="muted" VerticalAlignment="Center" Text="{l:Tr NewOrder.Total}" />
-                            <TextBlock Name="TotalText" Classes="h3" VerticalAlignment="Center" Text="{l:Money CatalogTotal}" />
-                        </StackPanel>
+                        <TextBlock Classes="muted" Text="{l:Tr NewOrder.Total}" />
+                        <TextBlock Name="TotalText" Classes="h3" Text="{l:Money Total}" />
                         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}" IsVisible="{Binding HasPayment}">
                             <TextBlock Classes="caption muted" Text="{l:Tr NewOrder.Remaining}" />
                             <TextBlock Name="RemainingText" Classes="caption strong" Text="{l:Money Remaining}" />
                         </StackPanel>
                     </StackPanel>
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="{DynamicResource SpaceHalf}">
-                        <TextBlock Classes="caption muted" Text="{l:Tr NewOrder.OurPrice}" />
-                        <NumericUpDown Name="OurPriceBox"
-                                       Value="{Binding OurPrice}"
-                                       Minimum="0"
-                                       Maximum="{Binding MaxOurPrice}"
-                                       ClipValueToMinMax="True"
-                                       ShowButtonSpinner="False"
-                                       FormatString="0.00"
-                                       PlaceholderText="{l:Money CatalogTotal}"
-                                       ToolTip.Tip="{l:Tr NewOrder.OurPriceHint}"
-                                       HorizontalAlignment="Stretch" />
-                        <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError OurPrice}"
-                                   IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                    </StackPanel>
-                    <Button Name="CreateButton" Grid.Column="2" Classes="primary" VerticalAlignment="Center" Command="{Binding SaveCommand}">
-                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
-                            <ui:Spinner IsVisible="{Binding IsBusy}" />
-                            <TextBlock Text="{l:Tr NewOrder.Create}" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="{DynamicResource GapGrid}" VerticalAlignment="Center">
+                        <StackPanel Spacing="{DynamicResource SpaceHalf}" VerticalAlignment="Center">
+                            <TextBlock Classes="caption muted" Text="{l:Tr NewOrder.OurPrice}" />
+                            <NumericUpDown Name="OurPriceBox"
+                                           Value="{Binding OurPrice}"
+                                           Minimum="0"
+                                           Maximum="{Binding MaxOurPrice}"
+                                           ClipValueToMinMax="True"
+                                           ShowButtonSpinner="False"
+                                           FormatString="0.00"
+                                           PlaceholderText="{l:Tr LabTests.Field.AmountPlaceholder}"
+                                           ToolTip.Tip="{l:Tr NewOrder.OurPriceHint}" />
+                            <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError OurPrice}"
+                                       IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                         </StackPanel>
-                    </Button>
+                        <Button Name="CreateButton" Classes="primary" VerticalAlignment="Center" Command="{Binding SaveCommand}">
+                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                                <ui:Spinner IsVisible="{Binding IsBusy}" />
+                                <TextBlock Text="{l:Tr NewOrder.Create}" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
                 </Grid>
             </ui:Card>
 

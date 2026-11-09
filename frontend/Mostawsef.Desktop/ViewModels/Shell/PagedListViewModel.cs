@@ -159,9 +159,18 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
     /// <summary>Extra data shown with the list, e.g. stat cards. Loaded on the first load, Refresh and ReloadAsync only.</summary>
     protected virtual Task LoadExtrasAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
-    /// <summary>Loads the shown page again with a fresh total and extras, e.g. after one of its rows was deleted.</summary>
-    protected Task ReloadAsync() =>
-        LoadAsync((_shownQuery ?? FirstPage(Search)) with { IncludeTotal = true }, _shownPage, withExtras: true);
+    /// <summary>
+    /// Unfiltered table total from extras (e.g. stats). When set and the list has no search, the list skips its own COUNT.
+    /// </summary>
+    protected virtual int? ExtrasTotalCount => null;
+
+    /// <summary>Loads the shown page again with extras; counts only when a search filter is active (stats cover the unfiltered total).</summary>
+    protected Task ReloadAsync()
+    {
+        var query = _shownQuery ?? FirstPage(Search);
+        var includeTotal = !string.IsNullOrWhiteSpace(query.Search);
+        return LoadAsync(query with { IncludeTotal = includeTotal }, _shownPage, withExtras: true);
+    }
 
     private CursorQuery FirstPage(string? search) => new(PageSize, search);
 
@@ -177,6 +186,7 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
     /// <summary>
     /// Starting a load cancels the one still running, so only the newest page and search are shown.
     /// Leaving the page cancels it too; the next activation loads again.
+    /// When extras cover the unfiltered total and there is no search, stats load first so the list skips COUNT.
     /// </summary>
     private async Task LoadAsync(CursorQuery query, int page, bool withExtras)
     {
@@ -188,7 +198,24 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
         IsLoading = true;
         try
         {
-            var extras = withExtras ? LoadExtrasAsync(cancellationToken) : Task.CompletedTask;
+            var useExtrasTotal = withExtras && string.IsNullOrWhiteSpace(query.Search);
+            Task? extras = null;
+            if (useExtrasTotal)
+            {
+                await LoadExtrasAsync(cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                if (ExtrasTotalCount is { } extrasTotal)
+                {
+                    TotalCount = extrasTotal;
+                }
+
+                query = query with { IncludeTotal = false };
+            }
+            else if (withExtras)
+            {
+                extras = LoadExtrasAsync(cancellationToken);
+            }
+
             var result = await FetchPageAsync(query, cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -217,7 +244,11 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
                 LoadError = result.Error;
             }
 
-            await extras;
+            if (extras is not null)
+            {
+                await extras;
+            }
+
             _loaded = true;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

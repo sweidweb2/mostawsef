@@ -16,6 +16,8 @@ public partial class ClinicSettingsViewModel(
     IToastService toasts,
     LocalizationService localization) : ViewModelBase, ILoadablePage
 {
+    private bool _loaded;
+
     public ClinicContext Clinic => clinic;
 
     [ObservableProperty]
@@ -26,9 +28,19 @@ public partial class ClinicSettingsViewModel(
 
     public async Task ActivateAsync()
     {
-        IsLoading = true;
-        HasLoadError = !await clinic.LoadAsync();
-        IsLoading = false;
+        if (_loaded)
+        {
+            return;
+        }
+
+        // Portal already starts loading clinic settings; reuse them when present.
+        if (clinic.Settings is not null)
+        {
+            _loaded = true;
+            return;
+        }
+
+        await LoadAsync();
     }
 
     public void Deactivate()
@@ -36,7 +48,7 @@ public partial class ClinicSettingsViewModel(
     }
 
     [RelayCommand]
-    private Task RefreshAsync() => ActivateAsync();
+    private Task RefreshAsync() => LoadAsync();
 
     [RelayCommand]
     private async Task EditAsync()
@@ -47,5 +59,13 @@ public partial class ClinicSettingsViewModel(
         {
             toasts.Success(localization.Get("Settings.Saved"));
         }
+    }
+
+    private async Task LoadAsync()
+    {
+        IsLoading = true;
+        HasLoadError = !await clinic.LoadAsync();
+        _loaded = clinic.Settings is not null;
+        IsLoading = false;
     }
 }

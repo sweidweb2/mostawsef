@@ -27,13 +27,15 @@ public class UserService(
     IUserRepository users,
     IPasswordHasher passwordHasher,
     ICurrentUser currentUser,
+    IUserAuthCache authCache,
     IActivityLogger activity) : IUserService
 {
     public async Task<PagedResult<UserListItemDto>> GetPageAsync(PageQuery query, CancellationToken cancellationToken)
     {
         var (items, total) = await users.GetPageAsync(query, cancellationToken);
         return new PagedResult<UserListItemDto>(
-            items.Select(u => new UserListItemDto(u.Id, u.Username, u.FullName, u.Role.ToString(), u.IsActive, u.LastLoginAt, u.CreatedAt)).ToList(),
+            items.Select(u => new UserListItemDto(
+                u.Id, u.Username, u.FullName, u.Role.ToString(), u.IsActive, u.LastLoginAt, u.CreatedAt)).ToList(),
             query.SafePage,
             query.SafePageSize,
             total);
@@ -85,6 +87,7 @@ public class UserService(
         }
 
         await users.SaveChangesAsync(cancellationToken);
+        authCache.Invalidate(user.Id);
 
         await LogAsync(ActivityActions.UserUpdated, "Updated a user", user, cancellationToken);
         return ToDetails(user);
@@ -114,6 +117,7 @@ public class UserService(
 
         users.Remove(user);
         await users.SaveChangesAsync(cancellationToken);
+        authCache.Invalidate(user.Id);
 
         await LogAsync(ActivityActions.UserDeleted, "Deleted a user", user, cancellationToken);
     }

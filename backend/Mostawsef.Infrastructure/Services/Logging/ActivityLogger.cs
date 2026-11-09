@@ -9,40 +9,57 @@ using Mostawsef.Infrastructure.Persistence.Repositories;
 namespace Mostawsef.Infrastructure.Services.Logging;
 
 /// <summary>
-/// Writes activities through its own DbContext, so a failing business transaction cannot block or roll back the log,
-/// and a logging failure never breaks the caller.
+/// Buffers activities for the current request and writes them once on <see cref="FlushAsync"/> (after the action,
+/// before the HTTP response finishes), so a failing business transaction cannot roll them back, a logging failure
+/// never breaks the caller, and several logs in one request share a single insert.
 /// </summary>
-public class ActivityLogger(
+public sealed class ActivityLogger(
     IDbContextFactory<AppDbContext> dbFactory,
     ICurrentUser currentUser,
     ILogger<ActivityLogger> logger) : IActivityLogger
 {
     internal static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
-    public async Task LogAsync(ActivityEntry entry, CancellationToken cancellationToken = default)
+    private readonly List<ActivityLog> _pending = [];
+
+    public Task LogAsync(ActivityEntry entry, CancellationToken cancellationToken = default)
     {
+        var log = new ActivityLog(
+            entry.Action,
+            entry.Module,
+            entry.Description,
+            entry.UserId ?? currentUser.UserId,
+            entry.Username ?? currentUser.Username,
+            entry.EntityType,
+            entry.EntityId,
+            currentUser.IpAddress,
+            currentUser.UserAgent,
+            entry.Details is null ? null : JsonSerializer.Serialize(entry.Details, Json));
+        log.FillSearchText();
+        _pending.Add(log);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>Writes every buffered entry in one SaveChanges. Safe to call more than once.</summary>
+    public async Task FlushAsync(CancellationToken cancellationToken = default)
+    {
+        if (_pending.Count == 0)
+        {
+            return;
+        }
+
+        var batch = _pending.ToList();
+        _pending.Clear();
+
         try
         {
             await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
-            var log = new ActivityLog(
-                entry.Action,
-                entry.Module,
-                entry.Description,
-                entry.UserId ?? currentUser.UserId,
-                entry.Username ?? currentUser.Username,
-                entry.EntityType,
-                entry.EntityId,
-                currentUser.IpAddress,
-                currentUser.UserAgent,
-                entry.Details is null ? null : JsonSerializer.Serialize(entry.Details, Json));
-            log.FillSearchText();
-            db.ActivityLogs.Add(log);
-
+            db.ActivityLogs.AddRange(batch);
             await db.SaveChangesAsync(cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(ex, "Could not write activity log {Action}", entry.Action);
+            logger.LogError(ex, "Could not write {Count} activity log(s)", batch.Count);
         }
     }
 }

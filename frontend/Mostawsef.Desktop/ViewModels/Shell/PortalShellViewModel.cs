@@ -30,6 +30,9 @@ public partial class PortalShellViewModel : ViewModelBase
     /// <summary>The menu page under an open sub-page; kept so Back restores it without recreating (or reloading unless stale).</summary>
     private ViewModelBase? _menuPage;
 
+    /// <summary>Menu pages kept for the portal lifetime so returning to a page reuses its view model (reload only when stale).</summary>
+    private readonly Dictionary<int, ViewModelBase> _menuPages = [];
+
     public PortalShellViewModel(
         PortalDefinition portal,
         NavigationService navigation,
@@ -146,12 +149,22 @@ public partial class PortalShellViewModel : ViewModelBase
     private void ShowMenuPage(int index)
     {
         var pageType = MenuItems[index].PageType;
-        // Fresh page each menu visit: keeps memory and language-switch work on the visible page only.
-        var page = _navigation.CanAccess(pageType) ? _navigation.CreatePage(pageType) : null;
-        if (page is null)
+        if (!_navigation.CanAccess(pageType))
         {
             _session.SignOut(SignOutReason.Expired);
             return;
+        }
+
+        if (!_menuPages.TryGetValue(index, out var page))
+        {
+            page = _navigation.CreatePage(pageType);
+            if (page is null)
+            {
+                _session.SignOut(SignOutReason.Expired);
+                return;
+            }
+
+            _menuPages[index] = page;
         }
 
         _menuPage = page;

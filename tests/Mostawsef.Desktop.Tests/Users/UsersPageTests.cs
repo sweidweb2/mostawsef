@@ -61,6 +61,34 @@ public class UsersPageTests
     }
 
     [AvaloniaFact]
+    public async Task Page_flips_skip_the_filtered_total()
+    {
+        using var app = new TestServices();
+        app.SignInAs(Roles.Super);
+        app.Api.On(HttpMethod.Get, UsersPath, request =>
+        {
+            var includeTotal = !request.RequestUri!.Query.Contains("includeTotal=false", StringComparison.Ordinal);
+            return FakeApiHandler.Json(new PagedResult<UserListItemDto>(
+                [includeTotal ? Sara : Omar],
+                includeTotal ? 1 : 2,
+                20,
+                includeTotal ? 40 : PageQuery.TotalNotComputed));
+        });
+
+        var page = app.Get<UsersViewModel>();
+        await page.ActivateAsync();
+        Assert.Contains("includeTotal=true", app.Api.RequestsTo(HttpMethod.Get, UsersPath).Last().RequestUri!.Query, StringComparison.Ordinal);
+        Assert.Equal(40, page.TotalCount);
+
+        page.CurrentPage = 2;
+        await WaitUntil(() => page.CurrentPage == 2 && !page.IsLoading);
+
+        Assert.Contains("includeTotal=false", app.Api.RequestsTo(HttpMethod.Get, UsersPath).Last().RequestUri!.Query, StringComparison.Ordinal);
+        Assert.Equal(40, page.TotalCount);
+        Assert.Equal(Omar.Id, Assert.Single(page.Items).Id);
+    }
+
+    [AvaloniaFact]
     public async Task Saving_an_empty_new_user_shows_field_errors_without_calling_the_api()
     {
         using var app = SuperWithUsers(Sara);
@@ -335,4 +363,15 @@ public class UsersPageTests
 
     private static List<string?> Toasts(Window window) =>
         window.GetVisualDescendants().OfType<Toast>().Select(t => t.Message).ToList();
+
+    private static async Task WaitUntil(Func<bool> condition)
+    {
+        for (var i = 0; i < 200 && !condition(); i++)
+        {
+            Dispatcher.UIThread.RunJobs();
+            await Task.Delay(10, TestContext.Current.CancellationToken);
+        }
+
+        Assert.True(condition());
+    }
 }

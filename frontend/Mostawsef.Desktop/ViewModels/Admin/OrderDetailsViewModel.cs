@@ -10,7 +10,7 @@ using Mostawsef.Desktop.ViewModels.Shell;
 
 namespace Mostawsef.Desktop.ViewModels.Admin;
 
-/// <summary>Admin portal sub-page: one order's main details and tests (read-only). Set <see cref="OrderId"/> before it opens.</summary>
+/// <summary>Admin portal sub-page: one order's main details and tests (read-only). Set <see cref="OrderId"/> before it opens; optionally <see cref="Seed"/> to skip the first GET.</summary>
 public partial class OrderDetailsViewModel(OrdersApi orders, NavigationService navigation) : ViewModelBase, ILoadablePage
 {
     private CancellationTokenSource? _loadCancellation;
@@ -47,6 +47,14 @@ public partial class OrderDetailsViewModel(OrdersApi orders, NavigationService n
         ApiError.NotFound => null,
         _ => "Error.Description",
     };
+
+    /// <summary>Shows <paramref name="order"/> immediately (e.g. after create) so Activate skips the GET.</summary>
+    public void Seed(OrderDetailsDto order)
+    {
+        OrderId = order.Id;
+        Order = order;
+        LoadError = null;
+    }
 
     public Task ActivateAsync() => Order is null ? LoadAsync() : Task.CompletedTask;
 

@@ -25,7 +25,7 @@ public class PageLifecycleTests
         new(Guid.NewGuid(), DateTime.UtcNow, "auth.signed_in", "Auth", "Signed in", "admin@test.local");
 
     [AvaloniaFact]
-    public void Returning_to_a_page_creates_a_fresh_one_and_loads_again()
+    public void Returning_to_a_page_reuses_it_without_reloading()
     {
         using var app = new TestServices();
         _ = new SlowServer(app) { Answers = true };
@@ -38,8 +38,8 @@ public class PageLifecycleTests
         shell.SelectedMenuIndex = Dashboard;
         shell.SelectedMenuIndex = ActivityLogs;
 
-        Assert.NotSame(page, shell.CurrentPage);
-        Assert.True(app.Api.Requests.Count > requests);
+        Assert.Same(page, shell.CurrentPage);
+        Assert.Equal(requests, app.Api.Requests.Count);
     }
 
     [AvaloniaFact]
@@ -64,7 +64,7 @@ public class PageLifecycleTests
     }
 
     [AvaloniaFact]
-    public async Task Leaving_a_page_cancels_its_requests_and_coming_back_loads_a_new_one()
+    public async Task Leaving_a_page_cancels_its_requests_and_coming_back_reloads_the_same_page()
     {
         using var app = new TestServices();
         var server = new SlowServer(app);
@@ -87,7 +87,7 @@ public class PageLifecycleTests
         var next = Assert.IsType<ActivityLogsViewModel>(shell.CurrentPage);
         await WaitUntil(() => !next.IsLoading);
 
-        Assert.NotSame(page, next);
+        Assert.Same(page, next);
         Assert.Single(next.Items);
         Assert.Equal(1, next.Stats!.Total);
     }

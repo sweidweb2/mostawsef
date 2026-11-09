@@ -302,10 +302,13 @@ public class UsersTests(ApiFactory factory)
 
         var byUsername = await super.GetJsonAsync<PagedResult<UserListItemDto>>($"api/users?search={user.Username.ToUpperInvariant()}");
         var firstPage = await super.GetJsonAsync<PagedResult<UserListItemDto>>("api/users?page=1&pageSize=1");
+        var withoutTotal = await super.GetJsonAsync<PagedResult<UserListItemDto>>("api/users?page=1&pageSize=1&includeTotal=false");
 
         Assert.Equal(user.Id, Assert.Single(byUsername.Items).Id);
         Assert.Single(firstPage.Items);
         Assert.True(firstPage.TotalCount >= 3);
+        Assert.Equal(PageQuery.TotalNotComputed, withoutTotal.TotalCount);
+        Assert.DoesNotContain("passwordHash", await (await super.GetAsync("api/users?page=1&pageSize=1", Ct)).Content.ReadAsStringAsync(Ct), StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

@@ -23,7 +23,7 @@ public class LabTestRepository(AppDbContext db) : ILabTestRepository
     public Task<bool> NameExistsAsync(string searchName, Guid? exceptId, CancellationToken cancellationToken) =>
         db.LabTests.AnyAsync(t => t.SearchName == searchName && t.Id != exceptId, cancellationToken);
 
-    public async Task<(IReadOnlyList<LabTest> Items, int Total)> GetPageAsync(PageQuery query, bool? active, CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<LabTestListRow> Items, int Total)> GetPageAsync(PageQuery query, bool? active, CancellationToken cancellationToken)
     {
         var tests = db.LabTests.AsNoTracking();
         if (active is { } isActive)
@@ -39,18 +39,22 @@ public class LabTestRepository(AppDbContext db) : ILabTestRepository
             tests = tests.Where(t => t.SearchName.StartsWith(term) || t.Code.StartsWith(code));
         }
 
-        var total = query.IncludeTotal
-            ? await tests.CountAsync(cancellationToken)
-            : PageQuery.TotalNotComputed;
-        var items = await tests
+        var rows = tests
             .OrderBy(t => t.SearchName)
             .ThenBy(t => t.Code)
-            .Skip((query.SafePage - 1) * query.SafePageSize)
-            .Take(query.SafePageSize)
-            .ToListAsync(cancellationToken);
+            .Select(t => new LabTestListRow(
+                t.Id, t.Code, t.Name, t.Price, t.LabCost, t.IsActive, t.CreatedAt, t.UpdatedAt, t.UpdatedBy, t.Version));
 
-        return (items, total);
+        return await rows.ToPageAsync(query, cancellationToken);
     }
+
+    public async Task<IReadOnlyList<LabTestListRow>> ListAllAsync(CancellationToken cancellationToken) =>
+        await db.LabTests.AsNoTracking()
+            .OrderBy(t => t.SearchName)
+            .ThenBy(t => t.Code)
+            .Select(t => new LabTestListRow(
+                t.Id, t.Code, t.Name, t.Price, t.LabCost, t.IsActive, t.CreatedAt, t.UpdatedAt, t.UpdatedBy, t.Version))
+            .ToListAsync(cancellationToken);
 
     public void Add(LabTest test) => db.LabTests.Add(test);
 

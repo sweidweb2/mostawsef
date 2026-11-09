@@ -19,6 +19,8 @@ public partial class SystemErrorsViewModel(LogsApi logs, IDialogService dialogs,
     [ObservableProperty]
     public partial SystemErrorStatsDto? Stats { get; private set; }
 
+    protected override int? ExtrasTotalCount => Stats?.Total;
+
     protected override Task<ApiResult<CursorPage<SystemErrorListItemDto>>> FetchPageAsync(CursorQuery query, CancellationToken cancellationToken) =>
         logs.GetSystemErrorsAsync(query, cancellationToken);
 

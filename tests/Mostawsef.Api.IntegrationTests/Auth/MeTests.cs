@@ -17,6 +17,20 @@ public class MeTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task A_second_authenticated_call_reuses_the_cached_auth_status()
+    {
+        var client = await factory.CreateClientAsAsync(TestUsers.Admin);
+        (await client.GetAsync("api/clinic-settings", TestContext.Current.CancellationToken)).EnsureSuccessStatusCode();
+
+        factory.Sql.Clear();
+        (await client.GetAsync("api/clinic-settings", TestContext.Current.CancellationToken)).EnsureSuccessStatusCode();
+
+        Assert.DoesNotContain(
+            factory.Sql.Queries,
+            q => q.Contains("FROM users", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public async Task With_a_valid_token_returns_the_current_user()
     {
         var client = factory.CreateClient();

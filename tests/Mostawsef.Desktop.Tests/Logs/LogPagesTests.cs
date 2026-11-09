@@ -50,7 +50,7 @@ public class LogPagesTests
         Assert.Single(page.Items);
         Assert.Equal(45, page.TotalCount);
         Assert.Equal(3, page.PageCount);
-        Assert.Equal("?pageSize=20", Assert.Single(ListRequests(app, ActivityPath)));
+        Assert.Equal("?pageSize=20&includeTotal=false", Assert.Single(ListRequests(app, ActivityPath)));
     }
 
     [AvaloniaFact]
@@ -166,7 +166,7 @@ public class LogPagesTests
         app.SignInAs(Roles.Super);
         var deleted = false;
         app.Api
-            .OnGet($"{ActivityPath}/stats", new ActivityLogStatsDto(21, 0, 0, 0))
+            .On(HttpMethod.Get, $"{ActivityPath}/stats", _ => FakeApiHandler.Json(new ActivityLogStatsDto(deleted ? 20 : 21, 0, 0, 0)))
             .On(HttpMethod.Delete, ActivityPath, _ =>
             {
                 deleted = true;
@@ -254,7 +254,7 @@ public class LogPagesTests
         Assert.EndsWith(SignIn.Id.ToString(), deleteRequest.RequestUri!.AbsolutePath);
         Assert.True(app.Api.RequestsTo(HttpMethod.Get, ActivityPath).Count() > listRequestsBefore);
         Assert.Equal(2, StatsRequests(app, ActivityPath));
-        Assert.DoesNotContain("includeTotal=false", LastListRequest(app, ActivityPath));
+        Assert.Contains("includeTotal=false", LastListRequest(app, ActivityPath), StringComparison.Ordinal);
     }
 
     [AvaloniaFact]

@@ -16,10 +16,27 @@ public record OrderListRow(
     long Paid,
     OrderStatus Status);
 
+/// <summary>Order details without loading payment entities; Paid is summed in SQL.</summary>
+public record OrderDetailsRow(
+    Guid Id,
+    string Number,
+    DateTime CreatedAt,
+    string? CreatedBy,
+    Guid PatientId,
+    string PatientName,
+    string PatientPhone,
+    OrderStatus Status,
+    string Currency,
+    long Total,
+    long Paid,
+    IReadOnlyList<OrderItemRow> Items);
+
+public record OrderItemRow(Guid LabTestId, string Code, string Name, long OurPrice);
+
 public interface IOrderRepository
 {
-    /// <summary>With its items (and their lab tests) and payments.</summary>
-    Task<Order?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
+    /// <summary>Details projection: items + lab-test labels and Paid sum; payments are not materialised.</summary>
+    Task<OrderDetailsRow?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>Newest first. Search is LIKE on SearchText (trigram; name, phone, number).</summary>
     Task<(IReadOnlyList<OrderListRow> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken);

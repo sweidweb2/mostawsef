@@ -12,13 +12,22 @@ public class UserRepository(AppDbContext db) : IUserRepository
     public Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
         db.Users.FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
 
+    public async Task<UserAuthStatus?> GetAuthStatusAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var row = await db.Users.AsNoTracking()
+            .Where(u => u.Id == id)
+            .Select(u => new { u.IsActive, u.Role })
+            .FirstOrDefaultAsync(cancellationToken);
+        return row is null ? null : new UserAuthStatus(row.IsActive, row.Role);
+    }
+
     public Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken) =>
         db.Users.FirstOrDefaultAsync(u => u.Username == username, cancellationToken);
 
     public Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken) =>
         db.Users.IgnoreQueryFilters().AnyAsync(u => u.Username == username, cancellationToken);
 
-    public async Task<(IReadOnlyList<User> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<UserListRow> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken)
     {
         var users = db.Users.AsNoTracking();
 
@@ -28,17 +37,13 @@ public class UserRepository(AppDbContext db) : IUserRepository
             users = users.Where(u => u.SearchName.Contains(term) || u.Username.Contains(term));
         }
 
-        var total = query.IncludeTotal
-            ? await users.CountAsync(cancellationToken)
-            : PageQuery.TotalNotComputed;
-        var items = await users
+        var rows = users
             .OrderBy(u => u.FullName)
             .ThenBy(u => u.Username)
-            .Skip((query.SafePage - 1) * query.SafePageSize)
-            .Take(query.SafePageSize)
-            .ToListAsync(cancellationToken);
+            .Select(u => new UserListRow(
+                u.Id, u.Username, u.FullName, u.Role, u.IsActive, u.LastLoginAt, u.CreatedAt));
 
-        return (items, total);
+        return await rows.ToPageAsync(query, cancellationToken);
     }
 
     public void Add(User user) => db.Users.Add(user);

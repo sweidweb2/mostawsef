@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using Avalonia;
@@ -313,24 +312,15 @@ public class PatientsPageTests
         var everyone = Enumerable.Range(1, 130)
             .Select(i => Omar with { Id = Guid.NewGuid(), FullName = $"Patient {i:000}" })
             .ToList();
-        app.Api.On(HttpMethod.Get, PatientsPath, request =>
-        {
-            var query = System.Web.HttpUtility.ParseQueryString(request.RequestUri!.Query);
-            var number = int.Parse(query["page"]!, CultureInfo.InvariantCulture);
-            var size = int.Parse(query["pageSize"]!, CultureInfo.InvariantCulture);
-            return FakeApiHandler.Json(new PagedResult<PatientDto>(everyone.Skip((number - 1) * size).Take(size).ToList(), number, size, everyone.Count));
-        });
+        app.Api
+            .OnGet(PatientsPath, new PagedResult<PatientDto>(everyone.Take(20).ToList(), 1, 20, everyone.Count))
+            .OnGet($"{PatientsPath}/all", (IReadOnlyList<PatientDto>)everyone);
         var (page, _) = await ShowPage(app);
         page.Search = "Patient 001";
 
         await page.ExportCommand.ExecuteAsync(null);
 
-        var exportReads = app.Api.RequestsTo(HttpMethod.Get, PatientsPath)
-            .Select(r => r.RequestUri!.Query)
-            .Where(q => q.Contains($"pageSize={PageQuery.MaxPageSize}", StringComparison.Ordinal))
-            .ToList();
-        Assert.Equal(2, exportReads.Count);
-        Assert.All(exportReads, q => Assert.DoesNotContain("search", q, StringComparison.Ordinal));
+        Assert.Single(app.Api.RequestsTo(HttpMethod.Get, $"{PatientsPath}/all"));
         var file = Assert.Single(app.OpenedFiles);
         Assert.StartsWith("patients-", Path.GetFileName(file));
         Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(File.ReadAllBytes(file), 0, 4));

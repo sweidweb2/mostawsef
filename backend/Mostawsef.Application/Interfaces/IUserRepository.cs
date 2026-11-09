@@ -1,12 +1,26 @@
 using Mostawsef.Contracts.Common;
 using Mostawsef.Domain.Entities;
+using Mostawsef.Domain.Enums;
 
 namespace Mostawsef.Application.Interfaces;
+
+/// <summary>One row of the users list: no password hash.</summary>
+public record UserListRow(
+    Guid Id,
+    string Username,
+    string FullName,
+    UserRole Role,
+    bool IsActive,
+    DateTime? LastLoginAt,
+    DateTime CreatedAt);
 
 /// <summary>Deleted users are invisible to every method except <see cref="UsernameExistsAsync"/>.</summary>
 public interface IUserRepository
 {
     Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>Active flag and role only (no tracking). Null when the user is missing or soft-deleted.</summary>
+    Task<UserAuthStatus?> GetAuthStatusAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>Lookup by normalized (trimmed, lower-case) username.</summary>
     Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken);
@@ -14,8 +28,8 @@ public interface IUserRepository
     /// <summary>True if any user, including a deleted one, has this normalized username.</summary>
     Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken);
 
-    /// <summary>Ordered by full name. Search matches the username or the normalized full name.</summary>
-    Task<(IReadOnlyList<User> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken);
+    /// <summary>Ordered by full name. Search matches the username or the normalized full name. No password hash.</summary>
+    Task<(IReadOnlyList<UserListRow> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken);
 
     void Add(User user);
 

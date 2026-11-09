@@ -106,7 +106,7 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
     }
 
     /// <summary>The next activation loads the page again, e.g. when the user comes back from a sub-page that added a record.</summary>
-    protected void MarkStale() => _loaded = false;
+    public void MarkStale() => _loaded = false;
 
     [RelayCommand]
     private Task RefreshAsync() => LoadAsync(CurrentPage, includeTotal: true);

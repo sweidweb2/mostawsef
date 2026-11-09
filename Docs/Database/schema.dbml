@@ -215,7 +215,7 @@ Table orders {
   Status OrderStatus [not null, default: 'Pending', note: 'Paid/PartiallyPaid derived from payments']
   DiscountType DiscountType
   DiscountValue bigint [not null, default: 0, note: 'Percent: 0-100; Fixed: minor units']
-  OurPrice bigint [not null, note: 'what the patient is charged; defaults to sum(order_items.OurPrice)']
+  OurPrice bigint [not null, note: 'what the patient is charged: sum(order_items.OurPrice) + optional addon from create']
   Currency varchar(3) [not null]
   Notes varchar(2000)
   CreatedAt timestamptz [not null]
@@ -232,7 +232,7 @@ Table orders {
     SearchText [type: gin, note: 'gin_trgm_ops']
   }
 
-  Note: 'Implemented (migration AddOrders; OurPrice on AddOrderOurPrice; SearchText on AddOrderSearchText). List search is LIKE on SearchText (trigram; min 3 letters/digits). Total = OurPrice - discount; Discounts not used yet (DiscountValue 0).'
+  Note: 'Implemented (migration AddOrders; OurPrice on AddOrderOurPrice; SearchText on AddOrderSearchText). List search is LIKE on SearchText (trigram; min 3 letters/digits). Total = OurPrice (catalog sum + addon) - discount; Discounts not used yet (DiscountValue 0).'
 }
 
 Table order_items {

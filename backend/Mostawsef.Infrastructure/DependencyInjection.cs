@@ -4,6 +4,7 @@ using Mostawsef.Application.Interfaces;
 using Mostawsef.Infrastructure.Persistence;
 using Mostawsef.Infrastructure.Persistence.Context;
 using Mostawsef.Infrastructure.Persistence.Repositories;
+using Mostawsef.Infrastructure.Services;
 using Mostawsef.Infrastructure.Services.Auth;
 using Mostawsef.Infrastructure.Services.Logging;
 
@@ -38,8 +39,12 @@ public static class DependencyInjection
 
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<ITokenService, JwtTokenService>();
+        services.AddSingleton<IUserAuthCache, UserAuthCache>();
+        services.AddSingleton<IClinicCurrency, ClinicCurrency>();
 
-        services.AddScoped<IActivityLogger, ActivityLogger>();
+        // Same instance for IActivityLogger and the flush middleware.
+        services.AddScoped<ActivityLogger>();
+        services.AddScoped<IActivityLogger>(sp => sp.GetRequiredService<ActivityLogger>());
         services.AddScoped<ISystemErrorLogger, SystemErrorLogger>();
 
         return services;

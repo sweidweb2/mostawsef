@@ -3,6 +3,19 @@ using Mostawsef.Domain.Entities;
 
 namespace Mostawsef.Application.Interfaces;
 
+/// <summary>One row of the lab-tests list / export.</summary>
+public record LabTestListRow(
+    Guid Id,
+    string Code,
+    string Name,
+    long Price,
+    long LabCost,
+    bool IsActive,
+    DateTime CreatedAt,
+    DateTime? UpdatedAt,
+    string? UpdatedBy,
+    int Version);
+
 public interface ILabTestRepository
 {
     Task<LabTest?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
@@ -20,7 +33,10 @@ public interface ILabTestRepository
     Task<bool> NameExistsAsync(string searchName, Guid? exceptId, CancellationToken cancellationToken);
 
     /// <summary>Ordered by SearchName then Code (unique indexes). Search is a prefix on SearchName or Code. <paramref name="active"/> filters IsActive when set.</summary>
-    Task<(IReadOnlyList<LabTest> Items, int Total)> GetPageAsync(PageQuery query, bool? active, CancellationToken cancellationToken);
+    Task<(IReadOnlyList<LabTestListRow> Items, int Total)> GetPageAsync(PageQuery query, bool? active, CancellationToken cancellationToken);
+
+    /// <summary>Every test, ordered by SearchName then Code (print/export).</summary>
+    Task<IReadOnlyList<LabTestListRow>> ListAllAsync(CancellationToken cancellationToken);
 
     void Add(LabTest test);
 

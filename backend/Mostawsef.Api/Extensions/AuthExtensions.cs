@@ -84,13 +84,28 @@ public static class AuthExtensions
         }
 
         var principal = context.Principal;
-        var users = context.HttpContext.RequestServices.GetRequiredService<IUserRepository>();
+        if (!Guid.TryParse(principal?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value, out var userId))
+        {
+            context.Fail("The user is no longer active or their role changed.");
+            return;
+        }
 
-        var user = Guid.TryParse(principal?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value, out var userId)
-            ? await users.GetByIdAsync(userId, context.HttpContext.RequestAborted)
-            : null;
+        var cache = context.HttpContext.RequestServices.GetRequiredService<IUserAuthCache>();
+        if (!cache.TryGet(userId, out var status))
+        {
+            var users = context.HttpContext.RequestServices.GetRequiredService<IUserRepository>();
+            var loaded = await users.GetAuthStatusAsync(userId, context.HttpContext.RequestAborted);
+            if (loaded is null)
+            {
+                context.Fail("The user is no longer active or their role changed.");
+                return;
+            }
 
-        if (user is not { IsActive: true } || user.Role.ToString() != principal?.FindFirst(JwtClaims.Role)?.Value)
+            status = loaded.Value;
+            cache.Set(userId, status);
+        }
+
+        if (!status.IsActive || status.Role.ToString() != principal?.FindFirst(JwtClaims.Role)?.Value)
         {
             context.Fail("The user is no longer active or their role changed.");
         }

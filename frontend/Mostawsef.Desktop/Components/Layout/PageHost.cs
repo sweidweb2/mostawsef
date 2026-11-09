@@ -6,8 +6,8 @@ namespace Mostawsef.Desktop.Components;
 
 /// <summary>
 /// Shows the view of <see cref="Page"/> (a view model, resolved by the app's data templates).
-/// A new view is built each time the page changes so off-screen menu pages are not kept alive
-/// (memory and language-switch cost stay with the visible page only).
+/// A new view is built each time the page changes; the shell may reuse the same view model when
+/// returning to a menu page, so only the view is rebuilt.
 /// </summary>
 public class PageHost : Decorator
 {

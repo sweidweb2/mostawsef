@@ -20,21 +20,24 @@ public class PatientRepository(AppDbContext db) : IPatientRepository
             patients = patients.Where(p => EF.Functions.Like(p.SearchText, pattern, TrigramSearch.EscapeCharacter));
         }
 
-        var total = query.IncludeTotal
-            ? await patients.CountAsync(cancellationToken)
-            : PageQuery.TotalNotComputed;
-        var items = await patients
+        var rows = patients
             .OrderBy(p => p.SearchName)
             .ThenBy(p => p.Id)
-            .Skip((query.SafePage - 1) * query.SafePageSize)
-            .Take(query.SafePageSize)
+            .Select(p => new PatientListRow(
+                p.Id, p.FullName, p.Phone, p.GuardianPhone, p.IsInsured, p.Gender, p.DateOfBirth,
+                p.CreatedAt, p.UpdatedAt, p.UpdatedBy, p.Version));
+
+        return await rows.ToPageAsync(query, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<PatientListRow>> ListAllAsync(CancellationToken cancellationToken) =>
+        await db.Patients.AsNoTracking()
+            .OrderBy(p => p.SearchName)
+            .ThenBy(p => p.Id)
             .Select(p => new PatientListRow(
                 p.Id, p.FullName, p.Phone, p.GuardianPhone, p.IsInsured, p.Gender, p.DateOfBirth,
                 p.CreatedAt, p.UpdatedAt, p.UpdatedBy, p.Version))
             .ToListAsync(cancellationToken);
-
-        return (items, total);
-    }
 
     public void Add(Patient patient) => db.Patients.Add(patient);
 

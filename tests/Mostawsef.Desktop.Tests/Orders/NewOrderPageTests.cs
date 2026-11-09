@@ -88,7 +88,7 @@ public class NewOrderPageTests
     }
 
     [AvaloniaFact]
-    public async Task The_total_uses_the_catalog_sum_until_our_price_is_typed_and_shows_the_balance_after_a_payment()
+    public async Task The_total_adds_our_price_on_top_of_the_catalog_and_caps_the_payment_live()
     {
         using var app = Admin();
         var (_, page, window) = await ShowNewOrderAsync(app);
@@ -97,18 +97,21 @@ public class NewOrderPageTests
 
         Assert.Equal(20000, page.CatalogTotal);
         Assert.Equal(20000, page.Total);
+        Assert.Equal(200m, page.MaxPayableAmount);
         Assert.Equal("200.00", Named<TextBlock>(window, "TotalText").Text);
         Assert.False(Named<TextBlock>(window, "RemainingText").IsEffectivelyVisible);
 
-        page.OurPrice = 170m;
+        page.OurPrice = 5m;
         page.PaymentAmount = 50m;
         Dispatcher.UIThread.RunJobs();
 
         Assert.Equal(20000, page.CatalogTotal);
-        Assert.Equal(17000, page.Total);
-        Assert.Equal("200.00", Named<TextBlock>(window, "TotalText").Text);
-        Assert.Equal("120.00", Named<TextBlock>(window, "RemainingText").Text);
+        Assert.Equal(20500, page.Total);
+        Assert.Equal(205m, page.MaxPayableAmount);
+        Assert.Equal("205.00", Named<TextBlock>(window, "TotalText").Text);
+        Assert.Equal("155.00", Named<TextBlock>(window, "RemainingText").Text);
         Assert.True(Named<TextBlock>(window, "RemainingText").IsEffectivelyVisible);
+        Assert.Equal(205m, Named<NumericUpDown>(window, "PaymentAmountBox").Maximum);
     }
 
     [AvaloniaFact]
@@ -242,10 +245,9 @@ public class NewOrderPageTests
             sent = request.Content!.ReadFromJsonAsync<CreateOrderRequest>().GetAwaiter().GetResult();
             return FakeApiHandler.Json(created);
         });
-        app.Api.OnGet($"{OrdersPath}/{created.Id}", created);
         var (shell, page, window) = await ShowNewOrderAsync(app);
         AddTests(page, Cbc, Sugar);
-        page.OurPrice = 180m;
+        page.OurPrice = 5m;
         page.ChooseNewPatientCommand.Execute(null);
         page.PatientForm.FullName = "  Omar Khaled ";
         page.PatientForm.Phone = " 0111 ";
@@ -256,17 +258,20 @@ public class NewOrderPageTests
 
         await page.SaveCommand.ExecuteAsync(null);
         var details = Assert.IsType<OrderDetailsViewModel>(shell.CurrentPage);
-        await WaitUntil(() => details.HasOrder);
+        await WaitUntil(() => details.HasOrder && Toasts(window).Count > 0);
 
+        Assert.True(details.HasOrder);
+        Assert.Empty(app.Api.RequestsTo(HttpMethod.Get, $"{OrdersPath}/{created.Id}"));
         Assert.NotNull(sent);
         Assert.Null(sent.PatientId);
         Assert.Equal(("Omar Khaled", "0111", Genders.Male), (sent.NewPatient!.FullName, sent.NewPatient.Phone, sent.NewPatient.Gender));
         Assert.Equal(
             [new CreateOrderItemRequest { LabTestId = Cbc.Id }, new CreateOrderItemRequest { LabTestId = Sugar.Id }],
             sent.Items);
-        Assert.Equal(18000, sent.OurPrice);
+        Assert.Equal(500, sent.OurPrice);
         Assert.Equal(new CreateFirstPaymentRequest { Amount = 5000, Method = PaymentMethods.Card, Notes = null }, sent.FirstPayment);
         Assert.Equal(created.Id, details.OrderId);
+        Assert.Equal(created.Number, details.Order!.Number);
         Assert.Contains("Order ORD-000007 created.", Toasts(window));
     }
 

@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using Avalonia;
@@ -138,24 +137,15 @@ public class LabTestsPageTests
         var catalog = Enumerable.Range(1, 150)
             .Select(i => Cbc with { Id = Guid.NewGuid(), Code = $"T{i:000}", Name = $"Test {i:000}" })
             .ToList();
-        app.Api.On(HttpMethod.Get, TestsPath, request =>
-        {
-            var query = System.Web.HttpUtility.ParseQueryString(request.RequestUri!.Query);
-            var number = int.Parse(query["page"]!, CultureInfo.InvariantCulture);
-            var size = int.Parse(query["pageSize"]!, CultureInfo.InvariantCulture);
-            return FakeApiHandler.Json(new PagedResult<LabTestDto>(catalog.Skip((number - 1) * size).Take(size).ToList(), number, size, catalog.Count));
-        });
+        app.Api
+            .OnGet(TestsPath, new PagedResult<LabTestDto>(catalog.Take(40).ToList(), 1, 40, catalog.Count))
+            .OnGet($"{TestsPath}/all", (IReadOnlyList<LabTestDto>)catalog);
         var (page, _) = await ShowPage(app);
         page.Search = "T001";
 
         await page.ExportCommand.ExecuteAsync(null);
 
-        var exportReads = app.Api.RequestsTo(HttpMethod.Get, TestsPath)
-            .Select(r => r.RequestUri!.Query)
-            .Where(q => q.Contains($"pageSize={PageQuery.MaxPageSize}", StringComparison.Ordinal))
-            .ToList();
-        Assert.Equal(2, exportReads.Count);
-        Assert.All(exportReads, q => Assert.DoesNotContain("search", q, StringComparison.Ordinal));
+        Assert.Single(app.Api.RequestsTo(HttpMethod.Get, $"{TestsPath}/all"));
         var file = Assert.Single(app.OpenedFiles);
         Assert.StartsWith("lab-tests-", Path.GetFileName(file));
         Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(File.ReadAllBytes(file), 0, 4));
@@ -167,12 +157,10 @@ public class LabTestsPageTests
     {
         using var app = new TestServices();
         app.SignInAs(Roles.Admin);
-        var serverDown = false;
-        app.Api.On(HttpMethod.Get, TestsPath, _ => serverDown
-            ? throw new HttpRequestException("Connection refused")
-            : FakeApiHandler.Json(new PagedResult<LabTestDto>([Cbc], 1, 40, 1)));
+        app.Api
+            .OnGet(TestsPath, new PagedResult<LabTestDto>([Cbc], 1, 40, 1))
+            .On(HttpMethod.Get, $"{TestsPath}/all", _ => throw new HttpRequestException("Connection refused"));
         var (page, window) = await ShowPage(app);
-        serverDown = true;
 
         await page.ExportCommand.ExecuteAsync(null);
         Dispatcher.UIThread.RunJobs();

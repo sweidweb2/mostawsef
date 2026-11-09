@@ -17,6 +17,11 @@ public class PatientsController(IPatientService patients) : ControllerBase
     public Task<PagedResult<PatientDto>> List([FromQuery] PageQuery query, CancellationToken cancellationToken) =>
         patients.GetPageAsync(query, cancellationToken);
 
+    /// <summary>Every patient for print/export (no notes).</summary>
+    [HttpGet("all")]
+    public Task<IReadOnlyList<PatientDto>> All(CancellationToken cancellationToken) =>
+        patients.ListAllAsync(cancellationToken);
+
     [HttpGet("{id:guid}")]
     [ProducesResponseType<PatientDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

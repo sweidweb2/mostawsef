@@ -82,7 +82,7 @@ public record CreateOrderRequest
     [MinLength(1, ErrorMessage = ErrorCodes.Required)]
     public IReadOnlyList<CreateOrderItemRequest> Items { get; init; } = [];
 
-    /// <summary>What the patient is charged; null uses the sum of the selected tests' catalog prices.</summary>
+    /// <summary>Optional amount added on top of the selected tests' catalog prices; null or 0 charges the catalog total only.</summary>
     [Range(0, OrderRules.MaxOurPrice, ErrorMessage = ErrorCodes.Range)]
     public long? OurPrice { get; init; }
 

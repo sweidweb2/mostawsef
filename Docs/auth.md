@@ -57,11 +57,13 @@ Unknown usernames take the same hashing time as wrong passwords, so response tim
 | `GET /api/system-settings` | Super | `200 { backupPath, maintenanceMode, version, updatedAt, updatedBy }` |
 | `PUT /api/system-settings` `{ backupPath, maintenanceMode, version }` | Super | `200`, `400` (`max_length\|260`), `409 concurrency_conflict` |
 | `GET /api/lab-tests?page=&pageSize=&search=` | Admin | Paged list sorted by name; search (cut to 100 characters) matches the normalized name or the code |
+| `GET /api/lab-tests/all` | Admin | Every test for print/export |
 | `GET /api/lab-tests/{id}` | Admin | `200 { id, code, name, price, labCost, isActive, ..., version }`, `404` |
 | `POST /api/lab-tests` `{ code, name, price, labCost }` | Admin | `201`, `400` (`max_length\|20`/`\|150`, `range\|0\|100000000` for a price outside 0 to 1,000,000.00), `409 taken` on `Code` or `Name` |
 | `PUT /api/lab-tests/{id}` `{ code, name, price, labCost, isActive, version }` | Admin | `200`, `400`, `404`, `409 taken` or `concurrency_conflict` |
 | `DELETE /api/lab-tests/{id}` | Admin | `204`, `404` |
 | `GET /api/patients?page=&pageSize=&search=` | Admin | Paged list sorted by SearchName; search matches SearchText (name/phones; trigram, min 3 letters/digits or 400) |
+| `GET /api/patients/all` | Admin | Every patient for print/export (notes omitted) |
 | `GET /api/patients/{id}` | Admin | `200 { id, fullName, phone, guardianPhone, notes, isInsured, gender, dateOfBirth, ..., version }`, `404` |
 | `POST /api/patients` `{ fullName, phone, guardianPhone, notes, isInsured, gender, dateOfBirth }` | Admin | `201`, `400` (`invalid` phone, gender or date of birth outside 1900-01-01..today) |
 | `PUT /api/patients/{id}` `{ ...same, version }` | Admin | `200`, `400`, `404`, `409 concurrency_conflict` |
@@ -69,8 +71,9 @@ Unknown usernames take the same hashing time as wrong passwords, so response tim
 | `GET /api/health` | Anonymous | `200 { status, database, apiVersion }`, `503` when the database is down |
 
 - Tokens: JWT signed with HMAC-SHA256, valid until the next midnight (server local time), so staff sign in once a day, claims `sub`, `unique_name`, `role`.
-- Every request re-checks the token's user: a deactivated, deleted or re-roled user gets `401` at once (the desktop then
-  returns to the login screen), not only when the token expires.
+- Every request re-checks the token's user (active flag and role only, cached until that user is updated or deleted): a
+  deactivated, deleted or re-roled user gets `401` on the next request (the desktop then returns to the login screen),
+  not only when the token expires.
 - Maintenance mode (Super portal, Settings page): while on, only Super users can sign in; others get `409 maintenance_mode`
   after a correct password (logged as `auth.sign_in_blocked`). Users already signed in keep working.
 - A Super cannot deactivate, demote, reset or delete their own account (`409 own_account`); they change their own password

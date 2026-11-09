@@ -11,6 +11,9 @@ public interface IPatientService
 {
     Task<PagedResult<PatientDto>> GetPageAsync(PageQuery query, CancellationToken cancellationToken);
 
+    /// <summary>Every patient for print/export (no notes).</summary>
+    Task<IReadOnlyList<PatientDto>> ListAllAsync(CancellationToken cancellationToken);
+
     Task<PatientDto> GetAsync(Guid id, CancellationToken cancellationToken);
 
     Task<PatientDto> CreateAsync(CreatePatientRequest request, CancellationToken cancellationToken);
@@ -28,6 +31,9 @@ public class PatientService(IPatientRepository patients, IActivityLogger activit
         var (items, total) = await patients.GetPageAsync(query, cancellationToken);
         return new PagedResult<PatientDto>(items.Select(ToListDto).ToList(), query.SafePage, query.SafePageSize, total);
     }
+
+    public async Task<IReadOnlyList<PatientDto>> ListAllAsync(CancellationToken cancellationToken) =>
+        (await patients.ListAllAsync(cancellationToken)).Select(ToListDto).ToList();
 
     public async Task<PatientDto> GetAsync(Guid id, CancellationToken cancellationToken) =>
         ToDto(await FindAsync(id, cancellationToken));

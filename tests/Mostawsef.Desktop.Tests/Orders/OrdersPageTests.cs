@@ -1,8 +1,11 @@
+using System.Net.Http;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Mostawsef.Contracts.Auth;
+using Mostawsef.Contracts.Common;
+using Mostawsef.Contracts.Patients;
 using Mostawsef.Desktop.Components;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Tests.Infrastructure;
@@ -97,7 +100,7 @@ public class OrdersPageTests
     }
 
     [AvaloniaFact]
-    public async Task Back_from_new_order_reloads_the_list_so_a_new_order_shows()
+    public async Task Back_from_new_order_without_saving_keeps_the_list()
     {
         using var app = Admin();
         var (shell, orders, _) = await ShowOrdersPageAsync(app);
@@ -105,6 +108,33 @@ public class OrdersPageTests
 
         await orders.NewOrderCommand.ExecuteAsync(null);
         Assert.IsType<NewOrderViewModel>(shell.CurrentPage);
+        await app.Navigation.BackAsync();
+        await WaitUntil(() => !orders.IsLoading);
+
+        Assert.Same(orders, shell.CurrentPage);
+        Assert.Equal(listReads, ListReads(app));
+    }
+
+    [AvaloniaFact]
+    public async Task Saving_a_new_order_reloads_the_list_when_returning_from_details()
+    {
+        using var app = Admin();
+        var created = Details(Guid.NewGuid());
+        app.Api.On(HttpMethod.Post, OrdersPath, _ => FakeApiHandler.Json(created));
+        var (shell, orders, _) = await ShowOrdersPageAsync(app);
+        var listReads = ListReads(app);
+
+        await orders.NewOrderCommand.ExecuteAsync(null);
+        var page = Assert.IsType<NewOrderViewModel>(shell.CurrentPage);
+        await WaitUntil(() => !page.IsCatalogLoading);
+        page.ChooseNewPatientCommand.Execute(null);
+        page.PatientForm.FullName = "Omar";
+        page.PatientForm.Phone = "0111";
+        page.PatientForm.Gender = Genders.Male;
+        page.AddTestCommand.Execute(page.Catalog.Single(t => t.Test.Id == Cbc.Id));
+        await page.SaveCommand.ExecuteAsync(null);
+        Assert.IsType<OrderDetailsViewModel>(shell.CurrentPage);
+
         await app.Navigation.BackAsync();
         await WaitUntil(() => !orders.IsLoading);
 

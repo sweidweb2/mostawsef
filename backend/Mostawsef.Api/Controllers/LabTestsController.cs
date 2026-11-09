@@ -20,6 +20,11 @@ public class LabTestsController(ILabTestService tests) : ControllerBase
         CancellationToken cancellationToken) =>
         tests.GetPageAsync(query, active, cancellationToken);
 
+    /// <summary>Every test for print/export.</summary>
+    [HttpGet("all")]
+    public Task<IReadOnlyList<LabTestDto>> All(CancellationToken cancellationToken) =>
+        tests.ListAllAsync(cancellationToken);
+
     [HttpGet("{id:guid}")]
     [ProducesResponseType<LabTestDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

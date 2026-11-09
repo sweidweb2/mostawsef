@@ -24,7 +24,7 @@ public class PatientsApi(ApiClient api)
 
     /// <summary>Every patient, sorted by name (print/export).</summary>
     public Task<ApiResult<IReadOnlyList<PatientDto>>> GetAllPatientsAsync(CancellationToken cancellationToken = default) =>
-        api.GetAllPagesAsync<PatientDto>("api/patients", cancellationToken);
+        api.GetAsync<IReadOnlyList<PatientDto>>("api/patients/all", cancellationToken);
 
     public Task<ApiResult<PatientDto>> GetPatientAsync(Guid id, CancellationToken cancellationToken = default) =>
         api.GetAsync<PatientDto>($"api/patients/{id}", cancellationToken);
