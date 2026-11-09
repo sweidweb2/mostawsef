@@ -48,12 +48,26 @@ public class PrintService(LocalizationService localization, ClinicContext clinic
         return document.GeneratePdf();
     }
 
-    /// <summary>Renders off the UI thread, saves to the temp print folder and opens the file. Returns its path.</summary>
+    /// <summary>Renders, cleans old PDFs and writes the file off the UI thread, then opens it. Returns its path.</summary>
     public async Task<string> PrintAsync(IDocument document, string name)
     {
-        var pdf = await Task.Run(() => Render(document));
+        var path = await Task.Run(() =>
+        {
+            var pdf = Render(document);
+            Directory.CreateDirectory(PrintFolder);
+            DeleteOldPrints();
 
-        Directory.CreateDirectory(PrintFolder);
+            var file = Path.Combine(PrintFolder, $"{name}-{DateTime.Now:yyyyMMdd-HHmmss-fff}.pdf");
+            File.WriteAllBytes(file, pdf);
+            return file;
+        });
+
+        openFile(path);
+        return path;
+    }
+
+    private static void DeleteOldPrints()
+    {
         foreach (var old in new DirectoryInfo(PrintFolder).GetFiles("*.pdf").Where(f => f.LastWriteTime < DateTime.Now.AddDays(-1)))
         {
             try
@@ -65,10 +79,5 @@ public class PrintService(LocalizationService localization, ClinicContext clinic
                 // Still open in a viewer: try again next time.
             }
         }
-
-        var path = Path.Combine(PrintFolder, $"{name}-{DateTime.Now:yyyyMMdd-HHmmss-fff}.pdf");
-        await File.WriteAllBytesAsync(path, pdf);
-        openFile(path);
-        return path;
     }
 }

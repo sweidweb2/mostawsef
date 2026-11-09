@@ -36,6 +36,7 @@ Migrations: `*_InitialUsers`, `*_AuditFieldsAndUserProfile`. Migrations are appl
 
 ASP.NET Core Identity `PasswordHasher` (format v3): **PBKDF2 with HMAC-SHA512, 100,000 iterations, a random 128-bit salt per password**.
 The salt and parameters are stored inside the hash string. If the hashing parameters are strengthened in a future version, hashes are upgraded automatically at the next successful sign-in.
+For non-Super sign-in, the maintenance-mode settings read overlaps the PBKDF2 work; a successful login then records `LastLoginAt` and the activity log in parallel.
 Unknown usernames take the same hashing time as wrong passwords, so response time does not reveal which usernames exist.
 
 ## API

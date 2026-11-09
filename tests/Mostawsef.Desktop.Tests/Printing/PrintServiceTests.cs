@@ -77,4 +77,21 @@ public class PrintServiceTests
         Assert.True(File.Exists(path));
         File.Delete(path);
     }
+
+    [AvaloniaFact]
+    public async Task Printing_deletes_pdfs_older_than_a_day_from_the_print_folder()
+    {
+        using var app = new TestServices();
+        Directory.CreateDirectory(PrintService.PrintFolder);
+        var stale = Path.Combine(PrintService.PrintFolder, "stale-old.pdf");
+        await File.WriteAllBytesAsync(stale, "%PDF-stale"u8.ToArray(), TestContext.Current.CancellationToken);
+        File.SetLastWriteTime(stale, DateTime.Now.AddDays(-2));
+        var print = app.Get<PrintService>();
+
+        var path = await print.PrintAsync(new LabTestsDocument(print.CreateContext(), Tests), "cleanup");
+
+        Assert.False(File.Exists(stale));
+        Assert.True(File.Exists(path));
+        File.Delete(path);
+    }
 }

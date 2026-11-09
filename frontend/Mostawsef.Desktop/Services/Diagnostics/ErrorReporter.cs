@@ -20,11 +20,15 @@ namespace Mostawsef.Desktop.Services.Diagnostics;
 /// if the API is unreachable, appends them to %AppData%\Mostawsef\logs\errors-yyyyMMdd.log.
 /// Install() hooks every global unhandled-exception source; call Report() from catch blocks you handle yourself.
 /// A repeating error is sent once per DuplicateWindow (the next report carries the repeat count),
-/// at most MaxReportsPerMinute errors are sent, and the "unexpected error" toast shows at most once per ToastInterval.
+/// at most MaxReportsPerMinute errors are admitted, at most MaxConcurrentSends POSTs run at once,
+/// and the "unexpected error" toast shows at most once per ToastInterval.
 /// </summary>
 public class ErrorReporter(LogsApi logsApi, NavigationService navigation, IToastService toasts, LocalizationService localization)
 {
     public const int MaxReportsPerMinute = 10;
+
+    /// <summary>One in-flight report POST at a time so an error storm cannot open MaxReportsPerMinute connections.</summary>
+    public const int MaxConcurrentSends = 1;
 
     public static readonly TimeSpan DuplicateWindow = TimeSpan.FromMinutes(1);
 
@@ -40,6 +44,7 @@ public class ErrorReporter(LogsApi logsApi, NavigationService navigation, IToast
     private readonly Lock _gate = new();
     private readonly Dictionary<string, Occurrence> _recent = [];
     private readonly Queue<DateTimeOffset> _admitted = new();
+    private readonly SemaphoreSlim _sendGate = new(MaxConcurrentSends, MaxConcurrentSends);
     private readonly SemaphoreSlim _fileGate = new(1, 1);
     private DateTimeOffset _serverPausedUntil;
     private DateTimeOffset? _lastToastAt;
@@ -94,39 +99,47 @@ public class ErrorReporter(LogsApi logsApi, NavigationService navigation, IToast
             return;
         }
 
-        var fullContext = context;
+        await _sendGate.WaitAsync();
         try
         {
-            fullContext = Context(context, repeats);
-            if (!serverPaused)
+            var fullContext = context;
+            try
             {
-                var request = new ReportClientErrorRequest(
-                    exception.Message,
-                    exception.GetType().FullName,
-                    exception.ToString(),
-                    level,
-                    fullContext,
-                    AppVersion,
-                    RuntimeInformation.OSDescription);
-
-                var result = await logsApi.ReportErrorAsync(request);
-                if (result.IsSuccess)
+                fullContext = Context(context, repeats);
+                if (!serverPaused)
                 {
-                    return;
-                }
+                    var request = new ReportClientErrorRequest(
+                        exception.Message,
+                        exception.GetType().FullName,
+                        exception.ToString(),
+                        level,
+                        fullContext,
+                        AppVersion,
+                        RuntimeInformation.OSDescription);
 
-                if (result.Error == ApiError.TooManyRequests)
-                {
-                    PauseServerReports();
+                    var result = await logsApi.ReportErrorAsync(request);
+                    if (result.IsSuccess)
+                    {
+                        return;
+                    }
+
+                    if (result.Error == ApiError.TooManyRequests)
+                    {
+                        PauseServerReports();
+                    }
                 }
             }
-        }
-        catch (Exception)
-        {
-            // Fall through to the local file.
-        }
+            catch (Exception)
+            {
+                // Fall through to the local file.
+            }
 
-        await WriteLocalAsync(exception, level, fullContext);
+            await WriteLocalAsync(exception, level, fullContext);
+        }
+        finally
+        {
+            _sendGate.Release();
+        }
     }
 
     private bool TryAdmit(string key, out int repeats, out bool serverPaused)

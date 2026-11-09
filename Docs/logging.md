@@ -66,7 +66,7 @@ Recorded today: `auth.signed_in`, `auth.sign_in_failed`, `auth.signed_out`, `aut
 | Desktop, unhandled exceptions | Automatic: `ErrorReporter.Install()` hooks UI-thread, task and process crashes, sends them to `POST /api/system-errors/report`, and shows a toast |
 | Desktop, errors you catch | `errorReporter.Report(ex, ErrorLevels.Error, "Saving patient");` |
 | Desktop, API unreachable | Written to `%AppData%\Mostawsef\logs\errors-yyyyMMdd.log` |
-| Desktop, repeating errors | The same error is sent once a minute (the next report says how often it repeated), at most 10 reports a minute, one "unexpected error" toast per 10 seconds; after a 429 the reporter writes to the local file only for a minute |
+| Desktop, repeating errors | The same error is sent once a minute (the next report says how often it repeated), at most 10 reports a minute with one POST in flight at a time, one "unexpected error" toast per 10 seconds; after a 429 the reporter writes to the local file only for a minute |
 
 ## API (Super only, except report)
 

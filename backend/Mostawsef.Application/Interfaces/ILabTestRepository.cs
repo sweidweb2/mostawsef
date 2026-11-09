@@ -19,7 +19,7 @@ public interface ILabTestRepository
     /// <summary>True if another test (not <paramref name="exceptId"/>) has this normalized name (SearchName).</summary>
     Task<bool> NameExistsAsync(string searchName, Guid? exceptId, CancellationToken cancellationToken);
 
-    /// <summary>Ordered by name. Search matches the normalized name or the code. <paramref name="active"/> filters IsActive when set.</summary>
+    /// <summary>Ordered by SearchName then Code (unique indexes). Search is a prefix on SearchName or Code. <paramref name="active"/> filters IsActive when set.</summary>
     Task<(IReadOnlyList<LabTest> Items, int Total)> GetPageAsync(PageQuery query, bool? active, CancellationToken cancellationToken);
 
     void Add(LabTest test);

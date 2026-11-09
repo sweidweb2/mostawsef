@@ -46,14 +46,22 @@ public class AuthService(
             return null;
         }
 
+        // Overlap the settings read with PBKDF2 for non-Super users (Super skips maintenance).
+        var settingsTask = user.Role == UserRole.Super ? null : systemSettings.GetAsync(cancellationToken);
+
         var check = passwordHasher.Verify(user.PasswordHash, request.Password);
         if (check == PasswordCheck.Failed)
         {
+            if (settingsTask is not null)
+            {
+                await settingsTask;
+            }
+
             await LogFailedSignInAsync(username, cancellationToken);
             return null;
         }
 
-        if (user.Role != UserRole.Super && (await systemSettings.GetAsync(cancellationToken)).MaintenanceMode)
+        if (settingsTask is not null && (await settingsTask).MaintenanceMode)
         {
             await activity.LogAsync(
                 new ActivityEntry(ActivityActions.SignInBlocked, ActivityModules.Auth, "Sign-in blocked by maintenance mode")
@@ -65,25 +73,28 @@ public class AuthService(
             throw AppException.Conflict(ErrorCodes.MaintenanceMode);
         }
 
+        var signedIn = new ActivityEntry(ActivityActions.SignedIn, ActivityModules.Auth, "Signed in")
+        {
+            UserId = user.Id,
+            Username = user.Username,
+            Details = new { Role = user.Role.ToString() },
+        };
+
+        // Last-login and activity log use separate DbContexts: run them together after the password work.
         if (check == PasswordCheck.SuccessRehashNeeded)
         {
             user.ChangePasswordHash(passwordHasher.Hash(request.Password));
             user.RecordLogin(time.GetUtcNow().UtcDateTime);
-            await users.SaveChangesAsync(cancellationToken);
+            await Task.WhenAll(
+                users.SaveChangesAsync(cancellationToken),
+                activity.LogAsync(signedIn, cancellationToken));
         }
         else
         {
-            await users.RecordLoginAsync(user.Id, time.GetUtcNow().UtcDateTime, cancellationToken);
+            await Task.WhenAll(
+                users.RecordLoginAsync(user.Id, time.GetUtcNow().UtcDateTime, cancellationToken),
+                activity.LogAsync(signedIn, cancellationToken));
         }
-
-        await activity.LogAsync(
-            new ActivityEntry(ActivityActions.SignedIn, ActivityModules.Auth, "Signed in")
-            {
-                UserId = user.Id,
-                Username = user.Username,
-                Details = new { Role = user.Role.ToString() },
-            },
-            cancellationToken);
 
         var token = tokens.CreateAccessToken(user);
         return new LoginResponse(token.Token, token.ExpiresAt, ToDto(user));

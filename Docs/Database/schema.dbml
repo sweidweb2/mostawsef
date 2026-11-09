@@ -201,7 +201,7 @@ Table lab_tests {
   UpdatedBy varchar(50)
   Version integer [not null]
 
-  Note: 'Implemented (migration AddLabTests).'
+  Note: 'Implemented (migration AddLabTests). List search is a prefix on SearchName/Code; list order is SearchName then Code (matches the unique indexes).'
 }
 
 Table orders {

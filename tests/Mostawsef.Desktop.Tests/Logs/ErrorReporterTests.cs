@@ -137,6 +137,46 @@ public class ErrorReporterTests
         Directory.Delete(logDirectory, recursive: true);
     }
 
+    [AvaloniaFact]
+    public async Task An_error_storm_sends_at_most_one_report_at_a_time()
+    {
+        using var app = new TestServices();
+        var inFlight = 0;
+        var peak = 0;
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        app.Api.On(HttpMethod.Post, ReportPath, async (_, _) =>
+        {
+            var now = Interlocked.Increment(ref inFlight);
+            Interlocked.Exchange(ref peak, Math.Max(peak, now));
+            await gate.Task;
+            Interlocked.Decrement(ref inFlight);
+            return new HttpResponseMessage(HttpStatusCode.Accepted);
+        });
+        var reporter = Reporter(app, out _);
+
+        var sends = Enumerable.Range(0, 5)
+            .Select(i => reporter.SendAsync(new InvalidOperationException($"Storm {i}")))
+            .ToArray();
+        await WaitUntil(() => Volatile.Read(ref inFlight) == 1);
+
+        Assert.Equal(1, Volatile.Read(ref inFlight));
+        gate.SetResult();
+        await Task.WhenAll(sends);
+
+        Assert.Equal(1, peak);
+        Assert.Equal(5, app.Api.RequestsTo(HttpMethod.Post, ReportPath).Count());
+    }
+
+    private static async Task WaitUntil(Func<bool> condition)
+    {
+        for (var i = 0; i < 200 && !condition(); i++)
+        {
+            await Task.Delay(10, TestContext.Current.CancellationToken);
+        }
+
+        Assert.True(condition());
+    }
+
     private static ErrorReporter Reporter(TestServices app, out string logDirectory, TimeProvider? clock = null, IToastService? toasts = null)
     {
         logDirectory = Path.Combine(Path.GetTempPath(), "mostawsef-tests", Guid.NewGuid().ToString("N"));

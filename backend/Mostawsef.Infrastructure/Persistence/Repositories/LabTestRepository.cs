@@ -34,15 +34,16 @@ public class LabTestRepository(AppDbContext db) : ILabTestRepository
         var term = SearchText.Normalize(query.SafeSearch);
         if (term.Length > 0)
         {
+            // Prefix match so the unique B-trees on SearchName / Code can be used (catalogs stay small either way).
             var code = LabTest.NormalizeCode(term);
-            tests = tests.Where(t => t.SearchName.Contains(term) || t.Code.Contains(code));
+            tests = tests.Where(t => t.SearchName.StartsWith(term) || t.Code.StartsWith(code));
         }
 
         var total = query.IncludeTotal
             ? await tests.CountAsync(cancellationToken)
             : PageQuery.TotalNotComputed;
         var items = await tests
-            .OrderBy(t => t.Name)
+            .OrderBy(t => t.SearchName)
             .ThenBy(t => t.Code)
             .Skip((query.SafePage - 1) * query.SafePageSize)
             .Take(query.SafePageSize)
