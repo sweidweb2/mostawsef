@@ -20,10 +20,9 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
     {
         var orders = db.Orders.AsNoTracking();
 
-        var term = SearchText.Normalize(query.SafeSearch);
-        if (term.Length > 0)
+        if (TrigramSearch.ContainsPattern(query.SafeSearch) is { } pattern)
         {
-            orders = orders.Where(o => o.SearchText.Contains(term));
+            orders = orders.Where(o => EF.Functions.Like(o.SearchText, pattern, TrigramSearch.EscapeCharacter));
         }
 
         var total = query.IncludeTotal

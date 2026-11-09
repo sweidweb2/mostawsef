@@ -10,10 +10,14 @@ namespace Mostawsef.Infrastructure.Persistence.Repositories;
 
 public class ActivityLogRepository(AppDbContext db) : IActivityLogRepository
 {
-    public Task<KeysetPage<ActivityLog>> GetPageAsync(PageRequest request, CancellationToken cancellationToken) =>
+    public Task<KeysetPage<ActivityLogSummary>> GetPageAsync(PageRequest request, CancellationToken cancellationToken) =>
         db.ActivityLogs.AsNoTracking()
             .Matching(request.Search)
-            .ToKeysetPageAsync(request, l => l, l => new PageCursor(l.OccurredAt, l.Id), cancellationToken);
+            .ToKeysetPageAsync(
+                request,
+                l => new ActivityLogSummary(l.Id, l.OccurredAt, l.Action, l.Module, l.Description, l.Username),
+                l => new PageCursor(l.OccurredAt, l.Id),
+                cancellationToken);
 
     public Task<ActivityLog?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
         db.ActivityLogs.AsNoTracking().FirstOrDefaultAsync(l => l.Id == id, cancellationToken);

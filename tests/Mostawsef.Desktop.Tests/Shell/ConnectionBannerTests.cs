@@ -87,6 +87,20 @@ public class ConnectionBannerTests
         Assert.Equal(ConnectionState.Online, monitor.State);
     }
 
+    [AvaloniaFact]
+    public async Task Health_checks_do_not_send_the_bearer_token()
+    {
+        using var app = new TestServices();
+        app.Api.OnGet(HealthPath, new HealthDto("Healthy", "Connected", ApiVersion.Current));
+        ShowPortal(app);
+
+        await app.Get<ConnectionMonitor>().CheckNowAsync();
+
+        var health = app.Api.RequestsTo(HttpMethod.Get, HealthPath).ToList();
+        Assert.NotEmpty(health);
+        Assert.All(health, r => Assert.Null(r.Headers.Authorization));
+    }
+
     private static Window ShowPortal(TestServices app)
     {
         app.SignInAs(Roles.Admin);

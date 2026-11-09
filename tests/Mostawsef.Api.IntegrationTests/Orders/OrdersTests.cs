@@ -338,6 +338,21 @@ public class OrdersTests(ApiFactory factory)
     }
 
     [Theory]
+    [InlineData("ab")]
+    [InlineData("a b")]
+    [InlineData("ـمـ")]
+    public async Task Search_with_fewer_than_3_letters_or_digits_returns_400_min_length(string search)
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+
+        var response = await admin.GetAsync($"{Url}?search={Uri.EscapeDataString(search)}", Ct);
+
+        var problem = await ProblemResponse.ReadAsync(response);
+        Assert.Equal(HttpStatusCode.BadRequest, problem.Status);
+        Assert.Equal(["min_length|3"], problem.Errors["Search"]);
+    }
+
+    [Theory]
     [InlineData("فاطمة")]
     [InlineData("فاطِمه")]
     public async Task Search_finds_the_patient_name_however_it_was_typed(string term)

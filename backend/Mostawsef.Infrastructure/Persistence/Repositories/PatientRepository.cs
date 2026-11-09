@@ -15,17 +15,16 @@ public class PatientRepository(AppDbContext db) : IPatientRepository
     {
         var patients = db.Patients.AsNoTracking();
 
-        var term = SearchText.Normalize(query.SafeSearch);
-        if (term.Length > 0)
+        if (TrigramSearch.ContainsPattern(query.SafeSearch) is { } pattern)
         {
-            patients = patients.Where(p => p.SearchText.Contains(term));
+            patients = patients.Where(p => EF.Functions.Like(p.SearchText, pattern, TrigramSearch.EscapeCharacter));
         }
 
         var total = query.IncludeTotal
             ? await patients.CountAsync(cancellationToken)
             : PageQuery.TotalNotComputed;
         var items = await patients
-            .OrderBy(p => p.FullName)
+            .OrderBy(p => p.SearchName)
             .ThenBy(p => p.Id)
             .Skip((query.SafePage - 1) * query.SafePageSize)
             .Take(query.SafePageSize)

@@ -184,7 +184,7 @@ Table patients {
     SearchText [type: gin, note: 'gin_trgm_ops']
   }
 
-  Note: 'Implemented (migration AddPatients; SearchText on AddPatientSearchText).'
+  Note: 'Implemented (migration AddPatients; SearchText on AddPatientSearchText). List order is SearchName; list search is LIKE on SearchText (trigram; min 3 letters/digits).'
 }
 
 Table lab_tests {
@@ -232,7 +232,7 @@ Table orders {
     SearchText [type: gin, note: 'gin_trgm_ops']
   }
 
-  Note: 'Implemented (migration AddOrders; OurPrice on AddOrderOurPrice; SearchText on AddOrderSearchText). Total = OurPrice - discount; Discounts not used yet (DiscountValue 0).'
+  Note: 'Implemented (migration AddOrders; OurPrice on AddOrderOurPrice; SearchText on AddOrderSearchText). List search is LIKE on SearchText (trigram; min 3 letters/digits). Total = OurPrice - discount; Discounts not used yet (DiscountValue 0).'
 }
 
 Table order_items {

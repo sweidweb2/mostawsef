@@ -24,6 +24,7 @@ public class PatientService(IPatientRepository patients, IActivityLogger activit
 {
     public async Task<PagedResult<PatientDto>> GetPageAsync(PageQuery query, CancellationToken cancellationToken)
     {
+        query.EnsureSearchable();
         var (items, total) = await patients.GetPageAsync(query, cancellationToken);
         return new PagedResult<PatientDto>(items.Select(ToListDto).ToList(), query.SafePage, query.SafePageSize, total);
     }

@@ -17,7 +17,12 @@ public class PatientsApi(ApiClient api)
             (string.IsNullOrWhiteSpace(search) ? string.Empty : $"&search={Uri.EscapeDataString(search.Trim())}"),
             cancellationToken);
 
-    /// <summary>Every patient, sorted by name.</summary>
+    /// <summary>One page of patients matching <paramref name="search"/> for the new-order autocomplete.</summary>
+    public Task<ApiResult<PagedResult<PatientDto>>> SearchPatientsAsync(
+        string? search, CancellationToken cancellationToken = default) =>
+        GetPatientsAsync(1, PageQuery.DefaultPageSize, search, includeTotal: false, cancellationToken);
+
+    /// <summary>Every patient, sorted by name (print/export).</summary>
     public Task<ApiResult<IReadOnlyList<PatientDto>>> GetAllPatientsAsync(CancellationToken cancellationToken = default) =>
         api.GetAllPagesAsync<PatientDto>("api/patients", cancellationToken);
 

@@ -85,6 +85,21 @@ public sealed record PageRequest(PageDirection Direction, PageCursor? Cursor, in
     }
 }
 
+/// <summary>Shared search-length check for offset-paged lists that use a trigram SearchText index.</summary>
+public static class PageQuerySearch
+{
+    /// <summary>Throws AppException (400, "min_length|3" on Search) when the search term is too short for the search index.</summary>
+    public static void EnsureSearchable(this PageQuery query)
+    {
+        if (PageQuery.IsSearchTooShort(query.Search))
+        {
+            throw AppException.Validation(
+                nameof(PageQuery.Search),
+                string.Format(CultureInfo.InvariantCulture, ErrorCodes.MinLength, nameof(PageQuery.Search), PageQuery.MinSearchLength));
+        }
+    }
+}
+
 /// <summary>Rows of one page, newest first, with the cursors to the neighbouring pages (null at either end).</summary>
 public sealed record KeysetPage<T>(IReadOnlyList<T> Items, int? Total, PageCursor? Next, PageCursor? Previous)
 {

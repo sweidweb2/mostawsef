@@ -197,6 +197,21 @@ public class PatientsTests(ApiFactory factory)
         Assert.Contains(page.Items, p => p.Id == patient.Id);
     }
 
+    [Theory]
+    [InlineData("ab")]
+    [InlineData("a b")]
+    [InlineData("ـمـ")]
+    public async Task Search_with_fewer_than_3_letters_or_digits_returns_400_min_length(string search)
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+
+        var response = await admin.GetAsync($"{Url}?search={Uri.EscapeDataString(search)}", Ct);
+
+        var problem = await ProblemResponse.ReadAsync(response);
+        Assert.Equal(HttpStatusCode.BadRequest, problem.Status);
+        Assert.Equal(["min_length|3"], problem.Errors["Search"]);
+    }
+
     [Fact]
     public async Task Search_matches_the_phone_and_the_guardian_phone_in_any_digits()
     {

@@ -136,22 +136,22 @@ public class NewOrderPageTests
     }
 
     [AvaloniaFact]
-    public async Task Patients_are_loaded_once_and_filter_locally_as_the_admin_types()
+    public async Task Patient_search_hits_the_api_and_picking_one_hides_the_box()
     {
         using var app = Admin();
         var (_, page, window) = await ShowNewOrderAsync(app);
 
-        Assert.Equal([Mona.Id, Omar.Id], page.Patients.Select(p => p.Id));
-        Assert.Single(app.Api.RequestsTo(HttpMethod.Get, PatientsPath));
-        Assert.Contains($"pageSize={PageQuery.MaxPageSize}", app.Api.RequestsTo(HttpMethod.Get, PatientsPath).Single().RequestUri!.Query, StringComparison.Ordinal);
-
-        Assert.True(NewOrderViewModel.MatchesPatient("٠١٠", Mona));
-        Assert.True(NewOrderViewModel.MatchesPatient("عمر", Omar));
-        Assert.False(NewOrderViewModel.MatchesPatient("٠١٠", Omar));
-        Assert.False(NewOrderViewModel.MatchesPatient("nobody", Mona));
+        Assert.Empty(page.Patients);
+        Assert.Empty(app.Api.RequestsTo(HttpMethod.Get, PatientsPath));
 
         page.PatientSearch = "mona";
-        Dispatcher.UIThread.RunJobs();
+        await WaitUntil(() => !page.IsLoadingPatients && page.Patients.Count > 0);
+
+        Assert.Equal(Mona.Id, Assert.Single(page.Patients).Id);
+        var search = Assert.Single(app.Api.RequestsTo(HttpMethod.Get, PatientsPath));
+        Assert.Contains("search=mona", search.RequestUri!.Query, StringComparison.Ordinal);
+        Assert.Contains($"pageSize={PageQuery.DefaultPageSize}", search.RequestUri.Query, StringComparison.Ordinal);
+        Assert.Contains("includeTotal=false", search.RequestUri.Query, StringComparison.Ordinal);
         Assert.False(page.NoPatientsFound);
 
         page.PatientPick = Mona;
@@ -159,7 +159,6 @@ public class NewOrderPageTests
 
         Assert.True(Named<Border>(window, "SelectedPatientCard").IsEffectivelyVisible);
         Assert.False(Named<AutoCompleteBox>(window, "PatientSearchBox").IsEffectivelyVisible);
-        Assert.Single(app.Api.RequestsTo(HttpMethod.Get, PatientsPath));
 
         page.ChangePatientCommand.Execute(null);
         Dispatcher.UIThread.RunJobs();
@@ -173,11 +172,41 @@ public class NewOrderPageTests
         var (_, page, window) = await ShowNewOrderAsync(app);
 
         page.PatientSearch = "nobody";
+        await WaitUntil(() => !page.IsLoadingPatients && page.NoPatientsFound);
+
+        Assert.Empty(page.Patients);
+        Assert.Contains("No patient matches. Check the spelling or add a new patient.", Texts(window));
+        Assert.Contains("search=nobody", Assert.Single(app.Api.RequestsTo(HttpMethod.Get, PatientsPath)).RequestUri!.Query, StringComparison.Ordinal);
+    }
+
+    [AvaloniaFact]
+    public async Task Arabic_and_eastern_digits_reach_the_api_as_the_typed_search()
+    {
+        using var app = Admin();
+        var (_, page, _) = await ShowNewOrderAsync(app);
+
+        page.PatientSearch = "٠١٠";
+        await WaitUntil(() => !page.IsLoadingPatients && page.Patients.Count > 0);
+        Assert.Equal(Mona.Id, Assert.Single(page.Patients).Id);
+
+        page.PatientSearch = "خالد";
+        await WaitUntil(() => !page.IsLoadingPatients && page.Patients.Any(p => p.Id == Omar.Id));
+        Assert.Equal(Omar.Id, Assert.Single(page.Patients).Id);
+    }
+
+    [AvaloniaFact]
+    public async Task A_patient_search_shorter_than_three_letters_does_not_call_the_api()
+    {
+        using var app = Admin();
+        var (_, page, _) = await ShowNewOrderAsync(app);
+
+        page.PatientSearch = "mo";
+        await Task.Delay(NewOrderViewModel.PatientSearchDelay + TimeSpan.FromMilliseconds(50), TestContext.Current.CancellationToken);
         Dispatcher.UIThread.RunJobs();
 
-        Assert.True(page.NoPatientsFound);
-        Assert.Contains("No patient matches. Check the spelling or add a new patient.", Texts(window));
-        Assert.Single(app.Api.RequestsTo(HttpMethod.Get, PatientsPath));
+        Assert.Empty(app.Api.RequestsTo(HttpMethod.Get, PatientsPath));
+        Assert.False(page.NoPatientsFound);
+        Assert.Empty(page.Patients);
     }
 
     [AvaloniaFact]

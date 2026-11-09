@@ -53,8 +53,26 @@ internal static class OrderPages
         app.SignInAs(Roles.Admin);
         app.Api.OnGet(OrdersPath, new PagedResult<OrderListItemDto>([PartlyPaid, Unpaid], 1, 20, 2));
         app.Api.On(HttpMethod.Get, TestsPath, request => CatalogResponse(request));
-        app.Api.OnGet(PatientsPath, new PagedResult<PatientDto>([Mona, Omar], 1, PageQuery.MaxPageSize, 2));
+        app.Api.On(HttpMethod.Get, PatientsPath, request => PatientResponse(request));
         return app;
+    }
+
+    /// <summary>Mirrors the API: SearchText-style name/phone search for the new-order autocomplete.</summary>
+    public static HttpResponseMessage PatientResponse(HttpRequestMessage request)
+    {
+        var query = System.Web.HttpUtility.ParseQueryString(request.RequestUri!.Query);
+        IEnumerable<PatientDto> patients = [Mona, Omar];
+        var term = SearchText.Normalize(query["search"]);
+        if (term.Length > 0)
+        {
+            patients = patients.Where(p =>
+                SearchText.Normalize(p.FullName).Contains(term, StringComparison.Ordinal)
+                || SearchText.Normalize(p.Phone).Contains(term, StringComparison.Ordinal)
+                || SearchText.Normalize(p.GuardianPhone).Contains(term, StringComparison.Ordinal));
+        }
+
+        var items = patients.ToList();
+        return FakeApiHandler.Json(new PagedResult<PatientDto>(items, 1, PageQuery.DefaultPageSize, items.Count));
     }
 
     /// <summary>Mirrors the API: optional active filter and SearchText-style name/code search.</summary>

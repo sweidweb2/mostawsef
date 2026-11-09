@@ -111,8 +111,20 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
     [RelayCommand]
     private Task RefreshAsync() => LoadAsync(CurrentPage, includeTotal: true);
 
+    /// <summary>
+    /// A new filter. A term the API would reject as too short is not sent; the list stays as it is and a warning explains why.
+    /// </summary>
     [RelayCommand]
-    private Task SearchAsync() => LoadAsync(page: 1, includeTotal: true);
+    private Task SearchAsync()
+    {
+        if (PageQuery.IsSearchTooShort(Search))
+        {
+            Toasts.Show(Localization.Format("Search.TooShort", PageQuery.MinSearchLength), kind: ToastKind.Warning);
+            return Task.CompletedTask;
+        }
+
+        return LoadAsync(page: 1, includeTotal: true);
+    }
 
     partial void OnCurrentPageChanged(int value)
     {

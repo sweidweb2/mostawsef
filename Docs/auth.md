@@ -61,7 +61,7 @@ Unknown usernames take the same hashing time as wrong passwords, so response tim
 | `POST /api/lab-tests` `{ code, name, price, labCost }` | Admin | `201`, `400` (`max_length\|20`/`\|150`, `range\|0\|100000000` for a price outside 0 to 1,000,000.00), `409 taken` on `Code` or `Name` |
 | `PUT /api/lab-tests/{id}` `{ code, name, price, labCost, isActive, version }` | Admin | `200`, `400`, `404`, `409 taken` or `concurrency_conflict` |
 | `DELETE /api/lab-tests/{id}` | Admin | `204`, `404` |
-| `GET /api/patients?page=&pageSize=&search=` | Admin | Paged list sorted by name; search matches the normalized name, phone or guardian phone (any digits) |
+| `GET /api/patients?page=&pageSize=&search=` | Admin | Paged list sorted by SearchName; search matches SearchText (name/phones; trigram, min 3 letters/digits or 400) |
 | `GET /api/patients/{id}` | Admin | `200 { id, fullName, phone, guardianPhone, notes, isInsured, gender, dateOfBirth, ..., version }`, `404` |
 | `POST /api/patients` `{ fullName, phone, guardianPhone, notes, isInsured, gender, dateOfBirth }` | Admin | `201`, `400` (`invalid` phone, gender or date of birth outside 1900-01-01..today) |
 | `PUT /api/patients/{id}` `{ ...same, version }` | Admin | `200`, `400`, `404`, `409 concurrency_conflict` |

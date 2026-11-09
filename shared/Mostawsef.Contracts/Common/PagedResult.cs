@@ -12,9 +12,14 @@ public record PagedResult<T>(IReadOnlyList<T> Items, int Page, int PageSize, int
 /// </summary>
 public record PageQuery(int Page = 1, int PageSize = 20, string? Search = null, bool IncludeTotal = true)
 {
+    public const int DefaultPageSize = 20;
+
     public const int MaxPageSize = 100;
 
     public const int MaxSearchLength = 100;
+
+    /// <summary>Same floor as <see cref="CursorQuery.MinSearchLength"/>: trigram search needs three characters.</summary>
+    public const int MinSearchLength = CursorQuery.MinSearchLength;
 
     /// <summary>Sentinel when <see cref="IncludeTotal"/> is false: the client keeps its previous total.</summary>
     public const int TotalNotComputed = -1;
@@ -25,4 +30,7 @@ public record PageQuery(int Page = 1, int PageSize = 20, string? Search = null, 
 
     /// <summary>Search cut to <see cref="MaxSearchLength"/> characters.</summary>
     public string? SafeSearch => Search is { Length: > MaxSearchLength } ? Search[..MaxSearchLength] : Search;
+
+    /// <summary>True for a term with fewer than <see cref="MinSearchLength"/> letters or digits. Blank means "no search".</summary>
+    public static bool IsSearchTooShort(string? search) => CursorQuery.IsSearchTooShort(search);
 }

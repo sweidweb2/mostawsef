@@ -119,9 +119,9 @@
                                                  ValueMemberBinding="{Binding FullName}"
                                                  MaxLength="{x:Static common:PageQuery.MaxSearchLength}"
                                                  PlaceholderText="{l:Tr NewOrder.PatientSearchPlaceholder}"
-                                                 MinimumPrefixLength="1"
-                                                 MinimumPopulateDelay="0"
-                                                 FilterMode="Custom"
+                                                 MinimumPrefixLength="{x:Static common:PageQuery.MinSearchLength}"
+                                                 MinimumPopulateDelay="0:0:0.250"
+                                                 FilterMode="None"
                                                  HorizontalAlignment="Stretch">
                                     <AutoCompleteBox.ItemTemplate>
                                         <DataTemplate x:DataType="patients:PatientDto">

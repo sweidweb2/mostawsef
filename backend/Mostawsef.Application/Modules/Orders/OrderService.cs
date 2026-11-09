@@ -34,6 +34,7 @@ public class OrderService(
 
     public async Task<PagedResult<OrderListItemDto>> GetPageAsync(PageQuery query, CancellationToken cancellationToken)
     {
+        query.EnsureSearchable();
         var (items, total) = await orders.GetPageAsync(query, cancellationToken);
         return new PagedResult<OrderListItemDto>(
             items.Select(o => new OrderListItemDto(

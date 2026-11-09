@@ -90,6 +90,7 @@ or more than one position, returns 400.
 
 `Activity logs` and `System errors`: stat cards, search, table (long text cut with the full text in a tooltip),
 pagination, an eye button (details modal) and a delete button (with confirmation) on each row.
+The activity-log list loads only the columns it shows (same idea as system-error summaries); Details and UserAgent stay on the details call.
 If the list cannot load, the table shows an error state with a Retry button (a specific message when the server is unreachable).
 Both pages derive from `ViewModels/Shell/PagedListViewModel`, which a new list page can reuse as well.
 Page moves send one cursor request without the total; a search counts again; the stat cards load only on the

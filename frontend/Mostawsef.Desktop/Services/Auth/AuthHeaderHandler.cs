@@ -1,3 +1,4 @@
+using System;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -12,19 +13,25 @@ namespace Mostawsef.Desktop.Services.Auth;
 /// </summary>
 public sealed class AuthHeaderHandler(SessionService session) : DelegatingHandler
 {
+    /// <summary>Anonymous health checks must not send a Bearer token (avoids a DB user lookup on every poll).</summary>
+    internal static bool OmitsBearer(HttpRequestMessage request) =>
+        request.RequestUri is { AbsolutePath: var path }
+        && path.Equals("/api/health", StringComparison.OrdinalIgnoreCase);
+
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         var token = session.AccessToken;
-        if (token is not null)
+        var attachBearer = token is not null && !OmitsBearer(request);
+        if (attachBearer)
         {
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
 
         var response = await base.SendAsync(request, cancellationToken);
 
-        if (token is not null && response.StatusCode == HttpStatusCode.Unauthorized)
+        if (attachBearer && response.StatusCode == HttpStatusCode.Unauthorized)
         {
-            session.Expire(token);
+            session.Expire(token!);
         }
 
         return response;

@@ -77,6 +77,12 @@ public static class AuthExtensions
     /// <summary>A valid token stops working as soon as its user is deactivated, deleted or given another role.</summary>
     private static async Task RejectStaleUserAsync(TokenValidatedContext context)
     {
+        // Health is anonymous; skip the user lookup even if a client sent a Bearer token.
+        if (context.HttpContext.Request.Path.StartsWithSegments("/api/health"))
+        {
+            return;
+        }
+
         var principal = context.Principal;
         var users = context.HttpContext.RequestServices.GetRequiredService<IUserRepository>();
 

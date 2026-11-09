@@ -23,7 +23,7 @@ public interface IPatientRepository
 {
     Task<Patient?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
-    /// <summary>Ordered by full name. Search matches SearchText (name and phones). Notes are not loaded.</summary>
+    /// <summary>Ordered by SearchName. Search is LIKE on SearchText (trigram). Notes are not loaded.</summary>
     Task<(IReadOnlyList<PatientListRow> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken);
 
     void Add(Patient patient);

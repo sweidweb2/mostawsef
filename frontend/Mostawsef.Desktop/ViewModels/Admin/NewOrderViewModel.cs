@@ -22,7 +22,7 @@ using Mostawsef.Desktop.ViewModels.Shell;
 namespace Mostawsef.Desktop.ViewModels.Admin;
 
 /// <summary>
-/// Admin portal sub-page: a new order in three columns. Column 1 picks an existing patient (live local autocomplete)
+/// Admin portal sub-page: a new order in three columns. Column 1 picks an existing patient (server-backed autocomplete)
 /// or fills a new one, plus an optional first payment; column 2 holds the selected tests and the live total (with an
 /// optional our-price override); column 3 is the active lab test catalog. Saving sends one request; the API saves it
 /// all or nothing.
@@ -42,12 +42,16 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
     private CancellationTokenSource _pageCancellation = new();
     private CancellationTokenSource? _catalogSearchDelay;
     private CancellationTokenSource? _catalogLoadCancellation;
+    private CancellationTokenSource? _patientSearchDelay;
+    private CancellationTokenSource? _patientLoadCancellation;
     private bool _catalogLoaded;
     private string? _loadedCatalogSearch;
-    private bool _patientsLoaded;
+    private string? _loadedPatientSearch;
     private OrderDetailsDto? _created;
 
     public static readonly TimeSpan CatalogSearchDelay = TimeSpan.FromMilliseconds(250);
+
+    public static readonly TimeSpan PatientSearchDelay = CatalogSearchDelay;
 
     public NewOrderViewModel(
         OrdersApi orders,
@@ -88,15 +92,16 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
     [ObservableProperty]
     public partial bool IsNewPatient { get; set; }
 
-    /// <summary>Every patient, loaded once for the autocomplete. Filtered locally as the admin types.</summary>
+    /// <summary>Patients matching the current search (one API page). The autocomplete shows this list as-is.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(NoPatientsFound))]
     public partial IReadOnlyList<PatientDto> Patients { get; private set; } = [];
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(NoPatientsFound))]
     public partial bool IsLoadingPatients { get; private set; }
 
-    /// <summary>Text in the patient autocomplete; drives the empty-results caption.</summary>
+    /// <summary>Text in the patient autocomplete; debounced search against the API.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(NoPatientsFound))]
     public partial string? PatientSearch { get; set; }
@@ -108,9 +113,10 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
     public bool NoPatientsFound =>
         !IsLoadingPatients
         && SelectedPatient is null
-        && Patients.Count > 0
         && !string.IsNullOrWhiteSpace(PatientSearch)
-        && !Patients.Any(p => MatchesPatient(PatientSearch!, p));
+        && !PageQuery.IsSearchTooShort(PatientSearch)
+        && _loadedPatientSearch == PatientSearch
+        && Patients.Count == 0;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasSelectedPatient), nameof(NoPatientsFound))]
@@ -215,11 +221,9 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
             _pageCancellation = new CancellationTokenSource();
         }
 
-        var catalog = _catalogLoaded && _loadedCatalogSearch == CatalogSearch
+        return _catalogLoaded && _loadedCatalogSearch == CatalogSearch
             ? Task.CompletedTask
             : LoadCatalogAsync();
-        var patients = _patientsLoaded ? Task.CompletedTask : LoadPatientsAsync();
-        return Task.WhenAll(catalog, patients);
     }
 
     public void Deactivate()
@@ -227,6 +231,8 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         CancelLifetime();
         _catalogSearchDelay?.Cancel();
         _catalogLoadCancellation?.Cancel();
+        _patientSearchDelay?.Cancel();
+        _patientLoadCancellation?.Cancel();
         _pageCancellation.Cancel();
     }
 
@@ -360,26 +366,14 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
             case nameof(CatalogSearch):
                 ScheduleCatalogSearch();
                 break;
+            case nameof(PatientSearch):
+                SchedulePatientSearch();
+                break;
         }
     }
 
     [RelayCommand]
     private Task<bool> BackAsync() => _navigation.BackAsync();
-
-    /// <summary>Name or phone match using the same normalization as the patients API.</summary>
-    public static bool MatchesPatient(string? search, object? item)
-    {
-        if (item is not PatientDto patient)
-        {
-            return false;
-        }
-
-        var term = SearchText.Normalize(search);
-        return term.Length > 0
-            && (SearchText.Normalize(patient.FullName).Contains(term, StringComparison.Ordinal)
-                || SearchText.Normalize(patient.Phone).Contains(term, StringComparison.Ordinal)
-                || SearchText.Normalize(patient.GuardianPhone).Contains(term, StringComparison.Ordinal));
-    }
 
     partial void OnPatientPickChanged(PatientDto? value)
     {
@@ -396,6 +390,8 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         {
             SelectedPatient = patient;
             PatientSearch = null;
+            Patients = [];
+            _loadedPatientSearch = null;
             Errors.Clear(nameof(CreateOrderRequest.PatientId));
         }
     }
@@ -406,15 +402,55 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         SelectedPatient = null;
         PatientPick = null;
         PatientSearch = null;
+        Patients = [];
+        _loadedPatientSearch = null;
     }
 
-    private async Task LoadPatientsAsync()
+    /// <summary>Waits briefly so typing does not hit the API on every keystroke, then searches patients.</summary>
+    private void SchedulePatientSearch()
     {
-        var cancellationToken = _pageCancellation.Token;
+        _patientSearchDelay?.Cancel();
+        var delay = new CancellationTokenSource();
+        _patientSearchDelay = delay;
+        _ = DebouncedPatientSearchAsync(delay.Token);
+    }
+
+    private async Task DebouncedPatientSearchAsync(CancellationToken delayToken)
+    {
+        try
+        {
+            await Task.Delay(PatientSearchDelay, delayToken);
+        }
+        catch (OperationCanceledException) when (delayToken.IsCancellationRequested)
+        {
+            return;
+        }
+
+        await SearchPatientsAsync();
+    }
+
+    private async Task SearchPatientsAsync()
+    {
+        var search = PatientSearch;
+        if (string.IsNullOrWhiteSpace(search) || PageQuery.IsSearchTooShort(search))
+        {
+            _patientLoadCancellation?.Cancel();
+            Patients = [];
+            _loadedPatientSearch = search;
+            IsLoadingPatients = false;
+            OnPropertyChanged(nameof(NoPatientsFound));
+            return;
+        }
+
+        _patientLoadCancellation?.Cancel();
+        var load = CancellationTokenSource.CreateLinkedTokenSource(_pageCancellation.Token);
+        _patientLoadCancellation = load;
+        var cancellationToken = load.Token;
+
         IsLoadingPatients = true;
         try
         {
-            var result = await _patients.GetAllPatientsAsync(cancellationToken);
+            var result = await _patients.SearchPatientsAsync(search, cancellationToken);
             if (cancellationToken.IsCancellationRequested)
             {
                 return;
@@ -423,19 +459,25 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
             if (!result.IsSuccess)
             {
                 _toasts.Error(Localization.Get(result.Error == ApiError.Unreachable ? "Login.ServerUnreachable" : "Error.RequestFailed"));
+                _loadedPatientSearch = search;
+                Patients = [];
                 return;
             }
 
-            Patients = result.Value!;
-            _patientsLoaded = true;
+            _loadedPatientSearch = search;
+            Patients = result.Value!.Items;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            // The user left the page; the next activation loads again.
+            // A newer search started, or the user left the page.
         }
         finally
         {
-            IsLoadingPatients = false;
+            if (_patientLoadCancellation == load)
+            {
+                _patientLoadCancellation = null;
+                IsLoadingPatients = false;
+            }
         }
     }
 

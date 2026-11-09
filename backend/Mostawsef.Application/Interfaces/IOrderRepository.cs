@@ -21,7 +21,7 @@ public interface IOrderRepository
     /// <summary>With its items (and their lab tests) and payments.</summary>
     Task<Order?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
-    /// <summary>Newest first. Search matches the order SearchText (name, phone, number).</summary>
+    /// <summary>Newest first. Search is LIKE on SearchText (trigram; name, phone, number).</summary>
     Task<(IReadOnlyList<OrderListRow> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken);
 
     void Add(Order order);

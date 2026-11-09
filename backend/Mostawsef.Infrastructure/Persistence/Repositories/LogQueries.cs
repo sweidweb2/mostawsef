@@ -5,31 +5,14 @@ using Mostawsef.Domain.Entities;
 namespace Mostawsef.Infrastructure.Persistence.Repositories;
 
 /// <summary>
-/// List search over the lowercased SearchText column: one LIKE '%term%' that the column's trigram index can serve.
+/// Builds a LIKE '%term%' pattern for a lowercased SearchText column so the GIN trigram index can serve it.
 /// The term's LIKE wildcards are escaped, so "%" and "_" match themselves.
 /// </summary>
-public static class LogSearch
+internal static class TrigramSearch
 {
-    private const string EscapeCharacter = "\\";
+    public const string EscapeCharacter = "\\";
 
-    /// <summary>Sets SearchText from the searchable fields (new rows and the backfill of older ones).</summary>
-    public static void FillSearchText(this ActivityLog log) =>
-        log.SetSearchText(SearchText.Key(log.Username, log.Action, log.Module, log.Description));
-
-    public static void FillSearchText(this SystemError error) =>
-        error.SetSearchText(SearchText.Key(error.Message, error.Source, error.ExceptionType, error.RequestPath, error.Username));
-
-    public static IQueryable<ActivityLog> Matching(this IQueryable<ActivityLog> logs, string? search) =>
-        ContainsPattern(search) is { } pattern
-            ? logs.Where(l => EF.Functions.Like(l.SearchText, pattern, EscapeCharacter))
-            : logs;
-
-    public static IQueryable<SystemError> Matching(this IQueryable<SystemError> errors, string? search) =>
-        ContainsPattern(search) is { } pattern
-            ? errors.Where(e => EF.Functions.Like(e.SearchText, pattern, EscapeCharacter))
-            : errors;
-
-    private static string? ContainsPattern(string? search)
+    public static string? ContainsPattern(string? search)
     {
         if (string.IsNullOrWhiteSpace(search))
         {
@@ -42,6 +25,27 @@ public static class LogSearch
             .Replace("_", EscapeCharacter + "_");
         return $"%{term}%";
     }
+}
+
+/// <summary>List search over activity and system-error SearchText columns.</summary>
+public static class LogSearch
+{
+    /// <summary>Sets SearchText from the searchable fields (new rows and the backfill of older ones).</summary>
+    public static void FillSearchText(this ActivityLog log) =>
+        log.SetSearchText(SearchText.Key(log.Username, log.Action, log.Module, log.Description));
+
+    public static void FillSearchText(this SystemError error) =>
+        error.SetSearchText(SearchText.Key(error.Message, error.Source, error.ExceptionType, error.RequestPath, error.Username));
+
+    public static IQueryable<ActivityLog> Matching(this IQueryable<ActivityLog> logs, string? search) =>
+        TrigramSearch.ContainsPattern(search) is { } pattern
+            ? logs.Where(l => EF.Functions.Like(l.SearchText, pattern, TrigramSearch.EscapeCharacter))
+            : logs;
+
+    public static IQueryable<SystemError> Matching(this IQueryable<SystemError> errors, string? search) =>
+        TrigramSearch.ContainsPattern(search) is { } pattern
+            ? errors.Where(e => EF.Functions.Like(e.SearchText, pattern, TrigramSearch.EscapeCharacter))
+            : errors;
 }
 
 internal static class Retention
