@@ -24,19 +24,101 @@
             <Setter Property="Padding" Value="{DynamicResource PaddingCardCompact}" />
         </Style>
 
-        <Style Selector="Border.step-pill">
-            <Setter Property="Background" Value="{DynamicResource BrushSurfaceAlt}" />
-            <Setter Property="CornerRadius" Value="{DynamicResource RadiusMd}" />
-            <Setter Property="Padding" Value="10,6" />
+        <Style Selector="Button.step-node">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="{DynamicResource PaddingControlSm}" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontWeight" Value="Normal" />
+        </Style>
+        <Style Selector="Button.step-node:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="Button.step-node:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
         </Style>
 
-        <Style Selector="Border.step-pill.current">
+        <Style Selector="Border.step-circle">
+            <Setter Property="Width" Value="{DynamicResource AvatarSize}" />
+            <Setter Property="Height" Value="{DynamicResource AvatarSize}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusFull}" />
+            <Setter Property="Background" Value="{DynamicResource BrushSurfaceAlt}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushBorderStrong}" />
+            <Setter Property="BorderThickness" Value="{DynamicResource BorderWidthThick}" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Border.step-circle.current">
+            <Setter Property="Background" Value="{DynamicResource BrushPrimary}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushPrimary}" />
+        </Style>
+        <Style Selector="Border.step-circle.complete">
             <Setter Property="Background" Value="{DynamicResource BrushPrimarySubtle}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushPrimary}" />
+        </Style>
+        <Style Selector="Border.step-circle.missing">
+            <Setter Property="Background" Value="{DynamicResource BrushDangerSubtle}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushDanger}" />
+        </Style>
+
+        <Style Selector="Border.step-circle TextBlock">
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeBodyLarge}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Foreground" Value="{DynamicResource BrushText}" />
+        </Style>
+        <Style Selector="Border.step-circle.current TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource BrushOnPrimary}" />
+        </Style>
+        <Style Selector="Border.step-circle.missing TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource BrushDanger}" />
+        </Style>
+        <Style Selector="Border.step-circle.complete PathIcon">
+            <Setter Property="Foreground" Value="{DynamicResource BrushPrimary}" />
+            <Setter Property="Width" Value="{DynamicResource IconSize}" />
+            <Setter Property="Height" Value="{DynamicResource IconSize}" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Border.step-circle.missing PathIcon">
+            <Setter Property="Foreground" Value="{DynamicResource BrushDanger}" />
+            <Setter Property="Width" Value="{DynamicResource IconSize}" />
+            <Setter Property="Height" Value="{DynamicResource IconSize}" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style Selector="TextBlock.step-label">
+            <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="TextAlignment" Value="Center" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,8,0,0" />
+        </Style>
+        <Style Selector="TextBlock.step-label.current">
+            <Setter Property="Foreground" Value="{DynamicResource BrushPrimary}" />
+        </Style>
+        <Style Selector="TextBlock.step-label.missing">
+            <Setter Property="Foreground" Value="{DynamicResource BrushDanger}" />
+        </Style>
+
+        <Style Selector="Border.step-line">
+            <Setter Property="Height" Value="{DynamicResource FocusRingWidth}" />
+            <Setter Property="Background" Value="{DynamicResource BrushBorderStrong}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Border.step-line.complete">
+            <Setter Property="Background" Value="{DynamicResource BrushPrimary}" />
         </Style>
     </UserControl.Styles>
 
     <UserControl.DataTemplates>
+        <!-- Outer Panel keeps the step marker as DataContext (ContentPresenter owns the root). Order is rebound inside. -->
         <DataTemplate x:DataType="vm:NewOrderPatientStep">
+            <Panel>
             <ui:Card Name="PatientColumn" Padding="0" Title="{l:Tr NewOrder.Patient}" DataContext="{Binding Order}">
                 <ScrollViewer>
                     <StackPanel Margin="{DynamicResource PaddingCard}" Spacing="{DynamicResource GapStack}">
@@ -46,9 +128,6 @@
                             <Button Name="NewPatientButton" Classes="ghost sm" Classes.selected="{Binding IsNewPatient}"
                                     Content="{l:Tr NewOrder.NewPatient}" Command="{Binding ChooseNewPatientCommand}" />
                         </StackPanel>
-
-                        <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError PatientId}"
-                                   IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
 
                         <StackPanel Spacing="{DynamicResource GapControls}" IsVisible="{Binding !IsNewPatient}">
                             <Border Name="SelectedPatientCard" Classes="order-item" IsVisible="{Binding HasSelectedPatient}">
@@ -64,80 +143,93 @@
                             </Border>
 
                             <StackPanel Spacing="{DynamicResource GapControls}" IsVisible="{Binding !HasSelectedPatient}">
-                                <AutoCompleteBox Name="PatientSearchBox"
-                                                 ItemsSource="{Binding Patients}"
-                                                 SelectedItem="{Binding PatientPick}"
-                                                 Text="{Binding PatientSearch}"
-                                                 ValueMemberBinding="{Binding FullName}"
-                                                 MaxLength="{x:Static common:PageQuery.MaxSearchLength}"
-                                                 PlaceholderText="{l:Tr NewOrder.PatientSearchPlaceholder}"
-                                                 MinimumPrefixLength="{x:Static common:PageQuery.MinSearchLength}"
-                                                 MinimumPopulateDelay="0:0:0.250"
-                                                 FilterMode="None"
-                                                 HorizontalAlignment="Stretch">
-                                    <AutoCompleteBox.ItemTemplate>
-                                        <DataTemplate x:DataType="patients:PatientDto">
-                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource GapControls}">
-                                                <TextBlock TextTrimming="CharacterEllipsis" Text="{Binding FullName}" ToolTip.Tip="{Binding FullName}" />
-                                                <TextBlock Grid.Column="1" Classes="muted" FlowDirection="LeftToRight" Text="{Binding Phone}" />
-                                            </Grid>
-                                        </DataTemplate>
-                                    </AutoCompleteBox.ItemTemplate>
-                                </AutoCompleteBox>
+                                <ui:FormField Error="{l:FieldError PatientId}">
+                                    <AutoCompleteBox Name="PatientSearchBox"
+                                                     SelectedItem="{Binding PatientPick}"
+                                                     Text="{Binding PatientSearch}"
+                                                     ValueMemberBinding="{Binding FullName, DataType={x:Type patients:PatientDto}}"
+                                                     MaxLength="{x:Static common:PageQuery.MaxSearchLength}"
+                                                     PlaceholderText="{l:Tr NewOrder.PatientSearchPlaceholder}"
+                                                     MinimumPrefixLength="{x:Static common:PageQuery.MinSearchLength}"
+                                                     MinimumPopulateDelay="0:0:0.250"
+                                                     FilterMode="None"
+                                                     HorizontalAlignment="Stretch"
+                                                     Loaded="PatientSearchBox_OnLoaded">
+                                        <AutoCompleteBox.ItemTemplate>
+                                            <DataTemplate x:DataType="patients:PatientDto">
+                                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource GapControls}">
+                                                    <TextBlock TextTrimming="CharacterEllipsis" Text="{Binding FullName}" ToolTip.Tip="{Binding FullName}" />
+                                                    <TextBlock Grid.Column="1" Classes="muted" FlowDirection="LeftToRight" Text="{Binding Phone}" />
+                                                </Grid>
+                                            </DataTemplate>
+                                        </AutoCompleteBox.ItemTemplate>
+                                    </AutoCompleteBox>
+                                </ui:FormField>
                                 <ui:Spinner HorizontalAlignment="Center" IsVisible="{Binding IsLoadingPatients}" />
                                 <TextBlock Classes="caption muted" TextWrapping="Wrap" Text="{l:Tr NewOrder.NoPatientsFound}"
                                            IsVisible="{Binding NoPatientsFound}" />
                             </StackPanel>
                         </StackPanel>
 
-                        <ContentControl Name="NewPatientForm" Content="{Binding PatientForm}" IsVisible="{Binding IsNewPatient}" />
+                        <ContentControl Name="NewPatientForm" Content="{Binding NewPatientFormContent}" />
                     </StackPanel>
                 </ScrollViewer>
             </ui:Card>
+            </Panel>
         </DataTemplate>
 
         <DataTemplate x:DataType="vm:NewOrderTestsStep">
+            <Panel>
             <Grid DataContext="{Binding Order}" ColumnDefinitions="*,1.4*" ColumnSpacing="{DynamicResource GapGrid}">
                 <ui:Card Name="TestsColumn" Padding="0" Title="{l:Tr NewOrder.SelectedTestsCount, Arg=SelectedTests.Count}">
-                    <Panel>
-                        <ScrollViewer>
-                            <ItemsControl Name="SelectedTestsList" Margin="{DynamicResource PaddingCard}" ItemsSource="{Binding SelectedTests}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <StackPanel Spacing="{DynamicResource GapControls}" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:OrderItemDraft">
-                                        <Border Classes="order-item">
-                                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{DynamicResource GapControls}">
-                                                <StackPanel Spacing="{DynamicResource SpaceHalf}">
-                                                    <TextBlock Classes="caption muted" Text="{Binding Test.Code}" />
-                                                    <TextBlock Classes="strong" TextWrapping="Wrap" Text="{Binding Test.Name}" />
-                                                    <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError LabTestId}"
-                                                               IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                                                </StackPanel>
-                                                <TextBlock Grid.Column="1" Classes="strong" VerticalAlignment="Center"
-                                                           Text="{l:Money Test.Price}" />
-                                                <ui:IconButton Grid.Column="2"
-                                                               Classes="ghost destructive sm"
-                                                               VerticalAlignment="Center"
-                                                               Icon="{StaticResource IconClose}"
-                                                               ToolTip.Tip="{l:Tr NewOrder.RemoveTest}"
-                                                               Command="{Binding $parent[ItemsControl].((vm:NewOrderViewModel)DataContext).RemoveTestCommand}"
-                                                               CommandParameter="{Binding}" />
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
-                        <ui:EmptyState Name="NoTestsState"
-                                       IsVisible="{Binding !HasSelectedTests}"
-                                       Icon="{StaticResource IconLab}"
-                                       Title="{l:Tr NewOrder.NoTests}"
-                                       Description="{l:Tr NewOrder.NoTestsHint}" />
-                    </Panel>
+                    <DockPanel>
+                        <TextBlock Name="ItemsError"
+                                   DockPanel.Dock="Top"
+                                   Margin="{DynamicResource PaddingCardCompact}"
+                                   Classes="caption danger"
+                                   TextWrapping="Wrap"
+                                   Text="{l:FieldError Items}"
+                                   IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        <Panel>
+                            <ScrollViewer>
+                                <ItemsControl Name="SelectedTestsList" Margin="{DynamicResource PaddingCard}" ItemsSource="{Binding SelectedTests}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Spacing="{DynamicResource GapControls}" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:OrderItemDraft">
+                                            <Border Classes="order-item">
+                                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{DynamicResource GapControls}">
+                                                    <StackPanel Spacing="{DynamicResource SpaceHalf}">
+                                                        <TextBlock Classes="caption muted" Text="{Binding Test.Code}" />
+                                                        <TextBlock Classes="strong" TextWrapping="Wrap" Text="{Binding Test.Name}" />
+                                                        <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError LabTestId}"
+                                                                   IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                                    </StackPanel>
+                                                    <TextBlock Grid.Column="1" Classes="strong" VerticalAlignment="Center"
+                                                               Text="{l:Money Test.Price}" />
+                                                    <ui:IconButton Grid.Column="2"
+                                                                   Classes="ghost destructive sm"
+                                                                   VerticalAlignment="Center"
+                                                                   Icon="{StaticResource IconClose}"
+                                                                   ToolTip.Tip="{l:Tr NewOrder.RemoveTest}"
+                                                                   Command="{Binding $parent[ItemsControl].((vm:NewOrderViewModel)DataContext).RemoveTestCommand}"
+                                                                   CommandParameter="{Binding}" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                            <ui:EmptyState Name="NoTestsState"
+                                           IsVisible="{Binding !HasSelectedTests}"
+                                           Icon="{StaticResource IconLab}"
+                                           Title="{l:Tr NewOrder.NoTests}"
+                                           Description="{l:Tr NewOrder.NoTestsHint}" />
+                        </Panel>
+                    </DockPanel>
                 </ui:Card>
 
                 <ui:Card Name="CatalogColumn" Grid.Column="1" Padding="0" Title="{l:Tr NewOrder.Catalog}">
@@ -188,41 +280,14 @@
                     </DockPanel>
                 </ui:Card>
             </Grid>
+            </Panel>
         </DataTemplate>
 
         <DataTemplate x:DataType="vm:NewOrderReviewStep">
+            <Panel>
             <ui:Card Name="ReviewColumn" Padding="0" Title="{l:Tr NewOrder.Review}" DataContext="{Binding Order}">
                 <ScrollViewer>
                     <StackPanel Margin="{DynamicResource PaddingCard}" Spacing="{DynamicResource GapStack}">
-                        <StackPanel Spacing="{DynamicResource GapControls}">
-                            <TextBlock Classes="h4" Text="{l:Tr NewOrder.SelectedTestsCount, Arg=SelectedTests.Count}" />
-                            <ItemsControl ItemsSource="{Binding SelectedTests}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <StackPanel Spacing="{DynamicResource GapControls}" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:OrderItemDraft">
-                                        <Border Classes="order-item">
-                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource GapControls}">
-                                                <StackPanel Spacing="{DynamicResource SpaceHalf}">
-                                                    <TextBlock Classes="caption muted" Text="{Binding Test.Code}" />
-                                                    <TextBlock Classes="strong" TextWrapping="Wrap" Text="{Binding Test.Name}" />
-                                                    <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError LabTestId}"
-                                                               IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                                                </StackPanel>
-                                                <TextBlock Grid.Column="1" Classes="strong" VerticalAlignment="Center"
-                                                           Text="{l:Money Test.Price}" />
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-
-                        <ui:Divider />
-
                         <ui:ResponsiveGrid MinColumnWidth="160" MaxColumns="2"
                                            ColumnSpacing="{DynamicResource GapGrid}" RowSpacing="{DynamicResource GapGrid}">
                             <StackPanel Spacing="{DynamicResource SpaceHalf}">
@@ -248,8 +313,6 @@
                                            IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                             </StackPanel>
                         </ui:ResponsiveGrid>
-
-                        <ui:Divider />
 
                         <TextBlock Classes="h4" Text="{l:Tr NewOrder.FirstPayment}" />
                         <TextBlock Classes="caption muted" TextWrapping="Wrap" Text="{l:Tr NewOrder.FirstPaymentHint}" />
@@ -284,37 +347,92 @@
                                          PlaceholderText="{l:Tr NewOrder.PaymentNotesPlaceholder}" />
                             </ui:FormField>
                         </ui:ResponsiveGrid>
+
+                        <ui:Divider />
+
+                        <TextBlock Classes="h4" Text="{l:Tr NewOrder.SelectedTestsCount, Arg=SelectedTests.Count}" />
+                        <ItemsControl ItemsSource="{Binding SelectedTests}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <ui:ResponsiveGrid MinColumnWidth="180" MaxColumns="3"
+                                                       ColumnSpacing="{DynamicResource GapControls}"
+                                                       RowSpacing="{DynamicResource GapControls}" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:OrderItemDraft">
+                                    <Border Classes="order-item">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource GapControls}">
+                                            <StackPanel Spacing="{DynamicResource SpaceHalf}">
+                                                <TextBlock Classes="caption muted" Text="{Binding Test.Code}" />
+                                                <TextBlock Classes="strong" TextWrapping="Wrap" Text="{Binding Test.Name}" />
+                                                <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError LabTestId}"
+                                                           IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                            </StackPanel>
+                                            <TextBlock Grid.Column="1" Classes="strong" VerticalAlignment="Center"
+                                                       Text="{l:Money Test.Price}" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
                 </ScrollViewer>
             </ui:Card>
+            </Panel>
         </DataTemplate>
     </UserControl.DataTemplates>
 
     <DockPanel Classes="page">
-        <ui:PageHeader DockPanel.Dock="Top" Title="{l:Tr NewOrder.Title}" Subtitle="{l:Tr NewOrder.Subtitle}">
-            <ui:PageHeader.Breadcrumb>
-                <Button Name="BackButton" Classes="ghost sm" Command="{Binding BackCommand}">
-                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}">
-                        <PathIcon Data="{StaticResource IconChevronStart}" />
-                        <TextBlock Text="{l:Tr OrderDetails.BackToOrders}" />
-                    </StackPanel>
-                </Button>
-            </ui:PageHeader.Breadcrumb>
-        </ui:PageHeader>
+        <Button Name="BackButton" DockPanel.Dock="Top" Classes="ghost sm" HorizontalAlignment="Left"
+                Margin="0,0,0,8" Command="{Binding BackCommand}">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}">
+                <PathIcon Data="{StaticResource IconChevronStart}" />
+                <TextBlock Text="{l:Tr OrderDetails.BackToOrders}" />
+            </StackPanel>
+        </Button>
 
         <ui:Alert Name="FormError" DockPanel.Dock="Top" Margin="0,0,0,12" Kind="Danger" Text="{l:TrKey FormErrorKey}" />
 
-        <StackPanel Name="StepIndicator" DockPanel.Dock="Top" Orientation="Horizontal" Spacing="{DynamicResource Space1}" Margin="0,0,0,12">
-            <Border Classes="step-pill" Classes.current="{Binding IsPatientStep}">
-                <TextBlock Text="{l:Tr NewOrder.StepPatient}" />
-            </Border>
-            <Border Classes="step-pill" Classes.current="{Binding IsTestsStep}">
-                <TextBlock Text="{l:Tr NewOrder.StepTests}" />
-            </Border>
-            <Border Classes="step-pill" Classes.current="{Binding IsReviewStep}">
-                <TextBlock Text="{l:Tr NewOrder.StepReview}" />
-            </Border>
-        </StackPanel>
+        <Grid Name="StepIndicator" DockPanel.Dock="Top" Margin="{DynamicResource PaddingCardCompact}">
+            <Grid Height="{DynamicResource AvatarSize}" VerticalAlignment="Top" ColumnDefinitions="*,*">
+                <!-- Inset by AvatarSize so the line meets each circle's edge. -->
+                <Border Classes="step-line" Classes.complete="{Binding PatientStepItem.LineComplete}" Margin="40,0" />
+                <Border Grid.Column="1" Classes="step-line" Classes.complete="{Binding TestsStepItem.LineComplete}" Margin="40,0" />
+            </Grid>
+
+            <ItemsControl ItemsSource="{Binding Steps}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="3" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:OrderStepItem">
+                        <Button Classes="step-node"
+                                Command="{Binding $parent[ItemsControl].((vm:NewOrderViewModel)DataContext).GoToStepCommand}"
+                                CommandParameter="{Binding Index}">
+                            <StackPanel>
+                                <Border Classes="step-circle"
+                                        Classes.current="{Binding IsCurrent}"
+                                        Classes.complete="{Binding ShowCheck}"
+                                        Classes.missing="{Binding ShowMissing}">
+                                    <Panel>
+                                        <TextBlock Text="{Binding Number}" IsVisible="{Binding ShowNumber}" />
+                                        <PathIcon Data="{StaticResource IconCheck}" IsVisible="{Binding ShowCheck}" />
+                                        <PathIcon Data="{StaticResource IconWarning}" IsVisible="{Binding ShowMissing}" />
+                                    </Panel>
+                                </Border>
+                                <TextBlock Classes="step-label"
+                                           Classes.current="{Binding IsCurrent}"
+                                           Classes.missing="{Binding ShowMissing}"
+                                           Text="{l:TrKey TitleKey}" />
+                            </StackPanel>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
 
         <Border DockPanel.Dock="Bottom" Margin="0,12,0,0" Padding="{DynamicResource PaddingCardCompact}"
                 Background="{DynamicResource BrushSurface}" CornerRadius="{DynamicResource RadiusMd}">
@@ -329,14 +447,20 @@
                         IsVisible="{Binding ShowNext}" />
                 <Button Name="CreateButton" Grid.Column="2" Classes="primary" Command="{Binding SaveCommand}"
                         IsVisible="{Binding ShowSave}">
-                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
-                        <ui:Spinner IsVisible="{Binding IsBusy}" />
-                        <TextBlock Text="{l:Tr NewOrder.Create}" />
-                    </StackPanel>
+                    <Panel>
+                        <TextBlock Text="{l:Tr NewOrder.Create}" IsVisible="{Binding !IsBusy}" />
+                        <ui:Spinner Width="20"
+                                    Height="20"
+                                    Foreground="{DynamicResource BrushOnPrimary}"
+                                    IsVisible="{Binding IsBusy}" />
+                    </Panel>
                 </Button>
             </Grid>
         </Border>
 
-        <ContentControl Name="StepHost" Content="{Binding StepContent}" />
+        <ui:LoadingOverlay Name="PreparingOverlay" IsLoading="{Binding IsPreparing}">
+            <!-- Caches each step's view; ContentControl was rebuilding the Tests catalog on every Next/Back. -->
+            <ui:CachedContentHost Name="StepHost" Content="{Binding StepContent}" />
+        </ui:LoadingOverlay>
     </DockPanel>
 </UserControl>

@@ -74,9 +74,24 @@ public partial class NavigationService : ObservableObject
     /// Opens a sub-page of the current portal (e.g. a details page) in place of the shown page; <paramref name="setup"/>
     /// passes its parameters before it loads. False if the user may not open it or kept unsaved changes of the open sub-page.
     /// </summary>
-    public async Task<bool> OpenAsync<TViewModel>(Action<TViewModel>? setup = null) where TViewModel : ViewModelBase
+    public Task<bool> OpenAsync<TViewModel>(Action<TViewModel>? setup = null) where TViewModel : ViewModelBase
     {
-        if (CurrentPage is not PortalShellViewModel shell || CreatePage(typeof(TViewModel)) is not TViewModel page)
+        if (CreatePage(typeof(TViewModel)) is not TViewModel page)
+        {
+            return Task.FromResult(false);
+        }
+
+        return OpenAsync(page, setup);
+    }
+
+    /// <summary>
+    /// Opens an existing sub-page instance (e.g. a reused New order page). False if the user may not open it or kept
+    /// unsaved changes of the open sub-page.
+    /// </summary>
+    public async Task<bool> OpenAsync<TViewModel>(TViewModel page, Action<TViewModel>? setup = null)
+        where TViewModel : ViewModelBase
+    {
+        if (CurrentPage is not PortalShellViewModel shell || !CanAccess(typeof(TViewModel)))
         {
             return false;
         }

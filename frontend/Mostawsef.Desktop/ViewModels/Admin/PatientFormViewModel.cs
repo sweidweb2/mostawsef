@@ -73,6 +73,21 @@ public partial class PatientFormViewModel : FormViewModel
     public bool HasRequiredFields =>
         !string.IsNullOrWhiteSpace(FullName) && !string.IsNullOrWhiteSpace(Phone) && !string.IsNullOrEmpty(Gender);
 
+    /// <summary>Clears the create form so a reused New order page starts empty.</summary>
+    public void Reset()
+    {
+        FullName = string.Empty;
+        Phone = string.Empty;
+        GuardianPhone = string.Empty;
+        Notes = string.Empty;
+        IsInsured = false;
+        Gender = string.Empty;
+        DateOfBirth = null;
+        Errors.Clear();
+        FormErrorKey = null;
+        MarkClean();
+    }
+
     protected override object BuildRequest()
     {
         var request = new CreatePatientRequest

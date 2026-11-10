@@ -100,6 +100,32 @@ public class OrdersPageTests
     }
 
     [AvaloniaFact]
+    public async Task New_order_button_shows_a_spinner_while_opening()
+    {
+        using var app = Admin();
+        var (shell, orders, window) = await ShowOrdersPageAsync(app);
+        var button = Named<Button>(window, "NewOrderButton");
+        var spinner = Assert.Single(button.GetVisualDescendants().OfType<Mostawsef.Desktop.Components.Spinner>());
+        var sawSpinner = false;
+        orders.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(OrdersViewModel.IsOpeningNewOrder) && orders.IsOpeningNewOrder)
+            {
+                Dispatcher.UIThread.RunJobs();
+                sawSpinner = spinner.IsVisible;
+            }
+        };
+
+        await orders.NewOrderCommand.ExecuteAsync(null);
+        var page = Assert.IsType<NewOrderViewModel>(shell.CurrentPage);
+        await WaitUntil(() => !page.IsPreparing);
+
+        Assert.True(sawSpinner);
+        Assert.False(orders.IsOpeningNewOrder);
+        Assert.False(spinner.IsVisible);
+    }
+
+    [AvaloniaFact]
     public async Task Back_from_new_order_without_saving_keeps_the_list()
     {
         using var app = Admin();

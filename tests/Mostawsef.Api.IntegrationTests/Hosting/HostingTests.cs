@@ -34,4 +34,20 @@ public class HostingTests(ApiFactory factory)
         Assert.False(logger.IsEnabled(LogLevel.Information));
         Assert.True(logger.IsEnabled(LogLevel.Warning));
     }
+
+    [Fact]
+    public async Task Api_responses_include_server_timing_except_health()
+    {
+        var client = factory.CreateClient();
+        var token = (await client.LoginAsAsync(TestUsers.Admin)).AccessToken;
+
+        var me = await client.WithBearer(token).GetAsync("api/auth/me", TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, me.StatusCode);
+        Assert.True(me.Headers.TryGetValues("Server-Timing", out var timing));
+        Assert.Contains(timing, v => v.Contains("app;dur=", StringComparison.Ordinal));
+
+        var health = await client.GetAsync("api/health", TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, health.StatusCode);
+        Assert.False(health.Headers.Contains("Server-Timing"));
+    }
 }

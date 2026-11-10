@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.Orders;
@@ -15,13 +16,46 @@ namespace Mostawsef.Desktop.ViewModels.Admin;
 public partial class OrdersViewModel(OrdersApi orders, NavigationService navigation, IToastService toasts, LocalizationService localization)
     : NumberedListViewModel<OrderListItemDto>(toasts, localization)
 {
+    /// <summary>One New order page for this portal visit; reset on each open so PageHost can reuse its view.</summary>
+    private NewOrderViewModel? _newOrder;
+
     protected override Task<ApiResult<PagedResult<OrderListItemDto>>> FetchPageAsync(
         int page, int pageSize, string? search, bool includeTotal, CancellationToken cancellationToken) =>
         orders.GetOrdersAsync(page, pageSize, search, includeTotal, cancellationToken);
 
-    [RelayCommand]
-    private Task<bool> NewOrderAsync() =>
-        navigation.OpenAsync<NewOrderViewModel>(page => page.OnOrderCreated = MarkStale);
+    /// <summary>True while the New order button is waiting for the create page to open.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(NewOrderCommand))]
+    public partial bool IsOpeningNewOrder { get; private set; }
+
+    private bool CanNewOrder() => !IsOpeningNewOrder;
+
+    [RelayCommand(CanExecute = nameof(CanNewOrder))]
+    private async Task NewOrderAsync()
+    {
+        IsOpeningNewOrder = true;
+        try
+        {
+            // Let the button spinner paint before the (first) view build runs on the UI thread.
+            await Task.Yield();
+
+            _newOrder ??= navigation.CreatePage(typeof(NewOrderViewModel)) as NewOrderViewModel;
+            if (_newOrder is null)
+            {
+                return;
+            }
+
+            await navigation.OpenAsync(_newOrder, page =>
+            {
+                page.OnOrderCreated = MarkStale;
+                page.BeginReuse();
+            });
+        }
+        finally
+        {
+            IsOpeningNewOrder = false;
+        }
+    }
 
     [RelayCommand]
     private Task ViewAsync(OrderListItemDto? item) =>

@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="using:Mostawsef.Desktop.Components"
         xmlns:l="using:Mostawsef.Desktop.Services.Local"
+        xmlns:dev="using:Mostawsef.Desktop.Views.Dev"
         xmlns:vm="using:Mostawsef.Desktop.ViewModels"
         x:Class="Mostawsef.Desktop.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -14,8 +15,18 @@
         WindowStartupLocation="CenterScreen"
         WindowState="Maximized">
 
+    <Window.KeyBindings>
+        <KeyBinding Gesture="Ctrl+Shift+P" Command="{Binding Perf.ToggleOverlayCommand}" />
+    </Window.KeyBindings>
+
     <!-- Login screen or the signed-in user's portal shell (see NavigationService). -->
-    <ui:DialogHost x:Name="Host">
-        <ContentControl Content="{Binding Navigation.CurrentPage}" />
-    </ui:DialogHost>
+    <Panel>
+        <ui:DialogHost x:Name="Host">
+            <ContentControl Content="{Binding Navigation.CurrentPage}" />
+        </ui:DialogHost>
+
+        <!-- Performance overlay: timed API / page / print events. Ctrl+Shift+P toggles. -->
+        <dev:PerfOverlay DataContext="{Binding Perf}"
+                         ZIndex="{StaticResource ZIndexOverlay}" />
+    </Panel>
 </Window>

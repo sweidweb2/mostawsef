@@ -66,12 +66,17 @@ public static class ServiceRegistration
         services.AddSingleton<OrdersApi>();
         services.AddSingleton<ConnectionMonitor>();
 
+        // Diagnostics: system errors + optional performance overlay/log
+        services.AddSingleton<ErrorReporter>();
+        services.AddSingleton<PerformanceMonitor>();
+
         // Clinic details + printing
         services.AddSingleton<ClinicContext>();
         services.AddSingleton(sp => new PrintService(
             sp.GetRequiredService<LocalizationService>(),
             sp.GetRequiredService<ClinicContext>(),
-            options.OpenFile ?? PrintService.OpenWithDefaultApp));
+            options.OpenFile ?? PrintService.OpenWithDefaultApp,
+            sp.GetRequiredService<PerformanceMonitor>()));
 
         // Auth + navigation
         services.AddSingleton<SessionService>();
@@ -83,9 +88,6 @@ public static class ServiceRegistration
         services.AddSingleton<IDialogService>(sp => sp.GetRequiredService<DialogService>());
         services.AddSingleton<ToastService>();
         services.AddSingleton<IToastService>(sp => sp.GetRequiredService<ToastService>());
-
-        // Diagnostics: desktop side of the system error engine
-        services.AddSingleton<ErrorReporter>();
 
         // View models: pages come from AppRoutes; portal shells are created by NavigationService.
         services.AddSingleton<MainWindowViewModel>();

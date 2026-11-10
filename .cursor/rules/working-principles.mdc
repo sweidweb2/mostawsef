@@ -22,6 +22,7 @@ alwaysApply: true
   - list page: `NumberedListViewModel` (or `PagedListViewModel` for logs) subclass + `DataTable` view + `AppRoutes` entry + desktop tests
   - UI: components from `Docs/shared-components.md` before writing new XAML
 - One way per concern: `ApiClient` for HTTP, `IActivityLogger` for activity, `ISystemErrorLogger`/`ErrorReporter` for errors,
+  `PerformanceMonitor` for speed debugging (overlay + perf log; do not sprinkle stopwatches in view models),
   `DialogService`/`ToastService` for feedback, `FormViewModel` + `ShowFormAsync` for forms, DataAnnotations with `ErrorCodes`
   + `AppException` for validation and expected errors, `TimeProvider` for the current time, `INumberSequence` for readable
   numbers, `ClinicContext` for clinic details and currency, `PrintService` + `ClinicPage` for printouts,

@@ -52,15 +52,17 @@ public class PageLifecycleTests
 
         shell.SelectedMenuIndex = ActivityLogs;
         Dispatcher.UIThread.RunJobs();
-        var view = window.GetVisualDescendants().OfType<ActivityLogsView>().Single();
+        var view = window.GetVisualDescendants().OfType<ActivityLogsView>().Single(v => v.IsVisible);
 
         shell.SelectedMenuIndex = Dashboard;
         Dispatcher.UIThread.RunJobs();
-        Assert.Empty(window.GetVisualDescendants().OfType<ActivityLogsView>());
+        Assert.All(
+            window.GetVisualDescendants().OfType<ActivityLogsView>(),
+            v => Assert.False(v.IsVisible));
 
         shell.SelectedMenuIndex = ActivityLogs;
         Dispatcher.UIThread.RunJobs();
-        Assert.Same(view, window.GetVisualDescendants().OfType<ActivityLogsView>().Single());
+        Assert.Same(view, window.GetVisualDescendants().OfType<ActivityLogsView>().Single(v => v.IsVisible));
     }
 
     [AvaloniaFact]

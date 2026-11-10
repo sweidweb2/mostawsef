@@ -116,14 +116,18 @@ internal static class OrderPages
         return (shell, orders, window);
     }
 
-    /// <summary>New order opened from the Orders page on the patient step (catalog loads on the tests step).</summary>
+    /// <summary>New order opened from the Orders page on the patient step (catalog preloads while preparing).</summary>
     public static async Task<(PortalShellViewModel Shell, NewOrderViewModel Page, Window Window)> ShowNewOrderAsync(
         TestServices app, double width = 1280, double height = 800)
     {
         var (shell, orders, window) = await ShowOrdersPageAsync(app, width, height);
         await orders.NewOrderCommand.ExecuteAsync(null);
         var page = Assert.IsType<NewOrderViewModel>(shell.CurrentPage);
-        await WaitUntil(() => page.SelectedStep == NewOrderViewModel.PatientStep && !page.IsLoadingPatients);
+        await WaitUntil(() =>
+            page.SelectedStep == NewOrderViewModel.PatientStep
+            && !page.IsPreparing
+            && !page.IsLoadingPatients
+            && page.StepContent is not null);
         return (shell, page, window);
     }
 

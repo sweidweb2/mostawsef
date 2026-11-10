@@ -20,10 +20,18 @@
                             </StackPanel>
                         </Button>
                         <Button Name="NewOrderButton" Classes="primary" Command="{Binding NewOrderCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
-                                <PathIcon Data="{StaticResource IconPlus}" />
-                                <TextBlock Text="{l:Tr Orders.New}" />
-                            </StackPanel>
+                            <Panel>
+                                <StackPanel Orientation="Horizontal"
+                                            Spacing="{DynamicResource GapControls}"
+                                            IsVisible="{Binding !IsOpeningNewOrder}">
+                                    <PathIcon Data="{StaticResource IconPlus}" />
+                                    <TextBlock Text="{l:Tr Orders.New}" />
+                                </StackPanel>
+                                <ui:Spinner Width="20"
+                                            Height="20"
+                                            Foreground="{DynamicResource BrushOnPrimary}"
+                                            IsVisible="{Binding IsOpeningNewOrder}" />
+                            </Panel>
                         </Button>
                     </StackPanel>
                 </ui:PageHeader.Actions>

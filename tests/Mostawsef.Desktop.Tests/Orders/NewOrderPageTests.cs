@@ -20,23 +20,69 @@ namespace Mostawsef.Desktop.Tests.Orders;
 public class NewOrderPageTests
 {
     [AvaloniaFact]
-    public async Task Opening_the_page_does_not_load_the_catalog_until_the_tests_step()
+    public async Task Opening_the_page_preloads_the_catalog_while_preparing()
     {
         using var app = Admin();
-        var (shell, page, _) = await ShowNewOrderAsync(app);
-
-        Assert.Empty(app.Api.RequestsTo(HttpMethod.Get, TestsPath));
-        Assert.Equal(NewOrderViewModel.PatientStep, page.SelectedStep);
-        Assert.Same(page, shell.CurrentPage);
-
-        page.SelectPatientCommand.Execute(Mona);
-        page.NextStepCommand.Execute(null);
-        await WaitUntil(() => !page.IsCatalogLoading && page.Catalog.Count > 0);
+        var (shell, page, window) = await ShowNewOrderAsync(app);
 
         var catalog = Assert.Single(app.Api.RequestsTo(HttpMethod.Get, TestsPath));
         Assert.Contains("active=true", catalog.RequestUri!.Query, StringComparison.Ordinal);
         Assert.Contains("includeTotal=false", catalog.RequestUri.Query, StringComparison.Ordinal);
         Assert.Equal([Cbc.Id, Sugar.Id], page.Catalog.Select(t => t.Test.Id));
+        Assert.Equal(NewOrderViewModel.PatientStep, page.SelectedStep);
+        Assert.Same(page, shell.CurrentPage);
+        Assert.False(page.IsPreparing);
+        Assert.False(Named<LoadingOverlay>(window, "PreparingOverlay").IsLoading);
+    }
+
+    [AvaloniaFact]
+    public async Task Reopening_reuses_the_same_page_and_clears_the_previous_draft()
+    {
+        using var app = Admin();
+        var (shell, orders, window) = await ShowOrdersPageAsync(app);
+        await orders.NewOrderCommand.ExecuteAsync(null);
+        var page = Assert.IsType<NewOrderViewModel>(shell.CurrentPage);
+        await WaitUntil(() => !page.IsPreparing && page.StepContent is not null);
+
+        page.SelectPatientCommand.Execute(Mona);
+        page.NextStepCommand.Execute(null);
+        await WaitUntil(() => page.SelectedStep == NewOrderViewModel.TestsStep && !page.IsCatalogLoading);
+        AddTests(page, Cbc);
+        Assert.True(page.IsDirty);
+
+        var discard = page.BackCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+        window.GetVisualDescendants().OfType<ConfirmDialog>().Single().Close(true);
+        await discard;
+        await WaitUntil(() => shell.CurrentPage == orders);
+
+        await orders.NewOrderCommand.ExecuteAsync(null);
+        await WaitUntil(() => !page.IsPreparing && page.StepContent is not null);
+
+        Assert.Same(page, shell.CurrentPage);
+        Assert.Equal(NewOrderViewModel.PatientStep, page.SelectedStep);
+        Assert.Null(page.SelectedPatient);
+        Assert.Empty(page.SelectedTests);
+        Assert.False(page.IsDirty);
+        Assert.Single(app.Api.RequestsTo(HttpMethod.Get, TestsPath));
+    }
+
+    [AvaloniaFact]
+    public async Task The_new_patient_form_is_built_only_after_choosing_new_patient()
+    {
+        using var app = Admin();
+        var (_, page, window) = await ShowNewOrderAsync(app);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Null(page.NewPatientFormContent);
+        Assert.Null(Named<ContentControl>(window, "NewPatientForm").Content);
+
+        page.ChooseNewPatientCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Same(page.PatientForm, page.NewPatientFormContent);
+        Assert.Same(page.PatientForm, Named<ContentControl>(window, "NewPatientForm").Content);
+        Assert.Contains(window.GetVisualDescendants().OfType<Control>(), c => c.Name == "FullNameBox");
     }
 
     [AvaloniaFact]
@@ -135,36 +181,43 @@ public class NewOrderPageTests
     }
 
     [AvaloniaFact]
-    public async Task Create_needs_a_patient_and_at_least_one_test_on_the_review_step()
+    public async Task Steps_are_free_to_move_but_create_needs_patient_and_tests()
     {
         using var app = Admin();
         var (_, page, _) = await ShowNewOrderAsync(app);
 
         Assert.False(page.SaveCommand.CanExecute(null));
-        Assert.False(page.NextStepCommand.CanExecute(null));
-
-        page.SelectPatientCommand.Execute(Mona);
         Assert.True(page.NextStepCommand.CanExecute(null));
-        Assert.False(page.SaveCommand.CanExecute(null));
 
-        await GoToTestsAsync(page);
-        AddTests(page, Cbc);
-        Assert.True(page.NextStepCommand.CanExecute(null));
         page.NextStepCommand.Execute(null);
+        Assert.Equal(NewOrderViewModel.TestsStep, page.SelectedStep);
+        Assert.Equal(OrderStepStatus.Missing, page.PatientStepItem.Status);
+        Assert.Equal(ErrorCodes.Required, page.Errors[nameof(CreateOrderRequest.PatientId)]);
+
+        page.GoToStepCommand.Execute(NewOrderViewModel.ReviewStep);
+        Assert.Equal(NewOrderViewModel.ReviewStep, page.SelectedStep);
+        Assert.Equal(OrderStepStatus.Missing, page.TestsStepItem.Status);
+        Assert.Equal(ErrorCodes.Required, page.Errors[nameof(CreateOrderRequest.Items)]);
         Assert.True(page.SaveCommand.CanExecute(null));
 
-        page.PreviousStepCommand.Execute(null);
-        page.PreviousStepCommand.Execute(null);
-        page.ChooseNewPatientCommand.Execute(null);
-        Assert.False(page.NextStepCommand.CanExecute(null));
-        page.PatientForm.FullName = "Omar";
-        page.PatientForm.Phone = "0111";
-        page.PatientForm.Gender = Genders.Male;
-        Assert.True(page.NextStepCommand.CanExecute(null));
+        await page.SaveCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("ErrorCode.validation", page.FormErrorKey);
+        Assert.Equal(NewOrderViewModel.PatientStep, page.SelectedStep);
+        Assert.Equal(OrderStepStatus.Missing, page.PatientStepItem.Status);
+        Assert.Empty(app.Api.RequestsTo(HttpMethod.Post, OrdersPath));
 
-        await GoToTestsAsync(page);
-        page.RemoveTestCommand.Execute(page.SelectedTests.Single());
-        Assert.False(page.NextStepCommand.CanExecute(null));
+        page.SelectPatientCommand.Execute(Mona);
+        Assert.Equal(OrderStepStatus.Number, page.PatientStepItem.Status);
+        Assert.True(page.IsPatientSatisfied);
+        page.GoToStepCommand.Execute(NewOrderViewModel.TestsStep);
+        await WaitUntil(() => page.SelectedStep == NewOrderViewModel.TestsStep && !page.IsCatalogLoading);
+        AddTests(page, Cbc);
+        Assert.True(page.IsTestsSatisfied);
+        Assert.NotEqual(OrderStepStatus.Missing, page.TestsStepItem.Status);
+        page.NextStepCommand.Execute(null);
+        Assert.Equal(NewOrderViewModel.ReviewStep, page.SelectedStep);
+        Assert.True(page.SaveCommand.CanExecute(null));
     }
 
     [AvaloniaFact]
@@ -176,8 +229,7 @@ public class NewOrderPageTests
         Assert.Empty(page.Patients);
         Assert.Empty(app.Api.RequestsTo(HttpMethod.Get, PatientsPath));
 
-        page.PatientSearch = "mona";
-        await WaitUntil(() => !page.IsLoadingPatients && page.Patients.Count > 0);
+        await page.SearchPatientsAsync("mona");
 
         Assert.Equal(Mona.Id, Assert.Single(page.Patients).Id);
         var search = Assert.Single(app.Api.RequestsTo(HttpMethod.Get, PatientsPath));
@@ -185,6 +237,7 @@ public class NewOrderPageTests
         Assert.Contains($"pageSize={PageQuery.DefaultPageSize}", search.RequestUri.Query, StringComparison.Ordinal);
         Assert.Contains("includeTotal=false", search.RequestUri.Query, StringComparison.Ordinal);
         Assert.False(page.NoPatientsFound);
+        Assert.NotNull(Named<AutoCompleteBox>(window, "PatientSearchBox").AsyncPopulator);
 
         page.PatientPick = Mona;
         Dispatcher.UIThread.RunJobs();
@@ -203,10 +256,11 @@ public class NewOrderPageTests
         using var app = Admin();
         var (_, page, window) = await ShowNewOrderAsync(app);
 
-        page.PatientSearch = "nobody";
-        await WaitUntil(() => !page.IsLoadingPatients && page.NoPatientsFound);
+        await page.SearchPatientsAsync("nobody");
+        Dispatcher.UIThread.RunJobs();
 
         Assert.Empty(page.Patients);
+        Assert.True(page.NoPatientsFound);
         Assert.Contains("No patient matches. Check the spelling or add a new patient.", Texts(window));
         Assert.Contains("search=nobody", Assert.Single(app.Api.RequestsTo(HttpMethod.Get, PatientsPath)).RequestUri!.Query, StringComparison.Ordinal);
     }
@@ -217,12 +271,10 @@ public class NewOrderPageTests
         using var app = Admin();
         var (_, page, _) = await ShowNewOrderAsync(app);
 
-        page.PatientSearch = "٠١٠";
-        await WaitUntil(() => !page.IsLoadingPatients && page.Patients.Count > 0);
+        await page.SearchPatientsAsync("٠١٠");
         Assert.Equal(Mona.Id, Assert.Single(page.Patients).Id);
 
-        page.PatientSearch = "خالد";
-        await WaitUntil(() => !page.IsLoadingPatients && page.Patients.Any(p => p.Id == Omar.Id));
+        await page.SearchPatientsAsync("خالد");
         Assert.Equal(Omar.Id, Assert.Single(page.Patients).Id);
     }
 
@@ -232,9 +284,7 @@ public class NewOrderPageTests
         using var app = Admin();
         var (_, page, _) = await ShowNewOrderAsync(app);
 
-        page.PatientSearch = "mo";
-        await Task.Delay(NewOrderViewModel.PatientSearchDelay + TimeSpan.FromMilliseconds(50), TestContext.Current.CancellationToken);
-        Dispatcher.UIThread.RunJobs();
+        await page.SearchPatientsAsync("mo");
 
         Assert.Empty(app.Api.RequestsTo(HttpMethod.Get, PatientsPath));
         Assert.False(page.NoPatientsFound);
@@ -427,41 +477,50 @@ public class NewOrderPageTests
     }
 
     [AvaloniaTheory]
-    [InlineData(AppLanguage.English, "New order", "1. Patient", "2. Tests", "3. Review")]
-    [InlineData(AppLanguage.Arabic, "طلب جديد", "١. المريض", "٢. التحاليل", "٣. المراجعة")]
+    [InlineData(AppLanguage.English, "Patient", "Tests", "Review")]
+    [InlineData(AppLanguage.Arabic, "المريض", "التحاليل", "المراجعة")]
     public async Task The_step_indicator_renders_in_both_languages(
-        AppLanguage language, string title, string patient, string tests, string review)
+        AppLanguage language, string patient, string tests, string review)
     {
         using var app = Admin(language);
         var (_, page, window) = await ShowNewOrderAsync(app);
         Dispatcher.UIThread.RunJobs();
 
         var texts = Texts(window);
-        Assert.Contains(title, texts);
         Assert.Contains(patient, texts);
         Assert.Contains(tests, texts);
         Assert.Contains(review, texts);
-        Assert.True(Named<ContentControl>(window, "StepHost").IsEffectivelyVisible);
+        Assert.True(Named<Button>(window, "BackButton").IsEffectivelyVisible);
+        Assert.True(Named<CachedContentHost>(window, "StepHost").IsEffectivelyVisible);
         Assert.True(Named<Card>(window, "PatientColumn").IsEffectivelyVisible);
         Assert.Equal(NewOrderViewModel.PatientStep, page.SelectedStep);
+
+        var steps = Named<Grid>(window, "StepIndicator");
+        var nodes = steps.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("step-node")).ToList();
+        Assert.Equal(3, nodes.Count);
+        Assert.All(nodes, node => Assert.True(node.IsEffectivelyVisible));
+        Assert.Equal(2, steps.GetVisualDescendants().OfType<Border>().Count(b => b.Classes.Contains("step-line")));
+        Assert.Equal(3, steps.GetVisualDescendants().OfType<Border>().Count(b => b.Classes.Contains("step-circle")));
     }
 
     [AvaloniaFact]
-    public async Task At_the_minimum_window_size_only_the_active_step_is_built()
+    public async Task At_the_minimum_window_size_only_the_active_step_is_visible()
     {
         using var app = Admin();
         var (_, page, window) = await ShowNewOrderAsync(app, width: 720, height: 520);
         Dispatcher.UIThread.RunJobs();
 
         Assert.True(Named<Card>(window, "PatientColumn").IsEffectivelyVisible);
-        Assert.DoesNotContain(window.GetVisualDescendants().OfType<Card>(), c => c.Name is "TestsColumn" or "CatalogColumn" or "ReviewColumn");
+        Assert.DoesNotContain(
+            window.GetVisualDescendants().OfType<Card>(),
+            c => c.Name is "TestsColumn" or "CatalogColumn" or "ReviewColumn" && c.IsEffectivelyVisible);
         Assert.True(Named<Button>(window, "NextStepButton").IsEffectivelyVisible);
         Assert.False(Named<Button>(window, "CreateButton").IsEffectivelyVisible);
 
         await GoToTestsAsync(page);
         Dispatcher.UIThread.RunJobs();
 
-        Assert.DoesNotContain(window.GetVisualDescendants().OfType<Card>(), c => c.Name == "PatientColumn");
+        Assert.False(Named<Card>(window, "PatientColumn").IsEffectivelyVisible);
         Assert.True(Named<Card>(window, "CatalogColumn").IsEffectivelyVisible);
         Assert.True(Named<Button>(window, "NextStepButton").IsEffectivelyVisible);
     }

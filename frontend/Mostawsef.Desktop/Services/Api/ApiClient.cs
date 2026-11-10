@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -8,6 +10,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Mostawsef.Contracts.Common;
+using Mostawsef.Desktop.Services.Diagnostics;
 
 namespace Mostawsef.Desktop.Services.Api;
 
@@ -15,7 +18,7 @@ namespace Mostawsef.Desktop.Services.Api;
 /// The only way the desktop app talks to the backend. Maps failures to ApiError.
 /// The bearer token is added by AuthHeaderHandler in the HttpClient pipeline.
 /// </summary>
-public class ApiClient(HttpClient http)
+public class ApiClient(HttpClient http, PerformanceMonitor perf)
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
@@ -23,26 +26,29 @@ public class ApiClient(HttpClient http)
     public event EventHandler? Unreachable;
 
     public Task<ApiResult<T>> GetAsync<T>(string path, CancellationToken cancellationToken = default) =>
-        SendAsync(() => http.GetAsync(path, cancellationToken), ReadJson<T>, cancellationToken);
+        SendAsync("GET", path, () => http.GetAsync(path, cancellationToken), ReadJson<T>, cancellationToken);
 
     public Task<ApiResult<TResponse>> PostAsync<TRequest, TResponse>(string path, TRequest body, CancellationToken cancellationToken = default) =>
-        SendAsync(() => http.PostAsJsonAsync(path, body, Json, cancellationToken), ReadJson<TResponse>, cancellationToken);
+        SendAsync("POST", path, () => http.PostAsJsonAsync(path, body, Json, cancellationToken), ReadJson<TResponse>, cancellationToken);
 
     /// <summary>POST without a response body (204 / 202). Value is true on success.</summary>
     public Task<ApiResult<bool>> PostAsync<TRequest>(string path, TRequest body, CancellationToken cancellationToken = default) =>
-        SendAsync(() => http.PostAsJsonAsync(path, body, Json, cancellationToken), NoContent, cancellationToken);
+        SendAsync("POST", path, () => http.PostAsJsonAsync(path, body, Json, cancellationToken), NoContent, cancellationToken);
 
     public Task<ApiResult<TResponse>> PutAsync<TRequest, TResponse>(string path, TRequest body, CancellationToken cancellationToken = default) =>
-        SendAsync(() => http.PutAsJsonAsync(path, body, Json, cancellationToken), ReadJson<TResponse>, cancellationToken);
+        SendAsync("PUT", path, () => http.PutAsJsonAsync(path, body, Json, cancellationToken), ReadJson<TResponse>, cancellationToken);
 
     public Task<ApiResult<bool>> DeleteAsync(string path, CancellationToken cancellationToken = default) =>
-        SendAsync(() => http.DeleteAsync(path, cancellationToken), NoContent, cancellationToken);
+        SendAsync("DELETE", path, () => http.DeleteAsync(path, cancellationToken), NoContent, cancellationToken);
 
     private async Task<ApiResult<T>> SendAsync<T>(
+        string method,
+        string path,
         Func<Task<HttpResponseMessage>> send,
         Func<HttpResponseMessage, CancellationToken, Task<ApiResult<T>>> read,
         CancellationToken cancellationToken)
     {
+        var sw = Stopwatch.StartNew();
         HttpResponseMessage response;
         try
         {
@@ -50,12 +56,21 @@ public class ApiClient(HttpClient http)
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !cancellationToken.IsCancellationRequested)
         {
+            sw.Stop();
+            RecordApi(method, path, sw.Elapsed, "unreachable");
             Unreachable?.Invoke(this, EventArgs.Empty);
             return ApiResult<T>.Fail(ApiError.Unreachable);
         }
 
         using (response)
         {
+            sw.Stop();
+            var serverMs = ReadServerTimingMs(response);
+            var detail = serverMs is { } ms
+                ? $"{(int)response.StatusCode}, server {ms.ToString("F0", CultureInfo.InvariantCulture)}ms"
+                : $"{(int)response.StatusCode}";
+            RecordApi(method, path, sw.Elapsed, detail);
+
             if (response.IsSuccessStatusCode)
             {
                 return await read(response, cancellationToken);
@@ -64,6 +79,52 @@ public class ApiClient(HttpClient http)
             var problem = (int)response.StatusCode is >= 400 and < 500 ? await ReadProblemAsync(response, cancellationToken) : null;
             return ApiResult<T>.Fail(MapError(response.StatusCode), response.StatusCode, problem);
         }
+    }
+
+    private void RecordApi(string method, string path, TimeSpan duration, string detail)
+    {
+        if (path.Contains("health", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        // Strip query strings so list filters do not explode the overlay.
+        var cut = path.IndexOf('?', StringComparison.Ordinal);
+        var route = cut >= 0 ? path[..cut] : path;
+        perf.Record("Api", $"{method} {route}", duration, detail);
+    }
+
+    /// <summary>Reads app;dur=N from Server-Timing when the API sent it.</summary>
+    private static double? ReadServerTimingMs(HttpResponseMessage response)
+    {
+        if (!response.Headers.TryGetValues("Server-Timing", out var values))
+        {
+            return null;
+        }
+
+        foreach (var value in values)
+        {
+            var dur = value.IndexOf("dur=", StringComparison.OrdinalIgnoreCase);
+            if (dur < 0)
+            {
+                continue;
+            }
+
+            var start = dur + 4;
+            var end = start;
+            while (end < value.Length && (char.IsDigit(value[end]) || value[end] is '.'))
+            {
+                end++;
+            }
+
+            if (end > start
+                && double.TryParse(value.AsSpan(start, end - start), NumberStyles.Float, CultureInfo.InvariantCulture, out var ms))
+            {
+                return ms;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>Reads "code" and "errors" from a problem body; null when the body is not a problem.</summary>

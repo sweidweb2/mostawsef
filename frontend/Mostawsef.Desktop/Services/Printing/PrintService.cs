@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Avalonia.Platform;
+using Mostawsef.Desktop.Services.Diagnostics;
 using Mostawsef.Desktop.Services.Local;
 using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
@@ -14,7 +15,11 @@ namespace Mostawsef.Desktop.Services.Printing;
 /// Turns QuestPDF documents into PDF files and opens them in the default viewer, where the user prints.
 /// Documents use <see cref="ClinicPage"/> for the shared header/footer and the app's Arabic + Latin font.
 /// </summary>
-public class PrintService(LocalizationService localization, ClinicContext clinic, Action<string> openFile)
+public class PrintService(
+    LocalizationService localization,
+    ClinicContext clinic,
+    Action<string> openFile,
+    PerformanceMonitor perf)
 {
     public const string FontFamily = "IBM Plex Sans Arabic";
 
@@ -51,6 +56,7 @@ public class PrintService(LocalizationService localization, ClinicContext clinic
     /// <summary>Renders, cleans old PDFs and writes the file off the UI thread, then opens it. Returns its path.</summary>
     public async Task<string> PrintAsync(IDocument document, string name)
     {
+        using var scope = perf.Measure("Print", name);
         var path = await Task.Run(() =>
         {
             var pdf = Render(document);

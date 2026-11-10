@@ -1,9 +1,12 @@
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Mostawsef.Desktop.Services.Api;
 using Mostawsef.Desktop.Services.Auth;
+using Mostawsef.Desktop.Services.Diagnostics;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Navigation;
 using Mostawsef.Desktop.Services.Ui;
@@ -23,6 +26,7 @@ public partial class PortalShellViewModel : ViewModelBase
     private readonly LocalizationService _localization;
     private readonly AuthApi _authApi;
     private readonly IToastService _toasts;
+    private readonly PerformanceMonitor _perf;
 
     /// <summary>Set while the menu goes back to its entry because the user kept a sub-page's changes.</summary>
     private bool _restoringMenu;
@@ -42,7 +46,8 @@ public partial class PortalShellViewModel : ViewModelBase
         AuthApi authApi,
         IToastService toasts,
         ConnectionMonitor connection,
-        ClinicContext clinic)
+        ClinicContext clinic,
+        PerformanceMonitor perf)
     {
         _navigation = navigation;
         _session = session;
@@ -50,6 +55,7 @@ public partial class PortalShellViewModel : ViewModelBase
         _localization = localization;
         _authApi = authApi;
         _toasts = toasts;
+        _perf = perf;
         Connection = connection;
 
         PortalTitleKey = portal.TitleKey;
@@ -187,12 +193,34 @@ public partial class PortalShellViewModel : ViewModelBase
 
     private void Show(ViewModelBase page)
     {
+        var name = page.GetType().Name;
+        var nav = Stopwatch.StartNew();
+        var outgoingName = CurrentPage?.GetType().Name ?? "none";
+
         (CurrentPage as ILoadablePage)?.Deactivate();
+        _perf.Record("Nav", outgoingName, nav.Elapsed, $"deactivate {_perf.MachineSnapshot()}");
+
+        // PageHost keeps views in the tree and toggles IsVisible (hide/show) — see View lines.
+        var setPage = Stopwatch.StartNew();
         CurrentPage = page;
+        _perf.Record("Nav", name, setPage.Elapsed, $"set-page {_perf.MachineSnapshot()}");
+        _perf.Record("Nav", name, nav.Elapsed, $"total {_perf.MachineSnapshot()}");
+        _perf.ProbeUiAfter(name, nav);
+
         if (page is ILoadablePage loadable)
         {
-            _ = loadable.ActivateAsync();
+            _ = ActivateTimedAsync(page, loadable);
         }
+        else
+        {
+            _perf.Record("Page", name, TimeSpan.Zero, "shown");
+        }
+    }
+
+    private async Task ActivateTimedAsync(ViewModelBase page, ILoadablePage loadable)
+    {
+        using var scope = _perf.Measure("Page", page.GetType().Name);
+        await loadable.ActivateAsync();
     }
 
     /// <summary>Called when the portal is replaced (e.g. sign-out): cancels the open page's API calls.</summary>

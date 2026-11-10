@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Mostawsef.Contracts.Auth;
 using Mostawsef.Desktop.Services.Api;
+using Mostawsef.Desktop.Services.Diagnostics;
 
 namespace Mostawsef.Desktop.Tests.Api;
 
@@ -22,7 +23,8 @@ public class ConnectTimeoutTests
         };
 
         var stopwatch = Stopwatch.StartNew();
-        var result = await new ApiClient(http).GetAsync<UserDto>("api/auth/me", TestContext.Current.CancellationToken);
+        var result = await new ApiClient(http, new PerformanceMonitor { IsEnabled = false, WriteToFile = false })
+            .GetAsync<UserDto>("api/auth/me", TestContext.Current.CancellationToken);
         stopwatch.Stop();
 
         Assert.Equal(ApiError.Unreachable, result.Error);

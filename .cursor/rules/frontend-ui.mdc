@@ -80,7 +80,9 @@ alwaysApply: false
   when any call is unreachable); the portal shell shows its banner. Pages do not show their own "server down" banners.
 - **Page state** lives in its view model. Services are singletons; menu page view models are created once per portal
   visit and reused when returning to that menu entry (reload only when stale or on Refresh). `PageHost` caches the view
-  per page instance the same way. Sub-pages opened with `OpenAsync` stay transient. No static mutable state.
+  per page instance and toggles `IsVisible` (does not detach DataGrids). Sub-pages opened with `OpenAsync` stay transient, except New order: `OrdersViewModel`
+  holds one instance for the portal visit; each open calls `BeginReuse()` (reset owned by New order) and `PageHost`
+  reuses its view. No static mutable state.
 
 ## Auth + navigation (see `Docs/auth.md`)
 - Every screen is listed in `AppRoutes` (view, access, portal menus); open pages only via `NavigationService` or the shell menu.

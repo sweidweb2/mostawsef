@@ -87,6 +87,31 @@ ones, `last=true` reads the oldest rows. A null cursor means that end is reached
 expensive part: send `includeTotal=false` when only the page changes (`TotalCount` is then null). An unknown cursor,
 or more than one position, returns 400.
 
+## Performance debugger (desktop + API)
+
+Dev aid for spotting slow operations while using the app. Not a business log; do not store medical data there.
+
+| Where | What |
+| --- | --- |
+| Desktop overlay | Bottom-right panel on `MainWindow`. **Off by default** (live updates during Nav were skewing GC/UI timings). **Ctrl+Shift+P** shows it; refresh is deferred to idle. Amber ≥ 200 ms, red ≥ 500 ms |
+| Desktop file | `%AppData%\Mostawsef\logs\perf-yyyyMMdd.log` always written while enabled (Debug on by default). Release: set env `MOSTAWSEF_PERF=1` |
+| API | `RequestTimingMiddleware` logs duration and adds `Server-Timing: app;dur=N` (skips `/api/health`) |
+
+| Category | Meaning |
+| --- | --- |
+| `Api` | HTTP round-trip (optional `server Nms` from the API) |
+| `Page` | `ActivateAsync` (data load for the page) |
+| `View` | `created` / `reused` = build or cache hit; `hide` / `show` = `PageHost` visibility switch (views stay in the tree) |
+| `Nav` | `deactivate` / `set-page` / `total` split + `cpu=` / `ws=` / `gc` |
+| `Ui` | `layout` = time until Loaded; `dispatcher-lag` = time until the UI thread is idle again |
+| `Print` | PDF render + open |
+
+If navigation *feels* slow but `Api`/`Page` look fine, read `View hide`/`show` and `Nav set-page`. PageHost keeps visited views mounted and toggles visibility so DataGrids are not torn down on every switch.
+
+Avalonia Developer Tools are **off by default** even in Debug (set `MOSTAWSEF_DEVTOOLS=1` to enable); they walk the tree on every attach and can dominate Nav.
+
+Instrumentation is centralized: `ApiClient`, `PageHost`, portal `Show`/`ActivateAsync`, `PrintService`, API middleware. Do not sprinkle stopwatches in view models.
+
 ## Desktop pages (Super portal)
 
 `Activity logs` and `System errors`: stat cards, search, table (long text cut with the full text in a tooltip),
@@ -97,5 +122,5 @@ Both pages derive from `ViewModels/Shell/PagedListViewModel`, which a new list p
 Page moves send one cursor request without the total; a search counts again; the stat cards load only on the
 first load, Refresh and after a delete (they cover the whole table, not the shown page or search). When there is no
 search, the list skips its own `COUNT` and uses `stats.Total` instead.
-The shell reuses each menu page's view model: returning to a list keeps its data (Refresh reloads).
+The shell reuses each menu page's view model and view (PageHost hides/shows; returning keeps list data).
 Leaving a page cancels its requests still running; if that interrupted the first load, returning loads it again.

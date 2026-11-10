@@ -40,6 +40,7 @@ var app = builder.Build();
 var seedUsers = builder.Configuration.GetSection("Seed:Users").Get<List<SeedUser>>() ?? [];
 await app.Services.InitializeDatabaseAsync(seedUsers);
 
+app.UseMiddleware<RequestTimingMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<ActivityLogFlushMiddleware>();
 

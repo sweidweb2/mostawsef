@@ -100,6 +100,11 @@
 
   <data name="Common.Refresh" xml:space="preserve"><value>تحديث</value></data>
   <data name="Error.Unexpected" xml:space="preserve"><value>حدث خطأ ما. تم الإبلاغ عن الخطأ.</value></data>
+  <data name="Perf.Title" xml:space="preserve"><value>الأداء</value></data>
+  <data name="Perf.ToggleHint" xml:space="preserve"><value>Ctrl+Shift+P</value></data>
+  <data name="Perf.Clear" xml:space="preserve"><value>مسح</value></data>
+  <data name="Perf.Empty" xml:space="preserve"><value>يُسجَّل في الملف واللوحة مخفية. افتح المجلد، أو استخدم التطبيق — تظهر الأسطر عند الخمول.</value></data>
+  <data name="Perf.OpenLog" xml:space="preserve"><value>فتح مجلد السجل</value></data>
   <data name="Error.RequestFailed" xml:space="preserve"><value>فشل الطلب. يرجى المحاولة مرة أخرى.</value></data>
 
   <data name="Nav.ActivityLogs" xml:space="preserve"><value>سجل النشاطات</value></data>
@@ -338,9 +343,9 @@
   <data name="NewOrder.Title" xml:space="preserve"><value>طلب جديد</value></data>
   <data name="NewOrder.Subtitle" xml:space="preserve"><value>المريض، ثم التحاليل، ثم المراجعة والإنشاء.</value></data>
   <data name="NewOrder.Patient" xml:space="preserve"><value>المريض</value></data>
-  <data name="NewOrder.StepPatient" xml:space="preserve"><value>١. المريض</value></data>
-  <data name="NewOrder.StepTests" xml:space="preserve"><value>٢. التحاليل</value></data>
-  <data name="NewOrder.StepReview" xml:space="preserve"><value>٣. المراجعة</value></data>
+  <data name="NewOrder.StepPatient" xml:space="preserve"><value>المريض</value></data>
+  <data name="NewOrder.StepTests" xml:space="preserve"><value>التحاليل</value></data>
+  <data name="NewOrder.StepReview" xml:space="preserve"><value>المراجعة</value></data>
   <data name="NewOrder.Next" xml:space="preserve"><value>التالي</value></data>
   <data name="NewOrder.Previous" xml:space="preserve"><value>رجوع</value></data>
   <data name="NewOrder.Review" xml:space="preserve"><value>المراجعة</value></data>
