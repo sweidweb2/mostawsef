@@ -47,7 +47,7 @@
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate x:DataType="vm:PatientRow">
                                         <Grid Margin="12,0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                            <ui:Avatar DisplayName="{Binding Name}" MaxInitials="1" IsColorful="True" Size="{DynamicResource AvatarSizeSm}" />
+                                            <ui:Avatar DisplayName="{Binding Name}" MaxInitials="1" IsColorful="True" Size="{StaticResource AvatarSizeSm}" />
                                             <TextBlock Grid.Column="1" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Text="{Binding Name}" />
                                             <ui:CopyButton Grid.Column="2" Classes="sm" Text="{Binding Name}" />
                                         </Grid>

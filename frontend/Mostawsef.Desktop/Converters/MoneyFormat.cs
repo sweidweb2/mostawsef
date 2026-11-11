@@ -11,7 +11,9 @@ namespace Mostawsef.Desktop.Converters;
 /// </summary>
 public static class MoneyFormat
 {
+    private static readonly object Gate = new();
     private static LocalizationService? _cachedLocalization;
+    private static int _cachedVersion;
     private static string? _cachedCode;
     private static string? _cachedSuffix;
 
@@ -23,13 +25,23 @@ public static class MoneyFormat
             return amount;
         }
 
-        if (!ReferenceEquals(_cachedLocalization, localization) || _cachedCode != currencyCode)
+        string suffix;
+        lock (Gate)
         {
-            _cachedLocalization = localization;
-            _cachedCode = currencyCode;
-            _cachedSuffix = " " + localization.Get(string.Concat("Currency.", currencyCode));
+            if (!ReferenceEquals(_cachedLocalization, localization)
+                || _cachedVersion != localization.Version
+                || _cachedCode != currencyCode
+                || _cachedSuffix is null)
+            {
+                _cachedLocalization = localization;
+                _cachedVersion = localization.Version;
+                _cachedCode = currencyCode;
+                _cachedSuffix = " " + localization.Get(string.Concat("Currency.", currencyCode));
+            }
+
+            suffix = _cachedSuffix;
         }
 
-        return string.Concat(amount, _cachedSuffix);
+        return string.Concat(amount, suffix);
     }
 }

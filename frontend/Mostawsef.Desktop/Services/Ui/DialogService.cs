@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Mostawsef.Desktop.Components;
+using Mostawsef.Desktop.Services.Auth;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.ViewModels.Shell;
 
@@ -31,7 +32,19 @@ public class DialogService : IDialogService
 {
     private DialogHost? _host;
 
+    public DialogService(SessionService session) =>
+        session.Changed += (_, _) =>
+        {
+            if (!session.IsAuthenticated)
+            {
+                CloseAll();
+            }
+        };
+
     public void Attach(DialogHost host) => _host = host;
+
+    /// <summary>Force-closes every open dialog (no discard prompt). Used on sign-out.</summary>
+    public void CloseAll() => _host?.CloseAll();
 
     public Task<object?> ShowAsync(Modal modal)
     {

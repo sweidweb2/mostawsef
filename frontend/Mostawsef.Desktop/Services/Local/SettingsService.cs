@@ -2,7 +2,9 @@ using System;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
+using Mostawsef.Desktop.Services.Diagnostics;
 
 namespace Mostawsef.Desktop.Services.Local;
 
@@ -19,18 +21,21 @@ public class SettingsService
     };
 
     private readonly string _filePath;
+    private readonly Lazy<ErrorReporter>? _errors;
     private readonly object _gate = new();
     private string? _pendingJson;
     private Task _writer = Task.CompletedTask;
+    private Exception? _loadFault;
 
     public SettingsService()
         : this(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Mostawsef", "settings.json"))
     {
     }
 
-    public SettingsService(string filePath)
+    public SettingsService(string filePath, Lazy<ErrorReporter>? errors = null)
     {
         _filePath = filePath;
+        _errors = errors;
         Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
         Current = Load();
     }
@@ -39,6 +44,7 @@ public class SettingsService
 
     public void Save()
     {
+        ReportLoadFaultIfAny();
         var json = JsonSerializer.Serialize(Current, JsonOptions);
         lock (_gate)
         {
@@ -63,6 +69,16 @@ public class SettingsService
         writer.Wait();
     }
 
+    /// <summary>Sends a deferred corrupt-file fault once DI can resolve <see cref="ErrorReporter"/>.</summary>
+    public void ReportLoadFaultIfAny()
+    {
+        var fault = Interlocked.Exchange(ref _loadFault, null);
+        if (fault is not null)
+        {
+            _errors?.Value.Report(fault, context: "Loading settings.json");
+        }
+    }
+
     private void WritePending()
     {
         string? json;
@@ -83,9 +99,10 @@ public class SettingsService
             File.WriteAllText(tempPath, json);
             File.Move(tempPath, _filePath, overwrite: true);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             // Preferences are best effort: a locked, read-only or otherwise unwritable file must not disturb the user.
+            _errors?.Value.Report(ex, context: "Saving settings.json");
         }
     }
 
@@ -100,8 +117,10 @@ public class SettingsService
         {
             return JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(_filePath), JsonOptions) ?? new AppSettings();
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
+            // Cannot resolve ErrorReporter here: this runs inside the SettingsService DI factory.
+            _loadFault = ex;
             return new AppSettings();
         }
     }

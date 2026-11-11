@@ -64,6 +64,7 @@ public class NewOrderPageTests : UiTestBase
         window.GetVisualDescendants().OfType<ConfirmDialog>().Single().Close(true);
         await discard;
         await WaitUntil(() => shell.CurrentPage == orders);
+        Assert.Empty(page.Catalog);
 
         await orders.NewOrderCommand.ExecuteAsync(null);
         await WaitUntil(() => !page.IsPreparing && page.StepContent is not null);
@@ -109,6 +110,22 @@ public class NewOrderPageTests : UiTestBase
 
         Assert.Single(app.Api.RequestsTo(HttpMethod.Get, TestsPath));
         Assert.Equal(2, page.Catalog.Count);
+    }
+
+    [AvaloniaFact]
+    public async Task Catalog_reloads_after_lab_tests_are_mutated()
+    {
+        using var app = Admin();
+        var (_, page, _) = await ShowNewOrderAsync(app);
+        await GoToTestsAsync(page);
+        Assert.Single(app.Api.RequestsTo(HttpMethod.Get, TestsPath));
+
+        app.Get<LabTestCatalogVersion>().Invalidate();
+        page.PreviousStepCommand.Execute(null);
+        page.NextStepCommand.Execute(null);
+        await WaitUntil(() => app.Api.RequestsTo(HttpMethod.Get, TestsPath).Count() == 2);
+
+        Assert.Equal(2, app.Api.RequestsTo(HttpMethod.Get, TestsPath).Count());
     }
 
     [AvaloniaFact]

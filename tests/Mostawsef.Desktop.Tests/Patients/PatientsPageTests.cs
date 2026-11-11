@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http;
 using System.Net.Http.Json;
 using Avalonia;
 using Avalonia.Controls;
@@ -120,7 +121,6 @@ public class PatientsPageTests : UiTestBase
     public async Task Edit_on_a_card_opens_the_form_filled_in_and_sends_the_loaded_version()
     {
         using var app = AdminWithPatients(Mona);
-        app.Api.OnGet($"{PatientsPath}/{Mona.Id}", Mona);
         UpdatePatientRequest? sent = null;
         app.Api.On(HttpMethod.Put, $"{PatientsPath}/{Mona.Id}", request =>
         {
@@ -150,6 +150,7 @@ public class PatientsPageTests : UiTestBase
             FullName = Mona.FullName, Phone = Mona.Phone, GuardianPhone = null, Notes = Mona.Notes, IsInsured = false,
             Gender = Genders.Female, DateOfBirth = Mona.DateOfBirth, Version = Mona.Version,
         }, sent);
+        Assert.Empty(app.Api.RequestsTo(HttpMethod.Get, $"{PatientsPath}/{Mona.Id}"));
         Assert.Empty(window.GetVisualDescendants().OfType<Modal>());
         Assert.Contains("Patient saved.", Toasts(window));
     }

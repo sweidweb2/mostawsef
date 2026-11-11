@@ -179,13 +179,12 @@ public partial class PerformanceMonitor : ObservableObject
     {
         try
         {
-            _process.Refresh();
-            var now = Clock.GetUtcNow();
-            var cpu = _process.TotalProcessorTime;
-            double cpuPct;
             lock (_gate)
             {
-                cpuPct = 0.0;
+                _process.Refresh();
+                var now = Clock.GetUtcNow();
+                var cpu = _process.TotalProcessorTime;
+                var cpuPct = 0.0;
                 if (_lastCpuAt != default)
                 {
                     var wallMs = (now - _lastCpuAt).TotalMilliseconds;
@@ -198,10 +197,10 @@ public partial class PerformanceMonitor : ObservableObject
 
                 _lastCpu = cpu;
                 _lastCpuAt = now;
-            }
 
-            var wsMb = _process.WorkingSet64 / (1024d * 1024d);
-            return $"cpu={cpuPct:F0}% ws={wsMb:F0}MB gc0={GC.CollectionCount(0)} gc1={GC.CollectionCount(1)}";
+                var wsMb = _process.WorkingSet64 / (1024d * 1024d);
+                return $"cpu={cpuPct:F0}% ws={wsMb:F0}MB gc0={GC.CollectionCount(0)} gc1={GC.CollectionCount(1)}";
+            }
         }
         catch (Exception)
         {
@@ -238,7 +237,7 @@ public partial class PerformanceMonitor : ObservableObject
 
         if (firstEntry)
         {
-            OnPropertyChanged(nameof(HasEntries));
+            NotifyHasEntries();
         }
 
         if (IsOverlayVisible)
@@ -262,6 +261,17 @@ public partial class PerformanceMonitor : ObservableObject
         }
 
         Entries.ReplaceAll(snapshot);
+    }
+
+    private void NotifyHasEntries()
+    {
+        if (Avalonia.Application.Current is null || Dispatcher.UIThread.CheckAccess())
+        {
+            OnPropertyChanged(nameof(HasEntries));
+            return;
+        }
+
+        Dispatcher.UIThread.Post(() => OnPropertyChanged(nameof(HasEntries)));
     }
 
     private void ScheduleOverlayRefresh()

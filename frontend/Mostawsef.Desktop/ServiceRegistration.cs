@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Mostawsef.Desktop.Services.Api;
@@ -38,8 +39,11 @@ public static class ServiceRegistration
     {
         options ??= new DesktopServiceOptions();
 
-        // Local
-        services.AddSingleton(_ => options.SettingsFilePath is null ? new SettingsService() : new SettingsService(options.SettingsFilePath));
+        // Local (Lazy ErrorReporter: SettingsService is built before the reporter, and Load() may run in the ctor)
+        services.AddSingleton(sp => new SettingsService(
+            options.SettingsFilePath
+                ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Mostawsef", "settings.json"),
+            new Lazy<ErrorReporter>(sp.GetRequiredService<ErrorReporter>)));
         services.AddSingleton<ThemeService>();
         services.AddSingleton<LocalizationService>();
 
@@ -80,6 +84,7 @@ public static class ServiceRegistration
 
         // Clinic details + printing
         services.AddSingleton<ClinicContext>();
+        services.AddSingleton<LabTestCatalogVersion>();
         services.AddSingleton(sp => new PrintService(
             sp.GetRequiredService<LocalizationService>(),
             sp.GetRequiredService<ClinicContext>(),

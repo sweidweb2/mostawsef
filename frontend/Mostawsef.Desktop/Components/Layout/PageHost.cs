@@ -132,9 +132,13 @@ public class PageHost : Decorator
         if (_current is not null)
         {
             var outgoingName = _current.DataContext?.GetType().Name ?? "none";
-            var hide = Stopwatch.StartNew();
+            var hide = perf is null ? null : Stopwatch.StartNew();
             _current.IsVisible = false;
-            perf?.Record("View", outgoingName, hide.Elapsed, "hide");
+            if (hide is not null)
+            {
+                perf!.Record("View", outgoingName, hide.Elapsed, "hide");
+            }
+
             _current = null;
         }
 
@@ -149,10 +153,13 @@ public class PageHost : Decorator
             _host.Children.Add(view);
         }
 
-        var show = Stopwatch.StartNew();
+        var show = perf is null ? null : Stopwatch.StartNew();
         view.IsVisible = true;
         _current = view;
-        perf?.Record("View", page.GetType().Name, show.Elapsed, "show");
+        if (show is not null)
+        {
+            perf!.Record("View", page.GetType().Name, show.Elapsed, "show");
+        }
     }
 
     private Control GetOrCreateView(object page, PerformanceMonitor? perf)
@@ -164,12 +171,16 @@ public class PageHost : Decorator
             return view;
         }
 
-        var sw = Stopwatch.StartNew();
+        var sw = perf is null ? null : Stopwatch.StartNew();
         view = BuildView(page);
         view.IsVisible = false;
-        sw.Stop();
+        sw?.Stop();
         _views[page] = view;
-        perf?.Record("View", name, sw.Elapsed, "created");
+        if (sw is not null)
+        {
+            perf!.Record("View", name, sw.Elapsed, "created");
+        }
+
         return view;
     }
 

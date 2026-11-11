@@ -7,10 +7,10 @@
              xmlns:vm="using:Mostawsef.Desktop.ViewModels.Admin"
              x:Class="Mostawsef.Desktop.Views.Admin.PatientFormView"
              x:DataType="vm:PatientFormViewModel">
-    <StackPanel Spacing="{DynamicResource GapGrid}">
+    <StackPanel Spacing="{StaticResource GapGrid}">
         <ui:Alert Kind="Danger" Text="{l:TrKey FormErrorKey}" />
 
-        <ui:ResponsiveGrid MinColumnWidth="220" MaxColumns="2" ColumnSpacing="{DynamicResource GapGrid}" RowSpacing="{DynamicResource GapGrid}">
+        <ui:ResponsiveGrid MinColumnWidth="220" MaxColumns="2" ColumnSpacing="{StaticResource GapGrid}" RowSpacing="{StaticResource GapGrid}">
             <ui:FormField ui:ResponsiveGrid.ColumnSpan="0" Label="{l:Tr Patients.Col.FullName}" IsRequired="True" Error="{l:FieldError FullName}">
                 <TextBox Name="FullNameBox"
                          Text="{Binding FullName}"

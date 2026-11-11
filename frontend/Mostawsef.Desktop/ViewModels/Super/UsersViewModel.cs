@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.Users;
 using Mostawsef.Desktop.Services.Api;
+using Mostawsef.Desktop.Services.Diagnostics;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Ui;
 using Mostawsef.Desktop.ViewModels.Shell;
@@ -12,8 +13,8 @@ using Mostawsef.Desktop.ViewModels.Shell;
 namespace Mostawsef.Desktop.ViewModels.Super;
 
 /// <summary>Super portal: users list with search and paging; add, edit, reset password and delete. Access via AppRoutes.</summary>
-public partial class UsersViewModel(UsersApi users, IDialogService dialogs, IToastService toasts, LocalizationService localization)
-    : NumberedListViewModel<UserListItemDto>(toasts, localization)
+public partial class UsersViewModel(UsersApi users, IDialogService dialogs, IToastService toasts, LocalizationService localization, ErrorReporter errors)
+    : NumberedListViewModel<UserListItemDto>(toasts, localization, errors)
 {
     protected override Task<ApiResult<PagedResult<UserListItemDto>>> FetchPageAsync(
         int page, int pageSize, string? search, bool includeTotal, CancellationToken cancellationToken) =>

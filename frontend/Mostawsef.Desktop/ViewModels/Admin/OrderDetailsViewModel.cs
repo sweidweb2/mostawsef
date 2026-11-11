@@ -79,6 +79,7 @@ public partial class OrderDetailsViewModel(OrdersApi orders, NavigationService n
     {
         _loadCancellation?.Cancel();
         IsLoading = false;
+        Order = null;
     }
 
     [RelayCommand]

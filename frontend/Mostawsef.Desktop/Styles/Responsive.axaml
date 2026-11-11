@@ -1,4 +1,4 @@
-﻿<!--
+<!--
     RESPONSIVENESS ENGINE
 
     Rules react to the width of the AppShell content area (container "AppContent"),
@@ -20,14 +20,14 @@
 
     <!-- Page root -->
     <Style Selector=":is(Control).page">
-        <Setter Property="Margin" Value="{DynamicResource PaddingPage}" />
-        <Setter Property="MaxWidth" Value="{DynamicResource ContentMaxWidth}" />
+        <Setter Property="Margin" Value="{StaticResource PaddingPage}" />
+        <Setter Property="MaxWidth" Value="{StaticResource ContentMaxWidth}" />
     </Style>
 
     <!-- Compact: < 900 -->
     <ContainerQuery Name="AppContent" Query="max-width:899">
         <Style Selector=":is(Control).page">
-            <Setter Property="Margin" Value="{DynamicResource PaddingPageCompact}" />
+            <Setter Property="Margin" Value="{StaticResource PaddingPageCompact}" />
         </Style>
         <Style Selector=":is(Control).hide-compact">
             <Setter Property="IsVisible" Value="False" />

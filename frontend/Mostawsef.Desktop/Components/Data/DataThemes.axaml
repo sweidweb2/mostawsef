@@ -7,15 +7,15 @@
     <ControlTheme x:Key="{x:Type ui:Badge}" TargetType="ui:Badge">
         <Setter Property="Background" Value="{DynamicResource BrushNeutralSubtle}" />
         <Setter Property="Foreground" Value="{DynamicResource BrushNeutralText}" />
-        <Setter Property="FontSize" Value="{DynamicResource FontSizeCaption}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeCaption}" />
         <Setter Property="FontWeight" Value="Medium" />
         <Setter Property="HorizontalAlignment" Value="Left" />
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="Template">
             <ControlTemplate>
                 <Border Background="{TemplateBinding Background}"
-                        CornerRadius="{DynamicResource RadiusFull}"
-                        Padding="{DynamicResource PaddingChip}">
+                        CornerRadius="{StaticResource RadiusFull}"
+                        Padding="{StaticResource PaddingChip}">
                     <TextBlock Text="{TemplateBinding Text}"
                                Foreground="{TemplateBinding Foreground}"
                                FontSize="{TemplateBinding FontSize}"
@@ -124,7 +124,7 @@
                 <Border Background="{DynamicResource BrushSurface}"
                         BorderBrush="{DynamicResource BrushBorder}"
                         BorderThickness="1"
-                        CornerRadius="{DynamicResource RadiusLg}"
+                        CornerRadius="{StaticResource RadiusLg}"
                         ClipToBounds="True">
                     <DockPanel>
                         <Border DockPanel.Dock="Top"
@@ -170,26 +170,26 @@
         <Setter Property="Background" Value="{DynamicResource BrushSurface}" />
         <Setter Property="Template">
             <ControlTemplate>
-                <Border Padding="{DynamicResource PaddingCard}"
+                <Border Padding="{StaticResource PaddingCard}"
                         Background="{TemplateBinding Background}"
                         BorderBrush="{DynamicResource BrushBorder}"
-                        BorderThickness="{DynamicResource BorderWidth}"
-                        CornerRadius="{DynamicResource RadiusLg}"
+                        BorderThickness="{StaticResource BorderWidth}"
+                        CornerRadius="{StaticResource RadiusLg}"
                         BoxShadow="{DynamicResource ShadowSm}">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource Space4}">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{StaticResource Space4}">
                         <Border Name="PART_IconTile"
                                 Width="44"
                                 Height="44"
-                                CornerRadius="{DynamicResource RadiusMd}"
+                                CornerRadius="{StaticResource RadiusMd}"
                                 Background="{DynamicResource BrushPrimarySubtle}"
                                 VerticalAlignment="Top">
                             <PathIcon Name="PART_Icon"
                                       Data="{TemplateBinding Icon}"
-                                      Width="{DynamicResource IconSize}"
-                                      Height="{DynamicResource IconSize}"
+                                      Width="{StaticResource IconSize}"
+                                      Height="{StaticResource IconSize}"
                                       Foreground="{DynamicResource BrushPrimary}" />
                         </Border>
-                        <StackPanel Grid.Column="1" Spacing="{DynamicResource Space1}" VerticalAlignment="Center">
+                        <StackPanel Grid.Column="1" Spacing="{StaticResource Space1}" VerticalAlignment="Center">
                             <TextBlock Classes="caption muted" Text="{TemplateBinding Title}" TextTrimming="CharacterEllipsis" />
                             <TextBlock Classes="h2" Text="{TemplateBinding Value}" />
                             <TextBlock Classes="caption muted"
@@ -232,7 +232,7 @@
     <ControlTheme x:Key="{x:Type ui:DetailsView}" TargetType="ui:DetailsView">
         <Setter Property="ItemsPanel">
             <ItemsPanelTemplate>
-                <StackPanel Spacing="{DynamicResource Space3}" />
+                <StackPanel Spacing="{StaticResource Space3}" />
             </ItemsPanelTemplate>
         </Setter>
         <Setter Property="Template">
@@ -245,7 +245,7 @@
     <ControlTheme x:Key="{x:Type ui:DetailsItem}" TargetType="ui:DetailsItem">
         <Setter Property="Template">
             <ControlTemplate>
-                <Grid ColumnDefinitions="150,*" ColumnSpacing="{DynamicResource Space4}">
+                <Grid ColumnDefinitions="150,*" ColumnSpacing="{StaticResource Space4}">
                     <TextBlock Classes="muted" Text="{TemplateBinding Label}" TextWrapping="Wrap" />
                     <SelectableTextBlock Name="PART_Value"
                                          Grid.Column="1"
@@ -253,16 +253,16 @@
                                          TextWrapping="Wrap" />
                     <Border Name="PART_Code"
                             Grid.Column="1"
-                            Padding="{DynamicResource PaddingControl}"
+                            Padding="{StaticResource PaddingControl}"
                             Background="{DynamicResource BrushSurfaceAlt}"
                             BorderBrush="{DynamicResource BrushBorder}"
-                            BorderThickness="{DynamicResource BorderWidth}"
-                            CornerRadius="{DynamicResource RadiusMd}"
+                            BorderThickness="{StaticResource BorderWidth}"
+                            CornerRadius="{StaticResource RadiusMd}"
                             IsVisible="False">
                         <ScrollViewer MaxHeight="260" HorizontalScrollBarVisibility="Auto">
                             <SelectableTextBlock Text="{TemplateBinding DisplayValue}"
-                                                 FontFamily="{DynamicResource FontFamilyMono}"
-                                                 FontSize="{DynamicResource FontSizeCaption}"
+                                                 FontFamily="{StaticResource FontFamilyMono}"
+                                                 FontSize="{StaticResource FontSizeCaption}"
                                                  FlowDirection="LeftToRight" />
                         </ScrollViewer>
                     </Border>

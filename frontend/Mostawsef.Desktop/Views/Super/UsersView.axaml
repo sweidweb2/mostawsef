@@ -11,15 +11,15 @@
         <StackPanel Classes="page">
             <ui:PageHeader Title="{l:Tr Nav.Users}" Subtitle="{l:Tr Users.Subtitle}">
                 <ui:PageHeader.Actions>
-                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
                         <Button Classes="secondary" Command="{Binding RefreshCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
                                 <PathIcon Data="{StaticResource IconRefresh}" />
                                 <TextBlock Text="{l:Tr Common.Refresh}" />
                             </StackPanel>
                         </Button>
                         <Button Name="AddUserButton" Classes="primary" Command="{Binding AddCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
                                 <PathIcon Data="{StaticResource IconPlus}" />
                                 <TextBlock Text="{l:Tr Users.Add}" />
                             </StackPanel>
@@ -94,7 +94,7 @@
                         <DataGridTemplateColumn Header="{l:Tr Common.Actions}" Width="140">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate x:DataType="users:UserListItemDto">
-                                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}" Margin="8,0" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space1}" Margin="8,0" VerticalAlignment="Center">
                                         <ui:IconButton Classes="ghost sm"
                                                        Icon="{StaticResource IconEdit}"
                                                        ToolTip.Tip="{l:Tr Common.Edit}"

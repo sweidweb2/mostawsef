@@ -10,7 +10,7 @@
             <ui:PageHeader Title="{l:Tr Nav.SystemSettings}" Subtitle="{l:Tr SystemSettings.Subtitle}">
                 <ui:PageHeader.Actions>
                     <Button Name="EditSettingsButton" Classes="primary" Command="{Binding EditCommand}" IsEnabled="{Binding HasSettings}">
-                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
                             <PathIcon Data="{StaticResource IconEdit}" />
                             <TextBlock Text="{l:Tr Common.Edit}" />
                         </StackPanel>

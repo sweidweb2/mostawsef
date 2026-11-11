@@ -23,20 +23,23 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
     public const int TestsPerPage = 40;
 
     private readonly LabTestsApi _tests;
+    private readonly LabTestCatalogVersion _catalogVersion;
     private readonly IDialogService _dialogs;
     private readonly PrintService _print;
     private readonly ErrorReporter _errors;
 
     public LabTestsViewModel(
         LabTestsApi tests,
+        LabTestCatalogVersion catalogVersion,
         IDialogService dialogs,
         IToastService toasts,
         LocalizationService localization,
         PrintService print,
         ErrorReporter errors)
-        : base(toasts, localization)
+        : base(toasts, localization, errors)
     {
         _tests = tests;
+        _catalogVersion = catalogVersion;
         _dialogs = dialogs;
         _print = print;
         _errors = errors;
@@ -66,6 +69,7 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
         }
 
         Toasts.Success(Localization.Get("LabTests.Saved"));
+        _catalogVersion.Invalidate();
         if (form.SavedValue is LabTestDto created)
         {
             InsertSorted(created, CompareByName);
@@ -88,6 +92,7 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
         if (await _dialogs.ShowFormAsync(new LabTestFormViewModel(_tests, _dialogs, Localization, item), Localization.Get("LabTests.EditTitle")))
         {
             Toasts.Success(Localization.Get("LabTests.Saved"));
+            _catalogVersion.Invalidate();
             await ReloadAsync(includeTotal: false);
         }
     }
@@ -114,6 +119,7 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
         }
 
         Toasts.Success(Localization.Get("LabTests.Deleted"));
+        _catalogVersion.Invalidate();
         await ReloadAsync();
     }
 

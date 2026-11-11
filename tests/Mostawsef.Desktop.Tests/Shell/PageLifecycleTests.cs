@@ -113,6 +113,22 @@ public class PageLifecycleTests : UiTestBase
     }
 
     [AvaloniaFact]
+    public void Close_drops_cached_menu_pages()
+    {
+        using var app = new TestServices();
+        _ = new SlowServer(app) { Answers = true };
+        var shell = OpenSuperPortal(app);
+        shell.SelectedMenuIndex = ActivityLogs;
+        var logs = shell.CurrentPage;
+
+        shell.Close();
+        shell.SelectedMenuIndex = Dashboard;
+        shell.SelectedMenuIndex = ActivityLogs;
+
+        Assert.NotSame(logs, shell.CurrentPage);
+    }
+
+    [AvaloniaFact]
     public async Task Details_that_arrive_after_leaving_the_page_do_not_open_a_modal()
     {
         using var app = new TestServices();

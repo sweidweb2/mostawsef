@@ -8,12 +8,12 @@
 
     <!-- Text inputs -->
     <Style Selector="TextBox">
-        <Setter Property="MinHeight" Value="{DynamicResource ControlHeight}" />
-        <Setter Property="CornerRadius" Value="{DynamicResource RadiusMd}" />
+        <Setter Property="MinHeight" Value="{StaticResource ControlHeight}" />
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusMd}" />
         <Setter Property="Background" Value="{DynamicResource BrushSurface}" />
         <Setter Property="Foreground" Value="{DynamicResource BrushText}" />
         <Setter Property="BorderBrush" Value="{DynamicResource BrushBorderStrong}" />
-        <Setter Property="Padding" Value="{DynamicResource PaddingInput}" />
+        <Setter Property="Padding" Value="{StaticResource PaddingInput}" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
     <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
@@ -40,8 +40,8 @@
 
     <!-- Pickers, combo boxes, numeric -->
     <Style Selector="ComboBox, CalendarDatePicker, AutoCompleteBox, NumericUpDown, DatePicker, TimePicker">
-        <Setter Property="MinHeight" Value="{DynamicResource ControlHeight}" />
-        <Setter Property="CornerRadius" Value="{DynamicResource RadiusMd}" />
+        <Setter Property="MinHeight" Value="{StaticResource ControlHeight}" />
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusMd}" />
         <Setter Property="BorderBrush" Value="{DynamicResource BrushBorderStrong}" />
     </Style>
     <Style Selector="ComboBox, CalendarDatePicker">
@@ -50,7 +50,7 @@
         <Setter Property="HorizontalAlignment" Value="Stretch" />
     </Style>
     <Style Selector="ComboBox">
-        <Setter Property="Padding" Value="{DynamicResource PaddingInput}" />
+        <Setter Property="Padding" Value="{StaticResource PaddingInput}" />
     </Style>
 
     <!-- Selection -->
@@ -78,7 +78,7 @@
     <Style Selector="ProgressBar">
         <Setter Property="Foreground" Value="{DynamicResource BrushPrimary}" />
         <Setter Property="Background" Value="{DynamicResource BrushSurfaceAlt}" />
-        <Setter Property="CornerRadius" Value="{DynamicResource RadiusFull}" />
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusFull}" />
         <Setter Property="MinHeight" Value="6" />
     </Style>
     <Style Selector="ProgressBar.success">

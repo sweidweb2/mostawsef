@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Mostawsef.Application.Common;
 using Mostawsef.Application.Interfaces;
+using Mostawsef.Contracts.Common;
 using Mostawsef.Domain.Entities;
 using Mostawsef.Infrastructure.Persistence.Context;
 
@@ -36,6 +38,10 @@ public class NumberSequenceRepository(IDbContextFactory<AppDbContext> dbFactory)
             catch (DbUpdateException) when (attempt == 0)
             {
                 // Another caller created the row first: take the next number from it.
+            }
+            catch (AppException ex) when (attempt == 0 && ex.Code == ErrorCodes.Taken)
+            {
+                // SaveChanges maps the unique race to AppException — same retry.
             }
         }
     }

@@ -7,20 +7,20 @@
     <ControlTheme x:Key="{x:Type ui:Toast}" TargetType="ui:Toast">
         <Setter Property="Template">
             <ControlTemplate>
-                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource Space3}" Margin="14,12,8,12">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{StaticResource Space3}" Margin="14,12,8,12">
                     <Border Name="PART_IconTile"
                             Width="32"
                             Height="32"
-                            CornerRadius="{DynamicResource RadiusFull}"
+                            CornerRadius="{StaticResource RadiusFull}"
                             Background="{DynamicResource BrushInfoSubtle}"
                             VerticalAlignment="Top">
                         <PathIcon Name="PART_Icon"
                                   Data="{StaticResource IconInfo}"
-                                  Width="{DynamicResource IconSize}"
-                                  Height="{DynamicResource IconSize}"
+                                  Width="{StaticResource IconSize}"
+                                  Height="{StaticResource IconSize}"
                                   Foreground="{DynamicResource BrushInfo}" />
                     </Border>
-                    <StackPanel Grid.Column="1" Spacing="{DynamicResource SpaceHalf}" VerticalAlignment="Center">
+                    <StackPanel Grid.Column="1" Spacing="{StaticResource SpaceHalf}" VerticalAlignment="Center">
                         <TextBlock Classes="strong"
                                    Text="{TemplateBinding Title}"
                                    TextWrapping="Wrap"
@@ -73,8 +73,8 @@
         <Setter Property="Foreground" Value="{DynamicResource BrushText}" />
         <Setter Property="Background" Value="{DynamicResource BrushSurfaceRaised}" />
         <Setter Property="BorderBrush" Value="{DynamicResource BrushBorder}" />
-        <Setter Property="BorderThickness" Value="{DynamicResource BorderWidth}" />
-        <Setter Property="CornerRadius" Value="{DynamicResource RadiusLg}" />
+        <Setter Property="BorderThickness" Value="{StaticResource BorderWidth}" />
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusLg}" />
         <Setter Property="Template">
             <ControlTemplate>
                 <LayoutTransformControl Name="PART_LayoutTransformControl" UseRenderTransform="True">
@@ -198,7 +198,7 @@
                     <Panel IsVisible="{TemplateBinding IsLoading}">
                         <Border Background="{DynamicResource BrushSurface}"
                                 CornerRadius="{TemplateBinding CornerRadius}"
-                                Opacity="{DynamicResource OpacityVeil}" />
+                                Opacity="{StaticResource OpacityVeil}" />
                         <StackPanel Spacing="12" HorizontalAlignment="Center" VerticalAlignment="Center">
                             <ui:Spinner HorizontalAlignment="Center" />
                             <TextBlock Classes="muted"
@@ -259,14 +259,14 @@
             <ControlTemplate>
                 <Border Background="{TemplateBinding Background}"
                         BorderBrush="{TemplateBinding BorderBrush}"
-                        BorderThickness="{DynamicResource BorderWidth}"
-                        CornerRadius="{DynamicResource RadiusMd}"
-                        Padding="{DynamicResource PaddingControl}">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource GapControls}">
+                        BorderThickness="{StaticResource BorderWidth}"
+                        CornerRadius="{StaticResource RadiusMd}"
+                        Padding="{StaticResource PaddingControl}">
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{StaticResource GapControls}">
                         <PathIcon Name="PART_Icon"
                                   Data="{StaticResource IconInfo}"
-                                  Width="{DynamicResource IconSizeSm}"
-                                  Height="{DynamicResource IconSizeSm}"
+                                  Width="{StaticResource IconSizeSm}"
+                                  Height="{StaticResource IconSizeSm}"
                                   Margin="0,3,0,0"
                                   VerticalAlignment="Top"
                                   Foreground="{DynamicResource BrushInfo}" />
@@ -343,7 +343,7 @@
                             Margin="0,4,0,0"
                             Command="{TemplateBinding RetryCommand}"
                             IsVisible="{TemplateBinding RetryCommand, Converter={x:Static ObjectConverters.IsNotNull}}">
-                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
                             <PathIcon Data="{StaticResource IconRefresh}" />
                             <TextBlock Text="{l:Tr Common.Retry}" />
                         </StackPanel>

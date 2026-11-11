@@ -19,6 +19,20 @@ public class SystemSettingsTests(ApiFactory factory)
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     [Fact]
+    public async Task A_second_read_reuses_the_cached_settings_row()
+    {
+        var super = await factory.CreateClientAsAsync(TestUsers.Super);
+        await super.GetJsonAsync<SystemSettingsDto>(Url);
+
+        factory.Sql.Clear();
+        await super.GetJsonAsync<SystemSettingsDto>(Url);
+
+        Assert.DoesNotContain(
+            factory.Sql.Queries,
+            q => q.Contains("system_settings", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public async Task Super_updates_the_settings_and_the_change_is_audited()
     {
         var super = await factory.CreateClientAsAsync(TestUsers.Super);

@@ -5,7 +5,7 @@
              xmlns:vm="using:Mostawsef.Desktop.ViewModels.Super"
              x:Class="Mostawsef.Desktop.Views.Super.UserFormView"
              x:DataType="vm:UserFormViewModel">
-    <StackPanel Spacing="{DynamicResource GapGrid}">
+    <StackPanel Spacing="{StaticResource GapGrid}">
         <ui:Alert Kind="Danger" Text="{l:TrKey FormErrorKey}" />
 
         <ui:FormField Label="{l:Tr Users.Col.FullName}" IsRequired="True" Error="{l:FieldError FullName}">

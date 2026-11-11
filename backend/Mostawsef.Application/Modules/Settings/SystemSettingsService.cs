@@ -14,10 +14,13 @@ public interface ISystemSettingsService
     Task<SystemSettingsDto> UpdateAsync(UpdateSystemSettingsRequest request, CancellationToken cancellationToken);
 }
 
-public class SystemSettingsService(ISystemSettingsRepository settings, IActivityLogger activity) : ISystemSettingsService
+public class SystemSettingsService(
+    ISystemSettingsRepository settings,
+    ISystemSettingsCache cache,
+    IActivityLogger activity) : ISystemSettingsService
 {
     public Task<SystemSettingsDto> GetAsync(CancellationToken cancellationToken) =>
-        settings.GetSnapshotAsync(cancellationToken);
+        cache.GetAsync(cancellationToken);
 
     public async Task<SystemSettingsDto> UpdateAsync(UpdateSystemSettingsRequest request, CancellationToken cancellationToken)
     {
@@ -29,6 +32,7 @@ public class SystemSettingsService(ISystemSettingsRepository settings, IActivity
 
         current.Update(request.BackupPath, request.MaintenanceMode);
         await settings.SaveChangesAsync(cancellationToken);
+        cache.Invalidate();
 
         await activity.LogAsync(
             new ActivityEntry(ActivityActions.SystemSettingsUpdated, ActivityModules.Settings, "Updated the system settings")

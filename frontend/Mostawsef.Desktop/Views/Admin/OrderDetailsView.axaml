@@ -12,7 +12,7 @@
             <ui:PageHeader Title="{l:Tr OrderDetails.Title, Arg=Order.Number}" Subtitle="{l:Tr OrderDetails.Subtitle}">
                 <ui:PageHeader.Breadcrumb>
                     <Button Name="BackButton" Classes="ghost sm" Command="{Binding BackCommand}">
-                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}">
+                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space1}">
                             <PathIcon Data="{StaticResource IconChevronStart}" />
                             <TextBlock Text="{l:Tr OrderDetails.BackToOrders}" />
                         </StackPanel>
@@ -32,9 +32,9 @@
                                Description="{l:TrKey LoadErrorDescriptionKey}"
                                RetryCommand="{Binding RefreshCommand}" />
 
-                <StackPanel Spacing="{DynamicResource GapGrid}" IsVisible="{Binding HasOrder}">
+                <StackPanel Spacing="{StaticResource GapGrid}" IsVisible="{Binding HasOrder}">
                     <ui:ResponsiveGrid MinColumnWidth="180" MaxColumns="3"
-                                       ColumnSpacing="{DynamicResource GapGrid}" RowSpacing="{DynamicResource GapGrid}">
+                                       ColumnSpacing="{StaticResource GapGrid}" RowSpacing="{StaticResource GapGrid}">
                         <ui:StatCard Name="TotalCard" Title="{l:Tr Orders.Col.Total}" Value="{l:Money Order.Total}" />
                         <ui:StatCard Name="PaidCard" Kind="Success" Title="{l:Tr Orders.Col.Paid}" Value="{l:Money Order.Paid}" />
                         <ui:StatCard Name="BalanceCard" Kind="Warning" Title="{l:Tr OrderDetails.Balance}" Value="{l:Money Order.Balance}" />
@@ -53,14 +53,14 @@
                     </ui:Card>
 
                     <ui:Card Title="{l:Tr OrderDetails.Tests, Arg=Order.Items.Count}">
-                        <StackPanel Spacing="{DynamicResource GapControls}">
+                        <StackPanel Spacing="{StaticResource GapControls}">
                             <ItemsControl Name="TestsList"
                                           Classes="virtualizing"
                                           MaxHeight="480"
                                           ItemsSource="{Binding Order.Items}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="orders:OrderItemDto">
-                                        <Grid Margin="0,0,0,8" ColumnDefinitions="120,*,Auto" ColumnSpacing="{DynamicResource GapControls}">
+                                        <Grid Margin="0,0,0,8" ColumnDefinitions="120,*,Auto" ColumnSpacing="{StaticResource GapControls}">
                                             <TextBlock Classes="muted" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Text="{Binding Code}" />
                                             <TextBlock Grid.Column="1" VerticalAlignment="Center" FontWeight="Medium"
                                                        TextWrapping="Wrap" Text="{Binding Name}" />
@@ -69,9 +69,9 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
-                            <StackPanel Name="AddonRow" Spacing="{DynamicResource GapControls}" IsVisible="{Binding HasAddon}">
+                            <StackPanel Name="AddonRow" Spacing="{StaticResource GapControls}" IsVisible="{Binding HasAddon}">
                                 <ui:Divider />
-                                <Grid ColumnDefinitions="120,*,Auto" ColumnSpacing="{DynamicResource GapControls}">
+                                <Grid ColumnDefinitions="120,*,Auto" ColumnSpacing="{StaticResource GapControls}">
                                     <TextBlock Classes="muted" VerticalAlignment="Center" Text="{l:Tr NewOrder.Addon}" />
                                     <TextBlock Name="AddonText" Grid.Column="2" VerticalAlignment="Center" FontWeight="Medium"
                                                Text="{l:Money Order.Addon}" />

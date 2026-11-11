@@ -41,6 +41,7 @@ public static class DependencyInjection
         services.AddSingleton<ITokenService, JwtTokenService>();
         services.AddSingleton<IUserAuthCache, UserAuthCache>();
         services.AddSingleton<IClinicSettingsCache, ClinicSettingsCache>();
+        services.AddSingleton<ISystemSettingsCache, SystemSettingsCache>();
 
         // Same instance for IActivityLogger and the flush middleware.
         services.AddScoped<ActivityLogger>();

@@ -13,7 +13,11 @@ public interface IUserAuthCache
 {
     bool TryGet(Guid userId, out UserAuthStatus status);
 
-    void Set(Guid userId, UserAuthStatus status);
+    /// <summary>Generation to pass to <see cref="TrySet"/>; bumps when <see cref="Invalidate"/> runs.</summary>
+    int Generation(Guid userId);
+
+    /// <summary>Caches only when <paramref name="generation"/> still matches (no Invalidate since it was read).</summary>
+    bool TrySet(Guid userId, int generation, UserAuthStatus status);
 
     void Invalidate(Guid userId);
 }

@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Desktop.Components;
 using Mostawsef.Desktop.Services.Auth;
+using Mostawsef.Desktop.Services.Diagnostics;
 
 namespace Mostawsef.Desktop.Services.Api;
 
@@ -34,13 +35,15 @@ public partial class ConnectionMonitor : ObservableObject
     public const int FastOfflineChecks = 5;
 
     private readonly ApiClient _api;
+    private readonly ErrorReporter _errors;
     private readonly DispatcherTimer _timer = new();
     private CancellationTokenSource? _checkCancellation;
     private int _consecutiveOffline;
 
-    public ConnectionMonitor(ApiClient api, SessionService session)
+    public ConnectionMonitor(ApiClient api, SessionService session, ErrorReporter errors)
     {
         _api = api;
+        _errors = errors;
         _timer.Tick += (_, _) => _ = CheckNowAsync();
         api.Unreachable += (_, _) => Dispatcher.UIThread.Post(() =>
         {
@@ -133,10 +136,11 @@ public partial class ConnectionMonitor : ObservableObject
         {
             // Stopped or replaced by a newer check.
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             if (IsRunning && !cancellationToken.IsCancellationRequested)
             {
+                _errors.Report(ex, context: "Connection health check");
                 State = ConnectionState.Offline;
                 _consecutiveOffline++;
             }

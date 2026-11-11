@@ -135,7 +135,8 @@ Display-only. They take plain values (text, status) and contain no business logi
 
 1. Check this list and Avalonia's built-in controls first. Prefer styling a built-in control over building a new one.
 2. Create the class in `Components/<Category>/<Name>.cs` (namespace `Mostawsef.Desktop.Components`).
-3. Add its `ControlTheme` to `Components/<Category>/<Category>Themes.axaml`. Use only `DynamicResource` tokens.
+3. Add its `ControlTheme` to `Components/<Category>/<Category>Themes.axaml`. Use tokens only:
+   `{DynamicResource}` for `Brush*` / theme shadows, `{StaticResource}` for fixed tokens.
 4. Make sure the category's themes file is included in `Styles/Theme.axaml`.
 5. Use `{l:Tr Key}` for any built-in text and add the key to both `Resources/Strings.resx` and `Strings.ar.resx`.
 6. Add it to the component gallery and update its row in this file.

@@ -3,6 +3,7 @@ using Mostawsef.Contracts.Auth;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.Logs;
 using Mostawsef.Desktop.Services.Api;
+using Mostawsef.Desktop.Services.Diagnostics;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Ui;
 using Mostawsef.Desktop.Tests.Infrastructure;
@@ -63,7 +64,7 @@ public class LogSearchTests : UiTestBase
         app.SignInAs(Roles.Super);
 
         var toasts = Substitute.For<IToastService>();
-        var page = new ActivityLogsViewModel(app.Get<LogsApi>(), app.Get<IDialogService>(), toasts, app.Localization);
+        var page = new ActivityLogsViewModel(app.Get<LogsApi>(), app.Get<IDialogService>(), toasts, app.Localization, app.Get<ErrorReporter>());
         await page.ActivateAsync();
         return (page, toasts);
     }

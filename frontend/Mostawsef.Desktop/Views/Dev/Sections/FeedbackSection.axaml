@@ -36,7 +36,7 @@
                     <ui:Card Padding="0">
                         <ui:LoadingOverlay IsLoading="{Binding IsOverlayLoading}"
                                            Message="{l:Tr Common.Loading}"
-                                           CornerRadius="{DynamicResource RadiusLg}">
+                                           CornerRadius="{StaticResource RadiusLg}">
                             <StackPanel Margin="20" Spacing="8">
                                 <TextBlock Classes="h4" Text="Content" />
                                 <TextBlock Classes="muted" Text="Covered while loading." />

@@ -10,13 +10,13 @@
             HorizontalAlignment="Right"
             VerticalAlignment="Bottom"
             Margin="16"
-            Padding="{DynamicResource PaddingCardCompact}"
+            Padding="{StaticResource PaddingCardCompact}"
             Width="420"
             MaxHeight="320"
             Background="{DynamicResource BrushSurfaceRaised}"
             BorderBrush="{DynamicResource BrushBorder}"
             BorderThickness="1"
-            CornerRadius="{DynamicResource RadiusLg}"
+            CornerRadius="{StaticResource RadiusLg}"
             BoxShadow="{DynamicResource ShadowLg}">
         <DockPanel>
             <Grid DockPanel.Dock="Top"

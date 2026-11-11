@@ -33,6 +33,9 @@ public partial class PortalShellViewModel : ViewModelBase
     /// <summary>Set while the menu goes back to its entry because the user kept a sub-page's changes.</summary>
     private bool _restoringMenu;
 
+    /// <summary>Bumped when another menu change supersedes an in-flight dirty-leave confirm.</summary>
+    private int _leaveGeneration;
+
     /// <summary>The menu page under an open sub-page; kept so Back restores it without recreating (or reloading unless stale).</summary>
     private ViewModelBase? _menuPage;
 
@@ -169,10 +172,18 @@ public partial class PortalShellViewModel : ViewModelBase
 
     private async Task LeaveDirtySubPageAsync(FormViewModel form, int oldValue, int newValue)
     {
+        var leaveId = ++_leaveGeneration;
+        var userId = _session.CurrentUser?.Id;
+
         try
         {
             if (await form.ConfirmDiscardAsync())
             {
+                if (leaveId != _leaveGeneration || !_session.IsAuthenticated || _session.CurrentUser?.Id != userId)
+                {
+                    return;
+                }
+
                 ShowMenuPage(newValue);
                 return;
             }
@@ -180,6 +191,11 @@ public partial class PortalShellViewModel : ViewModelBase
         catch (Exception ex)
         {
             _errors.Report(ex, context: "Leaving dirty sub-page");
+        }
+
+        if (leaveId != _leaveGeneration || !_session.IsAuthenticated || _session.CurrentUser?.Id != userId)
+        {
+            return;
         }
 
         _restoringMenu = true;
@@ -229,24 +245,31 @@ public partial class PortalShellViewModel : ViewModelBase
     private void Show(ViewModelBase page)
     {
         var name = page.GetType().Name;
-        var nav = Stopwatch.StartNew();
+        var track = _perf.IsEnabled;
+        var nav = track ? Stopwatch.StartNew() : null;
         var outgoingName = CurrentPage?.GetType().Name ?? "none";
 
         (CurrentPage as ILoadablePage)?.Deactivate();
-        _perf.Record("Nav", outgoingName, nav.Elapsed, $"deactivate {_perf.MachineSnapshot()}");
+        if (track)
+        {
+            _perf.Record("Nav", outgoingName, nav!.Elapsed, $"deactivate {_perf.MachineSnapshot()}");
+        }
 
         // PageHost keeps views in the tree and toggles IsVisible (hide/show) — see View lines.
-        var setPage = Stopwatch.StartNew();
+        var setPage = track ? Stopwatch.StartNew() : null;
         CurrentPage = page;
-        _perf.Record("Nav", name, setPage.Elapsed, $"set-page {_perf.MachineSnapshot()}");
-        _perf.Record("Nav", name, nav.Elapsed, $"total {_perf.MachineSnapshot()}");
-        _perf.ProbeUiAfter(name, nav);
+        if (track)
+        {
+            _perf.Record("Nav", name, setPage!.Elapsed, $"set-page {_perf.MachineSnapshot()}");
+            _perf.Record("Nav", name, nav!.Elapsed, $"total {_perf.MachineSnapshot()}");
+            _perf.ProbeUiAfter(name, nav!);
+        }
 
         if (page is ILoadablePage loadable)
         {
             _ = ActivateTimedAsync(page, loadable);
         }
-        else
+        else if (track)
         {
             _perf.Record("Page", name, TimeSpan.Zero, "shown");
         }
@@ -265,11 +288,21 @@ public partial class PortalShellViewModel : ViewModelBase
         }
     }
 
-    /// <summary>Called when the portal is replaced (e.g. sign-out): cancels the open page's API calls.</summary>
+    /// <summary>Called when the portal is replaced (e.g. sign-out): cancels open work and drops cached menu pages.</summary>
     public void Close()
     {
         DiscardSubPage();
         (CurrentPage as ILoadablePage)?.Deactivate();
+        foreach (var page in _menuPages.Values)
+        {
+            if (!ReferenceEquals(page, CurrentPage))
+            {
+                (page as ILoadablePage)?.Deactivate();
+            }
+        }
+
+        _menuPages.Clear();
+        _menuPage = null;
     }
 
     [RelayCommand]

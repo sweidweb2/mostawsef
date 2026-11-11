@@ -34,6 +34,7 @@ public partial class App : Application
             PageHost.Perf = Services.GetRequiredService<PerformanceMonitor>();
             PageHost.Localization = Services.GetRequiredService<LocalizationService>();
             Services.GetRequiredService<ErrorReporter>().Install();
+            Services.GetRequiredService<SettingsService>().ReportLoadFaultIfAny();
             Services.GetRequiredService<ThemeService>().Initialize();
             desktop.Exit += (_, _) => Services.GetRequiredService<SettingsService>().Flush();
 

@@ -23,6 +23,15 @@ public class DialogHost : ContentControl
 
     public bool HasOpenDialogs => _layers.Count > 0;
 
+    /// <summary>Force-closes every layer (skips ConfirmDismiss). Completes pending ShowAsync tasks with null.</summary>
+    internal void CloseAll()
+    {
+        foreach (var modal in _layers.Keys.ToList())
+        {
+            modal.Close();
+        }
+    }
+
     internal void Show(Modal modal)
     {
         if (_overlayLayer is null)

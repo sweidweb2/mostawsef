@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.Orders;
 using Mostawsef.Desktop.Services.Api;
+using Mostawsef.Desktop.Services.Diagnostics;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Navigation;
 using Mostawsef.Desktop.Services.Ui;
@@ -13,8 +14,8 @@ using Mostawsef.Desktop.ViewModels.Shell;
 namespace Mostawsef.Desktop.ViewModels.Admin;
 
 /// <summary>Admin portal: orders, newest first, with search (patient name, phone or number) and paging; opens New order and Order details.</summary>
-public partial class OrdersViewModel(OrdersApi orders, NavigationService navigation, IToastService toasts, LocalizationService localization)
-    : NumberedListViewModel<OrderListItemDto>(toasts, localization)
+public partial class OrdersViewModel(OrdersApi orders, NavigationService navigation, IToastService toasts, LocalizationService localization, ErrorReporter errors)
+    : NumberedListViewModel<OrderListItemDto>(toasts, localization, errors)
 {
     /// <summary>One New order page for this portal visit; reset on each open so PageHost can reuse its view.</summary>
     private NewOrderViewModel? _newOrder;

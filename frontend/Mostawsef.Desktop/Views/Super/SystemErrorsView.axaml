@@ -12,7 +12,7 @@
             <ui:PageHeader Title="{l:Tr Nav.SystemErrors}" Subtitle="{l:Tr Logs.ErrorsSubtitle}">
                 <ui:PageHeader.Actions>
                     <Button Classes="secondary" Command="{Binding RefreshCommand}">
-                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
                             <PathIcon Data="{StaticResource IconRefresh}" />
                             <TextBlock Text="{l:Tr Common.Refresh}" />
                         </StackPanel>
@@ -100,7 +100,7 @@
                         <DataGridTemplateColumn Header="{l:Tr Common.Actions}" Width="100">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate x:DataType="logs:SystemErrorListItemDto">
-                                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}" Margin="8,0" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space1}" Margin="8,0" VerticalAlignment="Center">
                                         <ui:IconButton Classes="ghost sm"
                                                        Icon="{StaticResource IconEye}"
                                                        ToolTip.Tip="{l:Tr Common.View}"

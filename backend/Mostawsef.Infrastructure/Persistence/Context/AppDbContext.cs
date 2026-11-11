@@ -23,7 +23,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
 
-    /// <summary>A save that hits a stale Version throws AppException (409 concurrency_conflict).</summary>
+    /// <summary>
+    /// Stale Version → 409 concurrency_conflict. Unique/FK races (check-then-act under concurrent requests) → 409
+    /// instead of a generic 500.
+    /// </summary>
     public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
         try
@@ -34,6 +37,52 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             throw AppException.Conflict(ErrorCodes.ConcurrencyConflict);
         }
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+        {
+            throw AppException.Conflict(ErrorCodes.Taken);
+        }
+        catch (DbUpdateException ex) when (IsForeignKeyViolation(ex))
+        {
+            throw AppException.Conflict(ErrorCodes.InUse);
+        }
+    }
+
+    private static bool IsUniqueViolation(DbUpdateException ex) =>
+        HasSqlState(ex, "23505")
+        || ContainsMessage(ex, "UNIQUE constraint failed")
+        || ContainsMessage(ex, "unique constraint");
+
+    private static bool IsForeignKeyViolation(DbUpdateException ex) =>
+        HasSqlState(ex, "23503")
+        || ContainsMessage(ex, "FOREIGN KEY constraint failed")
+        || ContainsMessage(ex, "foreign key constraint");
+
+    private static bool HasSqlState(Exception ex, string sqlState)
+    {
+        for (var e = ex; e is not null; e = e.InnerException!)
+        {
+            var property = e.GetType().GetProperty("SqlState");
+            if (property?.GetValue(e) is string state
+                && string.Equals(state, sqlState, StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool ContainsMessage(Exception ex, string fragment)
+    {
+        for (var e = ex; e is not null; e = e.InnerException!)
+        {
+            if (e.Message.Contains(fragment, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

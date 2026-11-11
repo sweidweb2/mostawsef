@@ -41,6 +41,18 @@ public sealed class ClinicSettingsCache(IServiceScopeFactory scopes) : IClinicSe
                 }
 
                 _cached = dto;
+
+                // Invalidate can still win between the check and the assign; drop stale and reload.
+                if (generation != Volatile.Read(ref _generation))
+                {
+                    if (ReferenceEquals(_cached, dto))
+                    {
+                        _cached = null;
+                    }
+
+                    continue;
+                }
+
                 return dto;
             }
         }

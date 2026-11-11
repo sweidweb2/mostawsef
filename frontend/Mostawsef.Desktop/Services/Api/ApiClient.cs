@@ -50,7 +50,8 @@ public class ApiClient(Lazy<HttpClient> http, PerformanceMonitor perf)
         Func<HttpResponseMessage, CancellationToken, Task<ApiResult<T>>> read,
         CancellationToken cancellationToken)
     {
-        var sw = Stopwatch.StartNew();
+        var track = perf.IsEnabled;
+        var sw = track ? Stopwatch.StartNew() : null;
         HttpResponseMessage response;
         try
         {
@@ -58,16 +59,23 @@ public class ApiClient(Lazy<HttpClient> http, PerformanceMonitor perf)
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !cancellationToken.IsCancellationRequested)
         {
-            sw.Stop();
-            RecordApi(method, path, sw.Elapsed, "unreachable");
+            if (sw is not null)
+            {
+                sw.Stop();
+                RecordApi(method, path, sw.Elapsed, "unreachable");
+            }
+
             Unreachable?.Invoke(this, EventArgs.Empty);
             return ApiResult<T>.Fail(ApiError.Unreachable);
         }
 
         using (response)
         {
-            sw.Stop();
-            RecordApi(method, path, sw.Elapsed, response);
+            if (sw is not null)
+            {
+                sw.Stop();
+                RecordApi(method, path, sw.Elapsed, response);
+            }
 
             if (response.IsSuccessStatusCode)
             {

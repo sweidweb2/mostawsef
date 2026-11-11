@@ -42,7 +42,8 @@ badges, actions and `RowNumber`.
    Expose `StyledProperty`s; use `DirectProperty` for read-only/computed values and internal commands.
 2. `ControlTheme` keyed `{x:Type ui:Name}` in `Components/<Category>/<Category>Themes.axaml` (included from `Styles/Theme.axaml`).
    A subclass of a templated control needs its own ControlTheme or `StyleKeyOverride`.
-3. Use only tokens, `{l:Tr ...}` for built-in text, `TemplateBinding` in templates. Mirror-safe (RTL) layout.
+3. Use only tokens (`DynamicResource` for `Brush*`/theme shadows, `StaticResource` for the rest),
+   `{l:Tr ...}` for built-in text, `TemplateBinding` in templates. Mirror-safe (RTL) layout.
 4. Visuals created in C# have no TemplatedParent: style them by class in `Components/ComponentStyles.axaml`.
 5. Global styles beat ControlTheme styles: for state that must override a global button style, toggle a class on the button and style that class globally.
 6. Clinic components stay display-only (plain text/enum properties), no business logic or Contracts DTOs.

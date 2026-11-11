@@ -118,6 +118,7 @@ public class OrdersPageTests : UiTestBase
 
         Assert.Same(orders, shell.CurrentPage);
         Assert.Null(shell.SubPage);
+        Assert.Null(details.Order);
         Assert.Equal(listReads, ListReads(app));
     }
 

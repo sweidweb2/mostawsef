@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Mostawsef.Contracts.Settings;
 using Mostawsef.Desktop.Services.Api;
 using Mostawsef.Desktop.Services.Auth;
+using Mostawsef.Desktop.Services.Diagnostics;
 
 namespace Mostawsef.Desktop.Services.Local;
 
@@ -16,17 +17,26 @@ namespace Mostawsef.Desktop.Services.Local;
 public partial class ClinicContext : ObservableObject
 {
     private readonly ClinicSettingsApi _api;
+    private readonly SessionService _session;
+    private readonly ErrorReporter _errors;
     private readonly object _gate = new();
     private Task<bool>? _inFlight;
+    private int _epoch;
 
-    public ClinicContext(ClinicSettingsApi api, SessionService session)
+    public ClinicContext(ClinicSettingsApi api, SessionService session, ErrorReporter errors)
     {
         _api = api;
+        _session = session;
+        _errors = errors;
         session.Changed += (_, _) =>
         {
             if (!session.IsAuthenticated)
             {
-                Settings = null;
+                lock (_gate)
+                {
+                    _epoch++;
+                    Settings = null;
+                }
             }
         };
     }
@@ -39,10 +49,12 @@ public partial class ClinicContext : ObservableObject
     /// <summary>
     /// Reads the settings from the API. Skips the GET when a value is already cached unless <paramref name="force"/>
     /// is true (Refresh). Concurrent non-force callers await the same request. Returns false (keeping the last values)
-    /// when the call fails.
+    /// when the call fails. Caller cancellation is ignored for the shared flight so one page leaving cannot starve others.
     /// </summary>
     public Task<bool> LoadAsync(bool force = false, CancellationToken cancellationToken = default)
     {
+        _ = cancellationToken;
+
         if (!force && Settings is not null)
         {
             return Task.FromResult(true);
@@ -60,11 +72,14 @@ public partial class ClinicContext : ObservableObject
                 return existing;
             }
 
-            return _inFlight = LoadCoreAsync(force, cancellationToken);
+            var epoch = _epoch;
+            Task<bool>? self = null;
+            self = LoadCoreAsync(force, epoch, () => self!);
+            return _inFlight = self;
         }
     }
 
-    private async Task<bool> LoadCoreAsync(bool force, CancellationToken cancellationToken)
+    private async Task<bool> LoadCoreAsync(bool force, int epoch, Func<Task<bool>> self)
     {
         try
         {
@@ -73,30 +88,47 @@ public partial class ClinicContext : ObservableObject
                 return true;
             }
 
-            var result = await _api.GetAsync(cancellationToken);
-            if (result.IsSuccess)
+            var result = await _api.GetAsync(CancellationToken.None);
+            if (!result.IsSuccess)
             {
+                return false;
+            }
+
+            lock (_gate)
+            {
+                if (epoch != _epoch || !_session.IsAuthenticated)
+                {
+                    return false;
+                }
+
                 Settings = result.Value;
             }
 
-            return result.IsSuccess;
+            return true;
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (Exception ex)
         {
-            return false;
-        }
-        catch (Exception)
-        {
+            _errors.Report(ex, context: "Loading clinic settings");
             return false;
         }
         finally
         {
             lock (_gate)
             {
-                _inFlight = null;
+                if (ReferenceEquals(_inFlight, self()))
+                {
+                    _inFlight = null;
+                }
             }
         }
     }
 
-    public void Update(ClinicSettingsDto settings) => Settings = settings;
+    public void Update(ClinicSettingsDto settings)
+    {
+        lock (_gate)
+        {
+            _epoch++;
+            Settings = settings;
+        }
+    }
 }

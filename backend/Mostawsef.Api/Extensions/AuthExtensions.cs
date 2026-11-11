@@ -94,6 +94,7 @@ public static class AuthExtensions
         var cache = context.HttpContext.RequestServices.GetRequiredService<IUserAuthCache>();
         if (!cache.TryGet(userId, out var status))
         {
+            var generation = cache.Generation(userId);
             var users = context.HttpContext.RequestServices.GetRequiredService<IUserRepository>();
             var loaded = await users.GetAuthStatusAsync(userId, context.HttpContext.RequestAborted);
             if (loaded is null)
@@ -103,7 +104,7 @@ public static class AuthExtensions
             }
 
             status = loaded.Value;
-            cache.Set(userId, status);
+            cache.TrySet(userId, generation, status);
         }
 
         var tokenVersion = int.TryParse(principal?.FindFirst(JwtClaims.TokenVersion)?.Value, out var tv) ? tv : 0;

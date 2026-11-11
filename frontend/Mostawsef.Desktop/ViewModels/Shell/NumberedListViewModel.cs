@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Desktop.Services.Api;
+using Mostawsef.Desktop.Services.Diagnostics;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Ui;
 
@@ -27,15 +28,18 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
     private readonly PageLifetime _pageLifetime = new();
     private CancellationTokenSource? _loadCancellation;
 
-    protected NumberedListViewModel(IToastService toasts, LocalizationService localization)
+    protected NumberedListViewModel(IToastService toasts, LocalizationService localization, ErrorReporter errors)
     {
         Toasts = toasts;
         Localization = localization;
+        Errors = errors;
     }
 
     protected IToastService Toasts { get; }
 
     protected LocalizationService Localization { get; }
+
+    protected ErrorReporter Errors { get; }
 
     /// <summary>Bound once for the page lifetime; reloads replace contents in place.</summary>
     public ListPageItems<TItem> Items { get; } = new();
@@ -263,8 +267,9 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
         {
             // A newer load replaced this one and owns the page state now, or the user left the page.
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            Errors.Report(ex, context: $"Loading {GetType().Name}");
             Items.ReplaceAll([]);
             TotalCount = 0;
             LoadError = ApiError.Server;

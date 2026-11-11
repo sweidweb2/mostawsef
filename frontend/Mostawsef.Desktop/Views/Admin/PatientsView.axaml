@@ -12,21 +12,21 @@
         <StackPanel Classes="page">
             <ui:PageHeader Title="{l:Tr Nav.Patients}" Subtitle="{l:Tr Patients.Subtitle}">
                 <ui:PageHeader.Actions>
-                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
                         <Button Classes="secondary" Command="{Binding RefreshCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
                                 <PathIcon Data="{StaticResource IconRefresh}" />
                                 <TextBlock Text="{l:Tr Common.Refresh}" />
                             </StackPanel>
                         </Button>
                         <Button Name="ExportButton" Classes="secondary" Command="{Binding ExportCommand}" ToolTip.Tip="{l:Tr Patients.ExportHint}">
-                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
                                 <PathIcon Data="{StaticResource IconDownload}" />
                                 <TextBlock Text="{l:Tr Common.Export}" />
                             </StackPanel>
                         </Button>
                         <Button Name="AddPatientButton" Classes="primary" Command="{Binding AddCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
                                 <PathIcon Data="{StaticResource IconPlus}" />
                                 <TextBlock Text="{l:Tr Patients.Add}" />
                             </StackPanel>
@@ -45,7 +45,7 @@
                           FirstRowNumber="{Binding FirstRowNumber}">
                 <ui:DataTable.Toolbar>
                     <!-- Equal side columns keep the search box centered in the row. -->
-                    <Grid ColumnDefinitions="*,2*,*" ColumnSpacing="{DynamicResource GapControls}">
+                    <Grid ColumnDefinitions="*,2*,*" ColumnSpacing="{StaticResource GapControls}">
                         <ui:SearchBox Name="SearchBox"
                                       Grid.Column="1"
                                       Text="{Binding Search}"
@@ -55,9 +55,9 @@
                         <StackPanel Grid.Column="2"
                                     Orientation="Horizontal"
                                     HorizontalAlignment="Right"
-                                    Spacing="{DynamicResource GapControls}">
+                                    Spacing="{StaticResource GapControls}">
                             <TextBlock Classes="caption muted" Text="{l:Tr Patients.Records, Arg=TotalCount}" VerticalAlignment="Center" />
-                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}">
+                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space1}">
                                 <ui:IconButton Name="TableViewButton"
                                                Classes="ghost sm"
                                                Classes.selected="{Binding !IsGridView}"
@@ -88,10 +88,10 @@
                             <DataGridTemplateColumn Header="{l:Tr Patients.Col.FullName}" Width="*">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate x:DataType="patients:PatientDto">
-                                        <Grid Margin="12,0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource Space2}"
+                                        <Grid Margin="12,0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{StaticResource Space2}"
                                               HorizontalAlignment="Left" VerticalAlignment="Center">
                                             <ui:Avatar DisplayName="{Binding FullName}" MaxInitials="1" IsColorful="True"
-                                                       Size="{DynamicResource AvatarSizeSm}" />
+                                                       Size="{StaticResource AvatarSizeSm}" />
                                             <TextBlock Grid.Column="1" VerticalAlignment="Center" FontWeight="Medium"
                                                        TextTrimming="CharacterEllipsis" Text="{Binding FullName}" ToolTip.Tip="{Binding FullName}" />
                                             <ui:CopyButton Grid.Column="2" Classes="sm" Text="{Binding FullName}" />
@@ -102,7 +102,7 @@
                             <DataGridTemplateColumn Header="{l:Tr Patients.Col.Phone}" Width="170">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate x:DataType="patients:PatientDto">
-                                        <Grid Margin="12,0" ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource Space1}"
+                                        <Grid Margin="12,0" ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource Space1}"
                                               HorizontalAlignment="Left" VerticalAlignment="Center">
                                             <TextBlock VerticalAlignment="Center" FlowDirection="LeftToRight"
                                                        TextTrimming="CharacterEllipsis" Text="{Binding Phone}" />
@@ -142,7 +142,7 @@
                             <DataGridTemplateColumn Header="{l:Tr Common.Actions}" Width="100">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate x:DataType="patients:PatientDto">
-                                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}" Margin="8,0" VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space1}" Margin="8,0" VerticalAlignment="Center">
                                             <ui:IconButton Classes="ghost sm"
                                                            Icon="{StaticResource IconEdit}"
                                                            ToolTip.Tip="{l:Tr Common.Edit}"
@@ -161,7 +161,7 @@
                     </DataGrid>
 
                     <ItemsControl Classes="virtualizing"
-                                  Margin="{DynamicResource PaddingCardCompact}"
+                                  Margin="{StaticResource PaddingCardCompact}"
                                   IsVisible="{Binding IsGridView}"
                                   ItemsSource="{Binding Items}">
                         <ItemsControl.ItemTemplate>
@@ -170,7 +170,7 @@
                                          Margin="0,0,0,8"
                                          Title="{Binding FullName}">
                                     <ui:Card.HeaderActions>
-                                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}" VerticalAlignment="Top">
+                                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space1}" VerticalAlignment="Top">
                                             <ui:IconButton Classes="ghost sm"
                                                            Icon="{StaticResource IconEdit}"
                                                            ToolTip.Tip="{l:Tr Common.Edit}"
@@ -184,13 +184,13 @@
                                         </StackPanel>
                                     </ui:Card.HeaderActions>
                                     <DockPanel>
-                                        <WrapPanel DockPanel.Dock="Bottom" ItemSpacing="{DynamicResource Space1}" LineSpacing="{DynamicResource Space1}">
+                                        <WrapPanel DockPanel.Dock="Bottom" ItemSpacing="{StaticResource Space1}" LineSpacing="{StaticResource Space1}">
                                             <ui:Badge Text="{l:TrKey Gender, Prefix=Gender.}" />
                                             <ui:Badge Kind="Info" Text="{l:Tr Patients.Insured}" IsVisible="{Binding IsInsured}" />
                                         </WrapPanel>
-                                        <StackPanel Spacing="{DynamicResource Space2}" VerticalAlignment="Center">
-                                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space2}">
-                                                <PathIcon Foreground="{DynamicResource BrushTextMuted}" Data="{StaticResource IconPhone}" Width="{DynamicResource IconSizeSm}" Height="{DynamicResource IconSizeSm}" />
+                                        <StackPanel Spacing="{StaticResource Space2}" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space2}">
+                                                <PathIcon Foreground="{DynamicResource BrushTextMuted}" Data="{StaticResource IconPhone}" Width="{StaticResource IconSizeSm}" Height="{StaticResource IconSizeSm}" />
                                                 <TextBlock Text="{Binding Phone}" FlowDirection="LeftToRight" TextTrimming="CharacterEllipsis" />
                                             </StackPanel>
                                             <TextBlock Classes="caption muted"

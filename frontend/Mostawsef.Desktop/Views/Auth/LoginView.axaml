@@ -8,24 +8,24 @@
              Background="{DynamicResource BrushBackground}">
 
     <Grid RowDefinitions="Auto,*">
-        <ui:PreferencesBar HorizontalAlignment="Right" Margin="{DynamicResource PaddingPage}" />
+        <ui:PreferencesBar HorizontalAlignment="Right" Margin="{StaticResource PaddingPage}" />
 
         <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
             <ui:Card Width="420"
                      MaxWidth="420"
-                     Margin="{DynamicResource PaddingPageCompact}"
+                     Margin="{StaticResource PaddingPageCompact}"
                      Padding="32"
                      HorizontalAlignment="Center"
                      VerticalAlignment="Center">
-                <StackPanel Spacing="{DynamicResource Space6}">
+                <StackPanel Spacing="{StaticResource Space6}">
                     <!-- Brand -->
-                    <StackPanel Spacing="{DynamicResource Space3}" HorizontalAlignment="Center">
+                    <StackPanel Spacing="{StaticResource Space3}" HorizontalAlignment="Center">
                         <ui:BrandMark Classes="lg" HorizontalAlignment="Center" />
                         <TextBlock Classes="muted" Text="{l:Tr Login.Subtitle}" HorizontalAlignment="Center" />
                     </StackPanel>
 
                     <!-- Form -->
-                    <StackPanel Spacing="{DynamicResource GapGrid}">
+                    <StackPanel Spacing="{StaticResource GapGrid}">
                         <ui:FormField Label="{l:Tr Login.Username}" IsRequired="True">
                             <TextBox Name="UsernameBox"
                                      Text="{Binding Username}"
@@ -39,14 +39,14 @@
 
                         <Border Background="{DynamicResource BrushDangerSubtle}"
                                 BorderBrush="{DynamicResource BrushDangerBorder}"
-                                BorderThickness="{DynamicResource BorderWidth}"
-                                CornerRadius="{DynamicResource RadiusMd}"
-                                Padding="{DynamicResource PaddingControl}"
+                                BorderThickness="{StaticResource BorderWidth}"
+                                CornerRadius="{StaticResource RadiusMd}"
+                                Padding="{StaticResource PaddingControl}"
                                 IsVisible="{Binding HasError}">
-                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource GapControls}">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{StaticResource GapControls}">
                                 <PathIcon Data="{StaticResource IconError}"
-                                          Width="{DynamicResource IconSizeSm}"
-                                          Height="{DynamicResource IconSizeSm}"
+                                          Width="{StaticResource IconSizeSm}"
+                                          Height="{StaticResource IconSizeSm}"
                                           Margin="0,3,0,0"
                                           VerticalAlignment="Top"
                                           Foreground="{DynamicResource BrushDanger}" />

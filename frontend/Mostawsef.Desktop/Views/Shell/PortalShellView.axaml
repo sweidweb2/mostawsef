@@ -36,7 +36,7 @@
         <ui:AppShell.TopBar>
             <ui:TopBar Title="{l:TrKey PortalTitleKey}">
                 <ui:TopBar.Actions>
-                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
                         <ui:PreferencesBar />
                         <ui:Divider Orientation="Vertical" Height="24" />
                         <Button Name="UserMenuButton" Classes="ghost">
@@ -54,8 +54,8 @@
                                     </MenuItem>
                                 </MenuFlyout>
                             </Button.Flyout>
-                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
-                                <ui:Avatar DisplayName="{Binding DisplayName}" Size="{DynamicResource AvatarSizeSm}" />
+                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
+                                <ui:Avatar DisplayName="{Binding DisplayName}" Size="{StaticResource AvatarSizeSm}" />
                                 <StackPanel VerticalAlignment="Center" Classes="hide-compact">
                                     <TextBlock Classes="strong" Text="{Binding DisplayName}" />
                                     <TextBlock Classes="caption muted" Text="{l:TrKey RoleKey}" />
@@ -70,7 +70,7 @@
         <DockPanel>
             <ui:Alert Name="ConnectionBanner"
                       DockPanel.Dock="Top"
-                      Margin="{DynamicResource PaddingPageCompact}"
+                      Margin="{StaticResource PaddingPageCompact}"
                       Kind="{Binding Connection.AlertKind}"
                       Text="{l:TrKey Connection.MessageKey}" />
             <ui:PageHost Name="PageHost" Page="{Binding CurrentPage}" />

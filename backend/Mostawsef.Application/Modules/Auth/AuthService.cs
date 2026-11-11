@@ -26,13 +26,14 @@ public interface IAuthService
 
 public class AuthService(
     IUserRepository users,
-    ISystemSettingsRepository systemSettings,
+    ISystemSettingsCache systemSettings,
     IPasswordHasher passwordHasher,
     ITokenService tokens,
     IUserAuthCache authCache,
     IActivityLogger activity,
     TimeProvider time) : IAuthService
 {
+    private static readonly object DummyHashGate = new();
     private static string? _dummyHash;
 
     public async Task<LoginResponse?> LoginAsync(LoginRequest request, CancellationToken cancellationToken)
@@ -42,15 +43,36 @@ public class AuthService(
         if (user is null || !user.IsActive)
         {
             // Same hashing cost as a real attempt, so response time does not reveal which usernames exist.
-            passwordHasher.Verify(_dummyHash ??= passwordHasher.Hash(Guid.NewGuid().ToString()), request.Password);
+            passwordHasher.Verify(DummyHash(passwordHasher), request.Password);
             await LogFailedSignInAsync(username, cancellationToken);
             return null;
         }
 
         // Overlap the settings read with PBKDF2 for non-Super users (Super skips maintenance).
-        var settingsTask = user.Role == UserRole.Super ? null : systemSettings.GetSnapshotAsync(cancellationToken);
+        var settingsTask = user.Role == UserRole.Super ? null : systemSettings.GetAsync(cancellationToken);
 
-        var check = passwordHasher.Verify(user.PasswordHash, request.Password);
+        PasswordCheck check;
+        try
+        {
+            check = passwordHasher.Verify(user.PasswordHash, request.Password);
+        }
+        catch
+        {
+            if (settingsTask is not null)
+            {
+                try
+                {
+                    await settingsTask;
+                }
+                catch
+                {
+                    // Observe so a racing settings fault is not abandoned when Verify fails first.
+                }
+            }
+
+            throw;
+        }
+
         if (check == PasswordCheck.Failed)
         {
             if (settingsTask is not null)
@@ -139,6 +161,14 @@ public class AuthService(
                 Username = attemptedUsername,
             },
             cancellationToken);
+
+    private static string DummyHash(IPasswordHasher passwordHasher)
+    {
+        lock (DummyHashGate)
+        {
+            return _dummyHash ??= passwordHasher.Hash(Guid.NewGuid().ToString());
+        }
+    }
 
     private static UserDto ToDto(User user) =>
         new(user.Id, user.Username, user.Role.ToString(), string.IsNullOrEmpty(user.FullName) ? null : user.FullName);

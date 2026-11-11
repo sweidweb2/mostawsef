@@ -12,9 +12,9 @@
         <StackPanel Classes="page">
             <ui:PageHeader Title="{l:Tr Nav.Orders}" Subtitle="{l:Tr Orders.Subtitle}">
                 <ui:PageHeader.Actions>
-                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
                         <Button Classes="secondary" Command="{Binding RefreshCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
                                 <PathIcon Data="{StaticResource IconRefresh}" />
                                 <TextBlock Text="{l:Tr Common.Refresh}" />
                             </StackPanel>
@@ -22,7 +22,7 @@
                         <Button Name="NewOrderButton" Classes="primary" Command="{Binding NewOrderCommand}">
                             <Panel>
                                 <StackPanel Orientation="Horizontal"
-                                            Spacing="{DynamicResource GapControls}"
+                                            Spacing="{StaticResource GapControls}"
                                             IsVisible="{Binding !IsOpeningNewOrder}">
                                     <PathIcon Data="{StaticResource IconPlus}" />
                                     <TextBlock Text="{l:Tr Orders.New}" />
@@ -47,7 +47,7 @@
                           FirstRowNumber="{Binding FirstRowNumber}">
                 <ui:DataTable.Toolbar>
                     <!-- Equal side columns keep the search box centered in the row. -->
-                    <Grid ColumnDefinitions="*,2*,*" ColumnSpacing="{DynamicResource GapControls}">
+                    <Grid ColumnDefinitions="*,2*,*" ColumnSpacing="{StaticResource GapControls}">
                         <ui:SearchBox Name="SearchBox"
                                       Grid.Column="1"
                                       Text="{Binding Search}"

@@ -11,7 +11,7 @@
                 <ui:PageHeader.Actions>
                     <Button Name="EditSettingsButton" Classes="primary" Command="{Binding EditCommand}"
                             IsEnabled="{Binding Clinic.Settings, Converter={x:Static ObjectConverters.IsNotNull}}">
-                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
                             <PathIcon Data="{StaticResource IconEdit}" />
                             <TextBlock Text="{l:Tr Common.Edit}" />
                         </StackPanel>

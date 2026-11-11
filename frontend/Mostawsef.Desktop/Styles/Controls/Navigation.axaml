@@ -4,7 +4,7 @@
 
     <!-- Tabs -->
     <Style Selector="TabItem">
-        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
         <Setter Property="FontWeight" Value="Medium" />
         <Setter Property="MinHeight" Value="40" />
         <Setter Property="Padding" Value="12,0" />
@@ -19,13 +19,13 @@
 
     <!-- Menus -->
     <Style Selector="ContextMenu, MenuFlyoutPresenter">
-        <Setter Property="CornerRadius" Value="{DynamicResource RadiusMd}" />
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusMd}" />
         <Setter Property="Background" Value="{DynamicResource BrushSurfaceRaised}" />
         <Setter Property="BorderBrush" Value="{DynamicResource BrushBorder}" />
         <Setter Property="Padding" Value="4" />
     </Style>
     <Style Selector="MenuItem">
-        <Setter Property="CornerRadius" Value="{DynamicResource RadiusSm}" />
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusSm}" />
         <Setter Property="MinHeight" Value="32" />
     </Style>
     <Style Selector="MenuItem.danger">
@@ -37,15 +37,15 @@
         <Setter Property="Background" Value="{DynamicResource BrushSurfaceRaised}" />
         <Setter Property="BorderBrush" Value="{DynamicResource BrushBorder}" />
         <Setter Property="BorderThickness" Value="1" />
-        <Setter Property="CornerRadius" Value="{DynamicResource RadiusLg}" />
-        <Setter Property="Padding" Value="{DynamicResource PaddingCard}" />
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusLg}" />
+        <Setter Property="Padding" Value="{StaticResource PaddingCard}" />
         <Setter Property="MaxWidth" Value="360" />
     </Style>
 
     <!-- Tooltip -->
     <Style Selector="ToolTip">
-        <Setter Property="CornerRadius" Value="{DynamicResource RadiusXs}" />
-        <Setter Property="FontSize" Value="{DynamicResource FontSizeCaption}" />
+        <Setter Property="CornerRadius" Value="{StaticResource RadiusXs}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeCaption}" />
     </Style>
 
     <!-- Split view -->

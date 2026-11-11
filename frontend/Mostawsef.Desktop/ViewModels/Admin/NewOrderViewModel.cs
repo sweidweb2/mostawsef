@@ -35,6 +35,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
     private readonly OrdersApi _orders;
     private readonly PatientsApi _patients;
     private readonly LabTestsApi _tests;
+    private readonly LabTestCatalogVersion _catalogVersion;
     private readonly NavigationService _navigation;
     private readonly IToastService _toasts;
     private readonly ErrorReporter _errors;
@@ -44,6 +45,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
     private CancellationTokenSource? _catalogLoadCancellation;
     private CancellationTokenSource? _patientLoadCancellation;
     private bool _catalogLoaded;
+    private int _loadedCatalogVersion;
     private string? _loadedCatalogSearch;
     private string? _loadedPatientSearch;
     private OrderDetailsDto? _created;
@@ -65,6 +67,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
         OrdersApi orders,
         PatientsApi patients,
         LabTestsApi tests,
+        LabTestCatalogVersion catalogVersion,
         NavigationService navigation,
         IDialogService dialogs,
         IToastService toasts,
@@ -75,6 +78,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
         _orders = orders;
         _patients = patients;
         _tests = tests;
+        _catalogVersion = catalogVersion;
         _navigation = navigation;
         _toasts = toasts;
         _errors = errors;
@@ -284,6 +288,10 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
         CancelInFlightWork();
         _pageLifetime.Cancel();
         IsPreparing = false;
+        Catalog = [];
+        _catalogLoaded = false;
+        _loadedCatalogSearch = null;
+        _created = null;
     }
 
     /// <summary>Cancels work, clears form state, and shows the preparing overlay for the next paint.</summary>
@@ -331,7 +339,6 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
     {
         CancelLifetime();
         _catalogSearchDelay?.Cancel();
-        _catalogSearchDelay?.Dispose();
         _catalogSearchDelay = null;
         _catalogLoadCancellation?.Cancel();
         _patientLoadCancellation?.Cancel();
@@ -687,7 +694,6 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
         }
 
         _catalogSearchDelay?.Cancel();
-        _catalogSearchDelay?.Dispose();
         var delay = new CancellationTokenSource();
         _catalogSearchDelay = delay;
         _ = DebouncedCatalogSearchAsync(delay);
@@ -699,7 +705,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
         {
             await Task.Delay(CatalogSearchDelay, delay.Token);
         }
-        catch (OperationCanceledException) when (delay.Token.IsCancellationRequested)
+        catch (OperationCanceledException)
         {
             return;
         }
@@ -717,7 +723,9 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
     }
 
     private Task EnsureCatalogAsync() =>
-        _catalogLoaded && _loadedCatalogSearch == CatalogSearch
+        _catalogLoaded
+        && _loadedCatalogSearch == CatalogSearch
+        && _loadedCatalogVersion == _catalogVersion.Current
             ? Task.CompletedTask
             : LoadCatalogAsync();
 
@@ -747,13 +755,15 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
             Catalog = BuildCatalog(result.Value!.Items);
             CatalogLoadError = null;
             _catalogLoaded = true;
+            _loadedCatalogVersion = _catalogVersion.Current;
             _loadedCatalogSearch = search;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            _errors.Report(ex, context: "Loading lab test catalog");
             CatalogLoadError = ApiError.Server;
         }
         finally

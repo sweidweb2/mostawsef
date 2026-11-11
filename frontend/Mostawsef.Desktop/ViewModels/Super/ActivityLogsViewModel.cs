@@ -6,6 +6,7 @@ using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.Logs;
 using Mostawsef.Desktop.Components;
 using Mostawsef.Desktop.Services.Api;
+using Mostawsef.Desktop.Services.Diagnostics;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Ui;
 using Mostawsef.Desktop.ViewModels.Shell;
@@ -13,8 +14,8 @@ using Mostawsef.Desktop.ViewModels.Shell;
 namespace Mostawsef.Desktop.ViewModels.Super;
 
 /// <summary>Super portal: activity log with stats, paging, search and details modal. Access via AppRoutes.</summary>
-public partial class ActivityLogsViewModel(LogsApi logs, IDialogService dialogs, IToastService toasts, LocalizationService localization)
-    : PagedListViewModel<ActivityLogListItemDto>(toasts, localization)
+public partial class ActivityLogsViewModel(LogsApi logs, IDialogService dialogs, IToastService toasts, LocalizationService localization, ErrorReporter errors)
+    : PagedListViewModel<ActivityLogListItemDto>(toasts, localization, errors)
 {
     [ObservableProperty]
     public partial ActivityLogStatsDto? Stats { get; private set; }

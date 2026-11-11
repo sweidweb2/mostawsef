@@ -7,9 +7,10 @@ alwaysApply: false
 # Desktop UI Rules (Avalonia 12)
 
 ## Styling: tokens only
-- Never hard-code colors, font sizes, spacing, radii, sizes, opacity or durations. Use tokens from `Styles/Tokens/`
-  via `{DynamicResource ...}` (e.g. `BrushPrimary`, `BrushSurface`, `BrushTextMuted`, `FontSizeH3`, `Space4`,
-  `RadiusLg`, `ShadowSm`, `ControlHeight`, `OpacityDisabled`). Full reference: `Docs/ui-foundation.md`.
+- Never hard-code colors, font sizes, spacing, radii, sizes, opacity or durations. Use tokens from `Styles/Tokens/`.
+  Theme-bound keys (`Brush*`, `ShadowXs`–`ShadowXl`) use `{DynamicResource ...}`; fixed tokens (`Space4`,
+  `RadiusLg`, `FontSizeH3`, `ControlHeight`, `OpacityDisabled`, icons, …) use `{StaticResource ...}`.
+  Full reference: `Docs/ui-foundation.md`.
 - Brand 60-30-10: 60% `#FFFFFF`/`#EAF3FB` surfaces and background, 30% `#B7D6F0`/`#4A90C8` secondary,
   10% `#1F5A8A` primary accent. Never put normal-size text on `#4A90C8` (contrast too low).
 - New colors go into `Styles/Tokens/Colors.axaml` in **both** the `Light` and `Dark` dictionaries; use semantic keys, not palette primitives.

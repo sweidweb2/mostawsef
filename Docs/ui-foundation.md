@@ -23,7 +23,9 @@ Component list and status: [shared-components.md](shared-components.md).
 | `Styles/Responsive.axaml` | **Responsiveness engine**: container-query utility classes |
 | `Styles/Controls/*.axaml` | Styles for built-in controls (text, buttons, inputs, tabs, menus, DataGrid) |
 
-Golden rule: components and views use **tokens only** (`{DynamicResource ...}`), never raw values.
+Golden rule: components and views use **tokens only**, never raw values.
+Theme-bound tokens (`Brush*`, `ShadowXs`–`ShadowXl`) use `{DynamicResource ...}`; everything else
+(`Space*`, `Gap*`, `Radius*`, `FontSize*`, sizes, paddings, icons, …) uses `{StaticResource ...}`.
 
 ---
 

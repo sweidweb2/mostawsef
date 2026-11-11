@@ -8,7 +8,7 @@
         <Setter Property="GridLinesVisibility" Value="Horizontal" />
         <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource BrushDivider}" />
         <Setter Property="HeadersVisibility" Value="Column" />
-        <Setter Property="RowHeight" Value="{DynamicResource TableRowHeight}" />
+        <Setter Property="RowHeight" Value="{StaticResource TableRowHeight}" />
         <Setter Property="CanUserResizeColumns" Value="True" />
         <Setter Property="CanUserSortColumns" Value="True" />
         <Setter Property="SelectionMode" Value="Single" />
@@ -18,13 +18,13 @@
         <Setter Property="Background" Value="{DynamicResource BrushSurfaceAlt}" />
         <Setter Property="Foreground" Value="{DynamicResource BrushTextMuted}" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="FontSize" Value="{DynamicResource FontSizeCaption}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeCaption}" />
         <Setter Property="Padding" Value="12,0" />
-        <Setter Property="MinHeight" Value="{DynamicResource TableHeaderHeight}" />
+        <Setter Property="MinHeight" Value="{StaticResource TableHeaderHeight}" />
     </Style>
 
     <Style Selector="DataGridCell">
-        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
         <Setter Property="Padding" Value="12,0" />
     </Style>
 
@@ -33,7 +33,7 @@
         The bar is always there but transparent, so hovering never shifts the cells.
     -->
     <Style Selector="DataGridRow">
-        <Setter Property="BorderThickness" Value="{DynamicResource TableRowAccent}" />
+        <Setter Property="BorderThickness" Value="{StaticResource TableRowAccent}" />
         <Setter Property="BorderBrush" Value="Transparent" />
         <Setter Property="Transitions">
             <Transitions>

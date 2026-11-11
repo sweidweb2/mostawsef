@@ -109,7 +109,7 @@
                             <Border Margin="0,0,8,8"
                                     Padding="12,8"
                                     Background="{DynamicResource BrushSurfaceAlt}"
-                                    CornerRadius="{DynamicResource RadiusMd}"
+                                    CornerRadius="{StaticResource RadiusMd}"
                                     ToolTip.Tip="Tooltip text">
                                 <TextBlock Text="Right-click / hover me" />
                                 <Border.ContextMenu>

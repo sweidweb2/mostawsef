@@ -34,7 +34,7 @@ public partial class PatientsViewModel : NumberedListViewModel<PatientDto>
         LocalizationService localization,
         PrintService print,
         ErrorReporter errors)
-        : base(toasts, localization)
+        : base(toasts, localization, errors)
     {
         _patients = patients;
         _dialogs = dialogs;
@@ -79,19 +79,14 @@ public partial class PatientsViewModel : NumberedListViewModel<PatientDto>
     [RelayCommand]
     private async Task EditAsync(PatientDto? item)
     {
-        if (item is null || await ReadAsync(ct => _patients.GetPatientAsync(item.Id, ct)) is not { } result)
+        // List rows are already full PatientDto (including Version); no GET needed.
+        if (item is null)
         {
-            return;
-        }
-
-        if (!result.IsSuccess)
-        {
-            ShowError(result);
             return;
         }
 
         if (await _dialogs.ShowFormAsync(
-                new PatientFormViewModel(_patients, _dialogs, Localization, result.Value), Localization.Get("Patients.EditTitle"), 640))
+                new PatientFormViewModel(_patients, _dialogs, Localization, item), Localization.Get("Patients.EditTitle"), 640))
         {
             Toasts.Success(Localization.Get("Patients.Saved"));
             await ReloadAsync(includeTotal: false);

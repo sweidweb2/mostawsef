@@ -12,21 +12,21 @@
         <StackPanel Classes="page">
             <ui:PageHeader Title="{l:Tr Nav.LabTests}" Subtitle="{l:Tr LabTests.Subtitle}">
                 <ui:PageHeader.Actions>
-                    <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
                         <Button Classes="secondary" Command="{Binding RefreshCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
                                 <PathIcon Data="{StaticResource IconRefresh}" />
                                 <TextBlock Text="{l:Tr Common.Refresh}" />
                             </StackPanel>
                         </Button>
                         <Button Name="ExportButton" Classes="secondary" Command="{Binding ExportCommand}" ToolTip.Tip="{l:Tr LabTests.ExportHint}">
-                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
                                 <PathIcon Data="{StaticResource IconDownload}" />
                                 <TextBlock Text="{l:Tr Common.Export}" />
                             </StackPanel>
                         </Button>
                         <Button Name="AddTestButton" Classes="primary" Command="{Binding AddCommand}">
-                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource GapControls}">
+                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
                                 <PathIcon Data="{StaticResource IconPlus}" />
                                 <TextBlock Text="{l:Tr LabTests.Add}" />
                             </StackPanel>
@@ -45,7 +45,7 @@
                           FirstRowNumber="{Binding FirstRowNumber}">
                 <ui:DataTable.Toolbar>
                     <!-- Equal side columns keep the search box centered in the row. -->
-                    <Grid ColumnDefinitions="*,2*,*" ColumnSpacing="{DynamicResource GapControls}">
+                    <Grid ColumnDefinitions="*,2*,*" ColumnSpacing="{StaticResource GapControls}">
                         <ui:SearchBox Name="SearchBox"
                                       Grid.Column="1"
                                       Text="{Binding Search}"
@@ -55,9 +55,9 @@
                         <StackPanel Grid.Column="2"
                                     Orientation="Horizontal"
                                     HorizontalAlignment="Right"
-                                    Spacing="{DynamicResource GapControls}">
+                                    Spacing="{StaticResource GapControls}">
                             <TextBlock Classes="caption muted" Text="{l:Tr LabTests.Records, Arg=TotalCount}" VerticalAlignment="Center" />
-                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}">
+                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space1}">
                                 <ui:IconButton Name="TableViewButton"
                                                Classes="ghost sm"
                                                Classes.selected="{Binding !IsGridView}"
@@ -88,7 +88,7 @@
                             <DataGridTemplateColumn Header="{l:Tr LabTests.Col.Code}" Width="140">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate x:DataType="tests:LabTestDto">
-                                        <Grid Margin="12,0" ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource Space1}"
+                                        <Grid Margin="12,0" ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource Space1}"
                                               HorizontalAlignment="Left" VerticalAlignment="Center">
                                             <TextBlock VerticalAlignment="Center" Classes="muted"
                                                        TextTrimming="CharacterEllipsis" Text="{Binding Code}" ToolTip.Tip="{Binding Code}" />
@@ -100,7 +100,7 @@
                             <DataGridTemplateColumn Header="{l:Tr LabTests.Col.Name}" Width="*">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate x:DataType="tests:LabTestDto">
-                                        <Grid Margin="12,0" ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource Space1}"
+                                        <Grid Margin="12,0" ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource Space1}"
                                               HorizontalAlignment="Left" VerticalAlignment="Center">
                                             <TextBlock VerticalAlignment="Center" FontWeight="Medium"
                                                        TextTrimming="CharacterEllipsis" Text="{Binding Name}" ToolTip.Tip="{Binding Name}" />
@@ -128,7 +128,7 @@
                             <DataGridTemplateColumn Header="{l:Tr Common.Actions}" Width="100">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate x:DataType="tests:LabTestDto">
-                                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}" Margin="8,0" VerticalAlignment="Center">
+                                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space1}" Margin="8,0" VerticalAlignment="Center">
                                             <ui:IconButton Classes="ghost sm"
                                                            Icon="{StaticResource IconEdit}"
                                                            ToolTip.Tip="{l:Tr Common.Edit}"
@@ -147,7 +147,7 @@
                     </DataGrid>
 
                     <ItemsControl Classes="virtualizing"
-                                  Margin="{DynamicResource PaddingCardCompact}"
+                                  Margin="{StaticResource PaddingCardCompact}"
                                   IsVisible="{Binding IsGridView}"
                                   ItemsSource="{Binding Items}">
                         <ItemsControl.ItemTemplate>
@@ -157,7 +157,7 @@
                                          Title="{Binding Name}"
                                          Subtitle="{Binding Code}">
                                     <ui:Card.HeaderActions>
-                                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}" VerticalAlignment="Top">
+                                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space1}" VerticalAlignment="Top">
                                             <ui:IconButton Classes="ghost sm"
                                                            Icon="{StaticResource IconEdit}"
                                                            ToolTip.Tip="{l:Tr Common.Edit}"

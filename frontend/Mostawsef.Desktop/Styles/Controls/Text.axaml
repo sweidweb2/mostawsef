@@ -10,47 +10,47 @@
     <Style Selector=":is(Window)">
         <Setter Property="Background" Value="{DynamicResource BrushBackground}" />
         <Setter Property="Foreground" Value="{DynamicResource BrushText}" />
-        <Setter Property="FontFamily" Value="{DynamicResource FontFamilyBase}" />
-        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
+        <Setter Property="FontFamily" Value="{StaticResource FontFamilyBase}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
     </Style>
 
     <!-- Sizes -->
     <Style Selector="TextBlock.display">
-        <Setter Property="FontSize" Value="{DynamicResource FontSizeDisplay}" />
-        <Setter Property="LineHeight" Value="{DynamicResource LineHeightDisplay}" />
-        <Setter Property="FontWeight" Value="{DynamicResource FontWeightBold}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeDisplay}" />
+        <Setter Property="LineHeight" Value="{StaticResource LineHeightDisplay}" />
+        <Setter Property="FontWeight" Value="{StaticResource FontWeightBold}" />
     </Style>
     <Style Selector="TextBlock.h1">
-        <Setter Property="FontSize" Value="{DynamicResource FontSizeH1}" />
-        <Setter Property="LineHeight" Value="{DynamicResource LineHeightH1}" />
-        <Setter Property="FontWeight" Value="{DynamicResource FontWeightBold}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeH1}" />
+        <Setter Property="LineHeight" Value="{StaticResource LineHeightH1}" />
+        <Setter Property="FontWeight" Value="{StaticResource FontWeightBold}" />
     </Style>
     <Style Selector="TextBlock.h2">
-        <Setter Property="FontSize" Value="{DynamicResource FontSizeH2}" />
-        <Setter Property="LineHeight" Value="{DynamicResource LineHeightH2}" />
-        <Setter Property="FontWeight" Value="{DynamicResource FontWeightSemiBold}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeH2}" />
+        <Setter Property="LineHeight" Value="{StaticResource LineHeightH2}" />
+        <Setter Property="FontWeight" Value="{StaticResource FontWeightSemiBold}" />
     </Style>
     <Style Selector="TextBlock.h3">
-        <Setter Property="FontSize" Value="{DynamicResource FontSizeH3}" />
-        <Setter Property="LineHeight" Value="{DynamicResource LineHeightH3}" />
-        <Setter Property="FontWeight" Value="{DynamicResource FontWeightSemiBold}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeH3}" />
+        <Setter Property="LineHeight" Value="{StaticResource LineHeightH3}" />
+        <Setter Property="FontWeight" Value="{StaticResource FontWeightSemiBold}" />
     </Style>
     <Style Selector="TextBlock.h4">
-        <Setter Property="FontSize" Value="{DynamicResource FontSizeH4}" />
-        <Setter Property="LineHeight" Value="{DynamicResource LineHeightH4}" />
-        <Setter Property="FontWeight" Value="{DynamicResource FontWeightSemiBold}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeH4}" />
+        <Setter Property="LineHeight" Value="{StaticResource LineHeightH4}" />
+        <Setter Property="FontWeight" Value="{StaticResource FontWeightSemiBold}" />
     </Style>
     <Style Selector="TextBlock.body-lg">
-        <Setter Property="FontSize" Value="{DynamicResource FontSizeBodyLarge}" />
-        <Setter Property="LineHeight" Value="{DynamicResource LineHeightBodyLarge}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBodyLarge}" />
+        <Setter Property="LineHeight" Value="{StaticResource LineHeightBodyLarge}" />
     </Style>
     <Style Selector="TextBlock.body">
-        <Setter Property="FontSize" Value="{DynamicResource FontSizeBody}" />
-        <Setter Property="LineHeight" Value="{DynamicResource LineHeightBody}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeBody}" />
+        <Setter Property="LineHeight" Value="{StaticResource LineHeightBody}" />
     </Style>
     <Style Selector="TextBlock.caption">
-        <Setter Property="FontSize" Value="{DynamicResource FontSizeCaption}" />
-        <Setter Property="LineHeight" Value="{DynamicResource LineHeightCaption}" />
+        <Setter Property="FontSize" Value="{StaticResource FontSizeCaption}" />
+        <Setter Property="LineHeight" Value="{StaticResource LineHeightCaption}" />
     </Style>
 
     <!-- Colors -->
@@ -76,6 +76,6 @@
 
     <!-- Weight -->
     <Style Selector="TextBlock.strong">
-        <Setter Property="FontWeight" Value="{DynamicResource FontWeightSemiBold}" />
+        <Setter Property="FontWeight" Value="{StaticResource FontWeightSemiBold}" />
     </Style>
 </Styles>
