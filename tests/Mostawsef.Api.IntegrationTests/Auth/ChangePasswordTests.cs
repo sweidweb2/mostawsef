@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Mostawsef.Api.IntegrationTests.Infrastructure;
 using Mostawsef.Contracts.Auth;
@@ -18,13 +19,25 @@ public class ChangePasswordTests(ApiFactory factory)
     public async Task Any_signed_in_user_changes_their_own_password(string role)
     {
         var (_, login) = await (await factory.CreateClientAsAsync(TestUsers.Super)).CreateUserAsync(role);
-        var client = await factory.CreateClientAsAsync(login);
+        var oldSession = await factory.CreateClient().LoginAsAsync(login);
+        var client = factory.CreateClient().WithBearer(oldSession.AccessToken);
 
         var response = await client.PostAsJsonAsync(
             "api/auth/change-password", new ChangePasswordRequest { CurrentPassword = login.Password, NewPassword = "Changed#Pass7" }, Ct);
 
-        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("api/auth/me", Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var renewed = await response.Content.ReadFromJsonAsync<LoginResponse>(Ct);
+        Assert.False(string.IsNullOrWhiteSpace(renewed!.AccessToken));
+        Assert.NotEqual(oldSession.AccessToken, renewed.AccessToken);
+
+        Assert.Equal(
+            HttpStatusCode.Unauthorized,
+            (await factory.CreateClient().WithBearer(oldSession.AccessToken).GetAsync("api/auth/me", Ct)).StatusCode);
+
+        var withNew = factory.CreateClient();
+        withNew.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", renewed.AccessToken);
+        Assert.Equal(HttpStatusCode.OK, (await withNew.GetAsync("api/auth/me", Ct)).StatusCode);
+
         Assert.Equal(HttpStatusCode.Unauthorized, (await factory.CreateClient().LoginAsync(login.Username, login.Password)).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await factory.CreateClient().LoginAsync(login.Username, "Changed#Pass7")).StatusCode);
     }

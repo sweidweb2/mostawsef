@@ -27,8 +27,8 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
                 o.Total - o.Items.Sum(i => i.Price),
                 o.Items.Select(i => new OrderItemRow(
                     i.LabTestId,
-                    i.LabTest != null ? i.LabTest.Code : string.Empty,
-                    i.LabTest != null ? i.LabTest.Name : string.Empty,
+                    i.LabTestCode,
+                    i.LabTestName,
                     i.Price)).ToList()))
             .FirstOrDefaultAsync(cancellationToken);
 

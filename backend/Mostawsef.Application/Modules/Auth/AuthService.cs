@@ -20,8 +20,11 @@ public interface IAuthService
     /// <summary>Records the sign-out of the current user (tokens are stateless, the client discards it).</summary>
     Task SignOutAsync(CancellationToken cancellationToken);
 
-    /// <summary>Throws AppException: 400 wrong_password on CurrentPassword, 404 if the user no longer exists.</summary>
-    Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request, CancellationToken cancellationToken);
+    /// <summary>
+    /// Throws AppException: 400 wrong_password on CurrentPassword, 404 if the user no longer exists.
+    /// Returns a fresh access token (password change bumps TokenVersion and invalidates the previous JWT).
+    /// </summary>
+    Task<LoginResponse> ChangePasswordAsync(Guid userId, ChangePasswordRequest request, CancellationToken cancellationToken);
 }
 
 public class AuthService(
@@ -133,7 +136,7 @@ public class AuthService(
     public Task SignOutAsync(CancellationToken cancellationToken) =>
         activity.LogAsync(new ActivityEntry(ActivityActions.SignedOut, ActivityModules.Auth, "Signed out"), cancellationToken);
 
-    public async Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request, CancellationToken cancellationToken)
+    public async Task<LoginResponse> ChangePasswordAsync(Guid userId, ChangePasswordRequest request, CancellationToken cancellationToken)
     {
         var user = await users.GetByIdAsync(userId, cancellationToken) ?? throw AppException.NotFound();
         if (passwordHasher.Verify(user.PasswordHash, request.CurrentPassword) == PasswordCheck.Failed)
@@ -152,6 +155,9 @@ public class AuthService(
                 EntityId = user.Id.ToString(),
             },
             cancellationToken);
+
+        var token = tokens.CreateAccessToken(user);
+        return new LoginResponse(token.Token, token.ExpiresAt, ToDto(user));
     }
 
     private Task LogFailedSignInAsync(string attemptedUsername, CancellationToken cancellationToken) =>

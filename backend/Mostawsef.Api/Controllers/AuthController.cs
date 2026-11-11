@@ -53,7 +53,7 @@ public class AuthController(IAuthService auth) : ControllerBase
 
     [HttpPost("change-password")]
     [Authorize]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<LoginResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> ChangePassword(ChangePasswordRequest request, CancellationToken cancellationToken)
@@ -63,8 +63,7 @@ public class AuthController(IAuthService auth) : ControllerBase
             return Unauthorized();
         }
 
-        await auth.ChangePasswordAsync(userId, request, cancellationToken);
-        return NoContent();
+        return Ok(await auth.ChangePasswordAsync(userId, request, cancellationToken));
     }
 
     private Guid? CurrentUserId() =>

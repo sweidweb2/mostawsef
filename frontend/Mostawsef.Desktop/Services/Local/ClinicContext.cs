@@ -88,23 +88,33 @@ public partial class ClinicContext : ObservableObject
                 return true;
             }
 
-            var result = await _api.GetAsync(CancellationToken.None);
-            if (!result.IsSuccess)
+            // Prefetch can race the first portal paint / a flaky start — retry a couple of times.
+            const int maxAttempts = 3;
+            for (var attempt = 1; attempt <= maxAttempts; attempt++)
             {
-                return false;
-            }
-
-            lock (_gate)
-            {
-                if (epoch != _epoch || !_session.IsAuthenticated)
+                var result = await _api.GetAsync(CancellationToken.None);
+                if (result.IsSuccess)
                 {
-                    return false;
+                    lock (_gate)
+                    {
+                        if (epoch != _epoch || !_session.IsAuthenticated)
+                        {
+                            return false;
+                        }
+
+                        Settings = result.Value;
+                    }
+
+                    return true;
                 }
 
-                Settings = result.Value;
+                if (attempt < maxAttempts)
+                {
+                    await Task.Delay(TimeSpan.FromMilliseconds(250 * attempt));
+                }
             }
 
-            return true;
+            return false;
         }
         catch (Exception ex)
         {

@@ -242,6 +242,8 @@ Table order_items {
   Id uuid [pk]
   OrderId uuid [not null]
   LabTestId uuid [not null]
+  LabTestCode varchar(20) [not null, note: 'code snapshot at order time']
+  LabTestName varchar(150) [not null, note: 'name snapshot at order time']
   LabPrice bigint [not null, note: 'copied from lab_tests.LabCost']
   Price bigint [not null, note: 'catalog price snapshot from lab_tests.Price']
   CreatedAt timestamptz [not null]

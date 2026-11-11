@@ -57,7 +57,7 @@ public class ApiClient(Lazy<HttpClient> http, PerformanceMonitor perf)
         {
             response = await send();
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !cancellationToken.IsCancellationRequested)
+        catch (HttpRequestException)
         {
             if (sw is not null)
             {
@@ -65,7 +65,19 @@ public class ApiClient(Lazy<HttpClient> http, PerformanceMonitor perf)
                 RecordApi(method, path, sw.Elapsed, "unreachable");
             }
 
+            // Real transport failure — flip the connection banner.
             Unreachable?.Invoke(this, EventArgs.Empty);
+            return ApiResult<T>.Fail(ApiError.Unreachable);
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            if (sw is not null)
+            {
+                sw.Stop();
+                RecordApi(method, path, sw.Elapsed, "timeout");
+            }
+
+            // Request timed out on a reachable server — fail the call, do not mark the app offline.
             return ApiResult<T>.Fail(ApiError.Unreachable);
         }
 

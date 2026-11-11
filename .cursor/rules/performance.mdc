@@ -1,0 +1,66 @@
+---
+description: Performance and reliability - UI hot paths, allocations, async, EF, memory, caching
+alwaysApply: true
+---
+
+# Performance & Reliability
+
+Follow these on every change. Prefer existing patterns (`ListPageItems.ReplaceAll`, `PagedListViewModel`/`NumberedListViewModel`,
+`ClinicContext` single-flight, `ILoadablePage.Deactivate`, `PerformanceMonitor`, `SearchBox` Enter-to-search).
+
+## UI thread and render
+- No sync I/O, `.Result` / `.Wait()` / `.GetAwaiter().GetResult()`, or heavy CPU in constructors, property getters,
+  converters, `OnRender`, `MeasureOverride`/`ArrangeOverride`, or layout callbacks. Offload with `async` and marshal
+  back via `Dispatcher.UIThread.Post`/`InvokeAsync`.
+- Property getters and converters stay O(1) and allocation-light; no LINQ, formatting, or I/O there.
+- Do not touch Avalonia controls or `ObservableCollection` from background threads; post to the UI thread.
+- Timers, polling, and background loops run only while needed: stop or pause on `Deactivate` / detach / sign-out
+  (same idea as `ConnectionMonitor` while signed in and page `Deactivate` cancelling in-flight reads).
+
+## Lists, bindings, XAML
+- Lists: use `DataTable`/`DataGrid` (virtualizing). Never put an items control inside `ScrollViewer` or `StackPanel` in a
+  way that disables virtualization; do not use a non-virtualizing panel for long lists; keep item templates light.
+- Compiled bindings stay on: every view/`DataTemplate` has `x:DataType`; fix broken paths; expensive work does not belong
+  in converters.
+- Prefer `{StaticResource}` unless the value must track theme (`Brush*`, theme shadows → `{DynamicResource}`). Do not
+  duplicate resource dictionaries or grow broad style selectors without need.
+- Keep XAML nesting shallow; avoid expensive effects (blur, heavy shadows, elaborate geometries) unless a token/pattern
+  already uses them.
+- Search/filter that hits the API or rebuilds a large list: debounce/throttle, or Enter-to-search (`ui:SearchBox`).
+  Do not fire a network/reload on every keystroke.
+
+## Collections and change notification
+- Do not add/remove/`PropertyChanged` per item in a tight loop. Batch: `ListPageItems.ReplaceAll` / `PrependNewest`, or
+  build then assign once. High-frequency updates need throttling.
+- Menu pages: reuse view models for the portal visit (`PageHost` caches the view); do not recreate on every navigation.
+  Services are singletons; page VMs are Transient from DI but held by the shell. Sub-pages stay transient unless an
+  existing reuse pattern (New order / Order details) applies. Do not invent a second lifetime scheme.
+
+## Data loading and caching
+- Load on first need (or page `ActivateAsync`), not at app/portal startup. Prefer paging over full dumps; only fetch
+  columns/fields the UI shows. Prefetch only where an existing pattern does (`ClinicContext` on Admin portal).
+- Cache repeated identical reads with clear ownership and invalidation (see `ClinicContext`, catalog version). No
+  unbounded caches; clear on sign-out / edit / version bump.
+- Do not keep large objects (images, full result sets, bitmaps) longer than needed; dispose `IDisposable`s.
+
+## Allocations and hot paths
+- Avoid LINQ-in-loops, repeated string concatenation, boxing, and unnecessary `ToList()`/`ToArray()` on hot paths
+  (render, layout, per-keystroke, per-row bind, tight server loops).
+- Logging: no string interpolation/formatting for disabled levels on hot paths; do not log per-frame or per-row.
+  Use `PerformanceMonitor` for speed debugging — do not sprinkle stopwatches in view models.
+
+## Async, exceptions, startup
+- `async Task` (or `async ValueTask`) end-to-end with `CancellationToken` on I/O. `async void` only for true event
+  handlers; every fire-and-forget (`_ = ...`) must observe errors (log/`ErrorReporter`). Library/infrastructure code
+  that does not need the UI sync context uses `ConfigureAwait(false)`.
+- Exceptions are not control flow. Do not catch-and-swallow; expected API cases use `AppException` / `ApiResult`;
+  unexpected failures go through `ISystemErrorLogger` / `ErrorReporter`.
+- Startup/DI: register cheaply; defer DB/network/file/heavy init until first use (migrations/seed stay on API startup as
+  today). Do not load every page VM or catalog at process start.
+
+## EF Core and API reads
+- Reads that do not update entities: `AsNoTracking()`. Page with `PageQueryExecutor` / `KeysetPaging` (or the feature’s
+  existing pager); never return unbounded lists to the UI.
+- No N+1: shape list queries with a single projection/`Select`, or an intentional `Include`/`AsSplitQuery` when needed.
+  Do not load graphs larger than the screen needs.
+- Application stays free of EF types; query details live in Infrastructure repositories.

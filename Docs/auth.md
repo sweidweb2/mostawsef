@@ -46,7 +46,7 @@ Unknown usernames take the same hashing time as wrong passwords, so response tim
 | --- | --- | --- |
 | `POST /api/auth/login` `{ username, password }` | Anonymous, max 10 requests/min per IP | `200 { accessToken, expiresAt, user }`, `400` empty fields, `401` invalid, `409 maintenance_mode` (non-Super while maintenance mode is on), `429` too many |
 | `GET /api/auth/me` | Bearer token | `200 { id, username, role, fullName }`, `401` |
-| `POST /api/auth/change-password` `{ currentPassword, newPassword }` | Bearer token | `204`, `400` (`wrong_password` on `CurrentPassword`, `min_length\|8`...) |
+| `POST /api/auth/change-password` `{ currentPassword, newPassword }` | Bearer token | `200 { accessToken, expiresAt, user }` (old JWT invalidated), `400` (`wrong_password` on `CurrentPassword`, `min_length\|8`...) |
 | `GET /api/users?page=&pageSize=&search=` | Super | Paged list sorted by name; search matches the username or the normalized full name |
 | `GET /api/users/{id}` | Super | `200` details with audit fields and `version`, `404` |
 | `POST /api/users` `{ fullName, username, password, role }` | Super | `201`, `400`, `409 username_taken` (also for deleted users' usernames) |
@@ -71,10 +71,10 @@ Unknown usernames take the same hashing time as wrong passwords, so response tim
 | `DELETE /api/patients/{id}` | Admin | `204` (soft delete), `404` |
 | `GET /api/health` | Anonymous | `200 { status, database, apiVersion }`, `503` when the database is down |
 
-- Tokens: JWT signed with HMAC-SHA256, valid until the next midnight (server local time), so staff sign in once a day, claims `sub`, `unique_name`, `role`, `tv` (`User.TokenVersion`).
+- Tokens: JWT signed with HMAC-SHA256, valid until the next midnight (server local time), so staff sign in once a day; if less than one hour remains until midnight, expiry rolls to the following midnight. Claims `sub`, `unique_name`, `role`, `tv` (`User.TokenVersion`).
 - Every request re-checks the token's user (active flag, role and token version, cached until that user is updated, deleted or their password changes): a
   deactivated, deleted, re-roled or password-changed user gets `401` on the next request (the desktop then returns to the login screen),
-  not only when the token expires.
+  not only when the token expires. Changing your own password returns a fresh token so the current session stays signed in; other sessions with the old `tv` are rejected.
 - Maintenance mode (Super portal, Settings page): while on, only Super users can sign in; others get `409 maintenance_mode`
   after a correct password (logged as `auth.sign_in_blocked`). Users already signed in keep working.
 - A Super cannot deactivate, demote, reset or delete their own account (`409 own_account`); they change their own password

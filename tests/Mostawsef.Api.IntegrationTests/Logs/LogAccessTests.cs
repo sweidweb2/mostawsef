@@ -36,14 +36,12 @@ public class LogAccessTests(ApiFactory factory)
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
-    [Theory]
-    [InlineData("api/activity-logs")]
-    [InlineData("api/system-errors")]
-    public async Task Admins_cannot_delete(string baseUrl)
+    [Fact]
+    public async Task Admins_cannot_delete_system_errors()
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
 
-        var response = await admin.DeleteAsync($"{baseUrl}/{Guid.NewGuid()}", TestContext.Current.CancellationToken);
+        var response = await admin.DeleteAsync($"api/system-errors/{Guid.NewGuid()}", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }

@@ -24,11 +24,33 @@ public class LabTestsApi(ApiClient api)
             cancellationToken);
 
     /// <summary>
-    /// Active tests for the new-order catalog, optionally filtered by search. One page (MaxPageSize);
-    /// search to narrow a larger catalog.
+    /// Active tests for the new-order catalog, optionally filtered by search.
+    /// Walks every page (MaxPageSize each) so a clinic catalog larger than one page is not truncated.
     /// </summary>
-    public Task<ApiResult<PagedResult<LabTestDto>>> GetCatalogAsync(string? search, CancellationToken cancellationToken = default) =>
-        GetTestsAsync(1, PageQuery.MaxPageSize, search, active: true, includeTotal: false, cancellationToken);
+    public async Task<ApiResult<PagedResult<LabTestDto>>> GetCatalogAsync(string? search, CancellationToken cancellationToken = default)
+    {
+        var all = new List<LabTestDto>();
+        var page = 1;
+        while (true)
+        {
+            var result = await GetTestsAsync(
+                page, PageQuery.MaxPageSize, search, active: true, includeTotal: false, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                return result;
+            }
+
+            var batch = result.Value!.Items;
+            all.AddRange(batch);
+            if (batch.Count < PageQuery.MaxPageSize)
+            {
+                return ApiResult<PagedResult<LabTestDto>>.Ok(
+                    new PagedResult<LabTestDto>(all, 1, all.Count == 0 ? PageQuery.MaxPageSize : all.Count, all.Count));
+            }
+
+            page++;
+        }
+    }
 
     /// <summary>Every test, sorted by name.</summary>
     public Task<ApiResult<IReadOnlyList<LabTestDto>>> GetAllTestsAsync(CancellationToken cancellationToken = default) =>

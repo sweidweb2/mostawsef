@@ -50,6 +50,8 @@ public class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
         builder.ToTable("order_items");
         builder.HasKey(i => i.Id);
 
+        builder.Property(i => i.LabTestCode).HasMaxLength(LabTest.CodeMaxLength).IsRequired();
+        builder.Property(i => i.LabTestName).HasMaxLength(LabTest.NameMaxLength).IsRequired();
         builder.Property(i => i.LabPrice).IsRequired();
         builder.Property(i => i.Price).IsRequired();
 

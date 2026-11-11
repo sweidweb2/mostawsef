@@ -85,7 +85,8 @@ public class DialogService : IDialogService
             Title = title,
             Content = form,
             MaxWidth = maxWidth,
-            ConfirmDismiss = form.ConfirmDiscardAsync,
+            // Block X/Esc/outside-click while Save is in flight (Cancel button is already CanExecute-gated).
+            ConfirmDismiss = async () => !form.IsBusy && await form.ConfirmDiscardAsync(),
             Footer = new StackPanel
             {
                 Orientation = Orientation.Horizontal,

@@ -36,10 +36,23 @@ public sealed class SystemSettingsCache(IServiceScopeFactory scopes) : ISystemSe
 
                 if (generation != Volatile.Read(ref _generation))
                 {
+                    // Invalidate ran while we were reading — load again under the same gate.
                     continue;
                 }
 
                 _cached = dto;
+
+                // Invalidate can still win between the check and the assign; drop stale and reload.
+                if (generation != Volatile.Read(ref _generation))
+                {
+                    if (ReferenceEquals(_cached, dto))
+                    {
+                        _cached = null;
+                    }
+
+                    continue;
+                }
+
                 return dto;
             }
         }

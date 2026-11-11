@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Mostawsef.Contracts.Auth;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Desktop.Services.Api;
+using Mostawsef.Desktop.Services.Auth;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Ui;
 using Mostawsef.Desktop.ViewModels.Shell;
@@ -14,11 +15,13 @@ namespace Mostawsef.Desktop.ViewModels.Auth;
 public partial class ChangePasswordFormViewModel : FormViewModel
 {
     private readonly AuthApi _auth;
+    private readonly SessionService _session;
 
-    public ChangePasswordFormViewModel(AuthApi auth, IDialogService dialogs, LocalizationService localization)
+    public ChangePasswordFormViewModel(AuthApi auth, SessionService session, IDialogService dialogs, LocalizationService localization)
         : base(dialogs, localization)
     {
         _auth = auth;
+        _session = session;
         MarkClean();
     }
 
@@ -41,6 +44,14 @@ public partial class ChangePasswordFormViewModel : FormViewModel
         }
     }
 
-    protected override async Task<IApiResult> SubmitAsync(object request, CancellationToken cancellationToken) =>
-        await _auth.ChangePasswordAsync((ChangePasswordRequest)request, cancellationToken);
+    protected override async Task<IApiResult> SubmitAsync(object request, CancellationToken cancellationToken)
+    {
+        var result = await _auth.ChangePasswordAsync((ChangePasswordRequest)request, cancellationToken);
+        if (result.IsSuccess)
+        {
+            _session.SignIn(result.Value!);
+        }
+
+        return result;
+    }
 }

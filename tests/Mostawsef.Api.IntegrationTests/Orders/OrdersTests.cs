@@ -103,6 +103,34 @@ public class OrdersTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task Order_item_labels_keep_the_name_from_order_time_after_a_rename()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var patient = await CreatePatientAsync(admin);
+        var test = await CreateTestAsync(admin);
+        var order = await CreateOrderAsync(admin, new CreateOrderRequest
+        {
+            PatientId = patient.Id,
+            Items = [new() { LabTestId = test.Id }],
+        });
+
+        var renamed = await admin.PutAsJsonAsync($"api/lab-tests/{test.Id}", new UpdateLabTestRequest
+        {
+            Code = test.Code,
+            Name = $"Renamed {test.Code}",
+            Price = test.Price,
+            LabCost = test.LabCost,
+            IsActive = true,
+            Version = test.Version,
+        }, Ct);
+        renamed.EnsureSuccessStatusCode();
+
+        var details = await admin.GetJsonAsync<OrderDetailsDto>($"{Url}/{order.Id}");
+        var item = Assert.Single(details.Items);
+        Assert.Equal((test.Code, test.Name), (item.Code, item.Name));
+    }
+
+    [Fact]
     public async Task A_new_patient_is_created_with_the_order_and_both_actions_are_logged()
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
@@ -348,7 +376,7 @@ public class OrdersTests(ApiFactory factory)
 
         var response = await client.PostAsJsonAsync(Url, request, Ct);
 
-        Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         Assert.Equal(0, await CountPatientsNamedAsync(request.NewPatient!.FullName));
     }
 

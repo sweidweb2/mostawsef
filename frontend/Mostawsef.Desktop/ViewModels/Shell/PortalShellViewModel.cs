@@ -308,7 +308,7 @@ public partial class PortalShellViewModel : ViewModelBase
     [RelayCommand]
     private async Task ChangePasswordAsync()
     {
-        var form = new ChangePasswordFormViewModel(_authApi, _dialogs, _localization);
+        var form = new ChangePasswordFormViewModel(_authApi, _session, _dialogs, _localization);
         if (await _dialogs.ShowFormAsync(form, _localization.Get("Auth.ChangePassword")))
         {
             _toasts.Success(_localization.Get("Auth.PasswordChanged"));

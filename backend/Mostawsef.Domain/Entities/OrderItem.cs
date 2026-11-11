@@ -2,7 +2,7 @@ using Mostawsef.Domain.Common;
 
 namespace Mostawsef.Domain.Entities;
 
-/// <summary>One test of an order, with the prices copied when it was ordered.</summary>
+/// <summary>One test of an order, with the prices and labels copied when it was ordered.</summary>
 public class OrderItem : Entity
 {
     private OrderItem()
@@ -13,6 +13,8 @@ public class OrderItem : Entity
     {
         LabTest = test;
         LabTestId = test.Id;
+        LabTestCode = test.Code;
+        LabTestName = test.Name;
         LabPrice = test.LabCost;
         Price = test.Price;
     }
@@ -22,6 +24,12 @@ public class OrderItem : Entity
     public Guid LabTestId { get; private set; }
 
     public LabTest? LabTest { get; private set; }
+
+    /// <summary>Catalog code at order time (survives renames and soft-deletes).</summary>
+    public string LabTestCode { get; private set; } = string.Empty;
+
+    /// <summary>Catalog name at order time (survives renames and soft-deletes).</summary>
+    public string LabTestName { get; private set; } = string.Empty;
 
     /// <summary>What the lab charges the clinic (the test's LabCost at order time).</summary>
     public long LabPrice { get; private set; }

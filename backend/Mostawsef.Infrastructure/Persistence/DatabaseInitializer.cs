@@ -68,6 +68,12 @@ public static class DatabaseInitializer
             logger.LogInformation("Filled TestsCount and Paid on {Count} existing orders", aggregates);
         }
 
+        if (pending.Contains(OrderItemSnapshotBackfill.Migration))
+        {
+            var snapshots = await OrderItemSnapshotBackfill.RunAsync(db, cancellationToken);
+            logger.LogInformation("Filled lab-test snapshots on {Count} existing order items", snapshots);
+        }
+
         if (!await db.Set<ClinicSettings>().AnyAsync(cancellationToken))
         {
             db.Add(new ClinicSettings("Mostawsef", Currencies.Egp));

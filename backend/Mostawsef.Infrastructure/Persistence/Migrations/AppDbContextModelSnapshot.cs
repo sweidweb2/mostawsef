@@ -334,8 +334,18 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                     b.Property<long>("LabPrice")
                         .HasColumnType("bigint");
 
+                    b.Property<string>("LabTestCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
                     b.Property<Guid>("LabTestId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("LabTestName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
 
                     b.Property<Guid>("OrderId")
                         .HasColumnType("uuid");

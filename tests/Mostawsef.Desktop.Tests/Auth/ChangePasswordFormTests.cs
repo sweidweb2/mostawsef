@@ -57,8 +57,10 @@ public class ChangePasswordFormTests : UiTestBase
     public async Task A_successful_change_closes_the_form_and_confirms()
     {
         using var app = new TestServices();
-        app.Api.On(HttpMethod.Post, ChangePasswordPath, HttpStatusCode.NoContent);
+        var renewed = new LoginResponse("new.jwt.token", DateTime.UtcNow.AddHours(8), new UserDto(Guid.NewGuid(), "super", Roles.Super, "Super"));
+        app.Api.On(HttpMethod.Post, ChangePasswordPath, _ => FakeApiHandler.Json(renewed));
         var window = ShowPortal(app, Roles.Super);
+        var before = app.Get<Mostawsef.Desktop.Services.Auth.SessionService>().AccessToken;
         var form = OpenForm(window);
 
         form.CurrentPassword = "Old#Pass1";
@@ -70,6 +72,8 @@ public class ChangePasswordFormTests : UiTestBase
         Assert.Single(app.Api.RequestsTo(HttpMethod.Post, ChangePasswordPath));
         Assert.Empty(window.GetVisualDescendants().OfType<Modal>());
         Assert.Contains("Password changed.", window.GetVisualDescendants().OfType<Toast>().Select(t => t.Message));
+        Assert.Equal(renewed.AccessToken, app.Get<Mostawsef.Desktop.Services.Auth.SessionService>().AccessToken);
+        Assert.NotEqual(before, renewed.AccessToken);
     }
 
     private static Window ShowPortal(TestServices app, string role)

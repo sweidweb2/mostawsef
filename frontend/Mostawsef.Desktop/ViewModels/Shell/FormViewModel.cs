@@ -50,6 +50,7 @@ public abstract partial class FormViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SaveCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CancelCommand))]
     public partial bool IsBusy { get; private set; }
 
     [ObservableProperty]
@@ -183,11 +184,8 @@ public abstract partial class FormViewModel : ViewModelBase
         try
         {
             var result = await SubmitAsync(request, cancellationToken);
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return;
-            }
 
+            // Server may have committed before cancel — never drop a successful save.
             if (result.IsSuccess)
             {
                 _savedRequest = request;
@@ -197,11 +195,16 @@ public abstract partial class FormViewModel : ViewModelBase
                 return;
             }
 
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
             ShowFailure(result);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            // The dialog closed or the page was left.
+            // The dialog closed or the page was left before the server answered.
         }
         finally
         {
@@ -209,7 +212,9 @@ public abstract partial class FormViewModel : ViewModelBase
         }
     }
 
-    [RelayCommand]
+    private bool CanCancel() => !IsBusy;
+
+    [RelayCommand(CanExecute = nameof(CanCancel))]
     private async Task CancelAsync()
     {
         if (await ConfirmDiscardAsync())
