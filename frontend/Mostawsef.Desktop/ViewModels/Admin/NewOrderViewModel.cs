@@ -920,9 +920,9 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
             ? OrderStepStatus.Complete
             : OrderStepStatus.Number;
 
-        Steps[PatientStep].Update(IsPatientStep, patient, IsPatientSatisfied);
-        Steps[TestsStep].Update(IsTestsStep, tests, IsTestsSatisfied);
-        Steps[ReviewStep].Update(IsReviewStep, review, lineComplete: false);
+        Steps[PatientStep].Update(IsPatientStep, patient, lineBeforeComplete: false, lineComplete: IsPatientSatisfied);
+        Steps[TestsStep].Update(IsTestsStep, tests, lineBeforeComplete: IsPatientSatisfied, lineComplete: IsTestsSatisfied);
+        Steps[ReviewStep].Update(IsReviewStep, review, lineBeforeComplete: IsTestsSatisfied, lineComplete: false);
     }
 
     private static OrderStepStatus StepStatus(bool incomplete, bool satisfied, bool current) =>

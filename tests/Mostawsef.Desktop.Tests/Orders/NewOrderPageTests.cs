@@ -529,7 +529,9 @@ public class NewOrderPageTests : UiTestBase
         var nodes = steps.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("step-node")).ToList();
         Assert.Equal(3, nodes.Count);
         Assert.All(nodes, node => Assert.True(node.IsEffectivelyVisible));
-        Assert.Equal(2, steps.GetVisualDescendants().OfType<Border>().Count(b => b.Classes.Contains("step-line")));
+        // Four half-lines (two connectors); first has no left, last has no right.
+        Assert.Equal(4, steps.GetVisualDescendants().OfType<Border>().Count(
+            b => b.Classes.Contains("step-line") && b.IsVisible));
         Assert.Equal(3, steps.GetVisualDescendants().OfType<Border>().Count(b => b.Classes.Contains("step-circle")));
     }
 

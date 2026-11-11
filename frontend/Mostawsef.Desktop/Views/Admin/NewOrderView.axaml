@@ -27,7 +27,8 @@
         <Style Selector="Button.step-node">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
-            <Setter Property="Padding" Value="{StaticResource PaddingControlSm}" />
+            <!-- Zero padding so the circle lines up with the half-line row above. -->
+            <Setter Property="Padding" Value="0" />
             <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="HorizontalContentAlignment" Value="Center" />
             <Setter Property="Cursor" Value="Hand" />
@@ -382,12 +383,6 @@
         <ui:Alert Name="FormError" DockPanel.Dock="Top" Margin="0,0,0,12" Kind="Danger" Text="{l:TrKey FormErrorKey}" />
 
         <Grid Name="StepIndicator" DockPanel.Dock="Top" Margin="{StaticResource PaddingCardCompact}">
-            <Grid Height="{StaticResource AvatarSize}" VerticalAlignment="Top" ColumnDefinitions="*,*">
-                <!-- Inset by AvatarSize so the line meets each circle's edge. -->
-                <Border Classes="step-line" Classes.complete="{Binding PatientStepItem.LineComplete}" Margin="40,0" />
-                <Border Grid.Column="1" Classes="step-line" Classes.complete="{Binding TestsStepItem.LineComplete}" Margin="40,0" />
-            </Grid>
-
             <ItemsControl ItemsSource="{Binding Steps}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -396,26 +391,42 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:OrderStepItem">
-                        <Button Classes="step-node"
-                                Command="{Binding $parent[ItemsControl].((vm:NewOrderViewModel)DataContext).GoToStepCommand}"
-                                CommandParameter="{Binding Index}">
-                            <StackPanel>
-                                <Border Classes="step-circle"
-                                        Classes.current="{Binding IsCurrent}"
-                                        Classes.complete="{Binding ShowCheck}"
-                                        Classes.missing="{Binding ShowMissing}">
-                                    <Panel>
-                                        <TextBlock Text="{Binding Number}" IsVisible="{Binding ShowNumber}" />
-                                        <PathIcon Data="{StaticResource IconCheck}" IsVisible="{Binding ShowCheck}" />
-                                        <PathIcon Data="{StaticResource IconWarning}" IsVisible="{Binding ShowMissing}" />
-                                    </Panel>
-                                </Border>
-                                <TextBlock Classes="step-label"
-                                           Classes.current="{Binding IsCurrent}"
-                                           Classes.missing="{Binding ShowMissing}"
-                                           Text="{l:TrKey TitleKey}" />
-                            </StackPanel>
-                        </Button>
+                        <!-- Half-lines sit outside the button so they meet at cell edges; first has no left, last no right. -->
+                        <Grid>
+                            <Grid Height="{StaticResource AvatarSize}"
+                                  VerticalAlignment="Top"
+                                  ColumnDefinitions="*,Auto,*"
+                                  IsHitTestVisible="False">
+                                <Border Classes="step-line"
+                                        IsVisible="{Binding HasLineBefore}"
+                                        Classes.complete="{Binding LineBeforeComplete}" />
+                                <Panel Grid.Column="1" Width="{StaticResource AvatarSize}" />
+                                <Border Grid.Column="2"
+                                        Classes="step-line"
+                                        IsVisible="{Binding HasLineAfter}"
+                                        Classes.complete="{Binding LineComplete}" />
+                            </Grid>
+                            <Button Classes="step-node"
+                                    Command="{Binding $parent[ItemsControl].((vm:NewOrderViewModel)DataContext).GoToStepCommand}"
+                                    CommandParameter="{Binding Index}">
+                                <StackPanel>
+                                    <Border Classes="step-circle"
+                                            Classes.current="{Binding IsCurrent}"
+                                            Classes.complete="{Binding ShowCheck}"
+                                            Classes.missing="{Binding ShowMissing}">
+                                        <Panel>
+                                            <TextBlock Text="{Binding Number}" IsVisible="{Binding ShowNumber}" />
+                                            <PathIcon Data="{StaticResource IconCheck}" IsVisible="{Binding ShowCheck}" />
+                                            <PathIcon Data="{StaticResource IconWarning}" IsVisible="{Binding ShowMissing}" />
+                                        </Panel>
+                                    </Border>
+                                    <TextBlock Classes="step-label"
+                                               Classes.current="{Binding IsCurrent}"
+                                               Classes.missing="{Binding ShowMissing}"
+                                               Text="{l:TrKey TitleKey}" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>

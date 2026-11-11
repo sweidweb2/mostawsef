@@ -31,6 +31,9 @@ public sealed partial class OrderStepItem : ObservableObject
 
     public bool HasLineAfter { get; }
 
+    /// <summary>True when this is not the first step (draws the left half of the connector).</summary>
+    public bool HasLineBefore => Index > 0;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowNumber), nameof(ShowCheck), nameof(ShowMissing))]
     public partial OrderStepStatus Status { get; private set; } = OrderStepStatus.Number;
@@ -38,6 +41,11 @@ public sealed partial class OrderStepItem : ObservableObject
     [ObservableProperty]
     public partial bool IsCurrent { get; private set; }
 
+    /// <summary>Connector into this step (shared with the previous step's line-after).</summary>
+    [ObservableProperty]
+    public partial bool LineBeforeComplete { get; private set; }
+
+    /// <summary>Connector out of this step toward the next.</summary>
     [ObservableProperty]
     public partial bool LineComplete { get; private set; }
 
@@ -47,10 +55,11 @@ public sealed partial class OrderStepItem : ObservableObject
 
     public bool ShowMissing => Status == OrderStepStatus.Missing;
 
-    public void Update(bool isCurrent, OrderStepStatus status, bool lineComplete)
+    public void Update(bool isCurrent, OrderStepStatus status, bool lineBeforeComplete, bool lineComplete)
     {
         IsCurrent = isCurrent;
         Status = status;
+        LineBeforeComplete = lineBeforeComplete;
         LineComplete = lineComplete;
     }
 }
