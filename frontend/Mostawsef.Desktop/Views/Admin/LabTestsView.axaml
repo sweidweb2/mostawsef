@@ -109,10 +109,10 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTextColumn Header="{l:Tr LabTests.Col.Price}" Width="140"
+                            <DataGridTextColumn x:DataType="tests:LabTestDto" Header="{l:Tr LabTests.Col.Price}" Width="140"
                                                Binding="{Binding Price, Converter={x:Static conv:ValueConverters.Money}}"
                                                IsReadOnly="True" />
-                            <DataGridTextColumn Header="{l:Tr LabTests.Col.LabCost}" Width="140"
+                            <DataGridTextColumn x:DataType="tests:LabTestDto" Header="{l:Tr LabTests.Col.LabCost}" Width="140"
                                                Binding="{Binding LabCost, Converter={x:Static conv:ValueConverters.Money}}"
                                                IsReadOnly="True" />
                             <DataGridTemplateColumn Header="{l:Tr LabTests.Col.Status}" Width="110">
@@ -146,46 +146,41 @@
                         </DataGrid.Columns>
                     </DataGrid>
 
-                    <ScrollViewer IsVisible="{Binding IsGridView}">
-                        <ItemsControl Margin="{DynamicResource PaddingCardCompact}" ItemsSource="{Binding Items}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <ui:ResponsiveGrid MinColumnWidth="200" MaxColumns="6" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="tests:LabTestDto">
-                                    <!-- At least as tall as it is wide: square unless the content needs more room. -->
-                                    <ui:Card Classes="outlined"
-                                             Title="{Binding Name}"
-                                             Subtitle="{Binding Code}"
-                                             MinHeight="{Binding $self.Bounds.Width}">
-                                        <ui:Card.HeaderActions>
-                                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}" VerticalAlignment="Top">
-                                                <ui:IconButton Classes="ghost sm"
-                                                               Icon="{StaticResource IconEdit}"
-                                                               ToolTip.Tip="{l:Tr Common.Edit}"
-                                                               Command="{Binding $parent[ItemsControl].((vm:LabTestsViewModel)DataContext).EditCommand}"
-                                                               CommandParameter="{Binding}" />
-                                                <ui:IconButton Classes="ghost destructive sm"
-                                                               Icon="{StaticResource IconDelete}"
-                                                               ToolTip.Tip="{l:Tr Common.Delete}"
-                                                               Command="{Binding $parent[ItemsControl].((vm:LabTestsViewModel)DataContext).DeleteCommand}"
-                                                               CommandParameter="{Binding}" />
-                                            </StackPanel>
-                                        </ui:Card.HeaderActions>
-                                        <DockPanel>
-                                            <Panel DockPanel.Dock="Bottom">
-                                                <ui:Badge Kind="Success" Text="{l:Tr LabTests.Active}" IsVisible="{Binding IsActive}" />
-                                                <ui:Badge Text="{l:Tr LabTests.Inactive}" IsVisible="{Binding !IsActive}" />
-                                            </Panel>
-                                            <TextBlock Classes="h3" Text="{l:Money Price}" TextWrapping="Wrap" VerticalAlignment="Center" />
-                                        </DockPanel>
-                                    </ui:Card>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
+                    <ItemsControl Classes="virtualizing"
+                                  Margin="{DynamicResource PaddingCardCompact}"
+                                  IsVisible="{Binding IsGridView}"
+                                  ItemsSource="{Binding Items}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="tests:LabTestDto">
+                                <ui:Card Classes="outlined"
+                                         Margin="0,0,0,8"
+                                         Title="{Binding Name}"
+                                         Subtitle="{Binding Code}">
+                                    <ui:Card.HeaderActions>
+                                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}" VerticalAlignment="Top">
+                                            <ui:IconButton Classes="ghost sm"
+                                                           Icon="{StaticResource IconEdit}"
+                                                           ToolTip.Tip="{l:Tr Common.Edit}"
+                                                           Command="{Binding $parent[ItemsControl].((vm:LabTestsViewModel)DataContext).EditCommand}"
+                                                           CommandParameter="{Binding}" />
+                                            <ui:IconButton Classes="ghost destructive sm"
+                                                           Icon="{StaticResource IconDelete}"
+                                                           ToolTip.Tip="{l:Tr Common.Delete}"
+                                                           Command="{Binding $parent[ItemsControl].((vm:LabTestsViewModel)DataContext).DeleteCommand}"
+                                                           CommandParameter="{Binding}" />
+                                        </StackPanel>
+                                    </ui:Card.HeaderActions>
+                                    <DockPanel>
+                                        <Panel DockPanel.Dock="Bottom">
+                                            <ui:Badge Kind="Success" Text="{l:Tr LabTests.Active}" IsVisible="{Binding IsActive}" />
+                                            <ui:Badge Text="{l:Tr LabTests.Inactive}" IsVisible="{Binding !IsActive}" />
+                                        </Panel>
+                                        <TextBlock Classes="h3" Text="{l:Money Price}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                    </DockPanel>
+                                </ui:Card>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </Panel>
 
                 <ui:DataTable.Footer>

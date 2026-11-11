@@ -60,7 +60,7 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="{l:Tr Logs.Col.Time}" Width="150"
+                        <DataGridTextColumn x:DataType="logs:SystemErrorListItemDto" Header="{l:Tr Logs.Col.Time}" Width="150"
                                            Binding="{Binding OccurredAt, Converter={x:Static conv:ValueConverters.LocalDateTime}}"
                                            IsReadOnly="True" />
                         <DataGridTemplateColumn Header="{l:Tr Logs.Col.Level}" Width="110">

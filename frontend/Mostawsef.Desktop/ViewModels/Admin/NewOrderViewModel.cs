@@ -77,10 +77,10 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         {
             if (e.PropertyName is not (nameof(IsDirty) or nameof(IsBusy) or nameof(FormErrorKey) or nameof(HasFormError)))
             {
-                InputChanged(nameof(PatientForm));
+                NotifyPatientInputsChanged(nameof(PatientForm));
             }
         };
-        SelectedTests.CollectionChanged += (_, _) => InputChanged(nameof(SelectedTests));
+        SelectedTests.CollectionChanged += (_, _) => NotifyTestsInputsChanged();
         Closed += OnClosed;
         _patientStep = new NewOrderPatientStep(this);
         _testsStep = new NewOrderTestsStep(this);
@@ -476,7 +476,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         switch (e.PropertyName)
         {
             case nameof(IsNewPatient) or nameof(SelectedPatient):
-                InputChanged(e.PropertyName);
+                NotifyPatientInputsChanged(e.PropertyName);
                 break;
             case nameof(Addon):
                 OnPropertyChanged(nameof(Total));
@@ -727,22 +727,29 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         }
     }
 
-    private void InputChanged(string propertyName)
+    private void NotifyPatientInputsChanged(string propertyName)
     {
         OnPropertyChanged(nameof(HasPatient));
-        OnPropertyChanged(nameof(HasSelectedTests));
         OnPropertyChanged(nameof(IsPatientSatisfied));
-        OnPropertyChanged(nameof(IsTestsSatisfied));
-        OnPropertyChanged(nameof(CatalogTotal));
-        OnPropertyChanged(nameof(Total));
-        OnPropertyChanged(nameof(MaxPayableAmount));
-        OnPropertyChanged(nameof(Remaining));
         Errors.Clear(propertyName);
         if (IsPatientSatisfied)
         {
             Errors.Clear(nameof(CreateOrderRequest.PatientId));
         }
 
+        RefreshStepStatuses();
+        SaveCommand.NotifyCanExecuteChanged();
+    }
+
+    private void NotifyTestsInputsChanged()
+    {
+        OnPropertyChanged(nameof(HasSelectedTests));
+        OnPropertyChanged(nameof(IsTestsSatisfied));
+        OnPropertyChanged(nameof(CatalogTotal));
+        OnPropertyChanged(nameof(Total));
+        OnPropertyChanged(nameof(MaxPayableAmount));
+        OnPropertyChanged(nameof(Remaining));
+        Errors.Clear(nameof(SelectedTests));
         if (IsTestsSatisfied)
         {
             Errors.Clear(nameof(CreateOrderRequest.Items));

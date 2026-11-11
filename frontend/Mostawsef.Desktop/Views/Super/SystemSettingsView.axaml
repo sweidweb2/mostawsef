@@ -24,9 +24,9 @@
                 <ui:LoadingOverlay IsLoading="{Binding IsLoading}">
                     <Panel>
                         <ui:DetailsView IsVisible="{Binding HasSettings}">
-                            <ui:DetailsItem Label="{l:Tr SystemSettings.Field.BackupPath}" Value="{Binding Settings.BackupPath}" />
+                            <ui:DetailsItem Label="{l:Tr SystemSettings.Field.BackupPath}" Value="{Binding Settings.BackupPath, FallbackValue=''}" />
                             <ui:DetailsItem Label="{l:Tr SystemSettings.Field.MaintenanceMode}" Value="{l:TrKey MaintenanceModeKey}" />
-                            <ui:DetailsItem Label="{l:Tr Settings.Field.UpdatedBy}" Value="{Binding Settings.UpdatedBy}" />
+                            <ui:DetailsItem Label="{l:Tr Settings.Field.UpdatedBy}" Value="{Binding Settings.UpdatedBy, FallbackValue=''}" />
                         </ui:DetailsView>
                         <ui:ErrorState Margin="0,24"
                                        RetryCommand="{Binding RefreshCommand}"

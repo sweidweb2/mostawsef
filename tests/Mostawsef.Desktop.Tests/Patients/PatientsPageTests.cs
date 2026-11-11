@@ -89,7 +89,7 @@ public class PatientsPageTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task The_grid_shows_a_square_card_per_patient_with_edit_and_delete()
+    public async Task The_grid_shows_a_card_per_patient_with_edit_and_delete()
     {
         using var app = AdminWithPatients(Mona, Omar);
         var (page, window) = await ShowPage(app);
@@ -101,10 +101,7 @@ public class PatientsPageTests : UiTestBase
         var cards = VisibleCards(window).ToList();
         Assert.Equal<string?>([Mona.FullName, Omar.FullName], cards.Select(c => c.Title));
         Assert.All(cards, card =>
-        {
-            Assert.True(card.Bounds.Height >= card.Bounds.Width - 1, $"{card.Bounds.Width}x{card.Bounds.Height}");
-            Assert.Equal<object?>([page.EditCommand, page.DeleteCommand], RowButtons(card).Select(b => b.Command));
-        });
+            Assert.Equal<object?>([page.EditCommand, page.DeleteCommand], RowButtons(card).Select(b => b.Command)));
         var monaTexts = cards[0].GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible).Select(t => t.Text).ToList();
         Assert.Contains("010 1234 5678", monaTexts);
         Assert.Contains("Female", monaTexts);

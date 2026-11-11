@@ -48,24 +48,21 @@
                        IsVisible="{Binding !HasEntries}"
                        Margin="0,8" />
 
-            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                          VerticalScrollBarVisibility="Auto">
-                <ItemsControl ItemsSource="{Binding Entries}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="diag:PerfEntry">
-                            <TextBlock Classes="caption"
-                                       Classes.danger="{Binding IsSlow}"
-                                       Classes.warning="{Binding IsWarn}"
-                                       FontFamily="{StaticResource FontFamilyMono}"
-                                       Text="{Binding Line}"
-                                       TextWrapping="NoWrap"
-                                       TextTrimming="CharacterEllipsis"
-                                       Margin="0,1"
-                                       ToolTip.Tip="{Binding Line}" />
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
+            <ItemsControl Classes="virtualizing" ItemsSource="{Binding Entries}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="diag:PerfEntry">
+                        <TextBlock Classes="caption"
+                                   Classes.danger="{Binding IsSlow}"
+                                   Classes.warning="{Binding IsWarn}"
+                                   FontFamily="{StaticResource FontFamilyMono}"
+                                   Text="{Binding Line}"
+                                   TextWrapping="NoWrap"
+                                   TextTrimming="CharacterEllipsis"
+                                   Margin="0,1"
+                                   ToolTip.Tip="{Binding Line}" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
         </DockPanel>
     </Border>
 </UserControl>

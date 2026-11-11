@@ -21,7 +21,7 @@
                 <ui:PageHeader.Actions>
                     <ui:Badge Name="StatusBadge"
                               IsVisible="{Binding HasOrder}"
-                              Kind="{Binding Order.Status, Converter={x:Static conv:ValueConverters.OrderStatusToBadgeKind}}"
+                              Kind="{Binding Order.Status, Converter={x:Static conv:ValueConverters.OrderStatusToBadgeKind}, FallbackValue={x:Static ui:BadgeKind.Neutral}}"
                               Text="{l:TrKey Order.Status, Prefix=OrderStatus.}" />
                 </ui:PageHeader.Actions>
             </ui:PageHeader>
@@ -42,27 +42,25 @@
 
                     <ui:Card Title="{l:Tr OrderDetails.Info}">
                         <ui:DetailsView>
-                            <ui:DetailsItem Label="{l:Tr Orders.Col.Number}" Value="{Binding Order.Number}" />
+                            <ui:DetailsItem Label="{l:Tr Orders.Col.Number}" Value="{Binding Order.Number, FallbackValue=''}" />
                             <ui:DetailsItem Label="{l:Tr Orders.Col.Date}"
-                                            Value="{Binding Order.CreatedAt, Converter={x:Static conv:ValueConverters.LocalDateTime}}" />
-                            <ui:DetailsItem Label="{l:Tr Orders.Col.Patient}" Value="{Binding Order.PatientName}" />
-                            <ui:DetailsItem Label="{l:Tr Orders.Col.Phone}" Value="{Binding Order.PatientPhone}" />
+                                            Value="{Binding Order.CreatedAt, Converter={x:Static conv:ValueConverters.LocalDateTime}, FallbackValue=''}" />
+                            <ui:DetailsItem Label="{l:Tr Orders.Col.Patient}" Value="{Binding Order.PatientName, FallbackValue=''}" />
+                            <ui:DetailsItem Label="{l:Tr Orders.Col.Phone}" Value="{Binding Order.PatientPhone, FallbackValue=''}" />
                             <ui:DetailsItem Label="{l:Tr Orders.Col.Status}" Value="{l:TrKey Order.Status, Prefix=OrderStatus.}" />
-                            <ui:DetailsItem Label="{l:Tr OrderDetails.CreatedBy}" Value="{Binding Order.CreatedBy}" />
+                            <ui:DetailsItem Label="{l:Tr OrderDetails.CreatedBy}" Value="{Binding Order.CreatedBy, FallbackValue=''}" />
                         </ui:DetailsView>
                     </ui:Card>
 
                     <ui:Card Title="{l:Tr OrderDetails.Tests, Arg=Order.Items.Count}">
                         <StackPanel Spacing="{DynamicResource GapControls}">
-                            <ItemsControl Name="TestsList" ItemsSource="{Binding Order.Items}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <StackPanel Spacing="{DynamicResource GapControls}" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
+                            <ItemsControl Name="TestsList"
+                                          Classes="virtualizing"
+                                          MaxHeight="480"
+                                          ItemsSource="{Binding Order.Items}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="orders:OrderItemDto">
-                                        <Grid ColumnDefinitions="120,*,Auto" ColumnSpacing="{DynamicResource GapControls}">
+                                        <Grid Margin="0,0,0,8" ColumnDefinitions="120,*,Auto" ColumnSpacing="{DynamicResource GapControls}">
                                             <TextBlock Classes="muted" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Text="{Binding Code}" />
                                             <TextBlock Grid.Column="1" VerticalAlignment="Center" FontWeight="Medium"
                                                        TextWrapping="Wrap" Text="{Binding Name}" />

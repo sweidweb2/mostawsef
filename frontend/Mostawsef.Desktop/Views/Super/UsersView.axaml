@@ -88,7 +88,7 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="{l:Tr Users.Col.LastLogin}" Width="160"
+                        <DataGridTextColumn x:DataType="users:UserListItemDto" Header="{l:Tr Users.Col.LastLogin}" Width="160"
                                            Binding="{Binding LastLoginAt, Converter={x:Static conv:ValueConverters.LocalDateTime}, FallbackValue='—', TargetNullValue='—'}"
                                            IsReadOnly="True" />
                         <DataGridTemplateColumn Header="{l:Tr Common.Actions}" Width="140">

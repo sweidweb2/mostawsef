@@ -22,7 +22,7 @@ public static class ValueConverters
             return text;
         }
 
-        var singleLine = text.ReplaceLineEndings(" ");
+        var singleLine = text.AsSpan().IndexOfAny('\r', '\n') >= 0 ? text.ReplaceLineEndings(" ") : text;
         return singleLine.Length <= max ? singleLine : singleLine[..max].TrimEnd() + "…";
     });
 
@@ -77,10 +77,11 @@ public static class ValueConverters
                 .ToString("N2", System.Globalization.CultureInfo.InvariantCulture);
         }
 
-        var localization = App.Localization;
-        var currency = App.Services.GetRequiredService<ClinicContext>().CurrencyCode;
-        return MoneyFormat.Format(minorUnits, currency, localization);
+        return MoneyFormat.Format(minorUnits, Clinic.CurrencyCode, App.Localization);
     }
+
+    private static ClinicContext? _clinic;
+    private static ClinicContext Clinic => _clinic ??= App.Services!.GetRequiredService<ClinicContext>();
 
     private sealed class DateOnlyConverter : IValueConverter
     {

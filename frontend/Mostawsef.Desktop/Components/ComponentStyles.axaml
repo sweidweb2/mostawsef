@@ -6,4 +6,22 @@
     <Style Selector="Border.dialog-scrim">
         <Setter Property="Background" Value="{DynamicResource BrushOverlay}" />
     </Style>
+
+    <!-- Scrollable lists: VirtualizingStackPanel needs the ScrollViewer in the ItemsControl template, not outside. -->
+    <Style Selector="ItemsControl.virtualizing">
+        <Setter Property="ItemsPanel">
+            <ItemsPanelTemplate>
+                <VirtualizingStackPanel />
+            </ItemsPanelTemplate>
+        </Setter>
+        <Setter Property="Template">
+            <ControlTemplate>
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <ItemsPresenter Name="PART_ItemsPresenter"
+                                    ItemsPanel="{TemplateBinding ItemsPanel}" />
+                </ScrollViewer>
+            </ControlTemplate>
+        </Setter>
+    </Style>
 </Styles>

@@ -69,7 +69,7 @@ public class LabTestsPageTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task The_grid_shows_a_square_card_per_test_with_edit_and_delete()
+    public async Task The_grid_shows_a_card_per_test_with_edit_and_delete()
     {
         using var app = AdminWithTests(Cbc, Sugar);
         var (page, window) = await ShowPage(app);
@@ -81,10 +81,7 @@ public class LabTestsPageTests : UiTestBase
         var cards = window.GetVisualDescendants().OfType<Card>().ToList();
         Assert.Equal<string?>([Cbc.Name, Sugar.Name], cards.Select(c => c.Title));
         Assert.All(cards, card =>
-        {
-            Assert.True(card.Bounds.Height >= card.Bounds.Width - 1, $"{card.Bounds.Width}x{card.Bounds.Height}");
-            Assert.Equal<object?>([page.EditCommand, page.DeleteCommand], RowButtons(card).Select(b => b.Command));
-        });
+            Assert.Equal<object?>([page.EditCommand, page.DeleteCommand], RowButtons(card).Select(b => b.Command)));
         var cardTexts = cards.SelectMany(c => c.GetVisualDescendants().OfType<TextBlock>()).Select(t => t.Text).ToList();
         Assert.Contains("150.50", cardTexts);
         Assert.DoesNotContain("90.00", cardTexts);

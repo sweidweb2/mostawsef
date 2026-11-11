@@ -159,6 +159,56 @@ public class PerformanceMonitorTests : UiTestBase
     }
 
     [AvaloniaFact]
+    public void FlushOverlay_replaces_entries_with_one_reset()
+    {
+        using var app = new TestServices();
+        var perf = app.Get<PerformanceMonitor>();
+        perf.IsEnabled = true;
+        perf.WriteToFile = false;
+        for (var i = 0; i < 5; i++)
+        {
+            perf.Record("Api", $"call-{i}", TimeSpan.FromMilliseconds(i));
+        }
+
+        var resets = 0;
+        perf.Entries.CollectionChanged += (_, e) =>
+        {
+            if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Reset)
+            {
+                resets++;
+            }
+        };
+
+        perf.FlushOverlay();
+
+        Assert.Equal(1, resets);
+        Assert.Equal(5, perf.Entries.Count);
+        Assert.Equal("call-4", perf.Entries[0].Name);
+    }
+
+    [AvaloniaFact]
+    public void Record_raises_HasEntries_only_for_the_first_entry()
+    {
+        using var app = new TestServices();
+        var perf = app.Get<PerformanceMonitor>();
+        perf.IsEnabled = true;
+        perf.WriteToFile = false;
+        var raises = 0;
+        perf.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PerformanceMonitor.HasEntries))
+            {
+                raises++;
+            }
+        };
+
+        perf.Record("Api", "one", TimeSpan.FromMilliseconds(1));
+        perf.Record("Api", "two", TimeSpan.FromMilliseconds(2));
+
+        Assert.Equal(1, raises);
+    }
+
+    [AvaloniaFact]
     public void Showing_the_overlay_flushes_recent_entries_when_idle()
     {
         using var app = new TestServices();

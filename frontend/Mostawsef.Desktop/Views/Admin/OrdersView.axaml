@@ -71,21 +71,21 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="{l:Tr Orders.Col.Number}" Width="130" Binding="{Binding Number}"
+                        <DataGridTextColumn x:DataType="orders:OrderListItemDto" Header="{l:Tr Orders.Col.Number}" Width="130" Binding="{Binding Number}"
                                            IsReadOnly="True" />
-                        <DataGridTextColumn Header="{l:Tr Orders.Col.Date}" Width="150"
+                        <DataGridTextColumn x:DataType="orders:OrderListItemDto" Header="{l:Tr Orders.Col.Date}" Width="150"
                                            Binding="{Binding CreatedAt, Converter={x:Static conv:ValueConverters.LocalDateTime}}"
                                            IsReadOnly="True" />
-                        <DataGridTextColumn Header="{l:Tr Orders.Col.Patient}" Width="*" Binding="{Binding PatientName}"
+                        <DataGridTextColumn x:DataType="orders:OrderListItemDto" Header="{l:Tr Orders.Col.Patient}" Width="*" Binding="{Binding PatientName}"
                                            IsReadOnly="True" />
-                        <DataGridTextColumn Header="{l:Tr Orders.Col.Phone}" Width="130" Binding="{Binding PatientPhone}"
+                        <DataGridTextColumn x:DataType="orders:OrderListItemDto" Header="{l:Tr Orders.Col.Phone}" Width="130" Binding="{Binding PatientPhone}"
                                            IsReadOnly="True" />
-                        <DataGridTextColumn Header="{l:Tr Orders.Col.Tests}" Width="80" Binding="{Binding TestsCount}"
+                        <DataGridTextColumn x:DataType="orders:OrderListItemDto" Header="{l:Tr Orders.Col.Tests}" Width="80" Binding="{Binding TestsCount}"
                                            IsReadOnly="True" />
-                        <DataGridTextColumn Header="{l:Tr Orders.Col.Total}" Width="130"
+                        <DataGridTextColumn x:DataType="orders:OrderListItemDto" Header="{l:Tr Orders.Col.Total}" Width="130"
                                            Binding="{Binding Total, Converter={x:Static conv:ValueConverters.Money}}"
                                            IsReadOnly="True" />
-                        <DataGridTextColumn Header="{l:Tr Orders.Col.Paid}" Width="130"
+                        <DataGridTextColumn x:DataType="orders:OrderListItemDto" Header="{l:Tr Orders.Col.Paid}" Width="130"
                                            Binding="{Binding Paid, Converter={x:Static conv:ValueConverters.Money}}"
                                            IsReadOnly="True" />
                         <DataGridTemplateColumn Header="{l:Tr Orders.Col.Status}" Width="130">

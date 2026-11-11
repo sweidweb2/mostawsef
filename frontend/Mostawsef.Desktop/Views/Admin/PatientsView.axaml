@@ -126,7 +126,7 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTextColumn Header="{l:Tr Patients.Col.DateOfBirth}" Width="120"
+                            <DataGridTextColumn x:DataType="patients:PatientDto" Header="{l:Tr Patients.Col.DateOfBirth}" Width="120"
                                                Binding="{Binding DateOfBirth, Converter={x:Static conv:ValueConverters.ShortDate}}"
                                                IsReadOnly="True" />
                             <DataGridTemplateColumn Header="{l:Tr Patients.Col.Insured}" Width="110">
@@ -160,53 +160,48 @@
                         </DataGrid.Columns>
                     </DataGrid>
 
-                    <ScrollViewer IsVisible="{Binding IsGridView}">
-                        <ItemsControl Margin="{DynamicResource PaddingCardCompact}" ItemsSource="{Binding Items}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <ui:ResponsiveGrid MinColumnWidth="200" MaxColumns="6" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="patients:PatientDto">
-                                    <!-- At least as tall as it is wide: square unless the content needs more room. -->
-                                    <ui:Card Classes="outlined"
-                                             Title="{Binding FullName}"
-                                             MinHeight="{Binding $self.Bounds.Width}">
-                                        <ui:Card.HeaderActions>
-                                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}" VerticalAlignment="Top">
-                                                <ui:IconButton Classes="ghost sm"
-                                                               Icon="{StaticResource IconEdit}"
-                                                               ToolTip.Tip="{l:Tr Common.Edit}"
-                                                               Command="{Binding $parent[ItemsControl].((vm:PatientsViewModel)DataContext).EditCommand}"
-                                                               CommandParameter="{Binding}" />
-                                                <ui:IconButton Classes="ghost destructive sm"
-                                                               Icon="{StaticResource IconDelete}"
-                                                               ToolTip.Tip="{l:Tr Common.Delete}"
-                                                               Command="{Binding $parent[ItemsControl].((vm:PatientsViewModel)DataContext).DeleteCommand}"
-                                                               CommandParameter="{Binding}" />
+                    <ItemsControl Classes="virtualizing"
+                                  Margin="{DynamicResource PaddingCardCompact}"
+                                  IsVisible="{Binding IsGridView}"
+                                  ItemsSource="{Binding Items}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="patients:PatientDto">
+                                <ui:Card Classes="outlined"
+                                         Margin="0,0,0,8"
+                                         Title="{Binding FullName}">
+                                    <ui:Card.HeaderActions>
+                                        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}" VerticalAlignment="Top">
+                                            <ui:IconButton Classes="ghost sm"
+                                                           Icon="{StaticResource IconEdit}"
+                                                           ToolTip.Tip="{l:Tr Common.Edit}"
+                                                           Command="{Binding $parent[ItemsControl].((vm:PatientsViewModel)DataContext).EditCommand}"
+                                                           CommandParameter="{Binding}" />
+                                            <ui:IconButton Classes="ghost destructive sm"
+                                                           Icon="{StaticResource IconDelete}"
+                                                           ToolTip.Tip="{l:Tr Common.Delete}"
+                                                           Command="{Binding $parent[ItemsControl].((vm:PatientsViewModel)DataContext).DeleteCommand}"
+                                                           CommandParameter="{Binding}" />
+                                        </StackPanel>
+                                    </ui:Card.HeaderActions>
+                                    <DockPanel>
+                                        <WrapPanel DockPanel.Dock="Bottom" ItemSpacing="{DynamicResource Space1}" LineSpacing="{DynamicResource Space1}">
+                                            <ui:Badge Text="{l:TrKey Gender, Prefix=Gender.}" />
+                                            <ui:Badge Kind="Info" Text="{l:Tr Patients.Insured}" IsVisible="{Binding IsInsured}" />
+                                        </WrapPanel>
+                                        <StackPanel Spacing="{DynamicResource Space2}" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space2}">
+                                                <PathIcon Foreground="{DynamicResource BrushTextMuted}" Data="{StaticResource IconPhone}" Width="{DynamicResource IconSizeSm}" Height="{DynamicResource IconSizeSm}" />
+                                                <TextBlock Text="{Binding Phone}" FlowDirection="LeftToRight" TextTrimming="CharacterEllipsis" />
                                             </StackPanel>
-                                        </ui:Card.HeaderActions>
-                                        <DockPanel>
-                                            <WrapPanel DockPanel.Dock="Bottom" ItemSpacing="{DynamicResource Space1}" LineSpacing="{DynamicResource Space1}">
-                                                <ui:Badge Text="{l:TrKey Gender, Prefix=Gender.}" />
-                                                <ui:Badge Kind="Info" Text="{l:Tr Patients.Insured}" IsVisible="{Binding IsInsured}" />
-                                            </WrapPanel>
-                                            <StackPanel Spacing="{DynamicResource Space2}" VerticalAlignment="Center">
-                                                <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space2}">
-                                                    <PathIcon Foreground="{DynamicResource BrushTextMuted}" Data="{StaticResource IconPhone}" Width="{DynamicResource IconSizeSm}" Height="{DynamicResource IconSizeSm}" />
-                                                    <TextBlock Text="{Binding Phone}" FlowDirection="LeftToRight" TextTrimming="CharacterEllipsis" />
-                                                </StackPanel>
-                                                <TextBlock Classes="caption muted"
-                                                           Text="{Binding DateOfBirth, Converter={x:Static conv:ValueConverters.ShortDate}}"
-                                                           IsVisible="{Binding DateOfBirth, Converter={x:Static ObjectConverters.IsNotNull}}" />
-                                            </StackPanel>
-                                        </DockPanel>
-                                    </ui:Card>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
+                                            <TextBlock Classes="caption muted"
+                                                       Text="{Binding DateOfBirth, Converter={x:Static conv:ValueConverters.ShortDate}}"
+                                                       IsVisible="{Binding DateOfBirth, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                </ui:Card>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </Panel>
 
                 <ui:DataTable.Footer>

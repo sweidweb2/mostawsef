@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -9,6 +8,7 @@ using System.Threading.Tasks;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Mostawsef.Desktop.ViewModels.Shell;
 
 namespace Mostawsef.Desktop.Services.Diagnostics;
 
@@ -67,7 +67,7 @@ public partial class PerformanceMonitor : ObservableObject
     public TimeProvider Clock { get; init; } = TimeProvider.System;
 
     /// <summary>Bound by the overlay only. Empty while the overlay is hidden.</summary>
-    public ObservableCollection<PerfEntry> Entries { get; } = [];
+    public ListPageItems<PerfEntry> Entries { get; } = [];
 
     /// <summary>In-memory ring (newest first), updated even when the overlay is hidden. Prefer this in tests.</summary>
     public IReadOnlyList<PerfEntry> Recent
@@ -102,7 +102,7 @@ public partial class PerformanceMonitor : ObservableObject
         }
         else
         {
-            Entries.Clear();
+            Entries.ReplaceAll([]);
         }
     }
 
@@ -112,13 +112,18 @@ public partial class PerformanceMonitor : ObservableObject
     [RelayCommand]
     private void Clear()
     {
+        var hadEntries = false;
         lock (_gate)
         {
+            hadEntries = _recent.Count > 0;
             _recent.Clear();
         }
 
-        Entries.Clear();
-        OnPropertyChanged(nameof(HasEntries));
+        Entries.ReplaceAll([]);
+        if (hadEntries)
+        {
+            OnPropertyChanged(nameof(HasEntries));
+        }
     }
 
     [RelayCommand]
@@ -215,8 +220,10 @@ public partial class PerformanceMonitor : ObservableObject
             Detail = detail,
         };
 
+        var firstEntry = false;
         lock (_gate)
         {
+            firstEntry = _recent.Count == 0;
             _recent.Insert(0, entry);
             while (_recent.Count > MaxEntries)
             {
@@ -224,7 +231,10 @@ public partial class PerformanceMonitor : ObservableObject
             }
         }
 
-        OnPropertyChanged(nameof(HasEntries));
+        if (firstEntry)
+        {
+            OnPropertyChanged(nameof(HasEntries));
+        }
 
         if (IsOverlayVisible)
         {
@@ -246,11 +256,7 @@ public partial class PerformanceMonitor : ObservableObject
             snapshot = _recent.ToList();
         }
 
-        Entries.Clear();
-        foreach (var entry in snapshot)
-        {
-            Entries.Add(entry);
-        }
+        Entries.ReplaceAll(snapshot);
     }
 
     private void ScheduleOverlayRefresh()

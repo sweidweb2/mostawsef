@@ -3,6 +3,7 @@
     <OutputType>WinExe</OutputType>
     <ImplicitUsings>disable</ImplicitUsings>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <TieredCompilation>true</TieredCompilation>
     <TieredPGO>true</TieredPGO>
     <SatelliteResourceLanguages>en;ar</SatelliteResourceLanguages>

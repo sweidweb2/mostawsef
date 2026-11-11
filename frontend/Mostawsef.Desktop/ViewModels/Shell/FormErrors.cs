@@ -11,6 +11,8 @@ namespace Mostawsef.Desktop.ViewModels.Shell;
 public sealed class FormErrors : INotifyPropertyChanged
 {
     private readonly Dictionary<string, string> _errors = new(StringComparer.OrdinalIgnoreCase);
+    private int _batchDepth;
+    private bool _batchDirty;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -18,8 +20,21 @@ public sealed class FormErrors : INotifyPropertyChanged
 
     public bool HasErrors => _errors.Count > 0;
 
+    /// <summary>Coalesces notifications until dispose. Nested batches are supported.</summary>
+    public IDisposable Batch()
+    {
+        _batchDepth++;
+        return new BatchScope(this);
+    }
+
     public void Set(string field, string code)
     {
+        if (_errors.TryGetValue(field, out var existing)
+            && string.Equals(existing, code, StringComparison.Ordinal))
+        {
+            return;
+        }
+
         _errors[field] = code;
         Changed();
     }
@@ -43,7 +58,42 @@ public sealed class FormErrors : INotifyPropertyChanged
 
     private void Changed()
     {
+        if (_batchDepth > 0)
+        {
+            _batchDirty = true;
+            return;
+        }
+
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item[]"));
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasErrors)));
+    }
+
+    private void EndBatch()
+    {
+        _batchDepth--;
+        if (_batchDepth > 0 || !_batchDirty)
+        {
+            return;
+        }
+
+        _batchDirty = false;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Item[]"));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(HasErrors)));
+    }
+
+    private sealed class BatchScope(FormErrors errors) : IDisposable
+    {
+        private bool _disposed;
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            errors.EndBatch();
+        }
     }
 }

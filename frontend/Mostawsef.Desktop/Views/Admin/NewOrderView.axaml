@@ -133,9 +133,9 @@
                             <Border Name="SelectedPatientCard" Classes="order-item" IsVisible="{Binding HasSelectedPatient}">
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource GapControls}">
                                     <StackPanel Spacing="{DynamicResource SpaceHalf}">
-                                        <TextBlock Classes="strong" TextWrapping="Wrap" Text="{Binding SelectedPatient.FullName}" />
+                                        <TextBlock Classes="strong" TextWrapping="Wrap" Text="{Binding SelectedPatient.FullName, FallbackValue=''}" />
                                         <TextBlock Classes="caption muted" FlowDirection="LeftToRight" HorizontalAlignment="Left"
-                                                   Text="{Binding SelectedPatient.Phone}" />
+                                                   Text="{Binding SelectedPatient.Phone, FallbackValue=''}" />
                                     </StackPanel>
                                     <Button Name="ChangePatientButton" Grid.Column="1" Classes="link" VerticalAlignment="Center"
                                             Content="{l:Tr NewOrder.ChangePatient}" Command="{Binding ChangePatientCommand}" />
@@ -191,38 +191,34 @@
                                    Text="{l:FieldError Items}"
                                    IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                         <Panel>
-                            <ScrollViewer>
-                                <ItemsControl Name="SelectedTestsList" Margin="{DynamicResource PaddingCard}" ItemsSource="{Binding SelectedTests}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <StackPanel Spacing="{DynamicResource GapControls}" />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:OrderItemDraft">
-                                            <Border Classes="order-item">
-                                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{DynamicResource GapControls}">
-                                                    <StackPanel Spacing="{DynamicResource SpaceHalf}">
-                                                        <TextBlock Classes="caption muted" Text="{Binding Test.Code}" />
-                                                        <TextBlock Classes="strong" TextWrapping="Wrap" Text="{Binding Test.Name}" />
-                                                        <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError LabTestId}"
-                                                                   IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                                                    </StackPanel>
-                                                    <TextBlock Grid.Column="1" Classes="strong" VerticalAlignment="Center"
-                                                               Text="{l:Money Test.Price}" />
-                                                    <ui:IconButton Grid.Column="2"
-                                                                   Classes="ghost destructive sm"
-                                                                   VerticalAlignment="Center"
-                                                                   Icon="{StaticResource IconClose}"
-                                                                   ToolTip.Tip="{l:Tr NewOrder.RemoveTest}"
-                                                                   Command="{Binding $parent[ItemsControl].((vm:NewOrderViewModel)DataContext).RemoveTestCommand}"
-                                                                   CommandParameter="{Binding}" />
-                                                </Grid>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </ScrollViewer>
+                            <ItemsControl Name="SelectedTestsList"
+                                          Classes="virtualizing"
+                                          Margin="{DynamicResource PaddingCard}"
+                                          ItemsSource="{Binding SelectedTests}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:OrderItemDraft">
+                                        <Border Classes="order-item" Margin="0,0,0,8">
+                                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{DynamicResource GapControls}">
+                                                <StackPanel Spacing="{DynamicResource SpaceHalf}">
+                                                    <TextBlock Classes="caption muted" Text="{Binding Test.Code}" />
+                                                    <TextBlock Classes="strong" TextWrapping="Wrap" Text="{Binding Test.Name}" />
+                                                    <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError LabTestId}"
+                                                               IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="1" Classes="strong" VerticalAlignment="Center"
+                                                           Text="{l:Money Test.Price}" />
+                                                <ui:IconButton Grid.Column="2"
+                                                               Classes="ghost destructive sm"
+                                                               VerticalAlignment="Center"
+                                                               Icon="{StaticResource IconClose}"
+                                                               ToolTip.Tip="{l:Tr NewOrder.RemoveTest}"
+                                                               Command="{Binding $parent[ItemsControl].((vm:NewOrderViewModel)DataContext).RemoveTestCommand}"
+                                                               CommandParameter="{Binding}" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                             <ui:EmptyState Name="NoTestsState"
                                            IsVisible="{Binding !HasSelectedTests}"
                                            Icon="{StaticResource IconLab}"
@@ -241,32 +237,28 @@
                                       MaxLength="{x:Static common:PageQuery.MaxSearchLength}"
                                       PlaceholderText="{l:Tr LabTests.SearchPlaceholder}" />
                         <Panel>
-                            <ScrollViewer>
-                                <ItemsControl Name="CatalogList" Margin="{DynamicResource PaddingCardCompact}" ItemsSource="{Binding Catalog}">
-                                    <ItemsControl.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <ui:ResponsiveGrid Name="CatalogGrid" MinColumnWidth="150" MaxColumns="4"
-                                                               ColumnSpacing="{DynamicResource GapControls}" RowSpacing="{DynamicResource GapControls}" />
-                                        </ItemsPanelTemplate>
-                                    </ItemsControl.ItemsPanel>
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:CatalogTestItem">
-                                            <Button Classes="secondary catalog-card"
-                                                    IsEnabled="{Binding !IsSelected}"
-                                                    ToolTip.Tip="{Binding Test.Name}"
-                                                    Command="{Binding $parent[ItemsControl].((vm:NewOrderViewModel)DataContext).AddTestCommand}"
-                                                    CommandParameter="{Binding}">
-                                                <StackPanel Spacing="{DynamicResource SpaceHalf}">
-                                                    <TextBlock Classes="caption muted" TextTrimming="CharacterEllipsis" Text="{Binding Test.Code}" />
-                                                    <TextBlock FontWeight="Medium" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
-                                                               Text="{Binding Test.Name}" />
-                                                    <TextBlock Classes="caption" Text="{l:Money Test.Price}" />
-                                                </StackPanel>
-                                            </Button>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </ScrollViewer>
+                            <ItemsControl Name="CatalogList"
+                                          Classes="virtualizing"
+                                          Margin="{DynamicResource PaddingCardCompact}"
+                                          ItemsSource="{Binding Catalog}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:CatalogTestItem">
+                                        <Button Classes="secondary catalog-card"
+                                                Margin="0,0,0,8"
+                                                IsEnabled="{Binding !IsSelected}"
+                                                ToolTip.Tip="{Binding Test.Name}"
+                                                Command="{Binding $parent[ItemsControl].((vm:NewOrderViewModel)DataContext).AddTestCommand}"
+                                                CommandParameter="{Binding}">
+                                            <StackPanel Spacing="{DynamicResource SpaceHalf}">
+                                                <TextBlock Classes="caption muted" TextTrimming="CharacterEllipsis" Text="{Binding Test.Code}" />
+                                                <TextBlock FontWeight="Medium" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
+                                                           Text="{Binding Test.Name}" />
+                                                <TextBlock Classes="caption" Text="{l:Money Test.Price}" />
+                                            </StackPanel>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                             <ui:EmptyState Name="CatalogEmptyState"
                                            IsVisible="{Binding IsCatalogEmpty}"
                                            Icon="{StaticResource IconSearch}"
@@ -351,17 +343,12 @@
                         <ui:Divider />
 
                         <TextBlock Classes="h4" Text="{l:Tr NewOrder.SelectedTestsCount, Arg=SelectedTests.Count}" />
-                        <ItemsControl ItemsSource="{Binding SelectedTests}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <ui:ResponsiveGrid MinColumnWidth="180" MaxColumns="3"
-                                                       ColumnSpacing="{DynamicResource GapControls}"
-                                                       RowSpacing="{DynamicResource GapControls}" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
+                        <ItemsControl Classes="virtualizing"
+                                      MaxHeight="320"
+                                      ItemsSource="{Binding SelectedTests}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:OrderItemDraft">
-                                    <Border Classes="order-item">
+                                    <Border Classes="order-item" Margin="0,0,0,8">
                                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource GapControls}">
                                             <StackPanel Spacing="{DynamicResource SpaceHalf}">
                                                 <TextBlock Classes="caption muted" Text="{Binding Test.Code}" />

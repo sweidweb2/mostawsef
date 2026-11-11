@@ -94,8 +94,11 @@ public abstract partial class FormViewModel : ViewModelBase
     /// <summary>Checks the fields as Save does, without sending: for a form embedded in another one (e.g. a new patient in an order).</summary>
     public bool ValidateInput()
     {
-        Errors.Clear();
-        return Validate(BuildRequest());
+        using (Errors.Batch())
+        {
+            Errors.Clear();
+            return Validate(BuildRequest());
+        }
     }
 
     /// <summary>True when there is nothing to lose, or the user agreed to discard the changes.</summary>
@@ -149,12 +152,14 @@ public abstract partial class FormViewModel : ViewModelBase
     private async Task SaveAsync()
     {
         FormErrorKey = null;
-        Errors.Clear();
-
         var request = BuildRequest();
-        if (!Validate(request))
+        using (Errors.Batch())
         {
-            return;
+            Errors.Clear();
+            if (!Validate(request))
+            {
+                return;
+            }
         }
 
         IsBusy = true;
@@ -220,20 +225,23 @@ public abstract partial class FormViewModel : ViewModelBase
     {
         var problem = result.Problem ?? ApiProblem.Empty;
         var shownOnField = false;
-        foreach (var (field, codes) in problem.FieldErrors)
+        using (Errors.Batch())
         {
-            if (codes.Length == 0)
+            foreach (var (field, codes) in problem.FieldErrors)
             {
-                continue;
-            }
+                if (codes.Length == 0)
+                {
+                    continue;
+                }
 
-            if (TrySetFieldError(field, codes[0]))
-            {
-                shownOnField = true;
-            }
-            else
-            {
-                FormErrorKey ??= TranslatableCode(codes[0]) ?? "Error.RequestFailed";
+                if (TrySetFieldError(field, codes[0]))
+                {
+                    shownOnField = true;
+                }
+                else
+                {
+                    FormErrorKey ??= TranslatableCode(codes[0]) ?? "Error.RequestFailed";
+                }
             }
         }
 
