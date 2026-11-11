@@ -5,7 +5,8 @@ using Mostawsef.Desktop.Tests.Infrastructure;
 
 namespace Mostawsef.Desktop.Tests.Api;
 
-public class ApiClientTests
+[Collection(UiTestCollection.Name)]
+public class ApiClientTests : UiTestBase
 {
     [AvaloniaTheory]
     [InlineData(HttpStatusCode.BadRequest, ApiError.BadRequest)]

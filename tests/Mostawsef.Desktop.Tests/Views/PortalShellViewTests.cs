@@ -16,7 +16,8 @@ using Mostawsef.Desktop.ViewModels.Auth;
 
 namespace Mostawsef.Desktop.Tests.Views;
 
-public class PortalShellViewTests
+[Collection(UiTestCollection.Name)]
+public class PortalShellViewTests : UiTestBase
 {
     [AvaloniaFact]
     public void Clicking_the_avatar_opens_a_menu_with_change_password_and_sign_out()

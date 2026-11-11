@@ -10,7 +10,8 @@ using Mostawsef.Desktop.Tests.Infrastructure;
 namespace Mostawsef.Desktop.Tests.Printing;
 
 /// <summary>Arabic letter shaping can't be asserted here: open an exported lab test list once to check it by eye.</summary>
-public class PrintServiceTests
+[Collection(UiTestCollection.Name)]
+public class PrintServiceTests : UiTestBase
 {
     private static readonly LabTestDto[] Tests =
     [

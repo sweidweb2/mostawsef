@@ -47,7 +47,7 @@ public static class DatabaseInitializer
         if (pending.Contains(OrderOurPriceBackfill.Migration))
         {
             var priced = await OrderOurPriceBackfill.RunAsync(db, cancellationToken);
-            logger.LogInformation("Filled OurPrice on {Count} existing orders", priced);
+            logger.LogInformation("Filled Total on {Count} existing orders", priced);
         }
 
         if (pending.Contains(OrderSearchTextBackfill.Migration))

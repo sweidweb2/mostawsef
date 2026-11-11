@@ -7,7 +7,8 @@ using Mostawsef.Desktop.Tests.Infrastructure;
 
 namespace Mostawsef.Desktop.Tests.Auth;
 
-public class AuthHeaderHandlerTests
+[Collection(UiTestCollection.Name)]
+public class AuthHeaderHandlerTests : UiTestBase
 {
     [AvaloniaFact]
     public async Task The_token_is_added_per_request_and_never_to_the_shared_client_headers()

@@ -5,7 +5,8 @@ using Mostawsef.Desktop.Tests.Infrastructure;
 
 [assembly: AvaloniaTestApplication(typeof(TestAppBuilder))]
 
-// Each test swaps App.Services (and the process culture follows its language), so desktop tests run one at a time.
+// Avalonia headless + App.Services are process-wide. A UI collection alone is not enough: other
+// collections would still run beside it and crash the test host. Keep the whole assembly serial.
 [assembly: CollectionBehavior(DisableTestParallelization = true)]
 
 namespace Mostawsef.Desktop.Tests.Infrastructure;

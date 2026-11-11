@@ -342,7 +342,7 @@ Health check: `GET http://localhost:5270/api/health` returns
 | Dev database | `docker-compose.yml` | Development PostgreSQL (+ optional pgAdmin) |
 | Lab tests | `LabTestsController`, `Application/Modules/LabTests`, desktop `LabTestsViewModel` + form | The test catalog (Admin): code, name, our price, lab cost, active. A test used by an order cannot be deleted (409 `in_use`) |
 | Patients | `PatientsController`, `Application/Modules/Patients`, desktop `PatientsViewModel` + form | Patient records (Admin), soft delete, Arabic-aware name/phone search |
-| Orders | `OrdersController`, `Application/Modules/Orders`, desktop `OrdersViewModel`, `NewOrderViewModel`, `OrderDetailsViewModel` | Admin: list (reads denormalized `TestsCount`/`Paid`), new order as a three-step flow (patient → tests catalog → review with optional first payment; catalog loads on the tests step; saved in one transaction, `ORD-000123` numbers), read-only details. No edit, cancel, discounts, refunds or printing yet |
+| Orders | `OrdersController`, `Application/Modules/Orders`, desktop `OrdersViewModel`, `NewOrderViewModel`, `OrderDetailsViewModel` | Admin: list (reads denormalized `TestsCount`/`Paid`), new order as a three-step flow (patient → tests catalog → review with optional addon + first payment; catalog loads on the tests step; saved in one transaction, `ORD-000123` numbers), read-only details (shows addon when > 0). Domain `Order.Total` is the chargeable total; `OrderItem.Price` is the catalog snapshot; Contracts `Addon` is the amount on top of catalog. No edit, cancel, discounts, refunds or printing yet |
 
 ---
 

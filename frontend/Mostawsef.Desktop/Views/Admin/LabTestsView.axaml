@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="using:Mostawsef.Desktop.Components"
              xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:conv="using:Mostawsef.Desktop.Converters"
              xmlns:tests="using:Mostawsef.Contracts.LabTests"
              xmlns:common="using:Mostawsef.Contracts.Common"
              xmlns:vm="using:Mostawsef.Desktop.ViewModels.Admin"
@@ -108,20 +109,12 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTemplateColumn Header="{l:Tr LabTests.Col.Price}" Width="140">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate x:DataType="tests:LabTestDto">
-                                        <TextBlock Margin="12,0" VerticalAlignment="Center" Text="{l:Money Price}" />
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-                            <DataGridTemplateColumn Header="{l:Tr LabTests.Col.LabCost}" Width="140">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate x:DataType="tests:LabTestDto">
-                                        <TextBlock Margin="12,0" VerticalAlignment="Center" Classes="muted" Text="{l:Money LabCost}" />
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="{l:Tr LabTests.Col.Price}" Width="140"
+                                               Binding="{Binding Price, Converter={x:Static conv:ValueConverters.Money}}"
+                                               IsReadOnly="True" />
+                            <DataGridTextColumn Header="{l:Tr LabTests.Col.LabCost}" Width="140"
+                                               Binding="{Binding LabCost, Converter={x:Static conv:ValueConverters.Money}}"
+                                               IsReadOnly="True" />
                             <DataGridTemplateColumn Header="{l:Tr LabTests.Col.Status}" Width="110">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate x:DataType="tests:LabTestDto">

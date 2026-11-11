@@ -16,7 +16,8 @@ using static Mostawsef.Desktop.Tests.Infrastructure.TestServices;
 
 namespace Mostawsef.Desktop.Tests.Users;
 
-public class UsersPageTests
+[Collection(UiTestCollection.Name)]
+public class UsersPageTests : UiTestBase
 {
     private const string UsersPath = "/api/users";
 
@@ -81,7 +82,7 @@ public class UsersPageTests
         Assert.Equal(40, page.TotalCount);
 
         page.CurrentPage = 2;
-        await WaitUntil(() => page.CurrentPage == 2 && !page.IsLoading);
+        await UiWait.UntilAsync(() => page.CurrentPage == 2 && !page.IsLoading);
 
         Assert.Contains("includeTotal=false", app.Api.RequestsTo(HttpMethod.Get, UsersPath).Last().RequestUri!.Query, StringComparison.Ordinal);
         Assert.Equal(40, page.TotalCount);
@@ -364,14 +365,4 @@ public class UsersPageTests
     private static List<string?> Toasts(Window window) =>
         window.GetVisualDescendants().OfType<Toast>().Select(t => t.Message).ToList();
 
-    private static async Task WaitUntil(Func<bool> condition)
-    {
-        for (var i = 0; i < 200 && !condition(); i++)
-        {
-            Dispatcher.UIThread.RunJobs();
-            await Task.Delay(10, TestContext.Current.CancellationToken);
-        }
-
-        Assert.True(condition());
-    }
 }

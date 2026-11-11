@@ -11,7 +11,8 @@ using NSubstitute;
 
 namespace Mostawsef.Desktop.Tests.Logs;
 
-public class LogSearchTests
+[Collection(UiTestCollection.Name)]
+public class LogSearchTests : UiTestBase
 {
     private const string ListPath = "/api/activity-logs";
 

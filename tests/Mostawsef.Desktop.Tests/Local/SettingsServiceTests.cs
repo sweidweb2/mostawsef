@@ -4,7 +4,8 @@ using Mostawsef.Desktop.Tests.Infrastructure;
 
 namespace Mostawsef.Desktop.Tests.Local;
 
-public class SettingsServiceTests
+[Collection(UiTestCollection.Name)]
+public class SettingsServiceTests : UiTestBase
 {
     [AvaloniaFact]
     public void Theme_and_language_changes_reach_the_settings_file()

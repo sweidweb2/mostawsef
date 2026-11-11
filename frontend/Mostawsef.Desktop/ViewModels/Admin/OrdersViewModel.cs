@@ -47,7 +47,7 @@ public partial class OrdersViewModel(OrdersApi orders, NavigationService navigat
 
             await navigation.OpenAsync(_newOrder, page =>
             {
-                page.OnOrderCreated = MarkStale;
+                page.OnOrderCreated = InsertCreated;
                 page.BeginReuse();
             });
         }
@@ -60,4 +60,17 @@ public partial class OrdersViewModel(OrdersApi orders, NavigationService navigat
     [RelayCommand]
     private Task ViewAsync(OrderListItemDto? item) =>
         item is null ? Task.CompletedTask : navigation.OpenAsync<OrderDetailsViewModel>(page => page.OrderId = item.Id);
+
+    /// <summary>Adds the new order on page 1 without wiping the table; falls back to a full reload when needed.</summary>
+    private void InsertCreated(OrderDetailsDto order) =>
+        PrependNewest(new OrderListItemDto(
+            order.Id,
+            order.Number,
+            order.CreatedAt,
+            order.PatientName,
+            order.PatientPhone,
+            order.Items.Count,
+            order.Total,
+            order.Paid,
+            order.Status));
 }

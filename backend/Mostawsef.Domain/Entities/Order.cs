@@ -56,7 +56,7 @@ public class Order : Entity
     public long DiscountValue { get; private set; }
 
     /// <summary>What the patient is charged for the whole order (minor units).</summary>
-    public long OurPrice { get; private set; }
+    public long Total { get; private set; }
 
     /// <summary>How many tests are on the order. Kept in sync by <see cref="AddItem"/> for the list page.</summary>
     public int TestsCount { get; private set; }
@@ -72,11 +72,11 @@ public class Order : Entity
 
     public IReadOnlyList<Payment> Payments => _payments;
 
-    /// <summary>Sum of the items' catalog prices (before an order-level our-price override).</summary>
-    public long CatalogTotal => _items.Sum(i => i.OurPrice);
+    /// <summary>Sum of the items' catalog prices (before the optional order-level addon).</summary>
+    public long CatalogTotal => _items.Sum(i => i.Price);
 
-    /// <summary>What the patient owes (no discounts yet).</summary>
-    public long Total => OurPrice;
+    /// <summary>Amount added on top of <see cref="CatalogTotal"/>; 0 when the patient pays catalog prices only.</summary>
+    public long Addon => Total - CatalogTotal;
 
     public long Balance => Total - Paid;
 
@@ -87,7 +87,7 @@ public class Order : Entity
     }
 
     /// <summary>Sets the chargeable total. Call after the items are added.</summary>
-    public void SetOurPrice(long ourPrice) => OurPrice = ourPrice;
+    public void SetTotal(long total) => Total = total;
 
     /// <summary>A payment in the order currency (exchange rate 1).</summary>
     public void AddPayment(PaymentMethod method, long amount, DateTime paidAt, string? notes)

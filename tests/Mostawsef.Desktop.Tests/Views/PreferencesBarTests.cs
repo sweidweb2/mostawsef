@@ -15,7 +15,8 @@ using static Mostawsef.Desktop.Tests.Infrastructure.TestServices;
 
 namespace Mostawsef.Desktop.Tests.Views;
 
-public class PreferencesBarTests
+[Collection(UiTestCollection.Name)]
+public class PreferencesBarTests : UiTestBase
 {
     [AvaloniaFact]
     public void Theme_button_switches_between_light_and_dark_and_saves_it()

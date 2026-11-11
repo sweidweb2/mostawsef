@@ -29,9 +29,11 @@ public record OrderDetailsRow(
     string Currency,
     long Total,
     long Paid,
+    long Balance,
+    long Addon,
     IReadOnlyList<OrderItemRow> Items);
 
-public record OrderItemRow(Guid LabTestId, string Code, string Name, long OurPrice);
+public record OrderItemRow(Guid LabTestId, string Code, string Name, long Price);
 
 public interface IOrderRepository
 {

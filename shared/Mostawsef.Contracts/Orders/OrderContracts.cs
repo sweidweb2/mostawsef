@@ -13,8 +13,8 @@ public static class OrderRules
     /// <summary>10,000,000.00 in the clinic currency.</summary>
     public const long MaxPaymentAmount = 1_000_000_000;
 
-    /// <summary>Same ceiling as a payment: the chargeable total of an order.</summary>
-    public const long MaxOurPrice = MaxPaymentAmount;
+    /// <summary>Same ceiling as a payment: the optional amount added on top of the catalog.</summary>
+    public const long MaxAddon = MaxPaymentAmount;
 }
 
 /// <summary>Order status values. The desktop shows "OrderStatus.&lt;value&gt;".</summary>
@@ -51,8 +51,9 @@ public record OrderListItemDto(
     long Paid,
     string Status);
 
-public record OrderItemDto(Guid LabTestId, string Code, string Name, long OurPrice);
+public record OrderItemDto(Guid LabTestId, string Code, string Name, long Price);
 
+/// <param name="Addon">Amount added on top of the tests' catalog prices when the order was created; 0 if none.</param>
 public record OrderDetailsDto(
     Guid Id,
     string Number,
@@ -66,6 +67,7 @@ public record OrderDetailsDto(
     long Total,
     long Paid,
     long Balance,
+    long Addon,
     IReadOnlyList<OrderItemDto> Items);
 
 /// <summary>
@@ -83,8 +85,8 @@ public record CreateOrderRequest
     public IReadOnlyList<CreateOrderItemRequest> Items { get; init; } = [];
 
     /// <summary>Optional amount added on top of the selected tests' catalog prices; null or 0 charges the catalog total only.</summary>
-    [Range(0, OrderRules.MaxOurPrice, ErrorMessage = ErrorCodes.Range)]
-    public long? OurPrice { get; init; }
+    [Range(0, OrderRules.MaxAddon, ErrorMessage = ErrorCodes.Range)]
+    public long? Addon { get; init; }
 
     /// <summary>Optional; at most the order total.</summary>
     public CreateFirstPaymentRequest? FirstPayment { get; init; }

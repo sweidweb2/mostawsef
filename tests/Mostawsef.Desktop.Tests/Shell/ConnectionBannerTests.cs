@@ -10,7 +10,8 @@ using Mostawsef.Desktop.Tests.Infrastructure;
 
 namespace Mostawsef.Desktop.Tests.Shell;
 
-public class ConnectionBannerTests
+[Collection(UiTestCollection.Name)]
+public class ConnectionBannerTests : UiTestBase
 {
     private const string HealthPath = "/api/health";
 

@@ -16,7 +16,8 @@ using static Mostawsef.Desktop.Tests.Infrastructure.TestServices;
 namespace Mostawsef.Desktop.Tests.Views;
 
 /// <summary>Renders real views headlessly (no window on screen) and checks what the user would see.</summary>
-public class ViewRenderingTests
+[Collection(UiTestCollection.Name)]
+public class ViewRenderingTests : UiTestBase
 {
     [AvaloniaFact]
     public void Login_screen_shows_the_sign_in_form()

@@ -4,7 +4,6 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -49,8 +48,8 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
     private bool _patientIncomplete;
     private bool _testsIncomplete;
 
-    /// <summary>Called after a successful create so the orders list reloads when the user returns.</summary>
-    public Action? OnOrderCreated { get; set; }
+    /// <summary>Called after a successful create so the orders list can insert the row without a full reload.</summary>
+    public Action<OrderDetailsDto>? OnOrderCreated { get; set; }
 
     public static readonly TimeSpan CatalogSearchDelay = TimeSpan.FromMilliseconds(250);
 
@@ -204,14 +203,14 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
 
     public bool HasSelectedTests => SelectedTests.Count > 0;
 
-    public decimal MaxOurPrice { get; } = Money.ToMajor(OrderRules.MaxOurPrice);
+    public decimal MaxAddon { get; } = Money.ToMajor(OrderRules.MaxAddon);
 
     public long CatalogTotal => SelectedTests.Sum(t => t.Test.Price);
 
     [ObservableProperty]
-    public partial decimal? OurPrice { get; set; }
+    public partial decimal? Addon { get; set; }
 
-    public long Total => CatalogTotal + (OurPrice is { } price ? Money.ToMinor(price) : 0);
+    public long Total => CatalogTotal + (Addon is { } price ? Money.ToMinor(price) : 0);
 
     public decimal MaxPayableAmount => Money.ToMajor(Math.Min(Total, OrderRules.MaxPaymentAmount));
 
@@ -310,7 +309,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
 
         CatalogSearch = null;
         CatalogLoadError = null;
-        OurPrice = null;
+        Addon = null;
         PaymentAmount = null;
         PaymentMethod = PaymentMethods.Cash;
         PaymentNotes = string.Empty;
@@ -350,7 +349,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         PatientId = IsNewPatient ? null : SelectedPatient?.Id,
         NewPatient = IsNewPatient ? PatientForm.ToCreateRequest() : null,
         Items = SelectedTests.Select(t => new CreateOrderItemRequest { LabTestId = t.Test.Id }).ToList(),
-        OurPrice = OurPrice is { } price ? Money.ToMinor(price) : null,
+        Addon = Addon is { } price ? Money.ToMinor(price) : null,
         FirstPayment = PaymentAmount is { } amount
             ? new CreateFirstPaymentRequest
             {
@@ -361,8 +360,26 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
             : null,
     };
 
-    protected override bool HasChanges(object request, object savedRequest) =>
-        JsonSerializer.Serialize(request) != JsonSerializer.Serialize(savedRequest);
+    protected override bool IsStateProperty(string propertyName) =>
+        base.IsStateProperty(propertyName)
+        || propertyName is nameof(HasPatient) or nameof(HasSelectedTests) or nameof(IsPatientSatisfied)
+            or nameof(IsTestsSatisfied) or nameof(CatalogTotal) or nameof(Total)
+            or nameof(MaxPayableAmount) or nameof(Remaining) or nameof(HasPayment)
+            or nameof(IsCatalogEmpty) or nameof(IsCatalogLoading) or nameof(IsPreparing)
+            or nameof(SelectedStep) or nameof(Catalog) or nameof(CatalogSearch)
+            or nameof(CatalogLoadError) or nameof(Steps);
+
+    /// <summary>Items is a list (reference equality), so compare field-by-field instead of JSON.</summary>
+    protected override bool HasChanges(object request, object savedRequest)
+    {
+        var current = (CreateOrderRequest)request;
+        var saved = (CreateOrderRequest)savedRequest;
+        return current.PatientId != saved.PatientId
+            || current.Addon != saved.Addon
+            || !Equals(current.NewPatient, saved.NewPatient)
+            || !Equals(current.FirstPayment, saved.FirstPayment)
+            || !current.Items.Select(i => i.LabTestId).SequenceEqual(saved.Items.Select(i => i.LabTestId));
+    }
 
     protected override void ValidateMore(FormErrors errors)
     {
@@ -461,7 +478,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
             case nameof(IsNewPatient) or nameof(SelectedPatient):
                 InputChanged(e.PropertyName);
                 break;
-            case nameof(OurPrice):
+            case nameof(Addon):
                 OnPropertyChanged(nameof(Total));
                 OnPropertyChanged(nameof(MaxPayableAmount));
                 OnPropertyChanged(nameof(Remaining));
@@ -848,7 +865,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
             : field.StartsWith(nameof(CreateOrderRequest.Items), StringComparison.OrdinalIgnoreCase)
                 ? TestsStep
                 : field.StartsWith(nameof(CreateOrderRequest.FirstPayment), StringComparison.OrdinalIgnoreCase)
-                    || field is nameof(PaymentAmount) or nameof(PaymentMethod) or nameof(PaymentNotes) or nameof(OurPrice)
+                    || field is nameof(PaymentAmount) or nameof(PaymentMethod) or nameof(PaymentNotes) or nameof(Addon)
                     ? ReviewStep
                     : SelectedStep;
 
@@ -865,7 +882,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
             return;
         }
 
-        OnOrderCreated?.Invoke();
+        OnOrderCreated?.Invoke(order);
         _toasts.Success(Localization.Format("Orders.Created", order.Number));
         await _navigation.OpenAsync<OrderDetailsViewModel>(page => page.Seed(order));
     }

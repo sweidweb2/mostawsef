@@ -364,8 +364,8 @@
   <data name="NewOrder.PaymentNotes" xml:space="preserve"><value>Notes</value></data>
   <data name="NewOrder.PaymentNotesPlaceholder" xml:space="preserve"><value>Optional, e.g. a receipt number</value></data>
   <data name="NewOrder.RemoveTest" xml:space="preserve"><value>Remove</value></data>
-  <data name="NewOrder.OurPrice" xml:space="preserve"><value>Our price</value></data>
-  <data name="NewOrder.OurPriceHint" xml:space="preserve"><value>Added on top of the selected tests' total. Leave empty for none.</value></data>
+  <data name="NewOrder.Addon" xml:space="preserve"><value>Our price</value></data>
+  <data name="NewOrder.AddonHint" xml:space="preserve"><value>Added on top of the selected tests' total. Leave empty for none.</value></data>
   <data name="NewOrder.NoTests" xml:space="preserve"><value>No tests yet</value></data>
   <data name="NewOrder.NoTestsHint" xml:space="preserve"><value>Click a test in the catalog to add it.</value></data>
   <data name="NewOrder.Total" xml:space="preserve"><value>Total</value></data>

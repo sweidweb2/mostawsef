@@ -15,7 +15,8 @@ using Mostawsef.Desktop.ViewModels.Super;
 
 namespace Mostawsef.Desktop.Tests.Settings;
 
-public class SystemSettingsPageTests
+[Collection(UiTestCollection.Name)]
+public class SystemSettingsPageTests : UiTestBase
 {
     private const string SettingsPath = "/api/system-settings";
 

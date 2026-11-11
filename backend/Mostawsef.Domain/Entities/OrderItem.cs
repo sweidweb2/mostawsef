@@ -14,7 +14,7 @@ public class OrderItem : Entity
         LabTest = test;
         LabTestId = test.Id;
         LabPrice = test.LabCost;
-        OurPrice = test.Price;
+        Price = test.Price;
     }
 
     public Guid OrderId { get; private set; }
@@ -27,5 +27,5 @@ public class OrderItem : Entity
     public long LabPrice { get; private set; }
 
     /// <summary>The test's catalog price at order time (not editable per item).</summary>
-    public long OurPrice { get; private set; }
+    public long Price { get; private set; }
 }

@@ -9,7 +9,8 @@ using Mostawsef.Desktop.ViewModels.Shell;
 
 namespace Mostawsef.Desktop.Tests.Auth;
 
-public class LoginViewModelTests
+[Collection(UiTestCollection.Name)]
+public class LoginViewModelTests : UiTestBase
 {
     [AvaloniaFact]
     public void Sign_in_is_disabled_until_username_and_password_are_entered()

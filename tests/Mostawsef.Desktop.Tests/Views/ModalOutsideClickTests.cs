@@ -14,7 +14,8 @@ using Mostawsef.Desktop.ViewModels.Admin;
 namespace Mostawsef.Desktop.Tests.Views;
 
 /// <summary>Clicking the dark area around a dialog acts like its X button.</summary>
-public class ModalOutsideClickTests
+[Collection(UiTestCollection.Name)]
+public class ModalOutsideClickTests : UiTestBase
 {
     private static readonly Point Outside = new(10, 10);
 

@@ -53,23 +53,33 @@
                     </ui:Card>
 
                     <ui:Card Title="{l:Tr OrderDetails.Tests, Arg=Order.Items.Count}">
-                        <ItemsControl Name="TestsList" ItemsSource="{Binding Order.Items}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Spacing="{DynamicResource GapControls}" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="orders:OrderItemDto">
-                                    <Grid ColumnDefinitions="120,*,Auto" ColumnSpacing="{DynamicResource GapControls}">
-                                        <TextBlock Classes="muted" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Text="{Binding Code}" />
-                                        <TextBlock Grid.Column="1" VerticalAlignment="Center" FontWeight="Medium"
-                                                   TextWrapping="Wrap" Text="{Binding Name}" />
-                                        <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="{l:Money OurPrice}" />
-                                    </Grid>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                        <StackPanel Spacing="{DynamicResource GapControls}">
+                            <ItemsControl Name="TestsList" ItemsSource="{Binding Order.Items}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Spacing="{DynamicResource GapControls}" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="orders:OrderItemDto">
+                                        <Grid ColumnDefinitions="120,*,Auto" ColumnSpacing="{DynamicResource GapControls}">
+                                            <TextBlock Classes="muted" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Text="{Binding Code}" />
+                                            <TextBlock Grid.Column="1" VerticalAlignment="Center" FontWeight="Medium"
+                                                       TextWrapping="Wrap" Text="{Binding Name}" />
+                                            <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="{l:Money Price}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <StackPanel Name="AddonRow" Spacing="{DynamicResource GapControls}" IsVisible="{Binding HasAddon}">
+                                <ui:Divider />
+                                <Grid ColumnDefinitions="120,*,Auto" ColumnSpacing="{DynamicResource GapControls}">
+                                    <TextBlock Classes="muted" VerticalAlignment="Center" Text="{l:Tr NewOrder.Addon}" />
+                                    <TextBlock Name="AddonText" Grid.Column="2" VerticalAlignment="Center" FontWeight="Medium"
+                                               Text="{l:Money Order.Addon}" />
+                                </Grid>
+                            </StackPanel>
+                        </StackPanel>
                     </ui:Card>
                 </StackPanel>
 

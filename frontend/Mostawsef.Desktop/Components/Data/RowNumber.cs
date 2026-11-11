@@ -70,6 +70,10 @@ public class RowNumber : TextBlock
     private void Refresh()
     {
         var index = DataContext is null || _grid?.ItemsSource is not IList items ? -1 : items.IndexOf(DataContext);
-        Text = index < 0 ? string.Empty : ((_table?.FirstRowNumber ?? 1) + index).ToString(CultureInfo.InvariantCulture);
+        var next = index < 0 ? string.Empty : ((_table?.FirstRowNumber ?? 1) + index).ToString(CultureInfo.InvariantCulture);
+        if (Text != next)
+        {
+            Text = next;
+        }
     }
 }

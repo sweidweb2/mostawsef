@@ -12,7 +12,8 @@ using static Mostawsef.Desktop.Tests.Infrastructure.TestServices;
 
 namespace Mostawsef.Desktop.Tests.Views;
 
-public class ErrorStateTests
+[Collection(UiTestCollection.Name)]
+public class ErrorStateTests : UiTestBase
 {
     [AvaloniaFact]
     public void Error_state_shows_the_default_translated_texts_and_no_retry_without_a_command()

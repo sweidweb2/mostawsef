@@ -299,17 +299,17 @@
                                 </StackPanel>
                             </StackPanel>
                             <StackPanel Spacing="{DynamicResource SpaceHalf}">
-                                <TextBlock Classes="caption muted" Text="{l:Tr NewOrder.OurPrice}" />
-                                <NumericUpDown Name="OurPriceBox"
-                                               Value="{Binding OurPrice}"
+                                <TextBlock Classes="caption muted" Text="{l:Tr NewOrder.Addon}" />
+                                <NumericUpDown Name="AddonBox"
+                                               Value="{Binding Addon}"
                                                Minimum="0"
-                                               Maximum="{Binding MaxOurPrice}"
+                                               Maximum="{Binding MaxAddon}"
                                                ClipValueToMinMax="True"
                                                ShowButtonSpinner="False"
                                                FormatString="0.00"
                                                PlaceholderText="{l:Tr LabTests.Field.AmountPlaceholder}"
-                                               ToolTip.Tip="{l:Tr NewOrder.OurPriceHint}" />
-                                <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError OurPrice}"
+                                               ToolTip.Tip="{l:Tr NewOrder.AddonHint}" />
+                                <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError Addon}"
                                            IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                             </StackPanel>
                         </ui:ResponsiveGrid>

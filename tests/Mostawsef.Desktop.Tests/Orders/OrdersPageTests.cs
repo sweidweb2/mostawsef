@@ -16,7 +16,8 @@ using static Mostawsef.Desktop.Tests.Orders.OrderPages;
 
 namespace Mostawsef.Desktop.Tests.Orders;
 
-public class OrdersPageTests
+[Collection(UiTestCollection.Name)]
+public class OrdersPageTests : UiTestBase
 {
     private static readonly Type[] OrderPageTypes = [typeof(OrdersViewModel), typeof(NewOrderViewModel), typeof(OrderDetailsViewModel)];
 
@@ -90,6 +91,8 @@ public class OrdersPageTests
         Assert.Contains("admin@test.local", texts);
         Assert.Contains("Partially paid", window.GetVisualDescendants().OfType<Badge>().Where(b => b.IsEffectivelyVisible).Select(b => b.Text));
         Assert.Equal(["200.00", "50.00", "150.00"], window.GetVisualDescendants().OfType<StatCard>().Select(c => c.Value));
+        Assert.False(details.HasAddon);
+        Assert.False(Named<StackPanel>(window, "AddonRow").IsVisible);
 
         await details.BackCommand.ExecuteAsync(null);
         Dispatcher.UIThread.RunJobs();
@@ -97,6 +100,25 @@ public class OrdersPageTests
         Assert.Same(orders, shell.CurrentPage);
         Assert.Null(shell.SubPage);
         Assert.Equal(listReads, ListReads(app));
+    }
+
+    [AvaloniaFact]
+    public async Task Details_show_the_addon_when_the_order_has_one()
+    {
+        using var app = Admin();
+        var order = Details(PartlyPaid.Id) with { Total = 23000, Balance = 18000, Addon = 3000 };
+        app.Api.OnGet($"{OrdersPath}/{PartlyPaid.Id}", order);
+        var (shell, orders, window) = await ShowOrdersPageAsync(app);
+
+        await orders.ViewCommand.ExecuteAsync(PartlyPaid);
+        var details = Assert.IsType<OrderDetailsViewModel>(shell.CurrentPage);
+        await WaitUntil(() => details.HasOrder);
+
+        Assert.True(details.HasAddon);
+        Assert.True(Named<StackPanel>(window, "AddonRow").IsVisible);
+        Assert.Equal("30.00", Named<TextBlock>(window, "AddonText").Text);
+        Assert.Contains("Our price", Texts(window));
+        Assert.Equal(["230.00", "50.00", "180.00"], window.GetVisualDescendants().OfType<StatCard>().Select(c => c.Value));
     }
 
     [AvaloniaFact]
@@ -142,7 +164,7 @@ public class OrdersPageTests
     }
 
     [AvaloniaFact]
-    public async Task Saving_a_new_order_reloads_the_list_when_returning_from_details()
+    public async Task Saving_a_new_order_inserts_it_on_the_list_without_a_reload()
     {
         using var app = Admin();
         var created = Details(Guid.NewGuid());
@@ -168,7 +190,9 @@ public class OrdersPageTests
         await WaitUntil(() => !orders.IsLoading);
 
         Assert.Same(orders, shell.CurrentPage);
-        Assert.Equal(listReads + 1, ListReads(app));
+        Assert.Equal(listReads, ListReads(app));
+        Assert.Equal(created.Id, orders.Items[0].Id);
+        Assert.Equal(3, orders.TotalCount);
     }
 
     [AvaloniaFact]

@@ -13,7 +13,8 @@ using Mostawsef.Desktop.ViewModels.Auth;
 
 namespace Mostawsef.Desktop.Tests.Auth;
 
-public class ChangePasswordFormTests
+[Collection(UiTestCollection.Name)]
+public class ChangePasswordFormTests : UiTestBase
 {
     private const string ChangePasswordPath = "/api/auth/change-password";
 

@@ -16,6 +16,7 @@ namespace Mostawsef.Desktop.ViewModels.Shell;
 /// Same bindings as <see cref="PagedListViewModel{TItem}"/>, which is for append-only, newest-first logs (cursor paging).
 /// The portal shell activates the page when it is shown (first load) and deactivates it when the user leaves,
 /// which cancels its API calls. Page flips skip the filtered total; search and refresh ask for it again.
+/// Rows live in one <see cref="ListPageItems{T}"/> instance so the DataGrid is not torn down on every reload.
 /// </summary>
 public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoadablePage
 {
@@ -36,9 +37,8 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
 
     protected LocalizationService Localization { get; }
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsEmpty))]
-    public partial IReadOnlyList<TItem> Items { get; private set; } = [];
+    /// <summary>Bound once for the page lifetime; reloads replace contents in place.</summary>
+    public ListPageItems<TItem> Items { get; } = new();
 
     [ObservableProperty]
     public partial int CurrentPage { get; set; } = 1;
@@ -107,6 +107,33 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
 
     /// <summary>The next activation loads the page again, e.g. when the user comes back from a sub-page that added a record.</summary>
     public void MarkStale() => _loaded = false;
+
+    /// <summary>
+    /// Puts a newly created row on page 1 without a server reload. Marks the page stale when a search is active
+    /// or the user is not on page 1 (the new row may not belong on the screen).
+    /// </summary>
+    protected void PrependNewest(TItem item)
+    {
+        if (!_loaded || CurrentPage != 1 || !string.IsNullOrWhiteSpace(Search))
+        {
+            MarkStale();
+            return;
+        }
+
+        LoadError = null;
+        Items.Insert(0, item);
+        while (Items.Count > PageSize)
+        {
+            Items.RemoveAt(Items.Count - 1);
+        }
+
+        TotalCount++;
+        PageCount = Math.Max(1, (int)Math.Ceiling(TotalCount / (double)PageSize));
+        // Nudge FirstRowNumber so RowNumber cells re-read indexes after an in-place insert.
+        FirstRowNumber = 0;
+        FirstRowNumber = 1;
+        OnPropertyChanged(nameof(IsEmpty));
+    }
 
     [RelayCommand]
     private Task RefreshAsync() => LoadAsync(CurrentPage, includeTotal: true);
@@ -190,9 +217,10 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
             }
             else
             {
-                Items = [];
+                Items.ReplaceAll([]);
                 TotalCount = 0;
                 LoadError = result.Error;
+                OnPropertyChanged(nameof(IsEmpty));
             }
 
             _loaded = true;
@@ -216,7 +244,7 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
     private void Show(PagedResult<TItem> result, bool includeTotal)
     {
         LoadError = null;
-        Items = result.Items;
+        Items.ReplaceAll(result.Items);
         if (includeTotal && result.TotalCount != PageQuery.TotalNotComputed)
         {
             TotalCount = result.TotalCount;
@@ -228,6 +256,7 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
         CurrentPage = result.Page;
         _suppressPageReload = false;
         FirstRowNumber = (result.Page - 1) * PageSize + 1;
+        OnPropertyChanged(nameof(IsEmpty));
     }
 
     /// <summary>An API read tied to the page (e.g. details for a modal): null when the user left the page before it finished.</summary>
@@ -255,4 +284,5 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
             : codeKey is not null && Localization.Get(codeKey) != codeKey ? codeKey
             : "Error.RequestFailed"));
     }
+
 }

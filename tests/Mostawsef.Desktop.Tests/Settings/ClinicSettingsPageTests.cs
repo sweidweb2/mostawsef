@@ -15,7 +15,8 @@ using Mostawsef.Desktop.ViewModels.Admin;
 
 namespace Mostawsef.Desktop.Tests.Settings;
 
-public class ClinicSettingsPageTests
+[Collection(UiTestCollection.Name)]
+public class ClinicSettingsPageTests : UiTestBase
 {
     private const string SettingsPath = "/api/clinic-settings";
 

@@ -18,7 +18,8 @@ using static Mostawsef.Desktop.Tests.Infrastructure.TestServices;
 
 namespace Mostawsef.Desktop.Tests.Patients;
 
-public class PatientsPageTests
+[Collection(UiTestCollection.Name)]
+public class PatientsPageTests : UiTestBase
 {
     private const string PatientsPath = "/api/patients";
 

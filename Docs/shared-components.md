@@ -70,7 +70,7 @@ Usage namespace: `xmlns:ui="using:Mostawsef.Desktop.Components"`.
 
 | Component | Status | Use |
 | --- | --- | --- |
-| DataTable (sorting, paging, selection) | Built | `ui:DataTable` wrapping a `DataGrid` (loading, empty and error states with `HasError` + `RetryCommand`, toolbar, footer). Every table starts with a `#` column of `ui:RowNumber` cells and binds `FirstRowNumber="{Binding FirstRowNumber}"` (both list view model bases provide it), so numbering continues across pages. Rows are `TableRowHeight` tall and, on hover, get a light tint and an accent bar on the start edge (styled once in `Styles/Controls/DataGrid.axaml`) |
+| DataTable (sorting, paging, selection) | Built | `ui:DataTable` wrapping a `DataGrid` (loading, empty and error states with `HasError` + `RetryCommand`, toolbar, footer). Every table starts with a `#` column of `ui:RowNumber` cells and binds `FirstRowNumber="{Binding FirstRowNumber}"` (both list view model bases provide it), so numbering continues across pages. List pages keep one `ListPageItems<T>` for the grid (`ReplaceAll` on reload; `PrependNewest` after create when possible). Prefer text columns + `ValueConverters` for money/dates; template columns for badges, actions and row numbers. Rows are `TableRowHeight` tall and, on hover, get a light tint and an accent bar on the start edge (styled once in `Styles/Controls/DataGrid.axaml`) |
 | Pagination | Built | `ui:Pagination` (`CurrentPage`, `PageCount`) |
 | ListView | Built-in | `ListBox` |
 | DetailsView (label/value pairs) | Built | `ui:DetailsView` + `ui:DetailsItem Label Value` (`IsCode` for JSON / stack traces) |

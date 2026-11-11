@@ -88,14 +88,9 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="{l:Tr Users.Col.LastLogin}" Width="160">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate x:DataType="users:UserListItemDto">
-                                    <TextBlock Margin="12,0" VerticalAlignment="Center" Classes="muted"
-                                               Text="{Binding LastLoginAt, Converter={x:Static conv:ValueConverters.LocalDateTime}, FallbackValue='—', TargetNullValue='—'}" />
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="{l:Tr Users.Col.LastLogin}" Width="160"
+                                           Binding="{Binding LastLoginAt, Converter={x:Static conv:ValueConverters.LocalDateTime}, FallbackValue='—', TargetNullValue='—'}"
+                                           IsReadOnly="True" />
                         <DataGridTemplateColumn Header="{l:Tr Common.Actions}" Width="140">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate x:DataType="users:UserListItemDto">

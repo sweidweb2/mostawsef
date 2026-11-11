@@ -10,6 +10,9 @@ $env:Path = "C:\Program Files\dotnet;" + $env:Path
 
 ## Tests
 
+While iterating, prefer one project plus a name filter (and `-Watch`). Use `all` as a full gate before push.
+Close the running API/desktop apps first so the script can use Debug builds (faster than the automatic Release fallback).
+
 ```powershell
 ./scripts/test.ps1
 ```
@@ -23,6 +26,9 @@ $env:Path = "C:\Program Files\dotnet;" + $env:Path
 ./scripts/test.ps1 api Login
 ```
 ```powershell
+./scripts/test.ps1 desktop Orders
+```
+```powershell
 ./scripts/test.ps1 desktop NavigationGuard
 ```
 ```powershell
@@ -32,15 +38,18 @@ $env:Path = "C:\Program Files\dotnet;" + $env:Path
 ./scripts/test.ps1 desktop -Watch
 ```
 ```powershell
+./scripts/test.ps1 desktop Orders -NoBuild
+```
+```powershell
 ./scripts/test.ps1 all -Coverage
 ```
 ```powershell
 ./scripts/test.ps1 api -Detailed
 ```
 
-Pattern: `./scripts/test.ps1 <all|api|desktop> <part of test name> [-Watch] [-Coverage] [-Detailed]`
+Pattern: `./scripts/test.ps1 <all|api|desktop> <part of test name> [-Watch] [-Coverage] [-Detailed] [-NoBuild]`
 API tests need Docker running. While the API or desktop app is running (Debug build, files locked), the script builds
-the tests in Release automatically.
+the tests in Release automatically. `-NoBuild` skips restore/build when binaries are already fresh (`-Watch` always rebuilds).
 
 Every push to GitHub runs the same script in GitHub Actions (`.github/workflows/tests.yml`): `api` on Ubuntu (Linux
 containers for Testcontainers), `desktop` on Windows. Results are in the repository's **Actions** tab.

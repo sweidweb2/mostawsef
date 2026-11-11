@@ -27,9 +27,6 @@ namespace Mostawsef.Desktop.ViewModels.Shell;
 /// </summary>
 public abstract partial class FormViewModel : ViewModelBase
 {
-    private static readonly HashSet<string> StateProperties =
-        [nameof(IsBusy), nameof(IsDirty), nameof(FormErrorKey), nameof(HasFormError)];
-
     private object? _savedRequest;
     private CancellationTokenSource _lifetime = new();
 
@@ -114,7 +111,7 @@ public abstract partial class FormViewModel : ViewModelBase
     {
         base.OnPropertyChanged(e);
 
-        if (_savedRequest is null || e.PropertyName is null || StateProperties.Contains(e.PropertyName))
+        if (_savedRequest is null || e.PropertyName is null || IsStateProperty(e.PropertyName))
         {
             return;
         }
@@ -122,6 +119,10 @@ public abstract partial class FormViewModel : ViewModelBase
         Errors.Clear(e.PropertyName);
         IsDirty = HasChanges(BuildRequest(), _savedRequest);
     }
+
+    /// <summary>Busy/dirty/error flags (and page-only UI props in subclasses) skip the dirty check.</summary>
+    protected virtual bool IsStateProperty(string propertyName) =>
+        propertyName is nameof(IsBusy) or nameof(IsDirty) or nameof(FormErrorKey) or nameof(HasFormError);
 
     /// <summary>Requests are records, so value equality works unless they hold lists: override then.</summary>
     protected virtual bool HasChanges(object request, object savedRequest) => !Equals(request, savedRequest);

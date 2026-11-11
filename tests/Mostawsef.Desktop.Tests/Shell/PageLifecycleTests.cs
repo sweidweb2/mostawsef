@@ -15,7 +15,8 @@ using Mostawsef.Desktop.Views.Super;
 
 namespace Mostawsef.Desktop.Tests.Shell;
 
-public class PageLifecycleTests
+[Collection(UiTestCollection.Name)]
+public class PageLifecycleTests : UiTestBase
 {
     private const string ActivityPath = "/api/activity-logs";
     private const int Dashboard = 0;
@@ -78,7 +79,7 @@ public class PageLifecycleTests
         Assert.NotEmpty(server.Waiting);
 
         shell.SelectedMenuIndex = Dashboard;
-        await WaitUntil(() => !page.IsLoading);
+        await UiWait.UntilAsync(() => !page.IsLoading);
 
         Assert.All(server.Waiting, request => Assert.True(request.IsCancellationRequested));
         Assert.False(page.HasLoadError);
@@ -87,7 +88,7 @@ public class PageLifecycleTests
         server.Waiting.Clear();
         shell.SelectedMenuIndex = ActivityLogs;
         var next = Assert.IsType<ActivityLogsViewModel>(shell.CurrentPage);
-        await WaitUntil(() => !next.IsLoading);
+        await UiWait.UntilAsync(() => !next.IsLoading);
 
         Assert.Same(page, next);
         Assert.Single(next.Items);
@@ -104,7 +105,7 @@ public class PageLifecycleTests
         var page = Assert.IsType<ActivityLogsViewModel>(shell.CurrentPage);
 
         app.Session.SignOut();
-        await WaitUntil(() => !page.IsLoading);
+        await UiWait.UntilAsync(() => !page.IsLoading);
 
         Assert.IsType<LoginViewModel>(app.Navigation.CurrentPage);
         Assert.NotEmpty(server.Waiting);
@@ -140,17 +141,6 @@ public class PageLifecycleTests
         app.SignInAs(Roles.Super);
         app.Navigation.NavigateToHome();
         return Assert.IsType<PortalShellViewModel>(app.Navigation.CurrentPage);
-    }
-
-    private static async Task WaitUntil(Func<bool> condition)
-    {
-        for (var i = 0; i < 200 && !condition(); i++)
-        {
-            Dispatcher.UIThread.RunJobs();
-            await Task.Delay(10, TestContext.Current.CancellationToken);
-        }
-
-        Assert.True(condition());
     }
 
     /// <summary>

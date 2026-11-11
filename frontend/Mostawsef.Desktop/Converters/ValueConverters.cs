@@ -1,7 +1,9 @@
 using System;
 using Avalonia.Data.Converters;
+using Microsoft.Extensions.DependencyInjection;
 using Mostawsef.Contracts.Orders;
 using Mostawsef.Desktop.Components;
+using Mostawsef.Desktop.Services.Local;
 
 namespace Mostawsef.Desktop.Converters;
 
@@ -26,6 +28,12 @@ public static class ValueConverters
 
     /// <summary>UTC timestamp -> local date and time in the current language's format.</summary>
     public static readonly IValueConverter LocalDateTime = new FuncValueConverter<DateTime, string>(FormatLocal);
+
+    /// <summary>
+    /// Minor units -> money text for DataGrid text columns (one binding, no MultiBinding per cell).
+    /// Forms and details keep {l:Money ...} so they still refresh on language/currency changes.
+    /// </summary>
+    public static readonly IValueConverter Money = new FuncValueConverter<long, string>(FormatMoney);
 
     /// <summary>"Warning" / "Error" / "Critical" -> Badge kind.</summary>
     public static readonly IValueConverter ErrorLevelToBadgeKind = new FuncValueConverter<string?, BadgeKind>(level => level switch
@@ -60,6 +68,19 @@ public static class ValueConverters
         DateTime.SpecifyKind(value, value.Kind == DateTimeKind.Unspecified ? DateTimeKind.Utc : value.Kind)
             .ToLocalTime()
             .ToString("g", App.Services is null ? System.Globalization.CultureInfo.CurrentCulture : App.Localization.Culture);
+
+    public static string FormatMoney(long minorUnits)
+    {
+        if (App.Services is null)
+        {
+            return Mostawsef.Contracts.Common.Money.ToMajor(minorUnits)
+                .ToString("N2", System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        var localization = App.Localization;
+        var currency = App.Services.GetRequiredService<ClinicContext>().CurrencyCode;
+        return MoneyFormat.Format(minorUnits, currency, localization);
+    }
 
     private sealed class DateOnlyConverter : IValueConverter
     {

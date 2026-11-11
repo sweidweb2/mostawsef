@@ -30,9 +30,12 @@ when the user leaves (cancels in-flight API calls; a cancelled first load marks 
 New order is the same reuse pattern for a sub-page (`OrdersViewModel` holds the instance; New order resets via `BeginReuse()`).
 Pass a cancellation token to every API read a page makes (`PagedListViewModel.ReadAsync` for one-off reads such as details).
 List pages derive from `ViewModels/Shell/NumberedListViewModel` (page numbers; records sorted by a field, e.g. users) or
-`PagedListViewModel` (cursor paging; append-only newest-first logs). Both expose the same bindings. A failed load shows the `DataTable` error state
-(bind `HasError`, `ErrorTitle`/`ErrorDescription` via `{l:TrKey LoadError...Key}` and `RetryCommand="{Binding RefreshCommand}"`).
-Use toasts for failed actions (save, delete), the error state for content that could not load.
+`PagedListViewModel` (cursor paging; append-only newest-first logs). Both expose the same bindings and keep rows in one
+`ListPageItems<T>` instance (`ReplaceAll` on reload; `PrependNewest` after create when the new row can sit on page 1).
+A failed load shows the `DataTable` error state (bind `HasError`, `ErrorTitle`/`ErrorDescription` via `{l:TrKey LoadError...Key}`
+and `RetryCommand="{Binding RefreshCommand}"`). Use toasts for failed actions (save, delete), the error state for content
+that could not load. Prefer `DataGridTextColumn` + `ValueConverters` for money/dates in tables; keep template columns for
+badges, actions and `RowNumber`.
 
 ## Creating a component
 1. Class in `Components/<Category>/<Name>.cs`, namespace `Mostawsef.Desktop.Components`.

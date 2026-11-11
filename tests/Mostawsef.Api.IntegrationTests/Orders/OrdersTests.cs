@@ -35,7 +35,7 @@ public class OrdersTests(ApiFactory factory)
         {
             PatientId = patient.Id,
             Items = [new() { LabTestId = cbc.Id }, new() { LabTestId = sugar.Id }],
-            OurPrice = 3000,
+            Addon = 3000,
         }, Ct);
         var order = await response.Content.ReadFromJsonAsync<OrderDetailsDto>(Ct);
 
@@ -43,7 +43,8 @@ public class OrdersTests(ApiFactory factory)
         Assert.EndsWith($"{Url}/{order!.Id}", response.Headers.Location!.ToString());
         Assert.Matches(@"^ORD-\d{6,}$", order.Number);
         Assert.Equal((patient.Id, patient.FullName, patient.Phone), (order.PatientId, order.PatientName, order.PatientPhone));
-        Assert.Equal((OrderStatuses.Pending, currency, 23000L, 0L, 23000L), (order.Status, order.Currency, order.Total, order.Paid, order.Balance));
+        Assert.Equal((OrderStatuses.Pending, currency, 23000L, 0L, 23000L, 3000L),
+            (order.Status, order.Currency, order.Total, order.Paid, order.Balance, order.Addon));
         Assert.Equal(TestUsers.Admin.Username, order.CreatedBy);
         Assert.Equal(
             [new OrderItemDto(cbc.Id, cbc.Code, cbc.Name, 15000), new OrderItemDto(sugar.Id, sugar.Code, sugar.Name, 5000)],
@@ -53,9 +54,9 @@ public class OrdersTests(ApiFactory factory)
         await using var scope = factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var labPrices = await db.OrderItems
-            .Where(i => i.OrderId == order.Id).OrderByDescending(i => i.OurPrice).Select(i => i.LabPrice).ToListAsync(Ct);
+            .Where(i => i.OrderId == order.Id).OrderByDescending(i => i.Price).Select(i => i.LabPrice).ToListAsync(Ct);
         Assert.Equal([9000L, 2000L], labPrices);
-        Assert.Equal(23000L, await db.Orders.Where(o => o.Id == order.Id).Select(o => o.OurPrice).SingleAsync(Ct));
+        Assert.Equal(23000L, await db.Orders.Where(o => o.Id == order.Id).Select(o => o.Total).SingleAsync(Ct));
     }
 
     [Theory]
@@ -74,12 +75,12 @@ public class OrdersTests(ApiFactory factory)
             FirstPayment = new() { Amount = amount, Method = PaymentMethods.Card, Notes = " Visa " },
         });
 
-        Assert.Equal((status, amount, balance), (order.Status, order.Paid, order.Balance));
+        Assert.Equal((status, amount, balance, 0L), (order.Status, order.Paid, order.Balance, order.Addon));
         var listed = (await admin.GetJsonAsync<PagedResult<OrderListItemDto>>($"{Url}?search={order.Number}")).Items.Single();
         Assert.Equal((1, 10000L, amount, status), (listed.TestsCount, listed.Total, listed.Paid, listed.Status));
 
         var reloaded = await admin.GetJsonAsync<OrderDetailsDto>($"{Url}/{order.Id}");
-        Assert.Equal((status, amount, balance, 1), (reloaded.Status, reloaded.Paid, reloaded.Balance, reloaded.Items.Count));
+        Assert.Equal((status, amount, balance, 0L, 1), (reloaded.Status, reloaded.Paid, reloaded.Balance, reloaded.Addon, reloaded.Items.Count));
         Assert.Equal(test.Code, reloaded.Items[0].Code);
     }
 
@@ -164,7 +165,7 @@ public class OrdersTests(ApiFactory factory)
         {
             NewPatient = new() { FullName = " ", Phone = "call me", Gender = "Other" },
             Items = [new() { LabTestId = null }],
-            OurPrice = -1,
+            Addon = -1,
             FirstPayment = new() { Amount = 0, Method = "Cheque", Notes = new string('n', 501) },
         }, Ct));
 
@@ -173,7 +174,7 @@ public class OrdersTests(ApiFactory factory)
         Assert.Equal([ErrorCodes.Invalid], problem.Errors["NewPatient.Phone"]);
         Assert.Equal([ErrorCodes.Invalid], problem.Errors["NewPatient.Gender"]);
         Assert.Equal([ErrorCodes.Required], problem.Errors["Items[0].LabTestId"]);
-        Assert.Equal([$"range|0|{OrderRules.MaxOurPrice}"], problem.Errors["OurPrice"]);
+        Assert.Equal([$"range|0|{OrderRules.MaxAddon}"], problem.Errors["Addon"]);
         Assert.Equal([$"range|1|{OrderRules.MaxPaymentAmount}"], problem.Errors["FirstPayment.Amount"]);
         Assert.Equal([ErrorCodes.Invalid], problem.Errors["FirstPayment.Method"]);
         Assert.Equal([$"max_length|{OrderRules.PaymentNotesMaxLength}"], problem.Errors["FirstPayment.Notes"]);
@@ -264,7 +265,7 @@ public class OrdersTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task A_first_payment_may_cover_the_catalog_plus_our_price_addon()
+    public async Task A_first_payment_may_cover_the_catalog_plus_addon()
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var patient = await CreatePatientAsync(admin);
@@ -274,7 +275,7 @@ public class OrdersTests(ApiFactory factory)
         {
             PatientId = patient.Id,
             Items = [new() { LabTestId = test.Id }],
-            OurPrice = 500,
+            Addon = 500,
             FirstPayment = new() { Amount = 4500, Method = PaymentMethods.Cash },
         });
 
@@ -284,7 +285,7 @@ public class OrdersTests(ApiFactory factory)
         {
             PatientId = patient.Id,
             Items = [new() { LabTestId = test.Id }],
-            OurPrice = 500,
+            Addon = 500,
             FirstPayment = new() { Amount = 4501, Method = PaymentMethods.Cash },
         }, Ct));
 

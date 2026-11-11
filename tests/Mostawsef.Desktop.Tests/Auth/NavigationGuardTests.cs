@@ -9,7 +9,8 @@ using Mostawsef.Desktop.ViewModels.Shell;
 
 namespace Mostawsef.Desktop.Tests.Auth;
 
-public class NavigationGuardTests
+[Collection(UiTestCollection.Name)]
+public class NavigationGuardTests : UiTestBase
 {
     [AvaloniaFact]
     public void Signed_out_users_cannot_open_any_portal_or_portal_page()

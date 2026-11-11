@@ -249,9 +249,6 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
-                    b.Property<long>("OurPrice")
-                        .HasColumnType("bigint");
-
                     b.Property<long>("Paid")
                         .HasColumnType("bigint");
 
@@ -285,6 +282,9 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
 
                     b.Property<int>("TestsCount")
                         .HasColumnType("integer");
+
+                    b.Property<long>("Total")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -340,7 +340,7 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("OrderId")
                         .HasColumnType("uuid");
 
-                    b.Property<long>("OurPrice")
+                    b.Property<long>("Price")
                         .HasColumnType("bigint");
 
                     b.Property<DateTime?>("UpdatedAt")

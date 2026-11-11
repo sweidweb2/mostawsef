@@ -19,7 +19,7 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(o => o.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
         builder.Property(o => o.DiscountType).HasConversion<string>().HasMaxLength(10);
         builder.Property(o => o.DiscountValue).IsRequired();
-        builder.Property(o => o.OurPrice).IsRequired();
+        builder.Property(o => o.Total).IsRequired();
         builder.Property(o => o.TestsCount).IsRequired();
         builder.Property(o => o.Paid).IsRequired();
         builder.Property(o => o.Currency).HasMaxLength(Order.CurrencyMaxLength).IsRequired();
@@ -51,7 +51,7 @@ public class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
         builder.HasKey(i => i.Id);
 
         builder.Property(i => i.LabPrice).IsRequired();
-        builder.Property(i => i.OurPrice).IsRequired();
+        builder.Property(i => i.Price).IsRequired();
 
         builder.HasOne(i => i.LabTest).WithMany().HasForeignKey(i => i.LabTestId).OnDelete(DeleteBehavior.Restrict);
 

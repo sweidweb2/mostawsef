@@ -90,6 +90,7 @@ alwaysApply: false
 - Pages opened from another page (new/details pages, not in the menu): `.SubPage<Vm, View>()` in the portal, opened with
   `NavigationService.OpenAsync<Vm>(vm => vm.Id = ...)` and closed with `BackAsync()` (asks first when a `FormViewModel`
   sub-page is dirty; the menu keeps its entry selected). Reference: Orders -> `NewOrderViewModel` / `OrderDetailsViewModel`.
-  A list that should reload on return calls `MarkStale()` when it opens the sub-page.
+  A list that should reload on return calls `MarkStale()` when it opens the sub-page. Prefer `PrependNewest`
+  (or an in-place update) when the create response already has the new row, so the DataGrid is not rebuilt.
 - All roles share one `PortalShellViewModel` + `Views/Shell/PortalShellView`; a role's title and menu come from its `AppRoutes` portal. Never subclass the shell per role.
 - Never store tokens or passwords on disk; the session lives in `SessionService` memory.

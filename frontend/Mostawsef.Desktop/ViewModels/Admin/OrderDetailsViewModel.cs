@@ -18,10 +18,13 @@ public partial class OrderDetailsViewModel(OrdersApi orders, NavigationService n
     public Guid OrderId { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasOrder))]
+    [NotifyPropertyChangedFor(nameof(HasOrder), nameof(HasAddon))]
     public partial OrderDetailsDto? Order { get; private set; }
 
     public bool HasOrder => Order is not null;
+
+    /// <summary>True when the order has an amount added on top of the tests' catalog prices.</summary>
+    public bool HasAddon => Order is { Addon: > 0 };
 
     [ObservableProperty]
     public partial bool IsLoading { get; private set; }

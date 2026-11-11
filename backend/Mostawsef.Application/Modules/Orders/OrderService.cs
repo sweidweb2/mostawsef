@@ -47,10 +47,7 @@ public class OrderService(
     public async Task<OrderDetailsDto> GetAsync(Guid id, CancellationToken cancellationToken)
     {
         var order = await orders.GetByIdAsync(id, cancellationToken) ?? throw AppException.NotFound();
-        return new OrderDetailsDto(
-            order.Id, order.Number, order.CreatedAt, order.CreatedBy, order.PatientId, order.PatientName, order.PatientPhone,
-            order.Status.ToString(), order.Currency, order.Total, order.Paid, order.Total - order.Paid,
-            order.Items.Select(i => new OrderItemDto(i.LabTestId, i.Code, i.Name, i.OurPrice)).ToList());
+        return ToDetails(order);
     }
 
     public async Task<OrderDetailsDto> CreateAsync(CreateOrderRequest request, CancellationToken cancellationToken)
@@ -60,7 +57,7 @@ public class OrderService(
         var (patient, isNewPatient) = await ResolvePatientAsync(request, cancellationToken);
         var lines = await LoadTestsAsync(request.Items, cancellationToken);
         var currencyCode = await currencyTask;
-        var total = lines.Sum(t => t.Price) + (request.OurPrice ?? 0);
+        var total = lines.Sum(t => t.Price) + (request.Addon ?? 0);
 
         var payment = request.FirstPayment;
         if (payment?.Amount > total)
@@ -79,7 +76,7 @@ public class OrderService(
             order.AddItem(test);
         }
 
-        order.SetOurPrice(total);
+        order.SetTotal(total);
 
         if (payment is not null)
         {
@@ -172,8 +169,13 @@ public class OrderService(
         return result;
     }
 
+    private static OrderDetailsDto ToDetails(OrderDetailsRow o) => new(
+        o.Id, o.Number, o.CreatedAt, o.CreatedBy, o.PatientId, o.PatientName, o.PatientPhone, o.Status.ToString(), o.Currency,
+        o.Total, o.Paid, o.Balance, o.Addon,
+        o.Items.Select(i => new OrderItemDto(i.LabTestId, i.Code, i.Name, i.Price)).ToList());
+
     private static OrderDetailsDto ToDetails(Order o) => new(
         o.Id, o.Number, o.CreatedAt, o.CreatedBy, o.PatientId, o.PatientName, o.PatientPhone, o.Status.ToString(), o.Currency,
-        o.Total, o.Paid, o.Balance,
-        o.Items.Select(i => new OrderItemDto(i.LabTestId, i.LabTest?.Code ?? string.Empty, i.LabTest?.Name ?? string.Empty, i.OurPrice)).ToList());
+        o.Total, o.Paid, o.Balance, o.Addon,
+        o.Items.Select(i => new OrderItemDto(i.LabTestId, i.LabTest?.Code ?? string.Empty, i.LabTest?.Name ?? string.Empty, i.Price)).ToList());
 }

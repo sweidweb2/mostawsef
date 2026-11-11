@@ -10,7 +10,8 @@ using Mostawsef.Desktop.ViewModels.Admin;
 
 namespace Mostawsef.Desktop.Tests.Diagnostics;
 
-public class PerformanceMonitorTests
+[Collection(UiTestCollection.Name)]
+public class PerformanceMonitorTests : UiTestBase
 {
     [AvaloniaFact]
     public void Record_adds_newest_first_and_caps_the_list()

@@ -21,13 +21,15 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
                 o.PatientPhone,
                 o.Status,
                 o.Currency,
-                o.OurPrice,
+                o.Total,
                 o.Paid,
+                o.Total - o.Paid,
+                o.Total - o.Items.Sum(i => i.Price),
                 o.Items.Select(i => new OrderItemRow(
                     i.LabTestId,
                     i.LabTest != null ? i.LabTest.Code : string.Empty,
                     i.LabTest != null ? i.LabTest.Name : string.Empty,
-                    i.OurPrice)).ToList()))
+                    i.Price)).ToList()))
             .FirstOrDefaultAsync(cancellationToken);
 
     public async Task<(IReadOnlyList<OrderListRow> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken)
@@ -49,7 +51,7 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
                 o.PatientName,
                 o.PatientPhone,
                 o.TestsCount,
-                o.OurPrice,
+                o.Total,
                 o.Paid,
                 o.Status));
 

@@ -19,7 +19,8 @@ using static Mostawsef.Desktop.Tests.Infrastructure.TestServices;
 
 namespace Mostawsef.Desktop.Tests.LabTests;
 
-public class LabTestsPageTests
+[Collection(UiTestCollection.Name)]
+public class LabTestsPageTests : UiTestBase
 {
     private const string TestsPath = "/api/lab-tests";
 

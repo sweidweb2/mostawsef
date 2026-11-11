@@ -9,7 +9,8 @@ using Mostawsef.Desktop.Tests.Infrastructure;
 
 namespace Mostawsef.Desktop.Tests.Views;
 
-public class ToastTests
+[Collection(UiTestCollection.Name)]
+public class ToastTests : UiTestBase
 {
     [AvaloniaFact]
     public void Toast_uses_the_app_design_with_icon_message_and_close_button_and_no_empty_title()

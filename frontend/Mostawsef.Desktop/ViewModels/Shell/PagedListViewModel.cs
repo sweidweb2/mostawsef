@@ -16,7 +16,8 @@ namespace Mostawsef.Desktop.ViewModels.Shell;
 /// Subclasses implement FetchPageAsync (and optionally LoadExtrasAsync, e.g. stat cards). Paging is keyset based:
 /// the total is counted only when the filter changes or on Refresh, and the extras only on the first load and Refresh.
 /// The portal shell activates the page when it is shown (first load) and deactivates it when the user leaves,
-/// which cancels its API calls.
+/// which cancels its API calls. Rows live in one <see cref="ListPageItems{T}"/> instance so the DataGrid is not
+/// torn down on every reload.
 /// </summary>
 public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadablePage
 {
@@ -43,9 +44,8 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
 
     protected LocalizationService Localization { get; }
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsEmpty))]
-    public partial IReadOnlyList<TItem> Items { get; private set; } = [];
+    /// <summary>Bound once for the page lifetime; reloads replace contents in place.</summary>
+    public ListPageItems<TItem> Items { get; } = new();
 
     [ObservableProperty]
     public partial int CurrentPage { get; set; } = 1;
@@ -239,9 +239,10 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
             }
             else
             {
-                Items = [];
+                Items.ReplaceAll([]);
                 TotalCount = 0;
                 LoadError = result.Error;
+                OnPropertyChanged(nameof(IsEmpty));
             }
 
             _loaded = true;
@@ -268,7 +269,7 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
         _nextCursor = result.NextCursor;
         _previousCursor = result.PreviousCursor;
         LoadError = null;
-        Items = result.Items;
+        Items.ReplaceAll(result.Items);
         if (result.TotalCount is { } total)
         {
             TotalCount = total;
@@ -284,6 +285,7 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
         CurrentPage = _shownPage;
         _suppressPageReload = false;
         FirstRowNumber = (_shownPage - 1) * PageSize + 1;
+        OnPropertyChanged(nameof(IsEmpty));
     }
 
     /// <summary>An API read tied to the page (e.g. details for a modal): null when the user left the page before it finished.</summary>

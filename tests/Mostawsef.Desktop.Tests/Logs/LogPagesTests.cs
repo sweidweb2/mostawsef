@@ -15,7 +15,8 @@ using Mostawsef.Desktop.ViewModels.Super;
 
 namespace Mostawsef.Desktop.Tests.Logs;
 
-public class LogPagesTests
+[Collection(UiTestCollection.Name)]
+public class LogPagesTests : UiTestBase
 {
     private const string ActivityPath = "/api/activity-logs";
     private const string ErrorsPath = "/api/system-errors";
@@ -61,7 +62,7 @@ public class LogPagesTests
         await page.ActivateAsync();
 
         page.CurrentPage = 2;
-        await WaitUntil(() => !page.IsLoading);
+        await UiWait.UntilAsync(() => !page.IsLoading);
         Assert.Equal("?pageSize=20&after=older-cursor&includeTotal=false", LastListRequest(app, ActivityPath));
         Assert.Equal(2, page.CurrentPage);
         Assert.Equal(45, page.TotalCount);
@@ -84,7 +85,7 @@ public class LogPagesTests
         Assert.Equal("1", window.GetVisualDescendants().OfType<RowNumber>().Single().Text);
 
         page.CurrentPage = 2;
-        await WaitUntil(() => !page.IsLoading);
+        await UiWait.UntilAsync(() => !page.IsLoading);
         Dispatcher.UIThread.RunJobs();
 
         Assert.Equal("21", window.GetVisualDescendants().OfType<RowNumber>().Single().Text);
@@ -97,10 +98,10 @@ public class LogPagesTests
         var page = app.Get<ActivityLogsViewModel>();
         await page.ActivateAsync();
         page.CurrentPage = 3;
-        await WaitUntil(() => !page.IsLoading);
+        await UiWait.UntilAsync(() => !page.IsLoading);
 
         page.CurrentPage = 2;
-        await WaitUntil(() => !page.IsLoading);
+        await UiWait.UntilAsync(() => !page.IsLoading);
 
         Assert.Equal("?pageSize=20&before=newer-cursor&includeTotal=false", LastListRequest(app, ActivityPath));
         Assert.Equal(2, page.CurrentPage);
@@ -114,7 +115,7 @@ public class LogPagesTests
         await page.ActivateAsync();
 
         page.CurrentPage = 3;
-        await WaitUntil(() => !page.IsLoading);
+        await UiWait.UntilAsync(() => !page.IsLoading);
 
         Assert.Equal("?pageSize=5&last=true&includeTotal=false", LastListRequest(app, ActivityPath));
         Assert.Equal(3, page.CurrentPage);
@@ -129,7 +130,7 @@ public class LogPagesTests
         await page.ActivateAsync();
 
         page.CurrentPage = 2;
-        await WaitUntil(() => !page.IsLoading);
+        await UiWait.UntilAsync(() => !page.IsLoading);
         page.Search = "admin";
         await page.SearchCommand.ExecuteAsync(null);
         Assert.Equal(1, StatsRequests(app, ActivityPath));
@@ -155,7 +156,7 @@ public class LogPagesTests
         Assert.False(pagination.IsEnabled);
 
         slow.Release.SetResult();
-        await WaitUntil(() => !page.IsLoading);
+        await UiWait.UntilAsync(() => !page.IsLoading);
         Assert.True(pagination.IsEnabled);
     }
 
@@ -178,7 +179,7 @@ public class LogPagesTests
                     : ListAnswer(request, deleted ? 20 : 21, [SignIn]));
         var (page, window) = await ShowPage<ActivityLogsViewModel>(app);
         page.CurrentPage = 2;
-        await WaitUntil(() => !page.IsLoading);
+        await UiWait.UntilAsync(() => !page.IsLoading);
 
         var delete = page.DeleteCommand.ExecuteAsync(SignIn);
         Dispatcher.UIThread.RunJobs();
@@ -203,9 +204,9 @@ public class LogPagesTests
 
         page.CurrentPage = 2;
         page.CurrentPage = 3;
-        await WaitUntil(() => page.Items.Contains(pageThree) && !page.IsLoading);
+        await UiWait.UntilAsync(() => page.Items.Contains(pageThree) && !page.IsLoading);
         slow.Release.SetResult();
-        await Drain();
+        await UiWait.DrainAsync();
 
         Assert.True(slow.RequestToken.IsCancellationRequested);
         Assert.Equal(3, page.CurrentPage);
@@ -227,7 +228,7 @@ public class LogPagesTests
         page.Search = "admin";
         await page.SearchCommand.ExecuteAsync(null);
         slow.Release.SetResult();
-        await Drain();
+        await UiWait.DrainAsync();
 
         Assert.True(slow.RequestToken.IsCancellationRequested);
         Assert.Equal(1, page.CurrentPage);
@@ -486,26 +487,6 @@ public class LogPagesTests
         public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public CancellationToken RequestToken { get; set; }
-    }
-
-    private static async Task WaitUntil(Func<bool> condition)
-    {
-        var deadline = DateTime.UtcNow.AddSeconds(5);
-        while (!condition() && DateTime.UtcNow < deadline)
-        {
-            Dispatcher.UIThread.RunJobs();
-            await Task.Delay(10, TestContext.Current.CancellationToken);
-        }
-    }
-
-    /// <summary>Lets late answers reach the view model before asserting they were ignored.</summary>
-    private static async Task Drain()
-    {
-        for (var i = 0; i < 20; i++)
-        {
-            Dispatcher.UIThread.RunJobs();
-            await Task.Delay(10, TestContext.Current.CancellationToken);
-        }
     }
 
     private static string LastListRequest(TestServices app, string path) =>

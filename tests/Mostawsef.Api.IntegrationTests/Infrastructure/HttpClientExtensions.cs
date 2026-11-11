@@ -23,13 +23,9 @@ public static class HttpClientExtensions
         return client;
     }
 
-    /// <summary>A client already signed in as the given user.</summary>
-    public static async Task<HttpClient> CreateClientAsAsync(this ApiFactory factory, TestUser user)
-    {
-        var client = factory.CreateClient();
-        var login = await client.LoginAsAsync(user);
-        return client.WithBearer(login.AccessToken);
-    }
+    /// <summary>A client already signed in as the given user (seeded Admin/Super tokens are cached on the factory).</summary>
+    public static async Task<HttpClient> CreateClientAsAsync(this ApiFactory factory, TestUser user) =>
+        factory.CreateClient().WithBearer(await factory.GetAccessTokenAsync(user));
 
     public static async Task<T> GetJsonAsync<T>(this HttpClient client, string url)
     {

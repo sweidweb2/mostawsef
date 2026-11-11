@@ -4,7 +4,7 @@ using Mostawsef.Infrastructure.Persistence.Context;
 namespace Mostawsef.Infrastructure.Persistence;
 
 /// <summary>
-/// Fills orders.OurPrice for rows created before AddOrderOurPrice (the column starts at 0).
+/// Fills orders.Total for rows created before AddOrderOurPrice (the column started as OurPrice at 0).
 /// Plain EF Core instead of SQL in the migration. DatabaseInitializer runs it once after that migration.
 /// </summary>
 public static class OrderOurPriceBackfill
@@ -20,7 +20,7 @@ public static class OrderOurPriceBackfill
         Guid? lastId = null;
         while (true)
         {
-            var query = db.Orders.Include(o => o.Items).Where(o => o.OurPrice == 0);
+            var query = db.Orders.Include(o => o.Items).Where(o => o.Total == 0);
             if (lastId is { } after)
             {
                 query = query.Where(o => o.Id.CompareTo(after) > 0);
@@ -29,7 +29,7 @@ public static class OrderOurPriceBackfill
             var batch = await query.OrderBy(o => o.Id).Take(BatchSize).ToListAsync(cancellationToken);
             foreach (var order in batch)
             {
-                order.SetOurPrice(order.CatalogTotal);
+                order.SetTotal(order.CatalogTotal);
             }
 
             await db.SaveChangesAsync(cancellationToken);

@@ -17,7 +17,8 @@ using static Mostawsef.Desktop.Tests.Orders.OrderPages;
 
 namespace Mostawsef.Desktop.Tests.Orders;
 
-public class NewOrderPageTests
+[Collection(UiTestCollection.Name)]
+public class NewOrderPageTests : UiTestBase
 {
     [AvaloniaFact]
     public async Task Opening_the_page_preloads_the_catalog_while_preparing()
@@ -154,7 +155,7 @@ public class NewOrderPageTests
     }
 
     [AvaloniaFact]
-    public async Task The_total_adds_our_price_on_top_of_the_catalog_and_caps_the_payment_live()
+    public async Task The_total_adds_the_addon_on_top_of_the_catalog_and_caps_the_payment_live()
     {
         using var app = Admin();
         var (_, page, window) = await ShowNewOrderAsync(app);
@@ -167,7 +168,7 @@ public class NewOrderPageTests
         Assert.Equal("200.00", Named<TextBlock>(window, "TotalText").Text);
         Assert.False(Named<TextBlock>(window, "RemainingText").IsEffectivelyVisible);
 
-        page.OurPrice = 5m;
+        page.Addon = 5m;
         page.PaymentAmount = 50m;
         Dispatcher.UIThread.RunJobs();
 
@@ -317,10 +318,10 @@ public class NewOrderPageTests
     }
 
     [AvaloniaFact]
-    public async Task A_valid_order_is_sent_with_empty_our_price_as_null_then_its_details_open()
+    public async Task A_valid_order_is_sent_with_an_addon_then_its_details_open()
     {
         using var app = Admin();
-        var created = Details(Guid.NewGuid());
+        var created = Details(Guid.NewGuid()) with { Total = 20500, Paid = 5000, Balance = 15500, Addon = 500 };
         CreateOrderRequest? sent = null;
         app.Api.On(HttpMethod.Post, OrdersPath, request =>
         {
@@ -333,7 +334,7 @@ public class NewOrderPageTests
         page.PatientForm.Phone = " 0111 ";
         page.PatientForm.Gender = Genders.Male;
         await GoToReviewAsync(page, Cbc, Sugar);
-        page.OurPrice = 5m;
+        page.Addon = 5m;
         page.PaymentAmount = 50m;
         page.PaymentMethod = PaymentMethods.Card;
         page.PaymentNotes = "  ";
@@ -343,6 +344,10 @@ public class NewOrderPageTests
         await WaitUntil(() => details.HasOrder && Toasts(window).Count > 0);
 
         Assert.True(details.HasOrder);
+        Assert.True(details.HasAddon);
+        Assert.Equal(500, details.Order!.Addon);
+        Assert.True(Named<StackPanel>(window, "AddonRow").IsVisible);
+        Assert.Equal("5.00", Named<TextBlock>(window, "AddonText").Text);
         Assert.Empty(app.Api.RequestsTo(HttpMethod.Get, $"{OrdersPath}/{created.Id}"));
         Assert.NotNull(sent);
         Assert.Null(sent.PatientId);
@@ -350,10 +355,10 @@ public class NewOrderPageTests
         Assert.Equal(
             [new CreateOrderItemRequest { LabTestId = Cbc.Id }, new CreateOrderItemRequest { LabTestId = Sugar.Id }],
             sent.Items);
-        Assert.Equal(500, sent.OurPrice);
+        Assert.Equal(500, sent.Addon);
         Assert.Equal(new CreateFirstPaymentRequest { Amount = 5000, Method = PaymentMethods.Card, Notes = null }, sent.FirstPayment);
         Assert.Equal(created.Id, details.OrderId);
-        Assert.Equal(created.Number, details.Order!.Number);
+        Assert.Equal(created.Number, details.Order.Number);
         Assert.Contains("Order ORD-000007 created.", Toasts(window));
     }
 

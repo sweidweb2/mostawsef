@@ -12,7 +12,8 @@ using static Mostawsef.Desktop.Tests.Infrastructure.TestServices;
 
 namespace Mostawsef.Desktop.Tests.Views;
 
-public class TranslationBindingTests
+[Collection(UiTestCollection.Name)]
+public class TranslationBindingTests : UiTestBase
 {
     private static readonly ActivityLogListItemDto SignIn =
         new(Guid.NewGuid(), DateTime.UtcNow, "auth.signed_in", "Auth", "Signed in", "admin@test.local");

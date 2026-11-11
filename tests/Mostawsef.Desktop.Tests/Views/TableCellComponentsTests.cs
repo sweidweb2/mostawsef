@@ -13,7 +13,8 @@ using Mostawsef.Desktop.Tests.Infrastructure;
 namespace Mostawsef.Desktop.Tests.Views;
 
 /// <summary>Row numbers, colored initials and copy buttons used inside table cells.</summary>
-public class TableCellComponentsTests
+[Collection(UiTestCollection.Name)]
+public class TableCellComponentsTests : UiTestBase
 {
     private static readonly string[] SampleNames =
         ["Rabi3 kasir", "Jawad ezzeddine", "zein baydon", "Abdallah abbas", "hasan rahhal", "hussein fayad"];

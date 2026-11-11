@@ -60,14 +60,9 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="{l:Tr Logs.Col.Time}" Width="150">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate x:DataType="logs:SystemErrorListItemDto">
-                                    <TextBlock Margin="12,0" VerticalAlignment="Center"
-                                               Text="{Binding OccurredAt, Converter={x:Static conv:ValueConverters.LocalDateTime}}" />
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="{l:Tr Logs.Col.Time}" Width="150"
+                                           Binding="{Binding OccurredAt, Converter={x:Static conv:ValueConverters.LocalDateTime}}"
+                                           IsReadOnly="True" />
                         <DataGridTemplateColumn Header="{l:Tr Logs.Col.Level}" Width="110">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate x:DataType="logs:SystemErrorListItemDto">

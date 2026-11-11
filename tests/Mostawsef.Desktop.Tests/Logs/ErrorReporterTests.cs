@@ -10,7 +10,8 @@ using NSubstitute;
 
 namespace Mostawsef.Desktop.Tests.Logs;
 
-public class ErrorReporterTests
+[Collection(UiTestCollection.Name)]
+public class ErrorReporterTests : UiTestBase
 {
     private const string ReportPath = "/api/system-errors/report";
 
@@ -157,7 +158,7 @@ public class ErrorReporterTests
         var sends = Enumerable.Range(0, 5)
             .Select(i => reporter.SendAsync(new InvalidOperationException($"Storm {i}")))
             .ToArray();
-        await WaitUntil(() => Volatile.Read(ref inFlight) == 1);
+        await UiWait.UntilAsync(() => Volatile.Read(ref inFlight) == 1, pumpDispatcher: false);
 
         Assert.Equal(1, Volatile.Read(ref inFlight));
         gate.SetResult();
@@ -165,16 +166,6 @@ public class ErrorReporterTests
 
         Assert.Equal(1, peak);
         Assert.Equal(5, app.Api.RequestsTo(HttpMethod.Post, ReportPath).Count());
-    }
-
-    private static async Task WaitUntil(Func<bool> condition)
-    {
-        for (var i = 0; i < 200 && !condition(); i++)
-        {
-            await Task.Delay(10, TestContext.Current.CancellationToken);
-        }
-
-        Assert.True(condition());
     }
 
     private static ErrorReporter Reporter(TestServices app, out string logDirectory, TimeProvider? clock = null, IToastService? toasts = null)

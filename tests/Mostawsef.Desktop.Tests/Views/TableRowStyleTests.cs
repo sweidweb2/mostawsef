@@ -11,7 +11,8 @@ using Mostawsef.Desktop.Tests.Infrastructure;
 namespace Mostawsef.Desktop.Tests.Views;
 
 /// <summary>Every table's rows: their height and the hover tint with the start-edge accent bar.</summary>
-public class TableRowStyleTests
+[Collection(UiTestCollection.Name)]
+public class TableRowStyleTests : UiTestBase
 {
     [AvaloniaFact]
     public async Task Rows_are_tall_and_hovering_one_tints_it_and_shows_the_accent_bar()

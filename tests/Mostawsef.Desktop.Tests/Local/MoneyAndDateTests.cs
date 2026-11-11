@@ -9,7 +9,8 @@ using Mostawsef.Desktop.Tests.Infrastructure;
 
 namespace Mostawsef.Desktop.Tests.Local;
 
-public class MoneyAndDateTests
+[Collection(UiTestCollection.Name)]
+public class MoneyAndDateTests : UiTestBase
 {
     [Theory]
     [InlineData(1250.50, 125050)]

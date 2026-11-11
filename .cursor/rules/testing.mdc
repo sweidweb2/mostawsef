@@ -38,16 +38,21 @@ Skip tests only for pure styling/token changes and docs.
 - Desktop tests: `using var app = new TestServices();` (real DI, fake API, temp settings, English). Stub the server with
   `app.Api.RespondToLoginWith(...)`, `RespondWithStatus(...)`, `FailWithNetworkError()`; sign in with `app.SignInAs(role)`.
   Printouts never open a viewer in tests: `app.OpenedFiles` lists the PDFs the app asked to open.
+  Classes that use `TestServices` or render UI inherit `UiTestBase` and `[Collection(UiTestCollection.Name)]`.
+  The assembly stays non-parallel (Avalonia headless + `App.Services` are process-wide). Prefer `UiWait.UntilAsync`
+  over local poll loops; skip opening a portal/`Show()` when the assertion is view-model only.
 - Time-dependent API behavior: swap the clock with `factory.WithWebHostBuilder(... ConfigureTestServices(s => s.AddSingleton<TimeProvider>(fixed)))`
   (see `ClockAndHealthTests`), never by sleeping.
 - Never call the real API, real settings file or real database from desktop tests.
 - Keep tests independent: no ordering, no shared mutable state between tests.
 
 ## Commands
-Always use the script (it checks Docker and switches to Release when the app is running):
+Always use the script (it checks Docker and switches to Release when the app is running). Prefer `api`/`desktop` plus a
+name filter while iterating; close the running apps for Debug builds; use `-NoBuild` when binaries are fresh:
 ```powershell
-./scripts/test.ps1 [all|api|desktop] [NameFilter] [-Watch] [-Coverage] [-Detailed]
+./scripts/test.ps1 [all|api|desktop] [NameFilter] [-Watch] [-Coverage] [-Detailed] [-NoBuild]
 ./scripts/test.ps1 api Login
+./scripts/test.ps1 desktop Orders
 ./scripts/test.ps1 desktop NavigationGuard -Watch
 ```
 
