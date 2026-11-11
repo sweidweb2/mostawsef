@@ -32,6 +32,7 @@ public partial class App : Application
         {
             Services = new ServiceCollection().AddMostawsefDesktop().BuildServiceProvider();
             PageHost.Perf = Services.GetRequiredService<PerformanceMonitor>();
+            PageHost.Localization = Services.GetRequiredService<LocalizationService>();
             Services.GetRequiredService<ErrorReporter>().Install();
             Services.GetRequiredService<ThemeService>().Initialize();
             desktop.Exit += (_, _) => Services.GetRequiredService<SettingsService>().Flush();

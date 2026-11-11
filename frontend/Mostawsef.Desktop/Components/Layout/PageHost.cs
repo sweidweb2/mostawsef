@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Mostawsef.Desktop.Services.Diagnostics;
+using Mostawsef.Desktop.Services.Local;
 
 namespace Mostawsef.Desktop.Components;
 
@@ -12,6 +14,7 @@ namespace Mostawsef.Desktop.Components;
 /// Shows the view of <see cref="Page"/> (a view model, resolved by the app's data templates).
 /// Views are cached by page instance and kept in the tree: switching pages toggles <see cref="Visual.IsVisible"/>
 /// instead of detaching. Detaching an Avalonia DataGrid with rows was multi-second; hiding is cheap.
+/// Hidden cached views are dropped on a language switch so every mounted page is not rebound.
 /// Transient sub-pages must call <see cref="Release"/> when discarded so their views do not accumulate.
 /// </summary>
 public class PageHost : Decorator
@@ -22,10 +25,14 @@ public class PageHost : Decorator
     /// <summary>Optional; set from app startup / tests so this control does not resolve DI itself.</summary>
     public static PerformanceMonitor? Perf { get; set; }
 
+    /// <summary>Optional; set from app startup / tests so language switches can drop hidden views.</summary>
+    public static LocalizationService? Localization { get; set; }
+
     // Grid stretches children to the host size; plain Panel would leave pages at their desired size.
     private readonly Grid _host = new();
     private readonly Dictionary<object, Control> _views = new();
     private Control? _current;
+    private LocalizationService? _subscribedLocalization;
 
     public PageHost()
     {
@@ -55,6 +62,18 @@ public class PageHost : Decorator
         view.DataContext = null;
     }
 
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        SubscribeLanguage();
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        UnsubscribeLanguage();
+        base.OnDetachedFromVisualTree(e);
+    }
+
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
@@ -62,6 +81,47 @@ public class PageHost : Decorator
         if (change.Property == PageProperty)
         {
             ShowPage(change.NewValue);
+        }
+    }
+
+    private void SubscribeLanguage()
+    {
+        if (Localization is not { } localization || ReferenceEquals(_subscribedLocalization, localization))
+        {
+            return;
+        }
+
+        UnsubscribeLanguage();
+        _subscribedLocalization = localization;
+        localization.LanguageChanged += OnLanguageChanged;
+    }
+
+    private void UnsubscribeLanguage()
+    {
+        if (_subscribedLocalization is null)
+        {
+            return;
+        }
+
+        _subscribedLocalization.LanguageChanged -= OnLanguageChanged;
+        _subscribedLocalization = null;
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs e) => DiscardHiddenViews();
+
+    /// <summary>Keeps the visible page; drops the rest so a language switch does not rebind every visited view.</summary>
+    private void DiscardHiddenViews()
+    {
+        foreach (var (page, view) in _views.ToList())
+        {
+            if (ReferenceEquals(view, _current))
+            {
+                continue;
+            }
+
+            _views.Remove(page);
+            _host.Children.Remove(view);
+            view.DataContext = null;
         }
     }
 

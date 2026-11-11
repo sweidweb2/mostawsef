@@ -39,6 +39,9 @@ public interface IApiResult
 
     /// <summary>Set for 4xx responses that carried a problem body.</summary>
     ApiProblem? Problem { get; }
+
+    /// <summary>Response body on success when the API returned one; otherwise null.</summary>
+    object? Body { get; }
 }
 
 public record ApiResult<T>(T? Value, ApiError Error, HttpStatusCode? StatusCode = null) : IApiResult
@@ -46,6 +49,8 @@ public record ApiResult<T>(T? Value, ApiError Error, HttpStatusCode? StatusCode 
     public bool IsSuccess => Error == ApiError.None && Value is not null;
 
     public ApiProblem? Problem { get; init; }
+
+    public object? Body => Value;
 
     public static ApiResult<T> Ok(T value) => new(value, ApiError.None, HttpStatusCode.OK);
 

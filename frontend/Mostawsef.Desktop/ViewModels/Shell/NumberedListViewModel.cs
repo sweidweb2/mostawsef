@@ -99,6 +99,7 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
         }
 
         _pageLifetime.Cancel();
+        IsLoading = false;
     }
 
     /// <summary>The next activation loads the page again, e.g. when the user comes back from a sub-page that added a record.</summary>
@@ -118,11 +119,51 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
 
         LoadError = null;
         Items.Insert(0, item);
+        TrimToPageSize();
+        BumpTotalAfterInsert();
+    }
+
+    /// <summary>
+    /// Inserts a newly created row in list sort order on page 1 without a reload.
+    /// Marks stale when a search is active or the user is not on page 1.
+    /// When the page is full and the row sorts after the last visible item, only the total is bumped.
+    /// </summary>
+    protected void InsertSorted(TItem item, Comparison<TItem> compare)
+    {
+        if (!_loaded || CurrentPage != 1 || !string.IsNullOrWhiteSpace(Search))
+        {
+            MarkStale();
+            return;
+        }
+
+        LoadError = null;
+        var index = 0;
+        while (index < Items.Count && compare(Items[index], item) <= 0)
+        {
+            index++;
+        }
+
+        if (index >= PageSize)
+        {
+            BumpTotalAfterInsert();
+            return;
+        }
+
+        Items.Insert(index, item);
+        TrimToPageSize();
+        BumpTotalAfterInsert();
+    }
+
+    private void TrimToPageSize()
+    {
         while (Items.Count > PageSize)
         {
             Items.RemoveAt(Items.Count - 1);
         }
+    }
 
+    private void BumpTotalAfterInsert()
+    {
         TotalCount++;
         PageCount = Math.Max(1, (int)Math.Ceiling(TotalCount / (double)PageSize));
         OnPropertyChanged(nameof(IsEmpty));

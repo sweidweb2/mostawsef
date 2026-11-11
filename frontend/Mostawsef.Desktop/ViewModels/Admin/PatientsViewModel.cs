@@ -59,9 +59,19 @@ public partial class PatientsViewModel : NumberedListViewModel<PatientDto>
     [RelayCommand]
     private async Task AddAsync()
     {
-        if (await _dialogs.ShowFormAsync(new PatientFormViewModel(_patients, _dialogs, Localization), Localization.Get("Patients.AddTitle"), 640))
+        var form = new PatientFormViewModel(_patients, _dialogs, Localization);
+        if (!await _dialogs.ShowFormAsync(form, Localization.Get("Patients.AddTitle"), 640))
         {
-            Toasts.Success(Localization.Get("Patients.Saved"));
+            return;
+        }
+
+        Toasts.Success(Localization.Get("Patients.Saved"));
+        if (form.SavedValue is PatientDto created)
+        {
+            InsertSorted(created, CompareByName);
+        }
+        else
+        {
             await ReloadAsync();
         }
     }
@@ -113,7 +123,7 @@ public partial class PatientsViewModel : NumberedListViewModel<PatientDto>
         await ReloadAsync();
     }
 
-    /// <summary>All patients, whatever the search or page shown, as a PDF opened in the default viewer.</summary>
+    /// <summary>Up to <see cref="PageQuery.MaxExportRows"/> patients as a PDF opened in the default viewer.</summary>
     [RelayCommand]
     private async Task ExportAsync()
     {
@@ -130,12 +140,24 @@ public partial class PatientsViewModel : NumberedListViewModel<PatientDto>
 
         try
         {
-            await _print.PrintAsync(new PatientsDocument(_print.CreateContext(), result.Value!), "patients");
+            var rows = result.Value!;
+            if (rows.Count >= PageQuery.MaxExportRows)
+            {
+                Toasts.Show(Localization.Get("Print.ExportTruncated"), kind: ToastKind.Warning);
+            }
+
+            await _print.PrintAsync(new PatientsDocument(await _print.CreateContextAsync(), rows), "patients");
         }
         catch (Exception ex)
         {
             _errors.Report(ex, context: "Exporting the patients");
             Toasts.Error(Localization.Get("Print.Failed"));
         }
+    }
+
+    private static int CompareByName(PatientDto a, PatientDto b)
+    {
+        var byName = string.Compare(a.FullName, b.FullName, StringComparison.OrdinalIgnoreCase);
+        return byName != 0 ? byName : a.Id.CompareTo(b.Id);
     }
 }

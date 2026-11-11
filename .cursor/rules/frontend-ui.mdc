@@ -74,15 +74,16 @@ alwaysApply: false
 - **Preferences** (`SettingsService` -> `%AppData%/Mostawsef/settings.json`): only `Theme`, `Language`, `ApiBaseUrl`.
   Never write tokens, passwords, user data or medical data to disk.
 - **Theme** (`ThemeService`) and **language** (`LocalizationService`) are app-wide singletons that save to settings; change them only through `ui:PreferencesBar`.
-- **Clinic** (`ClinicContext`): the clinic settings (name, address, phone, currency), loaded when a portal opens and
-  replaced after an edit. Read it for money and printouts; never call the settings API from other pages.
+- **Clinic** (`ClinicContext`): the clinic settings (name, address, phone, currency). Admin portal prefetches on open;
+  Super does not. Print/export and Clinic Settings load on first use (single-flight). Cleared on sign-out, replaced
+  after an edit. Read it for money and printouts; never call the settings API from other pages.
 - **Connection** (`ConnectionMonitor`): runs while signed in (health check every 60 s, 3 s while offline, offline at once
   when any call is unreachable); the portal shell shows its banner. Pages do not show their own "server down" banners.
 - **Page state** lives in its view model. Services are singletons; menu page view models are created once per portal
   visit and reused when returning to that menu entry (reload only when stale or on Refresh). `PageHost` caches the view
-  per page instance and toggles `IsVisible` (does not detach DataGrids). Sub-pages opened with `OpenAsync` stay transient, except New order: `OrdersViewModel`
-  holds one instance for the portal visit; each open calls `BeginReuse()` (reset owned by New order) and `PageHost`
-  reuses its view. No static mutable state.
+  per page instance and toggles `IsVisible` (does not detach DataGrids). Sub-pages opened with `OpenAsync` stay transient, except New order and
+  Order details: `OrdersViewModel` holds one instance of each for the portal visit; each open calls `BeginReuse()` (or `Seed` after create)
+  and `PageHost` reuses the view. No static mutable state.
 
 ## Auth + navigation (see `Docs/auth.md`)
 - Every screen is listed in `AppRoutes` (view, access, portal menus); open pages only via `NavigationService` or the shell menu.

@@ -207,6 +207,7 @@
   <data name="Print.Of" xml:space="preserve"><value>من</value></data>
   <data name="Print.PrintedAt" xml:space="preserve"><value>طُبعت في</value></data>
   <data name="Print.Failed" xml:space="preserve"><value>تعذّر إنشاء المطبوع. تم الإبلاغ عن الخطأ.</value></data>
+  <data name="Print.ExportTruncated" xml:space="preserve"><value>تم تصدير أول 10,000 صف فقط.</value></data>
 
   <data name="Form.DiscardTitle" xml:space="preserve"><value>تجاهل التغييرات؟</value></data>
   <data name="Form.DiscardMessage" xml:space="preserve"><value>لديك تغييرات غير محفوظة. هل تريد الإغلاق دون حفظ؟</value></data>

@@ -191,6 +191,22 @@ public class OrdersTests(ApiFactory factory)
         Assert.Equal([ErrorCodes.Required], problem.Errors["Items"]);
     }
 
+    [Fact]
+    public async Task An_order_with_too_many_tests_returns_400()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var patient = await CreatePatientAsync(admin);
+        var items = Enumerable.Range(0, OrderRules.MaxItems + 1)
+            .Select(_ => new CreateOrderItemRequest { LabTestId = Guid.NewGuid() })
+            .ToList();
+
+        var problem = await ProblemResponse.ReadAsync(await admin.PostAsJsonAsync(
+            Url, new CreateOrderRequest { PatientId = patient.Id, Items = items }, Ct));
+
+        Assert.Equal(HttpStatusCode.BadRequest, problem.Status);
+        Assert.Equal([$"max_length|{OrderRules.MaxItems}"], problem.Errors["Items"]);
+    }
+
     [Theory]
     [InlineData(false, ErrorCodes.Required)]
     [InlineData(true, ErrorCodes.Invalid)]

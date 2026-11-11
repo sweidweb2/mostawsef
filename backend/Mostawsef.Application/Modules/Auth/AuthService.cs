@@ -29,6 +29,7 @@ public class AuthService(
     ISystemSettingsRepository systemSettings,
     IPasswordHasher passwordHasher,
     ITokenService tokens,
+    IUserAuthCache authCache,
     IActivityLogger activity,
     TimeProvider time) : IAuthService
 {
@@ -86,6 +87,7 @@ public class AuthService(
             user.ChangePasswordHash(passwordHasher.Hash(request.Password));
             user.RecordLogin(time.GetUtcNow().UtcDateTime);
             await users.SaveChangesAsync(cancellationToken);
+            authCache.Invalidate(user.Id);
             await activity.LogAsync(signedIn, cancellationToken);
         }
         else
@@ -119,6 +121,7 @@ public class AuthService(
 
         user.ChangePasswordHash(passwordHasher.Hash(request.NewPassword));
         await users.SaveChangesAsync(cancellationToken);
+        authCache.Invalidate(user.Id);
 
         await activity.LogAsync(
             new ActivityEntry(ActivityActions.PasswordChanged, ActivityModules.Auth, "Changed own password")

@@ -56,9 +56,6 @@ public interface IActivityLogRepository
 
     Task<ActivityLogDetails?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
-    /// <summary>True when a row was deleted.</summary>
-    Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken);
-
     /// <summary>Deletes every record that occurred before <paramref name="cutoffUtc"/>, in batches. Returns how many.</summary>
     Task<int> DeleteOlderThanAsync(DateTime cutoffUtc, CancellationToken cancellationToken);
 

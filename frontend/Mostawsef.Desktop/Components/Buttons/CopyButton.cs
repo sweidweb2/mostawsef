@@ -43,6 +43,11 @@ public class CopyButton : IconButton
         {
             IsVisible = !string.IsNullOrEmpty(Text);
         }
+        else if (change.Property == IsVisibleProperty && change.GetNewValue<bool>() == false)
+        {
+            // PageHost hides views instead of detaching — cancel the one-shot timer here.
+            CancelReset();
+        }
     }
 
     protected override async void OnClick()
@@ -70,8 +75,14 @@ public class CopyButton : IconButton
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        _resetIcon?.Dispose();
-        Icon = Icons.Get("IconCopy");
+        CancelReset();
         base.OnDetachedFromVisualTree(e);
+    }
+
+    private void CancelReset()
+    {
+        _resetIcon?.Dispose();
+        _resetIcon = null;
+        Icon = Icons.Get("IconCopy");
     }
 }

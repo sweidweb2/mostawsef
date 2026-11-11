@@ -75,7 +75,7 @@ public static class AuthExtensions
         return services;
     }
 
-    /// <summary>A valid token stops working as soon as its user is deactivated, deleted or given another role.</summary>
+    /// <summary>A valid token stops working when its user is deactivated, deleted, given another role, or their password changes.</summary>
     private static async Task RejectStaleUserAsync(TokenValidatedContext context)
     {
         // Health is anonymous; skip the user lookup even if a client sent a Bearer token.
@@ -87,7 +87,7 @@ public static class AuthExtensions
         var principal = context.Principal;
         if (!Guid.TryParse(principal?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value, out var userId))
         {
-            context.Fail("The user is no longer active or their role changed.");
+            context.Fail("The user is no longer active or their credentials changed.");
             return;
         }
 
@@ -98,7 +98,7 @@ public static class AuthExtensions
             var loaded = await users.GetAuthStatusAsync(userId, context.HttpContext.RequestAborted);
             if (loaded is null)
             {
-                context.Fail("The user is no longer active or their role changed.");
+                context.Fail("The user is no longer active or their credentials changed.");
                 return;
             }
 
@@ -106,9 +106,12 @@ public static class AuthExtensions
             cache.Set(userId, status);
         }
 
-        if (!status.IsActive || !RoleMatches(status.Role, principal?.FindFirst(JwtClaims.Role)?.Value))
+        var tokenVersion = int.TryParse(principal?.FindFirst(JwtClaims.TokenVersion)?.Value, out var tv) ? tv : 0;
+        if (!status.IsActive
+            || !RoleMatches(status.Role, principal?.FindFirst(JwtClaims.Role)?.Value)
+            || status.TokenVersion != tokenVersion)
         {
-            context.Fail("The user is no longer active or their role changed.");
+            context.Fail("The user is no longer active or their credentials changed.");
         }
     }
 

@@ -161,38 +161,6 @@ public class LogPagesTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task Deleting_the_only_row_of_the_last_page_shows_the_new_last_page()
-    {
-        using var app = new TestServices();
-        app.SignInAs(Roles.Super);
-        var deleted = false;
-        app.Api
-            .On(HttpMethod.Get, $"{ActivityPath}/stats", _ => FakeApiHandler.Json(new ActivityLogStatsDto(deleted ? 20 : 21, 0, 0, 0)))
-            .On(HttpMethod.Delete, ActivityPath, _ =>
-            {
-                deleted = true;
-                return new HttpResponseMessage(HttpStatusCode.NoContent);
-            })
-            .On(HttpMethod.Get, ActivityPath, request =>
-                deleted && request.RequestUri!.Query.Contains("after=")
-                    ? ListAnswer(request, 20, [])
-                    : ListAnswer(request, deleted ? 20 : 21, [SignIn]));
-        var (page, window) = await ShowPage<ActivityLogsViewModel>(app);
-        page.CurrentPage = 2;
-        await UiWait.UntilAsync(() => !page.IsLoading);
-
-        var delete = page.DeleteCommand.ExecuteAsync(SignIn);
-        Dispatcher.UIThread.RunJobs();
-        window.GetVisualDescendants().OfType<ConfirmDialog>().Single().Close(true);
-        await delete;
-
-        Assert.Equal("?pageSize=20&last=true&includeTotal=false", LastListRequest(app, ActivityPath));
-        Assert.Equal(1, page.CurrentPage);
-        Assert.Equal(1, page.PageCount);
-        Assert.Equal(20, page.TotalCount);
-    }
-
-    [AvaloniaFact]
     public async Task A_slow_page_that_answers_late_does_not_replace_the_page_requested_after_it()
     {
         using var app = new TestServices();
@@ -234,42 +202,6 @@ public class LogPagesTests : UiTestBase
         Assert.Equal(1, page.CurrentPage);
         Assert.Equal(match, Assert.Single(page.Items));
         Assert.False(page.IsLoading);
-    }
-
-    [AvaloniaFact]
-    public async Task Delete_asks_to_confirm_then_deletes_and_reloads()
-    {
-        using var app = SuperWithActivity(total: 1, SignIn);
-        app.Api.On(HttpMethod.Delete, ActivityPath, HttpStatusCode.NoContent);
-        var (page, window) = await ShowPage<ActivityLogsViewModel>(app);
-        var listRequestsBefore = app.Api.RequestsTo(HttpMethod.Get, ActivityPath).Count();
-
-        var delete = page.DeleteCommand.ExecuteAsync(SignIn);
-        Dispatcher.UIThread.RunJobs();
-        Assert.Empty(app.Api.RequestsTo(HttpMethod.Delete, ActivityPath));
-
-        window.GetVisualDescendants().OfType<ConfirmDialog>().Single().Close(true);
-        await delete;
-
-        var deleteRequest = Assert.Single(app.Api.RequestsTo(HttpMethod.Delete, ActivityPath));
-        Assert.EndsWith(SignIn.Id.ToString(), deleteRequest.RequestUri!.AbsolutePath);
-        Assert.True(app.Api.RequestsTo(HttpMethod.Get, ActivityPath).Count() > listRequestsBefore);
-        Assert.Equal(2, StatsRequests(app, ActivityPath));
-        Assert.Contains("includeTotal=false", LastListRequest(app, ActivityPath), StringComparison.Ordinal);
-    }
-
-    [AvaloniaFact]
-    public async Task Cancelling_delete_does_not_call_the_api()
-    {
-        using var app = SuperWithActivity(total: 1, SignIn);
-        var (page, window) = await ShowPage<ActivityLogsViewModel>(app);
-
-        var delete = page.DeleteCommand.ExecuteAsync(SignIn);
-        Dispatcher.UIThread.RunJobs();
-        window.GetVisualDescendants().OfType<ConfirmDialog>().Single().Close(false);
-        await delete;
-
-        Assert.Empty(app.Api.RequestsTo(HttpMethod.Delete, ActivityPath));
     }
 
     [AvaloniaFact]

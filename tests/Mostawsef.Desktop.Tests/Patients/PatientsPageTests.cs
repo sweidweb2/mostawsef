@@ -203,7 +203,7 @@ public class PatientsPageTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task A_new_patient_is_sent_trimmed_with_blank_optional_fields_as_null_then_the_list_reloads()
+    public async Task A_new_patient_is_sent_trimmed_with_blank_optional_fields_as_null_then_the_list_inserts()
     {
         using var app = AdminWithPatients(Mona);
         CreatePatientRequest? sent = null;
@@ -232,7 +232,8 @@ public class PatientsPageTests : UiTestBase
             FullName = "Omar Khaled", Phone = "011 2222 3333", GuardianPhone = null, Notes = null, IsInsured = false,
             Gender = Genders.Male, DateOfBirth = new DateOnly(1990, 5, 17),
         }, sent);
-        Assert.True(app.Api.RequestsTo(HttpMethod.Get, PatientsPath).Count() > listRequests);
+        Assert.Equal(listRequests, app.Api.RequestsTo(HttpMethod.Get, PatientsPath).Count());
+        Assert.Contains(page.Items, p => p.Id == Omar.Id);
         Assert.Contains("Patient saved.", Toasts(window));
     }
 

@@ -21,7 +21,8 @@ public static class OrderListAggregatesBackfill
         Guid? lastId = null;
         while (true)
         {
-            var query = db.Orders.Include(o => o.Items).Include(o => o.Payments).AsQueryable();
+            // SplitQuery avoids Items × Payments row multiplication on the join.
+            var query = db.Orders.Include(o => o.Items).Include(o => o.Payments).AsSplitQuery().AsQueryable();
             if (lastId is { } after)
             {
                 query = query.Where(o => o.Id.CompareTo(after) > 0);

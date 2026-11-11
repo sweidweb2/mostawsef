@@ -48,6 +48,7 @@ public partial class SystemSettingsViewModel(
         }
 
         _loadCancellation?.Cancel();
+        IsLoading = false;
     }
 
     [RelayCommand]

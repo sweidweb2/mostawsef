@@ -21,24 +21,28 @@ public sealed class ClinicSettingsCache(IServiceScopeFactory scopes) : IClinicSe
         await _gate.WaitAsync(cancellationToken);
         try
         {
-            if (_cached is { } again)
+            while (true)
             {
-                return again;
-            }
+                if (_cached is { } again)
+                {
+                    return again;
+                }
 
-            var generation = Volatile.Read(ref _generation);
-            await using var scope = scopes.CreateAsyncScope();
-            var dto = await scope.ServiceProvider
-                .GetRequiredService<IClinicSettingsRepository>()
-                .GetSnapshotAsync(cancellationToken);
+                var generation = Volatile.Read(ref _generation);
+                await using var scope = scopes.CreateAsyncScope();
+                var dto = await scope.ServiceProvider
+                    .GetRequiredService<IClinicSettingsRepository>()
+                    .GetSnapshotAsync(cancellationToken);
 
-            // Drop the load if Invalidate ran while we were reading.
-            if (generation == Volatile.Read(ref _generation))
-            {
+                if (generation != Volatile.Read(ref _generation))
+                {
+                    // Invalidate ran while we were reading — load again under the same gate.
+                    continue;
+                }
+
                 _cached = dto;
+                return dto;
             }
-
-            return dto;
         }
         finally
         {

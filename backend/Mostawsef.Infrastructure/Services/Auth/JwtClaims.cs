@@ -4,4 +4,7 @@ namespace Mostawsef.Infrastructure.Services.Auth;
 public static class JwtClaims
 {
     public const string Role = "role";
+
+    /// <summary>Matches <c>User.TokenVersion</c>; bumped when the password changes.</summary>
+    public const string TokenVersion = "tv";
 }

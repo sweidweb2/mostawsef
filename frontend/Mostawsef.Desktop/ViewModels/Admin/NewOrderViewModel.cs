@@ -24,7 +24,7 @@ namespace Mostawsef.Desktop.ViewModels.Admin;
 /// <summary>
 /// Admin portal sub-page: a new order in three steps (patient, tests, review). Saving sends one request;
 /// the API saves it all or nothing. Orders reuses one instance per portal visit; <see cref="BeginReuse"/>
-/// clears the form and the catalog loads while the page shows its preparing state.
+/// clears the form. The lab-test catalog loads only when the tests step is shown.
 /// </summary>
 public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusablePage
 {
@@ -52,6 +52,9 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
 
     /// <summary>Called after a successful create so the orders list can insert the row without a full reload.</summary>
     public Action<OrderDetailsDto>? OnOrderCreated { get; set; }
+
+    /// <summary>Shared Order details instance from Orders so PageHost reuses one view after create.</summary>
+    public OrderDetailsViewModel? OrderDetailsPage { get; set; }
 
     public static readonly TimeSpan CatalogSearchDelay = TimeSpan.FromMilliseconds(250);
 
@@ -265,7 +268,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
 
         try
         {
-            if (IsPreparing || SelectedStep == TestsStep)
+            if (SelectedStep == TestsStep)
             {
                 await EnsureCatalogAsync();
             }
@@ -655,7 +658,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
     [RelayCommand]
     private void AddTest(CatalogTestItem? item)
     {
-        if (item is null || item.IsSelected)
+        if (item is null || item.IsSelected || SelectedTests.Count >= OrderRules.MaxItems)
         {
             return;
         }
@@ -974,7 +977,14 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
         {
             OnOrderCreated?.Invoke(order);
             _toasts.Success(Localization.Format("Orders.Created", order.Number));
-            await _navigation.OpenAsync<OrderDetailsViewModel>(page => page.Seed(order));
+            if (OrderDetailsPage is { } details)
+            {
+                await _navigation.OpenAsync(details, page => page.Seed(order));
+            }
+            else
+            {
+                await _navigation.OpenAsync<OrderDetailsViewModel>(page => page.Seed(order));
+            }
         }
         catch (Exception ex)
         {

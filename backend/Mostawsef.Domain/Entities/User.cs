@@ -34,6 +34,9 @@ public class User : SoftDeletableEntity
 
     public string PasswordHash { get; private set; } = string.Empty;
 
+    /// <summary>Bumped on every password change so existing JWTs stop working on the next request.</summary>
+    public int TokenVersion { get; private set; }
+
     public UserRole Role { get; private set; }
 
     public bool IsActive { get; private set; } = true;
@@ -50,7 +53,11 @@ public class User : SoftDeletableEntity
 
     public void ChangeRole(UserRole role) => Role = role;
 
-    public void ChangePasswordHash(string passwordHash) => PasswordHash = passwordHash;
+    public void ChangePasswordHash(string passwordHash)
+    {
+        PasswordHash = passwordHash;
+        TokenVersion++;
+    }
 
     public void RecordLogin(DateTime at) => LastLoginAt = at;
 

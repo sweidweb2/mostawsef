@@ -11,6 +11,7 @@ using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Tests.Infrastructure;
 using Mostawsef.Desktop.ViewModels.Admin;
 using Mostawsef.Desktop.ViewModels.Shell;
+using Mostawsef.Desktop.Views.Admin;
 using static Mostawsef.Desktop.Tests.Infrastructure.TestServices;
 using static Mostawsef.Desktop.Tests.Orders.OrderPages;
 
@@ -81,6 +82,24 @@ public class OrdersPageTests : UiTestBase
         await orders.ViewCommand.ExecuteAsync(PartlyPaid);
         var details = Assert.IsType<OrderDetailsViewModel>(shell.CurrentPage);
         await WaitUntil(() => details.HasOrder);
+        Dispatcher.UIThread.RunJobs();
+        var detailsView = window.GetVisualDescendants().OfType<OrderDetailsView>().Single(v => v.IsVisible);
+
+        await details.BackCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+        app.Api.OnGet($"{OrdersPath}/{Unpaid.Id}", Details(Unpaid.Id));
+        await orders.ViewCommand.ExecuteAsync(Unpaid);
+        var again = Assert.IsType<OrderDetailsViewModel>(shell.CurrentPage);
+        Assert.Same(details, again);
+        Dispatcher.UIThread.RunJobs();
+        Assert.Same(detailsView, window.GetVisualDescendants().OfType<OrderDetailsView>().Single(v => v.IsVisible));
+        await WaitUntil(() => again.Order?.Id == Unpaid.Id);
+        await again.BackCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+
+        await orders.ViewCommand.ExecuteAsync(PartlyPaid);
+        details = Assert.IsType<OrderDetailsViewModel>(shell.CurrentPage);
+        await WaitUntil(() => details.Order?.Id == PartlyPaid.Id);
 
         Assert.Equal(menu, shell.SelectedMenuIndex);
         Assert.Same(details, shell.SubPage);

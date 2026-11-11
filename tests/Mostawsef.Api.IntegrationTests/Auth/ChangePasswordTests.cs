@@ -24,6 +24,7 @@ public class ChangePasswordTests(ApiFactory factory)
             "api/auth/change-password", new ChangePasswordRequest { CurrentPassword = login.Password, NewPassword = "Changed#Pass7" }, Ct);
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("api/auth/me", Ct)).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await factory.CreateClient().LoginAsync(login.Username, login.Password)).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await factory.CreateClient().LoginAsync(login.Username, "Changed#Pass7")).StatusCode);
     }

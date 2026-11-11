@@ -24,9 +24,9 @@ public class UserRepository(AppDbContext db) : IUserRepository
     {
         var row = await db.Users.AsNoTracking()
             .Where(u => u.Id == id)
-            .Select(u => new { u.IsActive, u.Role })
+            .Select(u => new { u.IsActive, u.Role, u.TokenVersion })
             .FirstOrDefaultAsync(cancellationToken);
-        return row is null ? null : new UserAuthStatus(row.IsActive, row.Role);
+        return row is null ? null : new UserAuthStatus(row.IsActive, row.Role, row.TokenVersion);
     }
 
     public Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken) =>

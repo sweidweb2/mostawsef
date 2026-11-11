@@ -27,9 +27,15 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasMaxLength(User.FullNameMaxLength)
             .IsRequired();
 
+        // List order (FullName) and search (SearchName.Contains); users stay few, but OFFSET pages still use these.
+        builder.HasIndex(u => u.FullName);
+        builder.HasIndex(u => u.SearchName);
+
         builder.Property(u => u.PasswordHash)
             .HasMaxLength(256)
             .IsRequired();
+
+        builder.Property(u => u.TokenVersion).IsRequired();
 
         builder.Property(u => u.Role)
             .HasConversion<string>()

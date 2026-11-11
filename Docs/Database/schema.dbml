@@ -17,6 +17,7 @@ Table users {
   FullName varchar(100) [not null]
   SearchName varchar(100) [not null, note: 'FullName normalized for search']
   PasswordHash varchar(256) [not null, note: 'PBKDF2; never returned']
+  TokenVersion int [not null, default: 0, note: 'bumped on password change; JWT claim tv']
   Role varchar(20) [not null, note: 'UserRole']
   IsActive boolean [not null]
   LastLoginAt timestamptz

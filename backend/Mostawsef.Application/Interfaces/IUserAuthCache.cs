@@ -2,12 +2,12 @@ using Mostawsef.Domain.Enums;
 
 namespace Mostawsef.Application.Interfaces;
 
-/// <summary>Active flag and role used by JWT re-validation. Null when the user is missing or soft-deleted.</summary>
-public readonly record struct UserAuthStatus(bool IsActive, UserRole Role);
+/// <summary>Active flag, role and token version used by JWT re-validation. Null when the user is missing or soft-deleted.</summary>
+public readonly record struct UserAuthStatus(bool IsActive, UserRole Role, int TokenVersion);
 
 /// <summary>
-/// Short-lived auth status for <c>RejectStaleUserAsync</c>. Invalidate after a user is updated or deleted so
-/// deactivation and role changes take effect on the next request.
+/// Auth status for <c>RejectStaleUserAsync</c>. Invalidate after a user is updated, deleted or their password
+/// changes so deactivation, role and password changes take effect on the next request.
 /// </summary>
 public interface IUserAuthCache
 {

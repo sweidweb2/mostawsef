@@ -59,9 +59,19 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
     [RelayCommand]
     private async Task AddAsync()
     {
-        if (await _dialogs.ShowFormAsync(new LabTestFormViewModel(_tests, _dialogs, Localization), Localization.Get("LabTests.AddTitle")))
+        var form = new LabTestFormViewModel(_tests, _dialogs, Localization);
+        if (!await _dialogs.ShowFormAsync(form, Localization.Get("LabTests.AddTitle")))
         {
-            Toasts.Success(Localization.Get("LabTests.Saved"));
+            return;
+        }
+
+        Toasts.Success(Localization.Get("LabTests.Saved"));
+        if (form.SavedValue is LabTestDto created)
+        {
+            InsertSorted(created, CompareByName);
+        }
+        else
+        {
             await ReloadAsync();
         }
     }
@@ -107,7 +117,7 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
         await ReloadAsync();
     }
 
-    /// <summary>All tests, whatever the search or page shown, as a PDF opened in the default viewer.</summary>
+    /// <summary>Up to <see cref="PageQuery.MaxExportRows"/> tests as a PDF opened in the default viewer.</summary>
     [RelayCommand]
     private async Task ExportAsync()
     {
@@ -124,12 +134,24 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
 
         try
         {
-            await _print.PrintAsync(new LabTestsDocument(_print.CreateContext(), result.Value!), "lab-tests");
+            var rows = result.Value!;
+            if (rows.Count >= PageQuery.MaxExportRows)
+            {
+                Toasts.Show(Localization.Get("Print.ExportTruncated"), kind: ToastKind.Warning);
+            }
+
+            await _print.PrintAsync(new LabTestsDocument(await _print.CreateContextAsync(), rows), "lab-tests");
         }
         catch (Exception ex)
         {
             _errors.Report(ex, context: "Exporting the lab tests");
             Toasts.Error(Localization.Get("Print.Failed"));
         }
+    }
+
+    private static int CompareByName(LabTestDto a, LabTestDto b)
+    {
+        var byName = string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+        return byName != 0 ? byName : a.Id.CompareTo(b.Id);
     }
 }

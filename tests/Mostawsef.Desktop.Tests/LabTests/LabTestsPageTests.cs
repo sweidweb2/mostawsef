@@ -276,7 +276,7 @@ public class LabTestsPageTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task A_new_test_is_sent_trimmed_in_minor_units_then_the_list_reloads()
+    public async Task A_new_test_is_sent_trimmed_in_minor_units_then_the_list_inserts()
     {
         using var app = AdminWithTests(Cbc);
         CreateLabTestRequest? sent = null;
@@ -301,7 +301,8 @@ public class LabTestsPageTests : UiTestBase
 
         Assert.Equal(new CreateLabTestRequest { Code = "fbs", Name = "Fasting blood sugar", Price = 4000, LabCost = 2550 }, sent);
         Assert.Empty(window.GetVisualDescendants().OfType<Modal>());
-        Assert.True(app.Api.RequestsTo(HttpMethod.Get, TestsPath).Count() > listRequests);
+        Assert.Equal(listRequests, app.Api.RequestsTo(HttpMethod.Get, TestsPath).Count());
+        Assert.Contains(page.Items, t => t.Id == Sugar.Id);
         Assert.Contains("Lab test saved.", Toasts(window));
     }
 

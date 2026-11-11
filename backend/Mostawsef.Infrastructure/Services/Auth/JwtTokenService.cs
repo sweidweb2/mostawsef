@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Claims;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.JsonWebTokens;
@@ -31,6 +32,7 @@ public class JwtTokenService(IOptions<JwtOptions> jwtOptions, TimeProvider time)
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
                 new Claim(JwtClaims.Role, user.Role.ToString()),
+                new Claim(JwtClaims.TokenVersion, user.TokenVersion.ToString(CultureInfo.InvariantCulture)),
             ]),
         });
 

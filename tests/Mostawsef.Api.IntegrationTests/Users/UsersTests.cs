@@ -257,11 +257,13 @@ public class UsersTests(ApiFactory factory)
     {
         var super = await factory.CreateClientAsAsync(TestUsers.Super);
         var (user, login) = await super.CreateUserAsync();
+        var oldToken = await factory.CreateClientAsAsync(login);
 
         var response = await super.PostAsJsonAsync(
             $"api/users/{user.Id}/reset-password", new ResetPasswordRequest { NewPassword = "Fresh#Pass99" }, Ct);
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await oldToken.GetAsync("api/auth/me", Ct)).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await factory.CreateClient().LoginAsync(login.Username, login.Password)).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await factory.CreateClient().LoginAsync(login.Username, "Fresh#Pass99")).StatusCode);
     }

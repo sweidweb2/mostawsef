@@ -106,6 +106,7 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
         }
 
         _pageLifetime.Cancel();
+        IsLoading = false;
     }
 
     [RelayCommand]

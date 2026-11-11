@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.Input;
@@ -21,9 +22,23 @@ public partial class UsersViewModel(UsersApi users, IDialogService dialogs, IToa
     [RelayCommand]
     private async Task AddAsync()
     {
-        if (await dialogs.ShowFormAsync(new UserFormViewModel(users, dialogs, Localization), Localization.Get("Users.AddTitle")))
+        var form = new UserFormViewModel(users, dialogs, Localization);
+        if (!await dialogs.ShowFormAsync(form, Localization.Get("Users.AddTitle")))
         {
-            Toasts.Success(Localization.Get("Users.Saved"));
+            return;
+        }
+
+        Toasts.Success(Localization.Get("Users.Saved"));
+        if (form.SavedValue is UserDetailsDto created)
+        {
+            InsertSorted(
+                new UserListItemDto(
+                    created.Id, created.Username, created.FullName, created.Role, created.IsActive,
+                    created.LastLoginAt, created.CreatedAt, created.Version),
+                CompareByName);
+        }
+        else
+        {
             await ReloadAsync();
         }
     }
@@ -77,5 +92,11 @@ public partial class UsersViewModel(UsersApi users, IDialogService dialogs, IToa
 
         Toasts.Success(Localization.Get("Users.Deleted"));
         await ReloadAsync();
+    }
+
+    private static int CompareByName(UserListItemDto a, UserListItemDto b)
+    {
+        var byName = string.Compare(a.FullName, b.FullName, StringComparison.OrdinalIgnoreCase);
+        return byName != 0 ? byName : string.Compare(a.Username, b.Username, StringComparison.OrdinalIgnoreCase);
     }
 }

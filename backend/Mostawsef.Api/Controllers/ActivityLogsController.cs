@@ -29,10 +29,4 @@ public class ActivityLogsController(IActivityLogService logs) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(Guid id, CancellationToken cancellationToken) =>
         await logs.GetAsync(id, cancellationToken) is { } log ? Ok(log) : NotFound();
-
-    [HttpDelete("{id:guid}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken) =>
-        await logs.DeleteAsync(id, cancellationToken) ? NoContent() : NotFound();
 }

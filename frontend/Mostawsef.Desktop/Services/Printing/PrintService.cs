@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Platform;
 using Mostawsef.Desktop.Services.Diagnostics;
@@ -46,6 +47,13 @@ public class PrintService(
 
     /// <summary>What every document needs: clinic details, language and the print time. Take it on the UI thread.</summary>
     public PrintContext CreateContext() => new(clinic.Settings, localization, DateTime.Now);
+
+    /// <summary>Loads clinic settings if needed, then builds the print context. Prefer this before exports.</summary>
+    public async Task<PrintContext> CreateContextAsync(CancellationToken cancellationToken = default)
+    {
+        await clinic.LoadAsync(cancellationToken: cancellationToken);
+        return CreateContext();
+    }
 
     public byte[] Render(IDocument document)
     {

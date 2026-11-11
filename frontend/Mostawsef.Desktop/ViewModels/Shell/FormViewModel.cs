@@ -43,6 +43,9 @@ public abstract partial class FormViewModel : ViewModelBase
 
     protected LocalizationService Localization { get; }
 
+    /// <summary>The API response body after a successful save (e.g. the created DTO); null when cancelled or no body.</summary>
+    public object? SavedValue { get; private set; }
+
     public FormErrors Errors { get; } = new();
 
     [ObservableProperty]
@@ -189,6 +192,7 @@ public abstract partial class FormViewModel : ViewModelBase
             {
                 _savedRequest = request;
                 IsDirty = false;
+                SavedValue = result.Body;
                 Closed?.Invoke(this, true);
                 return;
             }

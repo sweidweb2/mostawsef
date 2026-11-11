@@ -139,9 +139,9 @@ public class UsersPageTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task A_valid_new_user_is_sent_then_the_form_closes_and_the_list_reloads()
+    public async Task A_valid_new_user_is_sent_then_the_form_closes_and_the_list_inserts()
     {
-        using var app = SuperWithUsers(Sara);
+        using var app = SuperWithUsers(Omar);
         CreateUserRequest? sent = null;
         app.Api.On(HttpMethod.Post, UsersPath, request =>
         {
@@ -164,7 +164,8 @@ public class UsersPageTests : UiTestBase
 
         Assert.Equal(new CreateUserRequest { FullName = "Sara Mahmoud", Username = "sara@test.local", Password = "Welcome#123", Role = Roles.Super }, sent);
         Assert.Empty(window.GetVisualDescendants().OfType<Modal>());
-        Assert.True(app.Api.RequestsTo(HttpMethod.Get, UsersPath).Count() > listRequests);
+        Assert.Equal(listRequests, app.Api.RequestsTo(HttpMethod.Get, UsersPath).Count());
+        Assert.Contains(page.Items, u => u.Id == SaraDetails.Id);
         Assert.Contains("User saved.", Toasts(window));
     }
 

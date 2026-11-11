@@ -97,7 +97,7 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="{l:Tr Common.Actions}" Width="100">
+                        <DataGridTemplateColumn Header="{l:Tr Common.Actions}" Width="56">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate x:DataType="logs:ActivityLogListItemDto">
                                     <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}" Margin="8,0" VerticalAlignment="Center">
@@ -105,11 +105,6 @@
                                                        Icon="{StaticResource IconEye}"
                                                        ToolTip.Tip="{l:Tr Common.View}"
                                                        Command="{Binding $parent[DataGrid].((vm:ActivityLogsViewModel)DataContext).ViewDetailsCommand}"
-                                                       CommandParameter="{Binding}" />
-                                        <ui:IconButton Classes="ghost destructive sm"
-                                                       Icon="{StaticResource IconDelete}"
-                                                       ToolTip.Tip="{l:Tr Common.Delete}"
-                                                       Command="{Binding $parent[DataGrid].((vm:ActivityLogsViewModel)DataContext).DeleteCommand}"
                                                        CommandParameter="{Binding}" />
                                     </StackPanel>
                                 </DataTemplate>

@@ -10,6 +10,9 @@ public static class OrderRules
 {
     public const int PaymentNotesMaxLength = 500;
 
+    /// <summary>Hard cap on tests per order (API + desktop).</summary>
+    public const int MaxItems = 100;
+
     /// <summary>10,000,000.00 in the clinic currency.</summary>
     public const long MaxPaymentAmount = 1_000_000_000;
 
@@ -82,6 +85,7 @@ public record CreateOrderRequest
 
     [Required(ErrorMessage = ErrorCodes.Required)]
     [MinLength(1, ErrorMessage = ErrorCodes.Required)]
+    [MaxLength(OrderRules.MaxItems, ErrorMessage = ErrorCodes.MaxLength)]
     public IReadOnlyList<CreateOrderItemRequest> Items { get; init; } = [];
 
     /// <summary>Optional amount added on top of the selected tests' catalog prices; null or 0 charges the catalog total only.</summary>

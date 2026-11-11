@@ -30,6 +30,7 @@ public sealed class TestServices : IDisposable
             .BuildServiceProvider();
         App.Services = Provider;
         PageHost.Perf = Provider.GetRequiredService<PerformanceMonitor>();
+        PageHost.Localization = Provider.GetRequiredService<LocalizationService>();
         Get<ThemeService>().Initialize();
     }
 

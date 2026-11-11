@@ -21,6 +21,7 @@ SessionService (token in memory) ──► NavigationService ──► Admin por
 | `Id` | uuid | Primary key |
 | `Username` | varchar(50) | Unique, stored trimmed and lower-case |
 | `PasswordHash` | varchar(256) | **Hash only, never the password** |
+| `TokenVersion` | integer | Bumped on password change/reset; embedded in the JWT as `tv` |
 | `Role` | varchar(20) | `Admin` or `Super` |
 | `FullName` | varchar(100) | Shown in the top bar and the users list |
 | `SearchName` | varchar(100) | `FullName` normalized for Arabic-aware search (`SearchText.Normalize`) |
@@ -70,9 +71,9 @@ Unknown usernames take the same hashing time as wrong passwords, so response tim
 | `DELETE /api/patients/{id}` | Admin | `204` (soft delete), `404` |
 | `GET /api/health` | Anonymous | `200 { status, database, apiVersion }`, `503` when the database is down |
 
-- Tokens: JWT signed with HMAC-SHA256, valid until the next midnight (server local time), so staff sign in once a day, claims `sub`, `unique_name`, `role`.
-- Every request re-checks the token's user (active flag and role only, cached until that user is updated or deleted): a
-  deactivated, deleted or re-roled user gets `401` on the next request (the desktop then returns to the login screen),
+- Tokens: JWT signed with HMAC-SHA256, valid until the next midnight (server local time), so staff sign in once a day, claims `sub`, `unique_name`, `role`, `tv` (`User.TokenVersion`).
+- Every request re-checks the token's user (active flag, role and token version, cached until that user is updated, deleted or their password changes): a
+  deactivated, deleted, re-roled or password-changed user gets `401` on the next request (the desktop then returns to the login screen),
   not only when the token expires.
 - Maintenance mode (Super portal, Settings page): while on, only Super users can sign in; others get `409 maintenance_mode`
   after a correct password (logged as `auth.sign_in_blocked`). Users already signed in keep working.

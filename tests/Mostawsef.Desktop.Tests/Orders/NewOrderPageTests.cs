@@ -21,19 +21,27 @@ namespace Mostawsef.Desktop.Tests.Orders;
 public class NewOrderPageTests : UiTestBase
 {
     [AvaloniaFact]
-    public async Task Opening_the_page_preloads_the_catalog_while_preparing()
+    public async Task Opening_the_page_does_not_load_the_catalog_until_the_tests_step()
     {
         using var app = Admin();
         var (shell, page, window) = await ShowNewOrderAsync(app);
 
-        var catalog = Assert.Single(app.Api.RequestsTo(HttpMethod.Get, TestsPath));
-        Assert.Contains("active=true", catalog.RequestUri!.Query, StringComparison.Ordinal);
-        Assert.Contains("includeTotal=false", catalog.RequestUri.Query, StringComparison.Ordinal);
-        Assert.Equal([Cbc.Id, Sugar.Id], page.Catalog.Select(t => t.Test.Id));
+        Assert.Empty(app.Api.RequestsTo(HttpMethod.Get, TestsPath));
+        Assert.Empty(page.Catalog);
         Assert.Equal(NewOrderViewModel.PatientStep, page.SelectedStep);
         Assert.Same(page, shell.CurrentPage);
         Assert.False(page.IsPreparing);
         Assert.False(Named<LoadingOverlay>(window, "PreparingOverlay").IsLoading);
+
+        page.SelectPatientCommand.Execute(Mona);
+        page.NextStepCommand.Execute(null);
+        await WaitUntil(() => page.SelectedStep == NewOrderViewModel.TestsStep && !page.IsCatalogLoading);
+
+        var catalog = Assert.Single(app.Api.RequestsTo(HttpMethod.Get, TestsPath));
+        Assert.Contains("active=true", catalog.RequestUri!.Query, StringComparison.Ordinal);
+        Assert.Contains("includeTotal=false", catalog.RequestUri.Query, StringComparison.Ordinal);
+        Assert.Contains($"pageSize={PageQuery.MaxPageSize}", catalog.RequestUri.Query, StringComparison.Ordinal);
+        Assert.Equal([Cbc.Id, Sugar.Id], page.Catalog.Select(t => t.Test.Id));
     }
 
     [AvaloniaFact]

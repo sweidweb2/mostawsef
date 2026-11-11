@@ -12,7 +12,7 @@ using Mostawsef.Desktop.ViewModels.Shell;
 
 namespace Mostawsef.Desktop.ViewModels.Super;
 
-/// <summary>Super portal: activity log with stats, paging, search, details modal and delete. Access via AppRoutes.</summary>
+/// <summary>Super portal: activity log with stats, paging, search and details modal. Access via AppRoutes.</summary>
 public partial class ActivityLogsViewModel(LogsApi logs, IDialogService dialogs, IToastService toasts, LocalizationService localization)
     : PagedListViewModel<ActivityLogListItemDto>(toasts, localization)
 {
@@ -59,29 +59,5 @@ public partial class ActivityLogsViewModel(LogsApi logs, IDialogService dialogs,
             Content = new ActivityLogDetailsViewModel(result.Value!),
             MaxWidth = 720,
         });
-    }
-
-    [RelayCommand]
-    private async Task DeleteAsync(ActivityLogListItemDto? item)
-    {
-        if (item is null
-            || !await dialogs.ConfirmAsync(Localization.Get("Logs.DeleteActivityConfirm"), confirmText: Localization.Get("Common.Delete"), isDanger: true))
-        {
-            return;
-        }
-
-        if (await ReadAsync(ct => logs.DeleteActivityLogAsync(item.Id, ct)) is not { } result)
-        {
-            return;
-        }
-
-        if (!result.IsSuccess)
-        {
-            ShowError(result.Error);
-            return;
-        }
-
-        Toasts.Success(Localization.Get("Logs.Deleted"));
-        await ReloadAsync();
     }
 }

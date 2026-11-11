@@ -24,7 +24,7 @@ internal static class PageQueryExecutor
         }
 
         var page = await pageRows
-            .Select(row => new PageRow<T>(row, rows.Count()))
+            .Select(row => new { Row = row, Total = rows.Count() })
             .ToListAsync(cancellationToken);
 
         if (page.Count == 0)
@@ -41,6 +41,4 @@ internal static class PageQueryExecutor
 
         return (items, page[0].Total);
     }
-
-    private readonly record struct PageRow<T>(T Row, int Total);
 }

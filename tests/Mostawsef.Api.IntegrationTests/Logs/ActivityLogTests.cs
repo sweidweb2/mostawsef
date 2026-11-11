@@ -179,27 +179,18 @@ public class ActivityLogTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task Delete_removes_the_record_and_records_the_deletion()
+    public async Task Single_entry_delete_is_not_allowed()
     {
-        var attempted = HttpClientExtensions.Unique("to-delete");
+        var attempted = HttpClientExtensions.Unique("to-keep");
         await factory.CreateClient().LoginAsync(attempted, "x");
         var super = await factory.CreateClientAsAsync(TestUsers.Super);
         var target = (await super.GetJsonAsync<CursorPage<ActivityLogListItemDto>>($"api/activity-logs?search={attempted}")).Items.Single();
 
         var deleted = await super.DeleteAsync($"api/activity-logs/{target.Id}", TestContext.Current.CancellationToken);
-        var getAfter = await super.GetAsync($"api/activity-logs/{target.Id}", TestContext.Current.CancellationToken);
-        var deleteAgain = await super.DeleteAsync($"api/activity-logs/{target.Id}", TestContext.Current.CancellationToken);
+        var stillThere = await super.GetAsync($"api/activity-logs/{target.Id}", TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, getAfter.StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, deleteAgain.StatusCode);
-
-        var audit = await super.GetJsonAsync<CursorPage<ActivityLogListItemDto>>("api/activity-logs?search=logs.activity_deleted&pageSize=100");
-        Assert.Contains(audit.Items, i => i.Username == TestUsers.Super.Username);
-
-        var auditDetails = await super.GetJsonAsync<ActivityLogDto>($"api/activity-logs/{audit.Items[0].Id}");
-        Assert.Equal(target.Id.ToString(), auditDetails.EntityId);
-        Assert.Null(auditDetails.Details);
+        Assert.Equal(HttpStatusCode.MethodNotAllowed, deleted.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, stillThere.StatusCode);
     }
 
     [Fact]

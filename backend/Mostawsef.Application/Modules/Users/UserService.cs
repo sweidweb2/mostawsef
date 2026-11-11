@@ -108,6 +108,7 @@ public class UserService(
 
         user.ChangePasswordHash(passwordHasher.Hash(request.NewPassword));
         await users.SaveChangesAsync(cancellationToken);
+        authCache.Invalidate(user.Id);
 
         await LogAsync(ActivityActions.UserPasswordReset, "Reset a user's password", user, cancellationToken);
     }

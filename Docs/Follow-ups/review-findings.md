@@ -18,13 +18,9 @@ Code review from November 2026. All 274 tests passed at the time; no memory leak
 
 ## Security issues in the code
 
-5. **Password changes keep old sessions alive.** Changing or resetting a password does not sign out existing
-   sessions: whoever holds an old token keeps access until midnight. `RejectStaleUserAsync` only checks "active"
-   and "role". Fix: a token-version number on `User`, put in the token and compared there (that check already loads
-   the user, so it costs nothing extra). Until then, deactivating the user is the only immediate cut-off.
-6. **Activity logs can be erased.** Super can delete single activity log entries. The deletion is logged, but that
-   entry can be deleted too, so the audit trail can be quietly erased. Remove single-entry deletes for activity logs
-   and keep only the automatic retention cleanup.
+5. ✅ **Password changes keep old sessions alive.** Fixed: `User.TokenVersion` is bumped on password change/reset,
+   put in the JWT, and checked in `RejectStaleUserAsync`.
+6. ✅ **Activity logs can be erased.** Fixed: single-entry activity-log deletes removed; only retention cleanup deletes.
 
 ## Smaller correctness issues
 

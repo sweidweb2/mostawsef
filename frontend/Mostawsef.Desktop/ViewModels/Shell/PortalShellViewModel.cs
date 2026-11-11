@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Mostawsef.Contracts.Auth;
 using Mostawsef.Desktop.Services.Api;
 using Mostawsef.Desktop.Services.Auth;
 using Mostawsef.Desktop.Services.Diagnostics;
@@ -65,7 +66,12 @@ public partial class PortalShellViewModel : ViewModelBase
         MenuItems = portal.Pages;
 
         connection.Start();
-        _ = clinic.LoadAsync();
+        // Money/print need clinic details; Super never shows them. Single-flight in ClinicContext.
+        if (_session.CurrentUser?.Role == Roles.Admin)
+        {
+            _ = clinic.LoadAsync();
+        }
+
         SelectedMenuIndex = 0;
     }
 

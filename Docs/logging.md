@@ -75,9 +75,8 @@ Recorded today: `auth.signed_in`, `auth.sign_in_failed`, `auth.signed_out`, `aut
 | --- | --- |
 | `GET /api/activity-logs?pageSize=&search=&after=\|before=\|last=true&includeTotal=` | Keyset-paged list, newest first (max page size 100); see below |
 | `GET /api/activity-logs/stats` | Total, today, last 7 days, failed sign-ins today (one statement; each count is read from an index) |
-| `GET /api/activity-logs/{id}` | Full record |
-| `DELETE /api/activity-logs/{id}` | Delete (the deletion itself is logged) |
-| `GET /api/system-errors...` | Same four endpoints for errors (stats: total, today, last 7 days, critical; critical uses the `(Level, OccurredAt)` index) |
+| `GET /api/activity-logs/{id}` | Full record (no single-entry delete; retention cleanup only) |
+| `GET /api/system-errors...` | List, stats, get, delete for errors (stats: total, today, last 7 days, critical; critical uses the `(Level, OccurredAt)` index) |
 | `POST /api/system-errors/report` | Desktop error report (anonymous, 30/min per IP) |
 
 Lists use keyset paging (`CursorQuery` / `CursorPage<T>`), because log tables only grow: each page is read from
@@ -115,12 +114,13 @@ Instrumentation is centralized: `ApiClient`, `PageHost`, portal `Show`/`Activate
 ## Desktop pages (Super portal)
 
 `Activity logs` and `System errors`: stat cards, search, table (long text cut with the full text in a tooltip),
-pagination, an eye button (details modal) and a delete button (with confirmation) on each row.
+pagination and an eye button (details modal). System errors also have a delete button (with confirmation); activity
+logs do not (audit trail is retention-only).
 The activity-log list loads only the columns it shows (same idea as system-error summaries); Details and UserAgent stay on the details call.
 If the list cannot load, the table shows an error state with a Retry button (a specific message when the server is unreachable).
 Both pages derive from `ViewModels/Shell/PagedListViewModel`, which a new list page can reuse as well.
 Page moves send one cursor request without the total; a search counts again; the stat cards load only on the
-first load, Refresh and after a delete (they cover the whole table, not the shown page or search). When there is no
+first load, Refresh and after a system-error delete (they cover the whole table, not the shown page or search). When there is no
 search, the list skips its own `COUNT` and uses `stats.Total` instead.
 The shell reuses each menu page's view model and view (PageHost hides/shows; returning keeps list data).
 Leaving a page cancels its requests still running; if that interrupted the first load, returning loads it again.

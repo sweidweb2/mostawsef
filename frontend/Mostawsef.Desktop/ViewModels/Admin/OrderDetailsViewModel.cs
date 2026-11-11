@@ -11,7 +11,7 @@ using Mostawsef.Desktop.ViewModels.Shell;
 namespace Mostawsef.Desktop.ViewModels.Admin;
 
 /// <summary>Admin portal sub-page: one order's main details and tests (read-only). Set <see cref="OrderId"/> before it opens; optionally <see cref="Seed"/> to skip the first GET.</summary>
-public partial class OrderDetailsViewModel(OrdersApi orders, NavigationService navigation) : ViewModelBase, ILoadablePage
+public partial class OrderDetailsViewModel(OrdersApi orders, NavigationService navigation) : ViewModelBase, ILoadablePage, IReusablePage
 {
     private CancellationTokenSource? _loadCancellation;
 
@@ -51,17 +51,35 @@ public partial class OrderDetailsViewModel(OrdersApi orders, NavigationService n
         _ => "Error.Description",
     };
 
+    /// <summary>Clears prior order state so Orders can reuse one instance (and its PageHost view) per portal visit.</summary>
+    public void BeginReuse()
+    {
+        _loadCancellation?.Cancel();
+        _loadCancellation = null;
+        OrderId = default;
+        Order = null;
+        LoadError = null;
+        IsLoading = false;
+    }
+
     /// <summary>Shows <paramref name="order"/> immediately (e.g. after create) so Activate skips the GET.</summary>
     public void Seed(OrderDetailsDto order)
     {
+        _loadCancellation?.Cancel();
+        _loadCancellation = null;
         OrderId = order.Id;
         Order = order;
         LoadError = null;
+        IsLoading = false;
     }
 
     public Task ActivateAsync() => Order is null ? LoadAsync() : Task.CompletedTask;
 
-    public void Deactivate() => _loadCancellation?.Cancel();
+    public void Deactivate()
+    {
+        _loadCancellation?.Cancel();
+        IsLoading = false;
+    }
 
     [RelayCommand]
     private Task RefreshAsync() => LoadAsync();

@@ -25,9 +25,6 @@ public class ActivityLogRepository(AppDbContext db) : IActivityLogRepository
                 l.EntityType, l.EntityId, l.IpAddress, l.UserAgent, l.Details))
             .FirstOrDefaultAsync(cancellationToken);
 
-    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken) =>
-        await db.ActivityLogs.Where(l => l.Id == id).ExecuteDeleteAsync(cancellationToken) > 0;
-
     public Task<int> DeleteOlderThanAsync(DateTime cutoffUtc, CancellationToken cancellationToken) =>
         Retention.DeleteInBatchesAsync(
             db.ActivityLogs.Where(l => l.OccurredAt < cutoffUtc).OrderBy(l => l.OccurredAt), cancellationToken);

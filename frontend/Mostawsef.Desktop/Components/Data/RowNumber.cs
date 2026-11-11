@@ -153,7 +153,17 @@ file static class RowIndexLookup
         public int IndexOf(object item)
         {
             EnsureMap();
-            return _map!.TryGetValue(item, out var index) ? index : -1;
+            if (_map!.TryGetValue(item, out var index)
+                && index < _items.Count
+                && Equals(_items[index], item))
+            {
+                return index;
+            }
+
+            // DataGrid may materialize a row before our CollectionChanged dirty flag runs.
+            _dirty = true;
+            EnsureMap();
+            return _map.TryGetValue(item, out index) ? index : -1;
         }
 
         private void EnsureMap()

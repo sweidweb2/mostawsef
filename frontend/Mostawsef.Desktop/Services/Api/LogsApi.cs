@@ -19,9 +19,6 @@ public class LogsApi(ApiClient api)
     public Task<ApiResult<ActivityLogDto>> GetActivityLogAsync(Guid id, CancellationToken cancellationToken = default) =>
         api.GetAsync<ActivityLogDto>($"api/activity-logs/{id}", cancellationToken);
 
-    public Task<ApiResult<bool>> DeleteActivityLogAsync(Guid id, CancellationToken cancellationToken = default) =>
-        api.DeleteAsync($"api/activity-logs/{id}", cancellationToken);
-
     public Task<ApiResult<CursorPage<SystemErrorListItemDto>>> GetSystemErrorsAsync(CursorQuery query, CancellationToken cancellationToken = default) =>
         api.GetAsync<CursorPage<SystemErrorListItemDto>>(ListUrl("api/system-errors", query), cancellationToken);
 

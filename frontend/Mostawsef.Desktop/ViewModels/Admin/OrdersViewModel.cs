@@ -19,6 +19,9 @@ public partial class OrdersViewModel(OrdersApi orders, NavigationService navigat
     /// <summary>One New order page for this portal visit; reset on each open so PageHost can reuse its view.</summary>
     private NewOrderViewModel? _newOrder;
 
+    /// <summary>One Order details page for this portal visit; reset on each open so PageHost can reuse its view.</summary>
+    private OrderDetailsViewModel? _orderDetails;
+
     protected override Task<ApiResult<PagedResult<OrderListItemDto>>> FetchPageAsync(
         int page, int pageSize, string? search, bool includeTotal, CancellationToken cancellationToken) =>
         orders.GetOrdersAsync(page, pageSize, search, includeTotal, cancellationToken);
@@ -40,6 +43,7 @@ public partial class OrdersViewModel(OrdersApi orders, NavigationService navigat
             await Task.Yield();
 
             _newOrder ??= navigation.CreatePage(typeof(NewOrderViewModel)) as NewOrderViewModel;
+            _orderDetails ??= navigation.CreatePage(typeof(OrderDetailsViewModel)) as OrderDetailsViewModel;
             if (_newOrder is null)
             {
                 return;
@@ -48,6 +52,7 @@ public partial class OrdersViewModel(OrdersApi orders, NavigationService navigat
             await navigation.OpenAsync(_newOrder, page =>
             {
                 page.OnOrderCreated = InsertCreated;
+                page.OrderDetailsPage = _orderDetails;
                 page.BeginReuse();
             });
         }
@@ -58,8 +63,22 @@ public partial class OrdersViewModel(OrdersApi orders, NavigationService navigat
     }
 
     [RelayCommand]
-    private Task ViewAsync(OrderListItemDto? item) =>
-        item is null ? Task.CompletedTask : navigation.OpenAsync<OrderDetailsViewModel>(page => page.OrderId = item.Id);
+    private Task ViewAsync(OrderListItemDto? item)
+    {
+        if (item is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        _orderDetails ??= navigation.CreatePage(typeof(OrderDetailsViewModel)) as OrderDetailsViewModel;
+        return _orderDetails is null
+            ? Task.CompletedTask
+            : navigation.OpenAsync(_orderDetails, page =>
+            {
+                page.BeginReuse();
+                page.OrderId = item.Id;
+            });
+    }
 
     /// <summary>Adds the new order on page 1 without wiping the table; falls back to a full reload when needed.</summary>
     private void InsertCreated(OrderDetailsDto order) =>
