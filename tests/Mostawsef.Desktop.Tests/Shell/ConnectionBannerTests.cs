@@ -1,3 +1,6 @@
+using System.Net;
+using System.Net.Http;
+using System.Text;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
@@ -100,6 +103,29 @@ public class ConnectionBannerTests : UiTestBase
         var health = app.Api.RequestsTo(HttpMethod.Get, HealthPath).ToList();
         Assert.NotEmpty(health);
         Assert.All(health, r => Assert.Null(r.Headers.Authorization));
+    }
+
+    [AvaloniaFact]
+    public async Task A_bad_health_payload_keeps_polling()
+    {
+        using var app = new TestServices();
+        Func<HttpResponseMessage> health = () => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("not-json", Encoding.UTF8, "application/json"),
+        };
+        app.Api.On(HttpMethod.Get, HealthPath, _ => health());
+        ShowPortal(app);
+        var monitor = app.Get<ConnectionMonitor>();
+
+        await monitor.CheckNowAsync();
+
+        Assert.Equal(ConnectionState.Offline, monitor.State);
+        Assert.True(monitor.IsRunning);
+
+        health = () => FakeApiHandler.Json(new HealthDto("Healthy", "Connected", ApiVersion.Current));
+        await monitor.CheckNowAsync();
+
+        Assert.Equal(ConnectionState.Online, monitor.State);
     }
 
     private static Window ShowPortal(TestServices app)

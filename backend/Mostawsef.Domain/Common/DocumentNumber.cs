@@ -7,6 +7,8 @@ public static class DocumentNumber
 {
     public const int Digits = 6;
 
+    private const string DigitsFormat = "000000";
+
     public static string Format(string prefix, long value) =>
-        $"{prefix}-{value.ToString(new string('0', Digits), CultureInfo.InvariantCulture)}";
+        string.Create(CultureInfo.InvariantCulture, $"{prefix}-{value.ToString(DigitsFormat, CultureInfo.InvariantCulture)}");
 }

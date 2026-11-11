@@ -15,9 +15,9 @@ namespace Mostawsef.Desktop.ViewModels.Super;
 public partial class UserFormViewModel : FormViewModel
 {
     private readonly UsersApi _users;
-    private readonly UserDetailsDto? _existing;
+    private readonly UserListItemDto? _existing;
 
-    public UserFormViewModel(UsersApi users, IDialogService dialogs, LocalizationService localization, UserDetailsDto? existing = null)
+    public UserFormViewModel(UsersApi users, IDialogService dialogs, LocalizationService localization, UserListItemDto? existing = null)
         : base(dialogs, localization)
     {
         _users = users;

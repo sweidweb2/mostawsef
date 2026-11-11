@@ -50,8 +50,61 @@ public static class SearchText
     }
 
     /// <summary>The value of a multi-field search column (e.g. log SearchText): each field normalized, then joined.</summary>
-    public static string Key(params string?[] fields) =>
-        string.Join(KeySeparator, fields.Select(Normalize).Where(f => f.Length > 0));
+    public static string Key(string? a) => Normalize(a);
+
+    public static string Key(string? a, string? b)
+    {
+        var builder = new StringBuilder();
+        AppendNormalized(builder, a);
+        AppendNormalized(builder, b);
+        return builder.ToString();
+    }
+
+    public static string Key(string? a, string? b, string? c)
+    {
+        var builder = new StringBuilder();
+        AppendNormalized(builder, a);
+        AppendNormalized(builder, b);
+        AppendNormalized(builder, c);
+        return builder.ToString();
+    }
+
+    public static string Key(string? a, string? b, string? c, string? d)
+    {
+        var builder = new StringBuilder();
+        AppendNormalized(builder, a);
+        AppendNormalized(builder, b);
+        AppendNormalized(builder, c);
+        AppendNormalized(builder, d);
+        return builder.ToString();
+    }
+
+    public static string Key(string? a, string? b, string? c, string? d, string? e)
+    {
+        var builder = new StringBuilder();
+        AppendNormalized(builder, a);
+        AppendNormalized(builder, b);
+        AppendNormalized(builder, c);
+        AppendNormalized(builder, d);
+        AppendNormalized(builder, e);
+        return builder.ToString();
+    }
+
+    private static void AppendNormalized(StringBuilder builder, string? field)
+    {
+        var normalized = Normalize(field);
+        if (normalized.Length == 0)
+        {
+            return;
+        }
+
+        if (builder.Length > 0)
+        {
+            builder.Append(KeySeparator);
+        }
+
+        builder.Append(normalized);
+    }
 
     private static char Map(char c) => c switch
     {

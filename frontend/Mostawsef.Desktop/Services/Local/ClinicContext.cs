@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -43,13 +44,24 @@ public partial class ClinicContext : ObservableObject
             return true;
         }
 
-        var result = await _api.GetAsync(cancellationToken);
-        if (result.IsSuccess)
+        try
         {
-            Settings = result.Value;
-        }
+            var result = await _api.GetAsync(cancellationToken);
+            if (result.IsSuccess)
+            {
+                Settings = result.Value;
+            }
 
-        return result.IsSuccess;
+            return result.IsSuccess;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            return false;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     public void Update(ClinicSettingsDto settings) => Settings = settings;

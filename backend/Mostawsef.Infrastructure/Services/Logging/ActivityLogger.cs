@@ -20,7 +20,7 @@ public sealed class ActivityLogger(
 {
     internal static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
-    private readonly List<ActivityLog> _pending = [];
+    private List<ActivityLog> _pending = [];
 
     public Task LogAsync(ActivityEntry entry, CancellationToken cancellationToken = default)
     {
@@ -48,8 +48,8 @@ public sealed class ActivityLogger(
             return;
         }
 
-        var batch = _pending.ToList();
-        _pending.Clear();
+        var batch = _pending;
+        _pending = [];
 
         try
         {

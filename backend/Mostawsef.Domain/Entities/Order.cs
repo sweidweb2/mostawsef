@@ -23,12 +23,17 @@ public class Order : Entity
     }
 
     public Order(string number, Patient patient, string currency)
+        : this(number, patient.Id, patient.FullName, patient.SearchName, patient.Phone, currency)
+    {
+    }
+
+    public Order(string number, Guid patientId, string patientName, string patientSearchName, string patientPhone, string currency)
     {
         Number = number;
-        PatientId = patient.Id;
-        PatientName = patient.FullName;
-        PatientSearchName = patient.SearchName;
-        PatientPhone = patient.Phone;
+        PatientId = patientId;
+        PatientName = patientName;
+        PatientSearchName = patientSearchName;
+        PatientPhone = patientPhone;
         Currency = currency;
     }
 

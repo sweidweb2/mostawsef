@@ -23,7 +23,8 @@ public record UserListItemDto(
     string Role,
     bool IsActive,
     DateTime? LastLoginAt,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    int Version);
 
 public record UserDetailsDto(
     Guid Id,
@@ -59,7 +60,7 @@ public record CreateUserRequest
     public string Role { get; init; } = Roles.Admin;
 }
 
-/// <summary>Version is the value from UserDetailsDto; a stale one returns 409 concurrency_conflict.</summary>
+/// <summary>Version is the value from the list/details DTO; a stale one returns 409 concurrency_conflict.</summary>
 public record UpdateUserRequest
 {
     [Required(ErrorMessage = ErrorCodes.Required)]

@@ -12,7 +12,8 @@ public record UserListRow(
     UserRole Role,
     bool IsActive,
     DateTime? LastLoginAt,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    int Version);
 
 /// <summary>User details for a read-only GET (no password hash, no tracking).</summary>
 public record UserDetailsRow(

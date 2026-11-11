@@ -41,7 +41,8 @@ public class SystemErrorService(ISystemErrorRepository errors, ISystemErrorLogge
             ? null
             : new SystemErrorDto(
                 e.Id, e.OccurredAt, e.Level.ToString(), e.Source, e.Message, e.ExceptionType, e.StackTrace,
-                e.RequestPath, e.RequestMethod, e.StatusCode, e.UserId, e.Username, e.TraceId, e.IpAddress, e.Details);
+                e.RequestPath, e.RequestMethod, e.StatusCode, e.UserId, e.Username, e.TraceId, e.IpAddress,
+                e.Details);
     }
 
     public async Task<SystemErrorStatsDto> GetStatsAsync(CancellationToken cancellationToken)

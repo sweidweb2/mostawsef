@@ -26,6 +26,7 @@ public partial class PortalShellViewModel : ViewModelBase
     private readonly LocalizationService _localization;
     private readonly AuthApi _authApi;
     private readonly IToastService _toasts;
+    private readonly ErrorReporter _errors;
     private readonly PerformanceMonitor _perf;
 
     /// <summary>Set while the menu goes back to its entry because the user kept a sub-page's changes.</summary>
@@ -47,6 +48,7 @@ public partial class PortalShellViewModel : ViewModelBase
         IToastService toasts,
         ConnectionMonitor connection,
         ClinicContext clinic,
+        ErrorReporter errors,
         PerformanceMonitor perf)
     {
         _navigation = navigation;
@@ -55,6 +57,7 @@ public partial class PortalShellViewModel : ViewModelBase
         _localization = localization;
         _authApi = authApi;
         _toasts = toasts;
+        _errors = errors;
         _perf = perf;
         Connection = connection;
 
@@ -92,6 +95,9 @@ public partial class PortalShellViewModel : ViewModelBase
     /// <summary>A page opened from the menu page (NavigationService.OpenAsync); the menu keeps its entry selected.</summary>
     public ViewModelBase? SubPage { get; private set; }
 
+    /// <summary>Raised when a transient sub-page will not be shown again (PageHost should drop its view).</summary>
+    public event Action<ViewModelBase>? PageDiscarded;
+
     partial void OnSelectedMenuIndexChanged(int oldValue, int newValue)
     {
         if (_restoringMenu || newValue < 0 || newValue >= MenuItems.Count)
@@ -116,6 +122,7 @@ public partial class PortalShellViewModel : ViewModelBase
             return false;
         }
 
+        DiscardSubPage();
         _menuPage ??= CurrentPage;
         Show(page);
         SubPage = page;
@@ -139,12 +146,34 @@ public partial class PortalShellViewModel : ViewModelBase
         return true;
     }
 
+    private void DiscardSubPage()
+    {
+        if (SubPage is null)
+        {
+            return;
+        }
+
+        var gone = SubPage;
+        SubPage = null;
+        if (gone is not IReusablePage)
+        {
+            PageDiscarded?.Invoke(gone);
+        }
+    }
+
     private async Task LeaveDirtySubPageAsync(FormViewModel form, int oldValue, int newValue)
     {
-        if (await form.ConfirmDiscardAsync())
+        try
         {
-            ShowMenuPage(newValue);
-            return;
+            if (await form.ConfirmDiscardAsync())
+            {
+                ShowMenuPage(newValue);
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            _errors.Report(ex, context: "Leaving dirty sub-page");
         }
 
         _restoringMenu = true;
@@ -174,7 +203,7 @@ public partial class PortalShellViewModel : ViewModelBase
         }
 
         _menuPage = page;
-        SubPage = null;
+        DiscardSubPage();
         Show(page);
     }
 
@@ -187,7 +216,7 @@ public partial class PortalShellViewModel : ViewModelBase
             return;
         }
 
-        SubPage = null;
+        DiscardSubPage();
         Show(page);
     }
 
@@ -219,12 +248,23 @@ public partial class PortalShellViewModel : ViewModelBase
 
     private async Task ActivateTimedAsync(ViewModelBase page, ILoadablePage loadable)
     {
-        using var scope = _perf.Measure("Page", page.GetType().Name);
-        await loadable.ActivateAsync();
+        try
+        {
+            using var scope = _perf.Measure("Page", page.GetType().Name);
+            await loadable.ActivateAsync();
+        }
+        catch (Exception ex)
+        {
+            _errors.Report(ex, context: $"Activating {page.GetType().Name}");
+        }
     }
 
     /// <summary>Called when the portal is replaced (e.g. sign-out): cancels the open page's API calls.</summary>
-    public void Close() => (CurrentPage as ILoadablePage)?.Deactivate();
+    public void Close()
+    {
+        DiscardSubPage();
+        (CurrentPage as ILoadablePage)?.Deactivate();
+    }
 
     [RelayCommand]
     private async Task ChangePasswordAsync()

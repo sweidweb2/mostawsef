@@ -35,7 +35,7 @@ public class UserService(
         var (items, total) = await users.GetPageAsync(query, cancellationToken);
         return new PagedResult<UserListItemDto>(
             items.Select(u => new UserListItemDto(
-                u.Id, u.Username, u.FullName, u.Role.ToString(), u.IsActive, u.LastLoginAt, u.CreatedAt)).ToList(),
+                u.Id, u.Username, u.FullName, u.Role.ToString(), u.IsActive, u.LastLoginAt, u.CreatedAt, u.Version)).ToList(),
             query.SafePage,
             query.SafePageSize,
             total);

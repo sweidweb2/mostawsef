@@ -23,7 +23,11 @@ namespace Mostawsef.Desktop.Services.Diagnostics;
 /// at most MaxReportsPerMinute errors are admitted, at most MaxConcurrentSends POSTs run at once,
 /// and the "unexpected error" toast shows at most once per ToastInterval.
 /// </summary>
-public class ErrorReporter(LogsApi logsApi, NavigationService navigation, IToastService toasts, LocalizationService localization)
+public class ErrorReporter(
+    Lazy<LogsApi> logsApi,
+    Lazy<NavigationService> navigation,
+    Lazy<IToastService> toasts,
+    Lazy<LocalizationService> localization)
 {
     public const int MaxReportsPerMinute = 10;
 
@@ -84,7 +88,7 @@ public class ErrorReporter(LogsApi logsApi, NavigationService navigation, IToast
         Report(exception, ErrorLevels.Error, "UI");
         if (TryClaimToast())
         {
-            toasts.Error(localization.Get("Error.Unexpected"));
+            toasts.Value.Error(localization.Value.Get("Error.Unexpected"));
         }
     }
 
@@ -117,7 +121,7 @@ public class ErrorReporter(LogsApi logsApi, NavigationService navigation, IToast
                         AppVersion,
                         RuntimeInformation.OSDescription);
 
-                    var result = await logsApi.ReportErrorAsync(request);
+                    var result = await logsApi.Value.ReportErrorAsync(request);
                     if (result.IsSuccess)
                     {
                         return;
@@ -206,7 +210,7 @@ public class ErrorReporter(LogsApi logsApi, NavigationService navigation, IToast
 
     private string Context(string? context, int repeats)
     {
-        var page = navigation.CurrentPage?.GetType().Name;
+        var page = navigation.Value.CurrentPage?.GetType().Name;
         return string.Join(" | ", new[]
         {
             context,

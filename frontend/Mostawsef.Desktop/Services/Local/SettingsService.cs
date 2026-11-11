@@ -83,9 +83,9 @@ public class SettingsService
             File.WriteAllText(tempPath, json);
             File.Move(tempPath, _filePath, overwrite: true);
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        catch (Exception)
         {
-            // Preferences are best effort: a locked or read-only file must not disturb the user.
+            // Preferences are best effort: a locked, read-only or otherwise unwritable file must not disturb the user.
         }
     }
 

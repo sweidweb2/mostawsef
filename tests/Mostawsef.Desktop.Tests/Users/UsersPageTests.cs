@@ -22,13 +22,13 @@ public class UsersPageTests : UiTestBase
     private const string UsersPath = "/api/users";
 
     private static readonly UserListItemDto Sara =
-        new(Guid.NewGuid(), "sara@test.local", "Sara Mahmoud", Roles.Admin, true, DateTime.UtcNow, DateTime.UtcNow);
+        new(Guid.NewGuid(), "sara@test.local", "Sara Mahmoud", Roles.Admin, true, DateTime.UtcNow, DateTime.UtcNow, 3);
 
     private static readonly UserListItemDto Omar =
-        new(Guid.NewGuid(), "omar@test.local", "Omar Khaled", Roles.Super, false, null, DateTime.UtcNow);
+        new(Guid.NewGuid(), "omar@test.local", "Omar Khaled", Roles.Super, false, null, DateTime.UtcNow, 0);
 
     private static readonly UserDetailsDto SaraDetails =
-        new(Sara.Id, Sara.Username, Sara.FullName, Sara.Role, true, null, DateTime.UtcNow, "super@test.local", null, null, 3);
+        new(Sara.Id, Sara.Username, Sara.FullName, Sara.Role, true, null, DateTime.UtcNow, "super@test.local", null, null, Sara.Version);
 
     [AvaloniaFact]
     public void Only_super_users_can_open_the_users_page()
@@ -192,7 +192,6 @@ public class UsersPageTests : UiTestBase
     public async Task A_stale_edit_shows_the_conflict_message_at_the_top_of_the_form()
     {
         using var app = SuperWithUsers(Sara);
-        app.Api.OnGet($"{UsersPath}/{Sara.Id}", SaraDetails);
         UpdateUserRequest? sent = null;
         app.Api.On(HttpMethod.Put, $"{UsersPath}/{Sara.Id}", request =>
         {
@@ -207,12 +206,13 @@ public class UsersPageTests : UiTestBase
         var alert = window.GetVisualDescendants().OfType<Alert>().Single();
         Assert.False(form.IsNew);
         Assert.False(alert.IsVisible);
+        Assert.Empty(app.Api.RequestsTo(HttpMethod.Get, $"{UsersPath}/{Sara.Id}"));
 
         form.FullName = "Sara M.";
         await form.SaveCommand.ExecuteAsync(null);
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal(SaraDetails.Version, sent!.Version);
+        Assert.Equal(Sara.Version, sent!.Version);
         Assert.True(alert.IsVisible);
         Assert.StartsWith("Someone else changed this record", alert.Text);
     }

@@ -53,7 +53,16 @@ public class CopyButton : IconButton
             return;
         }
 
-        await clipboard.SetTextAsync(Text);
+        try
+        {
+            await clipboard.SetTextAsync(Text);
+        }
+        catch (Exception)
+        {
+            // Clipboard can be locked by another process (RDP, managers); leave the icon alone.
+            return;
+        }
+
         Icon = Icons.Get("IconCheck");
         _resetIcon?.Dispose();
         _resetIcon = DispatcherTimer.RunOnce(() => Icon = Icons.Get("IconCopy"), ConfirmationTime);

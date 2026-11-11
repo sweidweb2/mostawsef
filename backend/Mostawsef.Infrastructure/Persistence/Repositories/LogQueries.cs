@@ -19,11 +19,50 @@ internal static class TrigramSearch
             return null;
         }
 
-        var term = SearchText.Normalize(search)
-            .Replace(EscapeCharacter, EscapeCharacter + EscapeCharacter)
-            .Replace("%", EscapeCharacter + "%")
-            .Replace("_", EscapeCharacter + "_");
-        return $"%{term}%";
+        var normalized = SearchText.Normalize(search);
+        if (normalized.Length == 0)
+        {
+            return null;
+        }
+
+        var escaped = EscapeLike(normalized);
+        return string.Create(escaped.Length + 2, escaped, static (span, term) =>
+        {
+            span[0] = '%';
+            term.AsSpan().CopyTo(span[1..]);
+            span[^1] = '%';
+        });
+    }
+
+    private static string EscapeLike(string term)
+    {
+        var extra = 0;
+        foreach (var c in term)
+        {
+            if (c is '\\' or '%' or '_')
+            {
+                extra++;
+            }
+        }
+
+        if (extra == 0)
+        {
+            return term;
+        }
+
+        return string.Create(term.Length + extra, term, static (span, value) =>
+        {
+            var i = 0;
+            foreach (var c in value)
+            {
+                if (c is '\\' or '%' or '_')
+                {
+                    span[i++] = '\\';
+                }
+
+                span[i++] = c;
+            }
+        });
     }
 }
 

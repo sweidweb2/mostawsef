@@ -24,15 +24,23 @@ internal static class PageQueryExecutor
         }
 
         var page = await pageRows
-            .Select(row => new { Row = row, Total = rows.Count() })
+            .Select(row => new PageRow<T>(row, rows.Count()))
             .ToListAsync(cancellationToken);
 
-        if (page.Count > 0)
+        if (page.Count == 0)
         {
-            return (page.Select(p => p.Row).ToList(), page[0].Total);
+            // Empty page (no matches, or past the last page): still need the total for the client.
+            return ([], await rows.CountAsync(cancellationToken));
         }
 
-        // Empty page (no matches, or past the last page): still need the total for the client.
-        return ([], await rows.CountAsync(cancellationToken));
+        var items = new List<T>(page.Count);
+        for (var i = 0; i < page.Count; i++)
+        {
+            items.Add(page[i].Row);
+        }
+
+        return (items, page[0].Total);
     }
+
+    private readonly record struct PageRow<T>(T Row, int Total);
 }

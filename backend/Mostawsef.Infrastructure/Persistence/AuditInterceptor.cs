@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Domain.Common;
@@ -42,29 +41,27 @@ public sealed class AuditInterceptor(ICurrentUser currentUser, TimeProvider time
         {
             if (entry.State == EntityState.Added)
             {
-                Set(entry, nameof(Entity.CreatedAt), now);
-                Set(entry, nameof(Entity.CreatedBy), user);
+                entry.Property(e => e.CreatedAt).CurrentValue = now;
+                entry.Property(e => e.CreatedBy).CurrentValue = user;
                 continue;
             }
 
-            if (entry.State == EntityState.Deleted && entry.Entity is ISoftDeletable)
+            if (entry.State == EntityState.Deleted && entry.Entity is SoftDeletableEntity soft)
             {
                 entry.State = EntityState.Modified;
-                Set(entry, nameof(ISoftDeletable.IsDeleted), true);
-                Set(entry, nameof(ISoftDeletable.DeletedAt), now);
-                Set(entry, nameof(ISoftDeletable.DeletedBy), user);
+                var softEntry = context.Entry(soft);
+                softEntry.Property(e => e.IsDeleted).CurrentValue = true;
+                softEntry.Property(e => e.DeletedAt).CurrentValue = now;
+                softEntry.Property(e => e.DeletedBy).CurrentValue = user;
             }
 
             if (entry.State == EntityState.Modified)
             {
-                Set(entry, nameof(Entity.UpdatedAt), now);
-                Set(entry, nameof(Entity.UpdatedBy), user);
+                entry.Property(e => e.UpdatedAt).CurrentValue = now;
+                entry.Property(e => e.UpdatedBy).CurrentValue = user;
                 var version = entry.Property(e => e.Version);
                 version.CurrentValue = version.OriginalValue + 1;
             }
         }
     }
-
-    private static void Set(EntityEntry<Entity> entry, string property, object? value) =>
-        entry.Property(property).CurrentValue = value;
 }

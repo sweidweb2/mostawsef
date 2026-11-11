@@ -1,8 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Mostawsef.Application.Common;
 using Mostawsef.Application.Interfaces;
-using Mostawsef.Contracts.Common;
-using Mostawsef.Domain.Entities;
 using Mostawsef.Domain.Enums;
 using Mostawsef.Infrastructure.Persistence.Context;
 
@@ -19,8 +17,13 @@ public class ActivityLogRepository(AppDbContext db) : IActivityLogRepository
                 l => new PageCursor(l.OccurredAt, l.Id),
                 cancellationToken);
 
-    public Task<ActivityLog?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
-        db.ActivityLogs.AsNoTracking().FirstOrDefaultAsync(l => l.Id == id, cancellationToken);
+    public Task<ActivityLogDetails?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
+        db.ActivityLogs.AsNoTracking()
+            .Where(l => l.Id == id)
+            .Select(l => new ActivityLogDetails(
+                l.Id, l.OccurredAt, l.Action, l.Module, l.Description, l.UserId, l.Username,
+                l.EntityType, l.EntityId, l.IpAddress, l.UserAgent, l.Details))
+            .FirstOrDefaultAsync(cancellationToken);
 
     public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken) =>
         await db.ActivityLogs.Where(l => l.Id == id).ExecuteDeleteAsync(cancellationToken) > 0;
@@ -58,8 +61,13 @@ public class SystemErrorRepository(AppDbContext db) : ISystemErrorRepository
                 e => new PageCursor(e.OccurredAt, e.Id),
                 cancellationToken);
 
-    public Task<SystemError?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
-        db.SystemErrors.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+    public Task<SystemErrorDetails?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
+        db.SystemErrors.AsNoTracking()
+            .Where(e => e.Id == id)
+            .Select(e => new SystemErrorDetails(
+                e.Id, e.OccurredAt, e.Level, e.Source, e.Message, e.ExceptionType, e.StackTrace,
+                e.RequestPath, e.RequestMethod, e.StatusCode, e.UserId, e.Username, e.TraceId, e.IpAddress, e.Details))
+            .FirstOrDefaultAsync(cancellationToken);
 
     public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken) =>
         await db.SystemErrors.Where(e => e.Id == id).ExecuteDeleteAsync(cancellationToken) > 0;

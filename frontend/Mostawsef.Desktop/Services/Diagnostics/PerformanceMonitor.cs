@@ -182,19 +182,24 @@ public partial class PerformanceMonitor : ObservableObject
             _process.Refresh();
             var now = Clock.GetUtcNow();
             var cpu = _process.TotalProcessorTime;
-            var cpuPct = 0.0;
-            if (_lastCpuAt != default)
+            double cpuPct;
+            lock (_gate)
             {
-                var wallMs = (now - _lastCpuAt).TotalMilliseconds;
-                if (wallMs > 1)
+                cpuPct = 0.0;
+                if (_lastCpuAt != default)
                 {
-                    cpuPct = 100.0 * (cpu - _lastCpu).TotalMilliseconds
-                        / (wallMs * Math.Max(1, Environment.ProcessorCount));
+                    var wallMs = (now - _lastCpuAt).TotalMilliseconds;
+                    if (wallMs > 1)
+                    {
+                        cpuPct = 100.0 * (cpu - _lastCpu).TotalMilliseconds
+                            / (wallMs * Math.Max(1, Environment.ProcessorCount));
+                    }
                 }
+
+                _lastCpu = cpu;
+                _lastCpuAt = now;
             }
 
-            _lastCpu = cpu;
-            _lastCpuAt = now;
             var wsMb = _process.WorkingSet64 / (1024d * 1024d);
             return $"cpu={cpuPct:F0}% ws={wsMb:F0}MB gc0={GC.CollectionCount(0)} gc1={GC.CollectionCount(1)}";
         }

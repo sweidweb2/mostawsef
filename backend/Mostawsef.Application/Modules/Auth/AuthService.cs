@@ -80,20 +80,18 @@ public class AuthService(
             Details = new { Role = user.Role.ToString() },
         };
 
-        // Last-login and activity log use separate DbContexts: run them together after the password work.
+        // Activity log is buffered in-request; keep these sequential (WhenAll added no real overlap).
         if (check == PasswordCheck.SuccessRehashNeeded)
         {
             user.ChangePasswordHash(passwordHasher.Hash(request.Password));
             user.RecordLogin(time.GetUtcNow().UtcDateTime);
-            await Task.WhenAll(
-                users.SaveChangesAsync(cancellationToken),
-                activity.LogAsync(signedIn, cancellationToken));
+            await users.SaveChangesAsync(cancellationToken);
+            await activity.LogAsync(signedIn, cancellationToken);
         }
         else
         {
-            await Task.WhenAll(
-                users.RecordLoginAsync(user.Id, time.GetUtcNow().UtcDateTime, cancellationToken),
-                activity.LogAsync(signedIn, cancellationToken));
+            await users.RecordLoginAsync(user.Id, time.GetUtcNow().UtcDateTime, cancellationToken);
+            await activity.LogAsync(signedIn, cancellationToken);
         }
 
         var token = tokens.CreateAccessToken(user);
@@ -102,8 +100,10 @@ public class AuthService(
 
     public async Task<UserDto?> GetUserAsync(Guid userId, CancellationToken cancellationToken)
     {
-        var user = await users.GetByIdAsync(userId, cancellationToken);
-        return user is { IsActive: true } ? ToDto(user) : null;
+        var user = await users.GetDetailsAsync(userId, cancellationToken);
+        return user is { IsActive: true }
+            ? new UserDto(user.Id, user.Username, user.Role.ToString(), string.IsNullOrEmpty(user.FullName) ? null : user.FullName)
+            : null;
     }
 
     public Task SignOutAsync(CancellationToken cancellationToken) =>

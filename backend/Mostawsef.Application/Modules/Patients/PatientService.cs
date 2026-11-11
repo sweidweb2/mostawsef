@@ -11,7 +11,7 @@ public interface IPatientService
 {
     Task<PagedResult<PatientDto>> GetPageAsync(PageQuery query, CancellationToken cancellationToken);
 
-    /// <summary>Every patient for print/export (no notes).</summary>
+    /// <summary>Up to <see cref="PageQuery.MaxExportRows"/> patients for print/export (no notes).</summary>
     Task<IReadOnlyList<PatientDto>> ListAllAsync(CancellationToken cancellationToken);
 
     Task<PatientDto> GetAsync(Guid id, CancellationToken cancellationToken);
@@ -33,7 +33,7 @@ public class PatientService(IPatientRepository patients, IActivityLogger activit
     }
 
     public async Task<IReadOnlyList<PatientDto>> ListAllAsync(CancellationToken cancellationToken) =>
-        (await patients.ListAllAsync(cancellationToken)).Select(ToListDto).ToList();
+        (await patients.ListAllAsync(cancellationToken)).Select(ToExportDto).ToList();
 
     public async Task<PatientDto> GetAsync(Guid id, CancellationToken cancellationToken)
     {
@@ -98,6 +98,10 @@ public class PatientService(IPatientRepository patients, IActivityLogger activit
     private static PatientDto ToListDto(PatientListRow p) => new(
         p.Id, p.FullName, p.Phone, p.GuardianPhone, Notes: null, p.IsInsured, p.Gender.ToString(), p.DateOfBirth,
         p.CreatedAt, p.UpdatedAt, p.UpdatedBy, p.Version);
+
+    private static PatientDto ToExportDto(PatientExportRow p) => new(
+        p.Id, p.FullName, p.Phone, p.GuardianPhone, Notes: null, p.IsInsured, p.Gender.ToString(), p.DateOfBirth,
+        default, null, null, 0);
 
     private static PatientDto ToDto(Patient p) => new(
         p.Id, p.FullName, p.Phone, p.GuardianPhone, p.Notes, p.IsInsured, p.Gender.ToString(), p.DateOfBirth,

@@ -13,6 +13,7 @@ using Mostawsef.Contracts.LabTests;
 using Mostawsef.Contracts.Orders;
 using Mostawsef.Contracts.Patients;
 using Mostawsef.Desktop.Services.Api;
+using Mostawsef.Desktop.Services.Diagnostics;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Navigation;
 using Mostawsef.Desktop.Services.Ui;
@@ -25,7 +26,7 @@ namespace Mostawsef.Desktop.ViewModels.Admin;
 /// the API saves it all or nothing. Orders reuses one instance per portal visit; <see cref="BeginReuse"/>
 /// clears the form and the catalog loads while the page shows its preparing state.
 /// </summary>
-public partial class NewOrderViewModel : FormViewModel, ILoadablePage
+public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusablePage
 {
     public const int PatientStep = 0;
     public const int TestsStep = 1;
@@ -36,8 +37,9 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
     private readonly LabTestsApi _tests;
     private readonly NavigationService _navigation;
     private readonly IToastService _toasts;
+    private readonly ErrorReporter _errors;
 
-    private CancellationTokenSource _pageCancellation = new();
+    private readonly PageLifetime _pageLifetime = new();
     private CancellationTokenSource? _catalogSearchDelay;
     private CancellationTokenSource? _catalogLoadCancellation;
     private CancellationTokenSource? _patientLoadCancellation;
@@ -63,6 +65,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         NavigationService navigation,
         IDialogService dialogs,
         IToastService toasts,
+        ErrorReporter errors,
         LocalizationService localization)
         : base(dialogs, localization)
     {
@@ -71,6 +74,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         _tests = tests;
         _navigation = navigation;
         _toasts = toasts;
+        _errors = errors;
 
         PatientForm = new PatientFormViewModel(patients, dialogs, localization);
         PatientForm.PropertyChanged += (_, e) =>
@@ -205,12 +209,14 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
 
     public decimal MaxAddon { get; } = Money.ToMajor(OrderRules.MaxAddon);
 
-    public long CatalogTotal => SelectedTests.Sum(t => t.Test.Price);
+    private long _catalogTotal;
+
+    public long CatalogTotal => _catalogTotal;
 
     [ObservableProperty]
     public partial decimal? Addon { get; set; }
 
-    public long Total => CatalogTotal + (Addon is { } price ? Money.ToMinor(price) : 0);
+    public long Total => _catalogTotal + (Addon is { } price ? Money.ToMinor(price) : 0);
 
     public decimal MaxPayableAmount => Money.ToMajor(Math.Min(Total, OrderRules.MaxPaymentAmount));
 
@@ -255,10 +261,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
     public async Task ActivateAsync()
     {
         EnsureLifetime();
-        if (_pageCancellation.IsCancellationRequested)
-        {
-            _pageCancellation = new CancellationTokenSource();
-        }
+        _pageLifetime.EnsureActive();
 
         try
         {
@@ -276,7 +279,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
     public void Deactivate()
     {
         CancelInFlightWork();
-        _pageCancellation.Cancel();
+        _pageLifetime.Cancel();
         IsPreparing = false;
     }
 
@@ -284,8 +287,8 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
     private void ResetCore()
     {
         CancelInFlightWork();
-        _pageCancellation.Cancel();
-        _pageCancellation = new CancellationTokenSource();
+        _pageLifetime.Cancel();
+        _pageLifetime.EnsureActive();
         EnsureLifetime();
 
         _created = null;
@@ -325,6 +328,8 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
     {
         CancelLifetime();
         _catalogSearchDelay?.Cancel();
+        _catalogSearchDelay?.Dispose();
+        _catalogSearchDelay = null;
         _catalogLoadCancellation?.Cancel();
         _patientLoadCancellation?.Cancel();
     }
@@ -378,7 +383,25 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
             || current.Addon != saved.Addon
             || !Equals(current.NewPatient, saved.NewPatient)
             || !Equals(current.FirstPayment, saved.FirstPayment)
-            || !current.Items.Select(i => i.LabTestId).SequenceEqual(saved.Items.Select(i => i.LabTestId));
+            || !SameItems(current.Items, saved.Items);
+    }
+
+    private static bool SameItems(IReadOnlyList<CreateOrderItemRequest> current, IReadOnlyList<CreateOrderItemRequest> saved)
+    {
+        if (current.Count != saved.Count)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < current.Count; i++)
+        {
+            if (current[i].LabTestId != saved[i].LabTestId)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     protected override void ValidateMore(FormErrors errors)
@@ -582,7 +605,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         }
 
         _patientLoadCancellation?.Cancel();
-        var load = CancellationTokenSource.CreateLinkedTokenSource(_pageCancellation.Token, cancellationToken);
+        var load = CancellationTokenSource.CreateLinkedTokenSource(_pageLifetime.Token, cancellationToken);
         _patientLoadCancellation = load;
         var token = load.Token;
 
@@ -618,6 +641,8 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
                 _patientLoadCancellation = null;
                 IsLoadingPatients = false;
             }
+
+            load.Dispose();
         }
     }
 
@@ -659,20 +684,30 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         }
 
         _catalogSearchDelay?.Cancel();
+        _catalogSearchDelay?.Dispose();
         var delay = new CancellationTokenSource();
         _catalogSearchDelay = delay;
-        _ = DebouncedCatalogSearchAsync(delay.Token);
+        _ = DebouncedCatalogSearchAsync(delay);
     }
 
-    private async Task DebouncedCatalogSearchAsync(CancellationToken delayToken)
+    private async Task DebouncedCatalogSearchAsync(CancellationTokenSource delay)
     {
         try
         {
-            await Task.Delay(CatalogSearchDelay, delayToken);
+            await Task.Delay(CatalogSearchDelay, delay.Token);
         }
-        catch (OperationCanceledException) when (delayToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (delay.Token.IsCancellationRequested)
         {
             return;
+        }
+        finally
+        {
+            if (_catalogSearchDelay == delay)
+            {
+                _catalogSearchDelay = null;
+            }
+
+            delay.Dispose();
         }
 
         await LoadCatalogAsync();
@@ -687,7 +722,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
     {
         var search = CatalogSearch;
         _catalogLoadCancellation?.Cancel();
-        var load = CancellationTokenSource.CreateLinkedTokenSource(_pageCancellation.Token);
+        var load = CancellationTokenSource.CreateLinkedTokenSource(_pageLifetime.Token);
         _catalogLoadCancellation = load;
         var cancellationToken = load.Token;
 
@@ -706,16 +741,17 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
                 return;
             }
 
-            var selected = SelectedTests.Select(t => t.Test.Id).ToHashSet();
-            Catalog = result.Value!.Items
-                .Select(t => new CatalogTestItem(t) { IsSelected = selected.Contains(t.Id) })
-                .ToList();
+            Catalog = BuildCatalog(result.Value!.Items);
             CatalogLoadError = null;
             _catalogLoaded = true;
             _loadedCatalogSearch = search;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+        }
+        catch (Exception)
+        {
+            CatalogLoadError = ApiError.Server;
         }
         finally
         {
@@ -724,6 +760,8 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
                 _catalogLoadCancellation = null;
                 IsCatalogLoading = false;
             }
+
+            load.Dispose();
         }
     }
 
@@ -743,6 +781,13 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
 
     private void NotifyTestsInputsChanged()
     {
+        long total = 0;
+        foreach (var test in SelectedTests)
+        {
+            total += test.Test.Price;
+        }
+
+        _catalogTotal = total;
         OnPropertyChanged(nameof(HasSelectedTests));
         OnPropertyChanged(nameof(IsTestsSatisfied));
         OnPropertyChanged(nameof(CatalogTotal));
@@ -757,6 +802,42 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
 
         RefreshStepStatuses();
         SaveCommand.NotifyCanExecuteChanged();
+    }
+
+    private List<CatalogTestItem> BuildCatalog(IReadOnlyList<LabTestDto> incoming)
+    {
+        var selected = new HashSet<Guid>(SelectedTests.Count);
+        foreach (var draft in SelectedTests)
+        {
+            selected.Add(draft.Test.Id);
+        }
+
+        Dictionary<Guid, CatalogTestItem>? prior = null;
+        if (Catalog is { Count: > 0 } existing)
+        {
+            prior = new Dictionary<Guid, CatalogTestItem>(existing.Count);
+            foreach (var item in existing)
+            {
+                prior[item.Test.Id] = item;
+            }
+        }
+
+        var list = new List<CatalogTestItem>(incoming.Count);
+        foreach (var test in incoming)
+        {
+            var isSelected = selected.Contains(test.Id);
+            if (prior is not null && prior.TryGetValue(test.Id, out var keep) && keep.Test.Equals(test))
+            {
+                keep.IsSelected = isSelected;
+                list.Add(keep);
+            }
+            else
+            {
+                list.Add(new CatalogTestItem(test) { IsSelected = isSelected });
+            }
+        }
+
+        return list;
     }
 
     private void MoveToStep(int step)
@@ -889,9 +970,16 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
             return;
         }
 
-        OnOrderCreated?.Invoke(order);
-        _toasts.Success(Localization.Format("Orders.Created", order.Number));
-        await _navigation.OpenAsync<OrderDetailsViewModel>(page => page.Seed(order));
+        try
+        {
+            OnOrderCreated?.Invoke(order);
+            _toasts.Success(Localization.Format("Orders.Created", order.Number));
+            await _navigation.OpenAsync<OrderDetailsViewModel>(page => page.Seed(order));
+        }
+        catch (Exception ex)
+        {
+            _errors.Report(ex, context: "Opening order after create");
+        }
     }
 
     private static string PaymentField(string requestField) => requestField switch
@@ -908,92 +996,4 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage
         Validator.TryValidateObject(request, new ValidationContext(request), results, validateAllProperties: true);
         return results.SelectMany(r => r.MemberNames.Select(field => (field, r.ErrorMessage ?? ErrorCodes.Invalid)));
     }
-}
-
-/// <summary>Glyph inside a step circle: number, check, or missing warning.</summary>
-public enum OrderStepStatus
-{
-    Number,
-    Complete,
-    Missing,
-}
-
-/// <summary>One step in the new-order indicator (bound from a single item template).</summary>
-public sealed partial class OrderStepItem : ObservableObject
-{
-    public OrderStepItem(int index, string number, string titleKey, bool hasLineAfter)
-    {
-        Index = index;
-        Number = number;
-        TitleKey = titleKey;
-        HasLineAfter = hasLineAfter;
-    }
-
-    public int Index { get; }
-
-    public string Number { get; }
-
-    public string TitleKey { get; }
-
-    public bool HasLineAfter { get; }
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowNumber), nameof(ShowCheck), nameof(ShowMissing))]
-    public partial OrderStepStatus Status { get; private set; } = OrderStepStatus.Number;
-
-    [ObservableProperty]
-    public partial bool IsCurrent { get; private set; }
-
-    [ObservableProperty]
-    public partial bool LineComplete { get; private set; }
-
-    public bool ShowNumber => Status == OrderStepStatus.Number;
-
-    public bool ShowCheck => Status == OrderStepStatus.Complete;
-
-    public bool ShowMissing => Status == OrderStepStatus.Missing;
-
-    public void Update(bool isCurrent, OrderStepStatus status, bool lineComplete)
-    {
-        IsCurrent = isCurrent;
-        Status = status;
-        LineComplete = lineComplete;
-    }
-}
-
-/// <summary>ContentControl marker for the patient step (keeps only that visual tree alive).</summary>
-public sealed class NewOrderPatientStep(NewOrderViewModel order)
-{
-    public NewOrderViewModel Order { get; } = order;
-}
-
-/// <summary>ContentControl marker for the tests step.</summary>
-public sealed class NewOrderTestsStep(NewOrderViewModel order)
-{
-    public NewOrderViewModel Order { get; } = order;
-}
-
-/// <summary>ContentControl marker for the review step.</summary>
-public sealed class NewOrderReviewStep(NewOrderViewModel order)
-{
-    public NewOrderViewModel Order { get; } = order;
-}
-
-/// <summary>A card of the catalog. Selected tests stay in the grid as a disabled ghost.</summary>
-public partial class CatalogTestItem(LabTestDto test) : ObservableObject
-{
-    public LabTestDto Test { get; } = test;
-
-    [ObservableProperty]
-    public partial bool IsSelected { get; set; }
-}
-
-/// <summary>A selected test; its catalog price contributes to the order total.</summary>
-public partial class OrderItemDraft(CatalogTestItem item) : ObservableObject
-{
-    public CatalogTestItem Item { get; } = item;
-
-    public LabTestDto Test => Item.Test;
-
-    public FormErrors Errors { get; } = new();
 }

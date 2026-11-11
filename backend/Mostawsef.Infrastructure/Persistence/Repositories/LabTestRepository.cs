@@ -65,12 +65,12 @@ public class LabTestRepository(AppDbContext db) : ILabTestRepository
         return await rows.ToPageAsync(query, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<LabTestListRow>> ListAllAsync(CancellationToken cancellationToken) =>
+    public async Task<IReadOnlyList<LabTestExportRow>> ListAllAsync(CancellationToken cancellationToken) =>
         await db.LabTests.AsNoTracking()
             .OrderBy(t => t.SearchName)
             .ThenBy(t => t.Code)
-            .Select(t => new LabTestListRow(
-                t.Id, t.Code, t.Name, t.Price, t.LabCost, t.IsActive, t.CreatedAt, t.UpdatedAt, t.UpdatedBy, t.Version))
+            .Take(PageQuery.MaxExportRows)
+            .Select(t => new LabTestExportRow(t.Id, t.Code, t.Name, t.Price, t.LabCost, t.IsActive))
             .ToListAsync(cancellationToken);
 
     public void Add(LabTest test) => db.LabTests.Add(test);

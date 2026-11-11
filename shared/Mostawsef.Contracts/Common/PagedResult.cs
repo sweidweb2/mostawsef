@@ -16,6 +16,9 @@ public record PageQuery(int Page = 1, int PageSize = 20, string? Search = null, 
 
     public const int MaxPageSize = 100;
 
+    /// <summary>Hard cap for print/export /all endpoints so a huge table cannot load unbound.</summary>
+    public const int MaxExportRows = 10_000;
+
     public const int MaxSearchLength = 100;
 
     /// <summary>Same floor as <see cref="CursorQuery.MinSearchLength"/>: trigram search needs three characters.</summary>

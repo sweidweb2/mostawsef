@@ -54,6 +54,54 @@ public class Patient : SoftDeletableEntity
         IsInsured = isInsured;
         Gender = gender;
         DateOfBirth = dateOfBirth;
-        SearchText = string.Join('\n', new[] { searchName, phone, GuardianPhone }.Where(s => !string.IsNullOrEmpty(s)));
+        SearchText = BuildSearchText(searchName, phone, GuardianPhone);
+    }
+
+    private static string BuildSearchText(string searchName, string phone, string? guardianPhone)
+    {
+        var length = 0;
+        if (!string.IsNullOrEmpty(searchName))
+        {
+            length = searchName.Length;
+        }
+
+        if (!string.IsNullOrEmpty(phone))
+        {
+            length += length > 0 ? 1 + phone.Length : phone.Length;
+        }
+
+        if (!string.IsNullOrEmpty(guardianPhone))
+        {
+            length += length > 0 ? 1 + guardianPhone.Length : guardianPhone.Length;
+        }
+
+        if (length == 0)
+        {
+            return string.Empty;
+        }
+
+        return string.Create(length, (searchName, phone, guardianPhone), static (span, state) =>
+        {
+            var i = 0;
+            Append(ref i, span, state.searchName);
+            Append(ref i, span, state.phone);
+            Append(ref i, span, state.guardianPhone);
+        });
+
+        static void Append(ref int i, Span<char> span, string? part)
+        {
+            if (string.IsNullOrEmpty(part))
+            {
+                return;
+            }
+
+            if (i > 0)
+            {
+                span[i++] = '\n';
+            }
+
+            part.AsSpan().CopyTo(span[i..]);
+            i += part.Length;
+        }
     }
 }

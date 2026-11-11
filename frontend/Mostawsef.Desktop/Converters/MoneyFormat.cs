@@ -11,9 +11,25 @@ namespace Mostawsef.Desktop.Converters;
 /// </summary>
 public static class MoneyFormat
 {
+    private static LocalizationService? _cachedLocalization;
+    private static string? _cachedCode;
+    private static string? _cachedSuffix;
+
     public static string Format(long minorUnits, string? currencyCode, LocalizationService localization)
     {
         var amount = Money.ToMajor(minorUnits).ToString("N2", CultureInfo.InvariantCulture);
-        return string.IsNullOrEmpty(currencyCode) ? amount : $"{amount} {localization.Get("Currency." + currencyCode)}";
+        if (string.IsNullOrEmpty(currencyCode))
+        {
+            return amount;
+        }
+
+        if (!ReferenceEquals(_cachedLocalization, localization) || _cachedCode != currencyCode)
+        {
+            _cachedLocalization = localization;
+            _cachedCode = currencyCode;
+            _cachedSuffix = " " + localization.Get(string.Concat("Currency.", currencyCode));
+        }
+
+        return string.Concat(amount, _cachedSuffix);
     }
 }

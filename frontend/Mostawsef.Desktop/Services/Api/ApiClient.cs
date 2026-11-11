@@ -18,28 +18,30 @@ namespace Mostawsef.Desktop.Services.Api;
 /// The only way the desktop app talks to the backend. Maps failures to ApiError.
 /// The bearer token is added by AuthHeaderHandler in the HttpClient pipeline.
 /// </summary>
-public class ApiClient(HttpClient http, PerformanceMonitor perf)
+public class ApiClient(Lazy<HttpClient> http, PerformanceMonitor perf)
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
     /// <summary>Raised (on the calling thread) whenever a call fails because the API could not be reached.</summary>
     public event EventHandler? Unreachable;
 
+    private HttpClient Http => http.Value;
+
     public Task<ApiResult<T>> GetAsync<T>(string path, CancellationToken cancellationToken = default) =>
-        SendAsync("GET", path, () => http.GetAsync(path, cancellationToken), ReadJson<T>, cancellationToken);
+        SendAsync("GET", path, () => Http.GetAsync(path, cancellationToken), ReadJson<T>, cancellationToken);
 
     public Task<ApiResult<TResponse>> PostAsync<TRequest, TResponse>(string path, TRequest body, CancellationToken cancellationToken = default) =>
-        SendAsync("POST", path, () => http.PostAsJsonAsync(path, body, Json, cancellationToken), ReadJson<TResponse>, cancellationToken);
+        SendAsync("POST", path, () => Http.PostAsJsonAsync(path, body, Json, cancellationToken), ReadJson<TResponse>, cancellationToken);
 
     /// <summary>POST without a response body (204 / 202). Value is true on success.</summary>
     public Task<ApiResult<bool>> PostAsync<TRequest>(string path, TRequest body, CancellationToken cancellationToken = default) =>
-        SendAsync("POST", path, () => http.PostAsJsonAsync(path, body, Json, cancellationToken), NoContent, cancellationToken);
+        SendAsync("POST", path, () => Http.PostAsJsonAsync(path, body, Json, cancellationToken), NoContent, cancellationToken);
 
     public Task<ApiResult<TResponse>> PutAsync<TRequest, TResponse>(string path, TRequest body, CancellationToken cancellationToken = default) =>
-        SendAsync("PUT", path, () => http.PutAsJsonAsync(path, body, Json, cancellationToken), ReadJson<TResponse>, cancellationToken);
+        SendAsync("PUT", path, () => Http.PutAsJsonAsync(path, body, Json, cancellationToken), ReadJson<TResponse>, cancellationToken);
 
     public Task<ApiResult<bool>> DeleteAsync(string path, CancellationToken cancellationToken = default) =>
-        SendAsync("DELETE", path, () => http.DeleteAsync(path, cancellationToken), NoContent, cancellationToken);
+        SendAsync("DELETE", path, () => Http.DeleteAsync(path, cancellationToken), NoContent, cancellationToken);
 
     private async Task<ApiResult<T>> SendAsync<T>(
         string method,
@@ -65,11 +67,7 @@ public class ApiClient(HttpClient http, PerformanceMonitor perf)
         using (response)
         {
             sw.Stop();
-            var serverMs = ReadServerTimingMs(response);
-            var detail = serverMs is { } ms
-                ? $"{(int)response.StatusCode}, server {ms.ToString("F0", CultureInfo.InvariantCulture)}ms"
-                : $"{(int)response.StatusCode}";
-            RecordApi(method, path, sw.Elapsed, detail);
+            RecordApi(method, path, sw.Elapsed, response);
 
             if (response.IsSuccessStatusCode)
             {
@@ -83,7 +81,7 @@ public class ApiClient(HttpClient http, PerformanceMonitor perf)
 
     private void RecordApi(string method, string path, TimeSpan duration, string detail)
     {
-        if (path.Contains("health", StringComparison.OrdinalIgnoreCase))
+        if (!perf.IsEnabled || path.Contains("health", StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
@@ -91,7 +89,21 @@ public class ApiClient(HttpClient http, PerformanceMonitor perf)
         // Strip query strings so list filters do not explode the overlay.
         var cut = path.IndexOf('?', StringComparison.Ordinal);
         var route = cut >= 0 ? path[..cut] : path;
-        perf.Record("Api", $"{method} {route}", duration, detail);
+        perf.Record("Api", string.Concat(method, " ", route), duration, detail);
+    }
+
+    private void RecordApi(string method, string path, TimeSpan duration, HttpResponseMessage response)
+    {
+        if (!perf.IsEnabled)
+        {
+            return;
+        }
+
+        var serverMs = ReadServerTimingMs(response);
+        var detail = serverMs is { } ms
+            ? string.Create(CultureInfo.InvariantCulture, $"{(int)response.StatusCode}, server {ms:F0}ms")
+            : ((int)response.StatusCode).ToString(CultureInfo.InvariantCulture);
+        RecordApi(method, path, duration, detail);
     }
 
     /// <summary>Reads app;dur=N from Server-Timing when the API sent it.</summary>
@@ -171,8 +183,19 @@ public class ApiClient(HttpClient http, PerformanceMonitor perf)
 
     private static async Task<ApiResult<T>> ReadJson<T>(HttpResponseMessage response, CancellationToken cancellationToken)
     {
-        var value = await response.Content.ReadFromJsonAsync<T>(Json, cancellationToken);
-        return value is null ? ApiResult<T>.Fail(ApiError.Server, response.StatusCode) : ApiResult<T>.Ok(value);
+        try
+        {
+            var value = await response.Content.ReadFromJsonAsync<T>(Json, cancellationToken);
+            return value is null ? ApiResult<T>.Fail(ApiError.Server, response.StatusCode) : ApiResult<T>.Ok(value);
+        }
+        catch (JsonException)
+        {
+            return ApiResult<T>.Fail(ApiError.Server, response.StatusCode);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !cancellationToken.IsCancellationRequested)
+        {
+            return ApiResult<T>.Fail(ApiError.Unreachable);
+        }
     }
 
     private static Task<ApiResult<bool>> NoContent(HttpResponseMessage response, CancellationToken cancellationToken) =>

@@ -24,7 +24,7 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
 
     private bool _suppressPageReload;
     private bool _loaded;
-    private CancellationTokenSource _pageCancellation = new();
+    private readonly PageLifetime _pageLifetime = new();
     private CancellationTokenSource? _loadCancellation;
 
     protected NumberedListViewModel(IToastService toasts, LocalizationService localization)
@@ -87,11 +87,7 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
 
     public Task ActivateAsync()
     {
-        if (_pageCancellation.IsCancellationRequested)
-        {
-            _pageCancellation = new CancellationTokenSource();
-        }
-
+        _pageLifetime.EnsureActive();
         return _loaded ? Task.CompletedTask : ReloadAsync();
     }
 
@@ -102,7 +98,7 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
             _loaded = false;
         }
 
-        _pageCancellation.Cancel();
+        _pageLifetime.Cancel();
     }
 
     /// <summary>The next activation loads the page again, e.g. when the user comes back from a sub-page that added a record.</summary>
@@ -129,9 +125,6 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
 
         TotalCount++;
         PageCount = Math.Max(1, (int)Math.Ceiling(TotalCount / (double)PageSize));
-        // Nudge FirstRowNumber so RowNumber cells re-read indexes after an in-place insert.
-        FirstRowNumber = 0;
-        FirstRowNumber = 1;
         OnPropertyChanged(nameof(IsEmpty));
     }
 
@@ -174,7 +167,7 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
     private async Task LoadAsync(int page, bool includeTotal)
     {
         _loadCancellation?.Cancel();
-        var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_pageCancellation.Token);
+        var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_pageLifetime.Token);
         _loadCancellation = cancellation;
         var cancellationToken = cancellation.Token;
 
@@ -229,6 +222,13 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
         {
             // A newer load replaced this one and owns the page state now, or the user left the page.
         }
+        catch (Exception)
+        {
+            Items.ReplaceAll([]);
+            TotalCount = 0;
+            LoadError = ApiError.Server;
+            OnPropertyChanged(nameof(IsEmpty));
+        }
         finally
         {
             if (_loadCancellation == cancellation)
@@ -262,7 +262,7 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
     /// <summary>An API read tied to the page (e.g. details for a modal): null when the user left the page before it finished.</summary>
     protected async Task<ApiResult<T>?> ReadAsync<T>(Func<CancellationToken, Task<ApiResult<T>>> read)
     {
-        var cancellationToken = _pageCancellation.Token;
+        var cancellationToken = _pageLifetime.Token;
         try
         {
             var result = await read(cancellationToken);

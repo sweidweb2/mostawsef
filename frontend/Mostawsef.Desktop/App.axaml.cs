@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
+using Mostawsef.Desktop.Components;
 using Mostawsef.Desktop.Services.Diagnostics;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Navigation;
@@ -30,6 +31,7 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             Services = new ServiceCollection().AddMostawsefDesktop().BuildServiceProvider();
+            PageHost.Perf = Services.GetRequiredService<PerformanceMonitor>();
             Services.GetRequiredService<ErrorReporter>().Install();
             Services.GetRequiredService<ThemeService>().Initialize();
             desktop.Exit += (_, _) => Services.GetRequiredService<SettingsService>().Flush();

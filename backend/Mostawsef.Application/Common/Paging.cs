@@ -12,10 +12,16 @@ public readonly record struct PageCursor(DateTime OccurredAt, Guid Id)
     public static bool TryParse(string? value, out PageCursor cursor)
     {
         cursor = default;
-        if (value?.Split('-') is not [var ticksText, var idText]
-            || !long.TryParse(ticksText, NumberStyles.None, CultureInfo.InvariantCulture, out var ticks)
+        if (string.IsNullOrEmpty(value))
+        {
+            return false;
+        }
+
+        var separator = value.IndexOf('-');
+        if (separator <= 0
+            || !long.TryParse(value.AsSpan(0, separator), NumberStyles.None, CultureInfo.InvariantCulture, out var ticks)
             || ticks > DateTime.MaxValue.Ticks
-            || !Guid.TryParseExact(idText, "N", out var id))
+            || !Guid.TryParseExact(value.AsSpan(separator + 1), "N", out var id))
         {
             return false;
         }

@@ -77,15 +77,28 @@ public abstract partial class FormViewModel : ViewModelBase
     }
 
     /// <summary>Cancels an in-flight save (and any override work that uses <see cref="LifetimeToken"/>).</summary>
-    public void CancelLifetime() => _lifetime.Cancel();
+    public void CancelLifetime()
+    {
+        if (!_lifetime.IsCancellationRequested)
+        {
+            _lifetime.Cancel();
+        }
+
+        _lifetime.Dispose();
+        _lifetime = new CancellationTokenSource();
+        _lifetime.Cancel();
+    }
 
     /// <summary>Call when a page form is shown again after <see cref="CancelLifetime"/>.</summary>
     protected void EnsureLifetime()
     {
-        if (_lifetime.IsCancellationRequested)
+        if (!_lifetime.IsCancellationRequested)
         {
-            _lifetime = new CancellationTokenSource();
+            return;
         }
+
+        _lifetime.Dispose();
+        _lifetime = new CancellationTokenSource();
     }
 
     /// <summary>Tied to the form's lifetime: cancelled when the dialog closes or the page is left.</summary>

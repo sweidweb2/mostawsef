@@ -31,18 +31,13 @@ public partial class UsersViewModel(UsersApi users, IDialogService dialogs, IToa
     [RelayCommand]
     private async Task EditAsync(UserListItemDto? item)
     {
-        if (item is null || await ReadAsync(ct => users.GetUserAsync(item.Id, ct)) is not { } result)
+        // List rows already include Version; no GET needed (same pattern as lab tests).
+        if (item is null)
         {
             return;
         }
 
-        if (!result.IsSuccess)
-        {
-            ShowError(result);
-            return;
-        }
-
-        if (await dialogs.ShowFormAsync(new UserFormViewModel(users, dialogs, Localization, result.Value), Localization.Get("Users.EditTitle")))
+        if (await dialogs.ShowFormAsync(new UserFormViewModel(users, dialogs, Localization, item), Localization.Get("Users.EditTitle")))
         {
             Toasts.Success(Localization.Get("Users.Saved"));
             await ReloadAsync(includeTotal: false);

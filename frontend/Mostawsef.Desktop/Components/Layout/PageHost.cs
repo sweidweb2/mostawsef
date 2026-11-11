@@ -4,7 +4,6 @@ using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
-using Microsoft.Extensions.DependencyInjection;
 using Mostawsef.Desktop.Services.Diagnostics;
 
 namespace Mostawsef.Desktop.Components;
@@ -13,11 +12,15 @@ namespace Mostawsef.Desktop.Components;
 /// Shows the view of <see cref="Page"/> (a view model, resolved by the app's data templates).
 /// Views are cached by page instance and kept in the tree: switching pages toggles <see cref="Visual.IsVisible"/>
 /// instead of detaching. Detaching an Avalonia DataGrid with rows was multi-second; hiding is cheap.
+/// Transient sub-pages must call <see cref="Release"/> when discarded so their views do not accumulate.
 /// </summary>
 public class PageHost : Decorator
 {
     public static readonly StyledProperty<object?> PageProperty =
         AvaloniaProperty.Register<PageHost, object?>(nameof(Page));
+
+    /// <summary>Optional; set from app startup / tests so this control does not resolve DI itself.</summary>
+    public static PerformanceMonitor? Perf { get; set; }
 
     // Grid stretches children to the host size; plain Panel would leave pages at their desired size.
     private readonly Grid _host = new();
@@ -35,6 +38,23 @@ public class PageHost : Decorator
         set => SetValue(PageProperty, value);
     }
 
+    /// <summary>Drops a discarded page's view from the cache and the visual tree.</summary>
+    public void Release(object page)
+    {
+        if (!_views.Remove(page, out var view))
+        {
+            return;
+        }
+
+        if (ReferenceEquals(_current, view))
+        {
+            _current = null;
+        }
+
+        _host.Children.Remove(view);
+        view.DataContext = null;
+    }
+
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
@@ -47,7 +67,7 @@ public class PageHost : Decorator
 
     private void ShowPage(object? page)
     {
-        var perf = TryPerf();
+        var perf = Perf is { IsEnabled: true } enabled ? enabled : null;
 
         if (_current is not null)
         {
@@ -63,7 +83,7 @@ public class PageHost : Decorator
             return;
         }
 
-        var view = GetOrCreateView(page);
+        var view = GetOrCreateView(page, perf);
         if (view.Parent is null)
         {
             _host.Children.Add(view);
@@ -75,10 +95,9 @@ public class PageHost : Decorator
         perf?.Record("View", page.GetType().Name, show.Elapsed, "show");
     }
 
-    private Control GetOrCreateView(object page)
+    private Control GetOrCreateView(object page, PerformanceMonitor? perf)
     {
         var name = page.GetType().Name;
-        var perf = TryPerf();
         if (_views.TryGetValue(page, out var view))
         {
             perf?.Record("View", name, TimeSpan.Zero, "reused");
@@ -99,17 +118,5 @@ public class PageHost : Decorator
         var view = this.FindDataTemplate(page)?.Build(page) ?? new TextBlock { Text = page.ToString() };
         view.DataContext = page;
         return view;
-    }
-
-    private static PerformanceMonitor? TryPerf()
-    {
-        try
-        {
-            return App.Services?.GetService<PerformanceMonitor>() is { IsEnabled: true } perf ? perf : null;
-        }
-        catch (Exception)
-        {
-            return null;
-        }
     }
 }

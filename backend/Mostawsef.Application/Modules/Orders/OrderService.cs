@@ -1,3 +1,4 @@
+using System.Globalization;
 using Mostawsef.Application.Common;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Application.Modules.Patients;
@@ -54,8 +55,28 @@ public class OrderService(
     {
         // Clinic currency is cached (own context); patient and tests share the request DbContext so they stay sequential.
         var currencyTask = clinic.GetCurrencyCodeAsync(cancellationToken);
-        var (patient, isNewPatient) = await ResolvePatientAsync(request, cancellationToken);
-        var lines = await LoadTestsAsync(request.Items, cancellationToken);
+        OrderPatientRow patient;
+        Patient? newPatient;
+        IReadOnlyList<LabTest> lines;
+        try
+        {
+            (patient, newPatient) = await ResolvePatientAsync(request, cancellationToken);
+            lines = await LoadTestsAsync(request.Items, cancellationToken);
+        }
+        catch
+        {
+            try
+            {
+                await currencyTask;
+            }
+            catch
+            {
+                // Observe so a racing currency fault is not abandoned when validation fails first.
+            }
+
+            throw;
+        }
+
         var currencyCode = await currencyTask;
         var total = lines.Sum(t => t.Price) + (request.Addon ?? 0);
 
@@ -68,7 +89,10 @@ public class OrderService(
 
         var order = new Order(
             DocumentNumber.Format(NumberPrefix, await numbers.NextAsync(NumberSequence, cancellationToken)),
-            patient,
+            patient.Id,
+            patient.FullName,
+            patient.SearchName,
+            patient.Phone,
             currencyCode);
         order.SetSearchText(SearchText.Key(patient.SearchName, patient.Phone, order.Number));
         foreach (var test in lines)
@@ -85,22 +109,22 @@ public class OrderService(
 
         order.UpdateStatus();
 
-        if (isNewPatient)
+        if (newPatient is not null)
         {
-            patients.Add(patient);
+            patients.Add(newPatient);
         }
 
         orders.Add(order);
         await orders.SaveChangesAsync(cancellationToken);
 
-        if (isNewPatient)
+        if (newPatient is not null)
         {
             await activity.LogAsync(
                 new ActivityEntry(ActivityActions.PatientCreated, ActivityModules.Patients, "Created a patient with an order")
                 {
                     EntityType = nameof(Patient),
-                    EntityId = patient.Id.ToString(),
-                    Details = new { patient.FullName },
+                    EntityId = newPatient.Id.ToString(),
+                    Details = new { newPatient.FullName },
                 },
                 cancellationToken);
         }
@@ -117,8 +141,9 @@ public class OrderService(
         return ToDetails(order);
     }
 
-    /// <summary>The existing patient, or a new one that the caller adds to the unit of work.</summary>
-    private async Task<(Patient Patient, bool IsNew)> ResolvePatientAsync(CreateOrderRequest request, CancellationToken cancellationToken)
+    /// <summary>Existing patient snapshot, or a new patient the caller adds to the unit of work.</summary>
+    private async Task<(OrderPatientRow Snapshot, Patient? NewPatient)> ResolvePatientAsync(
+        CreateOrderRequest request, CancellationToken cancellationToken)
     {
         switch (request)
         {
@@ -127,40 +152,52 @@ public class OrderService(
             case { PatientId: not null, NewPatient: not null }:
                 throw AppException.Validation(nameof(CreateOrderRequest.PatientId), ErrorCodes.Invalid);
             case { PatientId: { } id }:
-                return (await patients.GetByIdAsync(id, cancellationToken)
-                    ?? throw AppException.Validation(nameof(CreateOrderRequest.PatientId), ErrorCodes.NotFound), false);
+                var existing = await patients.GetOrderPatientAsync(id, cancellationToken)
+                    ?? throw AppException.Validation(nameof(CreateOrderRequest.PatientId), ErrorCodes.NotFound);
+                return (existing, null);
             default:
                 var newPatient = request.NewPatient!;
                 PatientInput.EnsureValidDateOfBirth(
                     newPatient.DateOfBirth, time, $"{nameof(CreateOrderRequest.NewPatient)}.{nameof(newPatient.DateOfBirth)}");
-                return (PatientInput.Create(newPatient), true);
+                var created = PatientInput.Create(newPatient);
+                return (new OrderPatientRow(created.Id, created.FullName, created.SearchName, created.Phone), created);
         }
     }
 
     /// <summary>The catalog test of each item, in the same order. Unknown, inactive or repeated tests fail on that item.</summary>
     private async Task<IReadOnlyList<LabTest>> LoadTestsAsync(IReadOnlyList<CreateOrderItemRequest> items, CancellationToken cancellationToken)
     {
-        var ids = items.Select(i => i.LabTestId!.Value).ToList();
-        var found = (await tests.GetByIdsAsync(ids.Distinct().ToList(), cancellationToken)).ToDictionary(t => t.Id);
-
+        var ids = new List<Guid>(items.Count);
+        var unique = new List<Guid>(items.Count);
         var seen = new HashSet<Guid>();
+        for (var i = 0; i < items.Count; i++)
+        {
+            var id = items[i].LabTestId!.Value;
+            ids.Add(id);
+            if (seen.Add(id))
+            {
+                unique.Add(id);
+            }
+        }
+
+        var found = (await tests.GetByIdsAsync(unique, cancellationToken)).ToDictionary(t => t.Id);
+        seen.Clear();
         var result = new List<LabTest>(ids.Count);
         for (var i = 0; i < ids.Count; i++)
         {
-            var field = $"{nameof(CreateOrderRequest.Items)}[{i}].{nameof(CreateOrderItemRequest.LabTestId)}";
             if (!seen.Add(ids[i]))
             {
-                throw AppException.Validation(field, ErrorCodes.Duplicate);
+                throw AppException.Validation(ItemField(i), ErrorCodes.Duplicate);
             }
 
             if (!found.TryGetValue(ids[i], out var test))
             {
-                throw AppException.Validation(field, ErrorCodes.NotFound);
+                throw AppException.Validation(ItemField(i), ErrorCodes.NotFound);
             }
 
             if (!test.IsActive)
             {
-                throw AppException.Validation(field, ErrorCodes.Inactive);
+                throw AppException.Validation(ItemField(i), ErrorCodes.Inactive);
             }
 
             result.Add(test);
@@ -168,6 +205,9 @@ public class OrderService(
 
         return result;
     }
+
+    private static string ItemField(int index) =>
+        string.Create(CultureInfo.InvariantCulture, $"{nameof(CreateOrderRequest.Items)}[{index}].{nameof(CreateOrderItemRequest.LabTestId)}");
 
     private static OrderDetailsDto ToDetails(OrderDetailsRow o) => new(
         o.Id, o.Number, o.CreatedAt, o.CreatedBy, o.PatientId, o.PatientName, o.PatientPhone, o.Status.ToString(), o.Currency,

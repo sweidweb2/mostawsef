@@ -19,6 +19,12 @@ public class PatientRepository(AppDbContext db) : IPatientRepository
                 p.CreatedAt, p.UpdatedAt, p.UpdatedBy, p.Version))
             .FirstOrDefaultAsync(cancellationToken);
 
+    public Task<OrderPatientRow?> GetOrderPatientAsync(Guid id, CancellationToken cancellationToken) =>
+        db.Patients.AsNoTracking()
+            .Where(p => p.Id == id)
+            .Select(p => new OrderPatientRow(p.Id, p.FullName, p.SearchName, p.Phone))
+            .FirstOrDefaultAsync(cancellationToken);
+
     public async Task<(IReadOnlyList<PatientListRow> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken)
     {
         var patients = db.Patients.AsNoTracking();
@@ -38,13 +44,13 @@ public class PatientRepository(AppDbContext db) : IPatientRepository
         return await rows.ToPageAsync(query, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<PatientListRow>> ListAllAsync(CancellationToken cancellationToken) =>
+    public async Task<IReadOnlyList<PatientExportRow>> ListAllAsync(CancellationToken cancellationToken) =>
         await db.Patients.AsNoTracking()
             .OrderBy(p => p.SearchName)
             .ThenBy(p => p.Id)
-            .Select(p => new PatientListRow(
-                p.Id, p.FullName, p.Phone, p.GuardianPhone, p.IsInsured, p.Gender, p.DateOfBirth,
-                p.CreatedAt, p.UpdatedAt, p.UpdatedBy, p.Version))
+            .Take(PageQuery.MaxExportRows)
+            .Select(p => new PatientExportRow(
+                p.Id, p.FullName, p.Phone, p.GuardianPhone, p.IsInsured, p.Gender, p.DateOfBirth))
             .ToListAsync(cancellationToken);
 
     public void Add(Patient patient) => db.Patients.Add(patient);

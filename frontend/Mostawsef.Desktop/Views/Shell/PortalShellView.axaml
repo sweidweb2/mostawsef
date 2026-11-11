@@ -73,7 +73,7 @@
                       Margin="{DynamicResource PaddingPageCompact}"
                       Kind="{Binding Connection.AlertKind}"
                       Text="{l:TrKey Connection.MessageKey}" />
-            <ui:PageHost Page="{Binding CurrentPage}" />
+            <ui:PageHost Name="PageHost" Page="{Binding CurrentPage}" />
         </DockPanel>
     </ui:AppShell>
 </UserControl>

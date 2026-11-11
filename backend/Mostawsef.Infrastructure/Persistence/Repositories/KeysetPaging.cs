@@ -20,9 +20,12 @@ internal static class KeysetPaging
         where TRow : class, IChronological
     {
         var total = request.IncludeTotal ? await rows.CountAsync(cancellationToken) : (int?)null;
-        var fetched = await Window(rows, request).Select(select).ToListAsync(cancellationToken);
-        var hasMore = fetched.Count > request.PageSize;
-        var items = fetched.Take(request.PageSize).ToList();
+        var items = await Window(rows, request).Select(select).ToListAsync(cancellationToken);
+        var hasMore = items.Count > request.PageSize;
+        if (hasMore)
+        {
+            items.RemoveAt(items.Count - 1);
+        }
 
         if (request.Direction is PageDirection.First or PageDirection.After)
         {

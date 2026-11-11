@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Contracts.Auth;
+using Mostawsef.Domain.Enums;
 using Mostawsef.Infrastructure.Services.Auth;
 
 namespace Mostawsef.Api.Extensions;
@@ -105,9 +106,12 @@ public static class AuthExtensions
             cache.Set(userId, status);
         }
 
-        if (!status.IsActive || status.Role.ToString() != principal?.FindFirst(JwtClaims.Role)?.Value)
+        if (!status.IsActive || !RoleMatches(status.Role, principal?.FindFirst(JwtClaims.Role)?.Value))
         {
             context.Fail("The user is no longer active or their role changed.");
         }
     }
+
+    private static bool RoleMatches(UserRole role, string? claim) =>
+        claim is not null && Enum.TryParse(claim, ignoreCase: false, out UserRole parsed) && parsed == role;
 }

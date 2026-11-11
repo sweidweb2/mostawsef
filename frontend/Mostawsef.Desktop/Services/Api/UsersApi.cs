@@ -16,9 +16,6 @@ public class UsersApi(ApiClient api)
             (string.IsNullOrWhiteSpace(search) ? string.Empty : $"&search={Uri.EscapeDataString(search.Trim())}"),
             cancellationToken);
 
-    public Task<ApiResult<UserDetailsDto>> GetUserAsync(Guid id, CancellationToken cancellationToken = default) =>
-        api.GetAsync<UserDetailsDto>($"api/users/{id}", cancellationToken);
-
     public Task<ApiResult<UserDetailsDto>> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default) =>
         api.PostAsync<CreateUserRequest, UserDetailsDto>("api/users", request, cancellationToken);
 

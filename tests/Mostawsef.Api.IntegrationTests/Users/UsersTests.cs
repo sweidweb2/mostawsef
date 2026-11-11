@@ -305,6 +305,7 @@ public class UsersTests(ApiFactory factory)
         var withoutTotal = await super.GetJsonAsync<PagedResult<UserListItemDto>>("api/users?page=1&pageSize=1&includeTotal=false");
 
         Assert.Equal(user.Id, Assert.Single(byUsername.Items).Id);
+        Assert.Equal(user.Version, byUsername.Items[0].Version);
         Assert.Single(firstPage.Items);
         Assert.True(firstPage.TotalCount >= 3);
         Assert.Equal(PageQuery.TotalNotComputed, withoutTotal.TotalCount);

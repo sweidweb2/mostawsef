@@ -14,17 +14,7 @@ namespace Mostawsef.Desktop.Converters;
 public static class ValueConverters
 {
     /// <summary>Cuts text to ConverterParameter characters (default 80) on one line and adds "…". Show the full text in a tooltip.</summary>
-    public static readonly IValueConverter Truncate = new FuncValueConverter<string?, object?, string?>((text, parameter) =>
-    {
-        var max = parameter is int i ? i : int.TryParse(parameter?.ToString(), out var parsed) ? parsed : 80;
-        if (string.IsNullOrEmpty(text))
-        {
-            return text;
-        }
-
-        var singleLine = text.AsSpan().IndexOfAny('\r', '\n') >= 0 ? text.ReplaceLineEndings(" ") : text;
-        return singleLine.Length <= max ? singleLine : singleLine[..max].TrimEnd() + "…";
-    });
+    public static readonly IValueConverter Truncate = new TruncateConverter();
 
     /// <summary>UTC timestamp -> local date and time in the current language's format.</summary>
     public static readonly IValueConverter LocalDateTime = new FuncValueConverter<DateTime, string>(FormatLocal);
@@ -82,6 +72,37 @@ public static class ValueConverters
 
     private static ClinicContext? _clinic;
     private static ClinicContext Clinic => _clinic ??= App.Services!.GetRequiredService<ClinicContext>();
+
+    private sealed class TruncateConverter : IValueConverter
+    {
+        public object? Convert(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
+        {
+            var max = parameter is int i
+                ? i
+                : parameter is string text && int.TryParse(text, out var parsed) ? parsed : 80;
+            if (value is not string source || source.Length == 0)
+            {
+                return value as string;
+            }
+
+            var needsFlat = source.AsSpan().IndexOfAny('\r', '\n') >= 0;
+            if (!needsFlat && source.Length <= max)
+            {
+                return source;
+            }
+
+            var singleLine = needsFlat ? source.ReplaceLineEndings(" ") : source;
+            if (singleLine.Length <= max)
+            {
+                return singleLine;
+            }
+
+            return string.Concat(singleLine.AsSpan(0, max).TrimEnd(), "…");
+        }
+
+        public object? ConvertBack(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture) =>
+            throw new NotSupportedException();
+    }
 
     private sealed class DateOnlyConverter : IValueConverter
     {

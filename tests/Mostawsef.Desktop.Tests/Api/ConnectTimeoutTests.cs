@@ -23,7 +23,7 @@ public class ConnectTimeoutTests
         };
 
         var stopwatch = Stopwatch.StartNew();
-        var result = await new ApiClient(http, new PerformanceMonitor { IsEnabled = false, WriteToFile = false })
+        var result = await new ApiClient(new Lazy<HttpClient>(() => http), new PerformanceMonitor { IsEnabled = false, WriteToFile = false })
             .GetAsync<UserDto>("api/auth/me", TestContext.Current.CancellationToken);
         stopwatch.Stop();
 

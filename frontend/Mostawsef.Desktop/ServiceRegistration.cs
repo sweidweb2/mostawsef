@@ -55,7 +55,10 @@ public static class ServiceRegistration
             http.Timeout = RequestTimeout;
             return http;
         });
-        services.AddSingleton<ApiClient>();
+        // HttpClient stays uncreated until the first API call (login, health, or error report).
+        services.AddSingleton(sp => new ApiClient(
+            new Lazy<HttpClient>(sp.GetRequiredService<HttpClient>),
+            sp.GetRequiredService<PerformanceMonitor>()));
         services.AddSingleton<AuthApi>();
         services.AddSingleton<LogsApi>();
         services.AddSingleton<UsersApi>();
@@ -67,7 +70,12 @@ public static class ServiceRegistration
         services.AddSingleton<ConnectionMonitor>();
 
         // Diagnostics: system errors + optional performance overlay/log
-        services.AddSingleton<ErrorReporter>();
+        // Lazy deps so Install() does not build the HTTP stack or toast service.
+        services.AddSingleton(sp => new ErrorReporter(
+            new Lazy<LogsApi>(sp.GetRequiredService<LogsApi>),
+            new Lazy<NavigationService>(sp.GetRequiredService<NavigationService>),
+            new Lazy<IToastService>(sp.GetRequiredService<IToastService>),
+            new Lazy<LocalizationService>(sp.GetRequiredService<LocalizationService>)));
         services.AddSingleton<PerformanceMonitor>();
 
         // Clinic details + printing

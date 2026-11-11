@@ -18,7 +18,7 @@
     <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Light">
             <BoxShadows x:Key="ShadowXs">0 1 2 0 #0F0C2840</BoxShadows>
-            <BoxShadows x:Key="ShadowSm">0 1 3 0 #140C2840, 0 1 2 0 #0F0C2840</BoxShadows>
+            <BoxShadows x:Key="ShadowSm">0 1 3 0 #140C2840</BoxShadows>
             <BoxShadows x:Key="ShadowMd">0 4 12 0 #1A0C2840</BoxShadows>
             <BoxShadows x:Key="ShadowLg">0 12 28 0 #240C2840</BoxShadows>
             <BoxShadows x:Key="ShadowXl">0 20 40 0 #2E0C2840</BoxShadows>

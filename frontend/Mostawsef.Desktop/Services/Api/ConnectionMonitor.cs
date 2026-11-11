@@ -41,7 +41,7 @@ public partial class ConnectionMonitor : ObservableObject
     public ConnectionMonitor(ApiClient api, SessionService session)
     {
         _api = api;
-        _timer.Tick += async (_, _) => await CheckNowAsync();
+        _timer.Tick += (_, _) => _ = CheckNowAsync();
         api.Unreachable += (_, _) => Dispatcher.UIThread.Post(() =>
         {
             if (IsRunning)
@@ -128,12 +128,18 @@ public partial class ConnectionMonitor : ObservableObject
             {
                 _consecutiveOffline = 0;
             }
-
-            ScheduleNext();
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             // Stopped or replaced by a newer check.
+        }
+        catch (Exception)
+        {
+            if (IsRunning && !cancellationToken.IsCancellationRequested)
+            {
+                State = ConnectionState.Offline;
+                _consecutiveOffline++;
+            }
         }
         finally
         {
@@ -143,6 +149,10 @@ public partial class ConnectionMonitor : ObservableObject
             }
 
             check.Dispose();
+            if (IsRunning && !cancellationToken.IsCancellationRequested)
+            {
+                ScheduleNext();
+            }
         }
     }
 

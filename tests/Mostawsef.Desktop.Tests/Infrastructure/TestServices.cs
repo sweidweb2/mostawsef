@@ -1,7 +1,9 @@
 using Avalonia.Controls;
 using Avalonia.VisualTree;
 using Microsoft.Extensions.DependencyInjection;
+using Mostawsef.Desktop.Components;
 using Mostawsef.Desktop.Services.Auth;
+using Mostawsef.Desktop.Services.Diagnostics;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Navigation;
 
@@ -27,6 +29,7 @@ public sealed class TestServices : IDisposable
             .AddMostawsefDesktop(new DesktopServiceOptions { HttpHandler = Api, SettingsFilePath = SettingsFile, OpenFile = OpenedFiles.Add })
             .BuildServiceProvider();
         App.Services = Provider;
+        PageHost.Perf = Provider.GetRequiredService<PerformanceMonitor>();
         Get<ThemeService>().Initialize();
     }
 

@@ -41,6 +41,14 @@ public class TableCellComponentsTests : UiTestBase
         grid.ItemsSource = new List<string> { "y", "x" };
         Dispatcher.UIThread.RunJobs();
         Assert.Equal("x=2 y=1", Numbers(window));
+
+        var live = new System.Collections.ObjectModel.ObservableCollection<string> { "p", "q" };
+        grid.ItemsSource = live;
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("p=1 q=2", Numbers(window));
+        live.Insert(0, "o");
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("o=1 p=2 q=3", Numbers(window));
     }
 
     [AvaloniaFact]

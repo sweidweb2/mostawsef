@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
@@ -16,6 +15,8 @@ namespace Mostawsef.Desktop.Components;
 public class Avatar : TemplatedControl
 {
     public const int ToneCount = 5;
+
+    private static readonly string[] ToneClasses = [":tone0", ":tone1", ":tone2", ":tone3", ":tone4"];
 
     public static readonly StyledProperty<string?> DisplayNameProperty =
         AvaloniaProperty.Register<Avatar, string?>(nameof(DisplayName));
@@ -111,8 +112,7 @@ public class Avatar : TemplatedControl
 
         if (change.Property == DisplayNameProperty || change.Property == MaxInitialsProperty)
         {
-            var words = (DisplayName ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            Initials = string.Concat(words.Take(Math.Max(1, MaxInitials)).Select(w => char.ToUpperInvariant(w[0])));
+            Initials = BuildInitials(DisplayName, MaxInitials);
         }
         else if (change.Property == SizeProperty)
         {
@@ -125,8 +125,38 @@ public class Avatar : TemplatedControl
             var tone = IsColorful ? ToneOf(DisplayName) : -1;
             for (var i = 0; i < ToneCount; i++)
             {
-                PseudoClasses.Set($":tone{i}", i == tone);
+                PseudoClasses.Set(ToneClasses[i], i == tone);
             }
         }
+    }
+
+    private static string BuildInitials(string? name, int max)
+    {
+        max = Math.Max(1, max);
+        Span<char> letters = stackalloc char[max];
+        var count = 0;
+        var atWordStart = true;
+        foreach (var c in (name ?? string.Empty).AsSpan().Trim())
+        {
+            if (char.IsWhiteSpace(c))
+            {
+                atWordStart = true;
+                continue;
+            }
+
+            if (!atWordStart)
+            {
+                continue;
+            }
+
+            letters[count++] = char.ToUpperInvariant(c);
+            atWordStart = false;
+            if (count == max)
+            {
+                break;
+            }
+        }
+
+        return count == 0 ? string.Empty : new string(letters[..count]);
     }
 }

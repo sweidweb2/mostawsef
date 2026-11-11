@@ -25,7 +25,7 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
 
     private bool _suppressPageReload;
     private bool _loaded;
-    private CancellationTokenSource _pageCancellation = new();
+    private readonly PageLifetime _pageLifetime = new();
     private CancellationTokenSource? _loadCancellation;
 
     // The page on screen: how it was requested, its number and the cursors to its neighbours.
@@ -94,11 +94,7 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
 
     public Task ActivateAsync()
     {
-        if (_pageCancellation.IsCancellationRequested)
-        {
-            _pageCancellation = new CancellationTokenSource();
-        }
-
+        _pageLifetime.EnsureActive();
         return _loaded ? Task.CompletedTask : ReloadAsync();
     }
 
@@ -109,7 +105,7 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
             _loaded = false;
         }
 
-        _pageCancellation.Cancel();
+        _pageLifetime.Cancel();
     }
 
     [RelayCommand]
@@ -192,15 +188,15 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
     private async Task LoadAsync(CursorQuery query, int page, bool withExtras)
     {
         _loadCancellation?.Cancel();
-        var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_pageCancellation.Token);
+        var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_pageLifetime.Token);
         _loadCancellation = cancellation;
         var cancellationToken = cancellation.Token;
 
         IsLoading = true;
+        var useExtrasTotal = withExtras && string.IsNullOrWhiteSpace(query.Search);
+        Task? extras = withExtras ? LoadExtrasAsync(cancellationToken) : null;
         try
         {
-            var useExtrasTotal = withExtras && string.IsNullOrWhiteSpace(query.Search);
-            Task? extras = withExtras ? LoadExtrasAsync(cancellationToken) : null;
             if (useExtrasTotal)
             {
                 query = query with { IncludeTotal = false };
@@ -212,6 +208,7 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
             if (extras is not null)
             {
                 await extras;
+                extras = null;
                 cancellationToken.ThrowIfCancellationRequested();
                 if (useExtrasTotal && ExtrasTotalCount is { } extrasTotal)
                 {
@@ -251,8 +248,27 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
         {
             // A newer load replaced this one and owns the page state now, or the user left the page.
         }
+        catch (Exception)
+        {
+            Items.ReplaceAll([]);
+            TotalCount = 0;
+            LoadError = ApiError.Server;
+            OnPropertyChanged(nameof(IsEmpty));
+        }
         finally
         {
+            if (extras is not null)
+            {
+                try
+                {
+                    await extras;
+                }
+                catch (Exception)
+                {
+                    // Observe a racing extras fault so it is not abandoned when the page fetch failed first.
+                }
+            }
+
             if (_loadCancellation == cancellation)
             {
                 _loadCancellation = null;
@@ -291,7 +307,7 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
     /// <summary>An API read tied to the page (e.g. details for a modal): null when the user left the page before it finished.</summary>
     protected async Task<ApiResult<T>?> ReadAsync<T>(Func<CancellationToken, Task<ApiResult<T>>> read)
     {
-        var cancellationToken = _pageCancellation.Token;
+        var cancellationToken = _pageLifetime.Token;
         try
         {
             var result = await read(cancellationToken);

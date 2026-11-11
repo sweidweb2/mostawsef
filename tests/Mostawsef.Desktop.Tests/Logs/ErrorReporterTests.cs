@@ -1,9 +1,12 @@
+using System;
 using System.Net;
 using System.Net.Http.Json;
 using Avalonia.Headless.XUnit;
 using Mostawsef.Contracts.Logs;
 using Mostawsef.Desktop.Services.Api;
 using Mostawsef.Desktop.Services.Diagnostics;
+using Mostawsef.Desktop.Services.Local;
+using Mostawsef.Desktop.Services.Navigation;
 using Mostawsef.Desktop.Services.Ui;
 using Mostawsef.Desktop.Tests.Infrastructure;
 using NSubstitute;
@@ -171,7 +174,11 @@ public class ErrorReporterTests : UiTestBase
     private static ErrorReporter Reporter(TestServices app, out string logDirectory, TimeProvider? clock = null, IToastService? toasts = null)
     {
         logDirectory = Path.Combine(Path.GetTempPath(), "mostawsef-tests", Guid.NewGuid().ToString("N"));
-        return new ErrorReporter(app.Get<LogsApi>(), app.Navigation, toasts ?? app.Get<IToastService>(), app.Localization)
+        return new ErrorReporter(
+            new Lazy<LogsApi>(app.Get<LogsApi>),
+            new Lazy<NavigationService>(() => app.Navigation),
+            new Lazy<IToastService>(() => toasts ?? app.Get<IToastService>()),
+            new Lazy<LocalizationService>(() => app.Localization))
         {
             LogDirectory = logDirectory,
             Clock = clock ?? TimeProvider.System,

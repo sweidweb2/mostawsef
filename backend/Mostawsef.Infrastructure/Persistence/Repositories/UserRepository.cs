@@ -49,7 +49,7 @@ public class UserRepository(AppDbContext db) : IUserRepository
             .OrderBy(u => u.FullName)
             .ThenBy(u => u.Username)
             .Select(u => new UserListRow(
-                u.Id, u.Username, u.FullName, u.Role, u.IsActive, u.LastLoginAt, u.CreatedAt));
+                u.Id, u.Username, u.FullName, u.Role, u.IsActive, u.LastLoginAt, u.CreatedAt, u.Version));
 
         return await rows.ToPageAsync(query, cancellationToken);
     }

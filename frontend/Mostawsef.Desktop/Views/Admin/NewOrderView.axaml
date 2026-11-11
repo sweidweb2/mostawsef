@@ -119,7 +119,7 @@
         <!-- Outer Panel keeps the step marker as DataContext (ContentPresenter owns the root). Order is rebound inside. -->
         <DataTemplate x:DataType="vm:NewOrderPatientStep">
             <Panel>
-            <ui:Card Name="PatientColumn" Padding="0" Title="{l:Tr NewOrder.Patient}" DataContext="{Binding Order}">
+            <ui:Card Name="PatientColumn" Classes="outlined" Padding="0" Title="{l:Tr NewOrder.Patient}" DataContext="{Binding Order}">
                 <ScrollViewer>
                     <StackPanel Margin="{DynamicResource PaddingCard}" Spacing="{DynamicResource GapStack}">
                         <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}">
@@ -181,7 +181,7 @@
         <DataTemplate x:DataType="vm:NewOrderTestsStep">
             <Panel>
             <Grid DataContext="{Binding Order}" ColumnDefinitions="*,1.4*" ColumnSpacing="{DynamicResource GapGrid}">
-                <ui:Card Name="TestsColumn" Padding="0" Title="{l:Tr NewOrder.SelectedTestsCount, Arg=SelectedTests.Count}">
+                <ui:Card Name="TestsColumn" Classes="outlined" Padding="0" Title="{l:Tr NewOrder.SelectedTestsCount, Arg=SelectedTests.Count}">
                     <DockPanel>
                         <TextBlock Name="ItemsError"
                                    DockPanel.Dock="Top"
@@ -228,7 +228,7 @@
                     </DockPanel>
                 </ui:Card>
 
-                <ui:Card Name="CatalogColumn" Grid.Column="1" Padding="0" Title="{l:Tr NewOrder.Catalog}">
+                <ui:Card Name="CatalogColumn" Classes="outlined" Grid.Column="1" Padding="0" Title="{l:Tr NewOrder.Catalog}">
                     <DockPanel>
                         <ui:SearchBox Name="CatalogSearchBox"
                                       DockPanel.Dock="Top"
@@ -277,7 +277,7 @@
 
         <DataTemplate x:DataType="vm:NewOrderReviewStep">
             <Panel>
-            <ui:Card Name="ReviewColumn" Padding="0" Title="{l:Tr NewOrder.Review}" DataContext="{Binding Order}">
+            <ui:Card Name="ReviewColumn" Classes="outlined" Padding="0" Title="{l:Tr NewOrder.Review}" DataContext="{Binding Order}">
                 <ScrollViewer>
                     <StackPanel Margin="{DynamicResource PaddingCard}" Spacing="{DynamicResource GapStack}">
                         <ui:ResponsiveGrid MinColumnWidth="160" MaxColumns="2"

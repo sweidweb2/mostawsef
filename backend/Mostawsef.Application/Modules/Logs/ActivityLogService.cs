@@ -30,7 +30,11 @@ public class ActivityLogService(IActivityLogRepository logs, IActivityLogger act
     public async Task<ActivityLogDto?> GetAsync(Guid id, CancellationToken cancellationToken)
     {
         var log = await logs.GetByIdAsync(id, cancellationToken);
-        return log is null ? null : ToDto(log);
+        return log is null
+            ? null
+            : new ActivityLogDto(
+                log.Id, log.OccurredAt, log.Action, log.Module, log.Description, log.UserId, log.Username,
+                log.EntityType, log.EntityId, log.IpAddress, log.UserAgent, log.Details);
     }
 
     public async Task<ActivityLogStatsDto> GetStatsAsync(CancellationToken cancellationToken)
@@ -57,10 +61,6 @@ public class ActivityLogService(IActivityLogRepository logs, IActivityLogger act
 
         return true;
     }
-
-    private static ActivityLogDto ToDto(ActivityLog l) => new(
-        l.Id, l.OccurredAt, l.Action, l.Module, l.Description, l.UserId, l.Username,
-        l.EntityType, l.EntityId, l.IpAddress, l.UserAgent, l.Details);
 }
 
 internal static class LogPeriods

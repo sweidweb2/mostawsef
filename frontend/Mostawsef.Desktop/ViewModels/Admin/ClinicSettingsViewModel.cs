@@ -64,8 +64,14 @@ public partial class ClinicSettingsViewModel(
     private async Task LoadAsync(bool force = false)
     {
         IsLoading = true;
-        HasLoadError = !await clinic.LoadAsync(force);
-        _loaded = clinic.Settings is not null;
-        IsLoading = false;
+        try
+        {
+            HasLoadError = !await clinic.LoadAsync(force);
+            _loaded = clinic.Settings is not null;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 }
