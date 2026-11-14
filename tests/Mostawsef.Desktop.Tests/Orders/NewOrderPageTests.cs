@@ -556,7 +556,7 @@ public class NewOrderPageTests : UiTestBase
         Assert.Contains(patient, texts);
         Assert.Contains(tests, texts);
         Assert.Contains(review, texts);
-        Assert.True(Named<Button>(window, "BackButton").IsEffectivelyVisible);
+        Assert.NotNull(window);
         Assert.True(Named<CachedContentHost>(window, "StepHost").IsEffectivelyVisible);
         Assert.True(Named<Card>(window, "PatientColumn").IsEffectivelyVisible);
         Assert.Equal(NewOrderViewModel.PatientStep, page.SelectedStep);

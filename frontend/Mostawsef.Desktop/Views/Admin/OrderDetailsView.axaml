@@ -10,14 +10,6 @@
     <ScrollViewer>
         <StackPanel Classes="page">
             <ui:PageHeader Title="{l:Tr OrderDetails.Title, Arg={Binding Order.Number}}" Subtitle="{l:Tr OrderDetails.Subtitle}">
-                <ui:PageHeader.Breadcrumb>
-                    <Button Name="BackButton" Classes="ghost sm" Command="{Binding BackCommand}">
-                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space1}">
-                            <PathIcon Data="{StaticResource IconChevronStart}" />
-                            <TextBlock Text="{l:Tr OrderDetails.BackToOrders}" />
-                        </StackPanel>
-                    </Button>
-                </ui:PageHeader.Breadcrumb>
                 <ui:PageHeader.Actions>
                     <ui:Badge Name="StatusBadge"
                               IsVisible="{Binding HasOrder}"

@@ -64,10 +64,30 @@ public class TrKeyExtension(BindingBase value) : MarkupExtension
 
     public string? Prefix { get; set; }
 
-    public override object ProvideValue(IServiceProvider serviceProvider) =>
-        App.Services is null
-            ? Prefix ?? string.Empty
-            : Translation.Bind(Value, new Translation.KeyConverter(App.Localization), Prefix);
+    /// <summary>Optional binding of the {0} argument of the translated key: Text="{l:TrKey {Binding TitleKey}, Arg={Binding TitleArg}}".</summary>
+    public BindingBase? Arg { get; set; }
+
+    public override object ProvideValue(IServiceProvider serviceProvider)
+    {
+        if (App.Services is null)
+        {
+            return Prefix ?? string.Empty;
+        }
+
+        return Arg is null
+            ? Translation.Bind(Value, new Translation.KeyConverter(App.Localization), Prefix)
+            : new MultiBinding
+            {
+                Bindings =
+                {
+                    Value,
+                    Arg,
+                    new CompiledBinding(Translation.VersionPath) { Source = App.Localization },
+                },
+                Mode = BindingMode.OneWay,
+                Converter = new Translation.KeyFormatConverter(App.Localization),
+            };
+    }
 }
 
 /// <summary>
@@ -198,6 +218,21 @@ internal static class Translation
             values.Count > 0 && values[0] is long minorUnits
                 ? Converters.MoneyFormat.Format(minorUnits, clinic.CurrencyCode, Localization)
                 : null;
+    }
+
+    /// <summary>values[0] = resource key, values[1] = the {0} argument.</summary>
+    public sealed class KeyFormatConverter(LocalizationService localization) : Converter(localization)
+    {
+        public override object? Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture)
+        {
+            if (values.Count < 2 || values[0] is not string { Length: > 0 } key)
+            {
+                return null;
+            }
+
+            var arg = values[1] == AvaloniaProperty.UnsetValue ? null : values[1];
+            return Localization.Format(key, arg);
+        }
     }
 
     public sealed class FormatConverter(LocalizationService localization) : Converter(localization)

@@ -11,17 +11,21 @@ using Mostawsef.Desktop.ViewModels.Shell;
 namespace Mostawsef.Desktop.ViewModels.Admin;
 
 /// <summary>Admin portal sub-page: one order's main details and tests (read-only). Set <see cref="OrderId"/> before it opens; optionally <see cref="Seed"/> to skip the first GET.</summary>
-public partial class OrderDetailsViewModel(OrdersApi orders, NavigationService navigation) : ViewModelBase, ILoadablePage, IReusablePage
+public partial class OrderDetailsViewModel(OrdersApi orders, NavigationService navigation) : ViewModelBase, ILoadablePage, IReusablePage, IBreadcrumbPage
 {
     private CancellationTokenSource? _loadCancellation;
 
     public Guid OrderId { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasOrder), nameof(HasAddon))]
+    [NotifyPropertyChangedFor(nameof(HasOrder), nameof(HasAddon), nameof(BreadcrumbArg))]
     public partial OrderDetailsDto? Order { get; private set; }
 
     public bool HasOrder => Order is not null;
+
+    public string BreadcrumbKey => "OrderDetails.Title";
+
+    public string? BreadcrumbArg => Order?.Number;
 
     /// <summary>True when the order has an amount added on top of the tests' catalog prices.</summary>
     public bool HasAddon => Order is { Addon: > 0 };

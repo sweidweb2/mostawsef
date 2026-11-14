@@ -372,17 +372,19 @@
     </UserControl.DataTemplates>
 
     <DockPanel Classes="page">
-        <Button Name="BackButton" DockPanel.Dock="Top" Classes="ghost sm" HorizontalAlignment="Left"
-                Margin="0,0,0,8" Command="{Binding BackCommand}">
-            <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space1}">
-                <PathIcon Data="{StaticResource IconChevronStart}" />
-                <TextBlock Text="{l:Tr OrderDetails.BackToOrders}" />
-            </StackPanel>
-        </Button>
-
         <ui:Alert Name="FormError" DockPanel.Dock="Top" Margin="0,0,0,12" Kind="Danger" Text="{l:TrKey {Binding FormErrorKey}}" />
 
-        <Grid Name="StepIndicator" DockPanel.Dock="Top" Margin="{StaticResource PaddingCardCompact}">
+        <Grid Name="StepRow" DockPanel.Dock="Top" ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource GapGrid}"
+              Margin="{StaticResource PaddingCardCompact}">
+            <Button Name="NextStepButton" Grid.Column="1" Classes="primary" VerticalAlignment="Top"
+                    Command="{Binding NextStepCommand}"
+                    IsVisible="{Binding ShowNext}">
+                <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space1}">
+                    <TextBlock Text="{l:Tr NewOrder.Next}" VerticalAlignment="Center" />
+                    <PathIcon Data="{StaticResource IconChevronEnd}" />
+                </StackPanel>
+            </Button>
+            <Grid Name="StepIndicator">
             <ItemsControl ItemsSource="{Binding Steps}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -430,6 +432,7 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
+            </Grid>
         </Grid>
 
         <Border DockPanel.Dock="Bottom" Margin="0,12,0,0" Padding="{StaticResource PaddingCardCompact}"
@@ -439,10 +442,6 @@
                         Content="{l:Tr NewOrder.Previous}"
                         Command="{Binding PreviousStepCommand}"
                         IsVisible="{Binding CanGoBack}" />
-                <Button Name="NextStepButton" Grid.Column="2" Classes="primary"
-                        Content="{l:Tr NewOrder.Next}"
-                        Command="{Binding NextStepCommand}"
-                        IsVisible="{Binding ShowNext}" />
                 <Button Name="CreateButton" Grid.Column="2" Classes="primary" Command="{Binding SaveCommand}"
                         IsVisible="{Binding ShowSave}">
                     <Panel>

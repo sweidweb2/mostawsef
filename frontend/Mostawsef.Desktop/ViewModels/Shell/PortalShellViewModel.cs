@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -107,14 +108,65 @@ public partial class PortalShellViewModel : ViewModelBase
     public string RoleKey => $"Role.{_session.CurrentUser?.Role}";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(MenuTitleKey))]
     public partial int SelectedMenuIndex { get; set; } = -1;
+
+    /// <summary>Resource key of the selected menu page's title: the first breadcrumb segment.</summary>
+    public string? MenuTitleKey =>
+        SelectedMenuIndex >= 0 && SelectedMenuIndex < MenuItems.Count ? MenuItems[SelectedMenuIndex].TitleKey : null;
 
     /// <summary>The menu page, or the sub-page opened on top of it.</summary>
     [ObservableProperty]
     public partial ViewModelBase? CurrentPage { get; private set; }
 
     /// <summary>A page opened from the menu page (NavigationService.OpenAsync); the menu keeps its entry selected.</summary>
-    public ViewModelBase? SubPage { get; private set; }
+    public ViewModelBase? SubPage
+    {
+        get;
+        private set
+        {
+            if (ReferenceEquals(field, value))
+            {
+                return;
+            }
+
+            if (field is IBreadcrumbPage old)
+            {
+                old.PropertyChanged -= OnSubPagePropertyChanged;
+            }
+
+            field = value;
+            if (value is IBreadcrumbPage next)
+            {
+                next.PropertyChanged += OnSubPagePropertyChanged;
+            }
+
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasSubPage));
+            OnPropertyChanged(nameof(SubPageTitleKey));
+            OnPropertyChanged(nameof(SubPageTitleArg));
+        }
+    }
+
+    /// <summary>True while a sub-page is open: the breadcrumb then shows "menu page &gt; sub-page".</summary>
+    public bool HasSubPage => SubPage is not null;
+
+    public string? SubPageTitleKey => (SubPage as IBreadcrumbPage)?.BreadcrumbKey;
+
+    public string? SubPageTitleArg => (SubPage as IBreadcrumbPage)?.BreadcrumbArg;
+
+    private void OnSubPagePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(IBreadcrumbPage.BreadcrumbKey) or nameof(IBreadcrumbPage.BreadcrumbArg))
+        {
+            OnPropertyChanged(nameof(SubPageTitleKey));
+            OnPropertyChanged(nameof(SubPageTitleArg));
+        }
+    }
+
+    /// <summary>The breadcrumb's menu segment: closes the sub-page (asks first if it has unsaved changes).</summary>
+    [RelayCommand]
+    private Task<bool> BackAsync() => CloseSubPageAsync();
 
     /// <summary>Raised when a transient sub-page will not be shown again (PageHost should drop its view).</summary>
     public event Action<ViewModelBase>? PageDiscarded;

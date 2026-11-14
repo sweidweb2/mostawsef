@@ -34,7 +34,23 @@
         </ui:AppShell.SidebarFooter>
 
         <ui:AppShell.TopBar>
-            <ui:TopBar Title="{l:TrKey {Binding PortalTitleKey}}">
+            <ui:TopBar>
+                <ui:TopBar.Leading>
+                    <StackPanel Name="Breadcrumb" Orientation="Horizontal" Spacing="{StaticResource Space1}" Margin="0,0,16,0">
+                        <TextBlock Name="BreadcrumbCurrent" Classes="h4" VerticalAlignment="Center"
+                                   IsVisible="{Binding !HasSubPage}"
+                                   Text="{l:TrKey {Binding MenuTitleKey}}" />
+                        <Button Name="BreadcrumbRoot" Classes="ghost" IsVisible="{Binding HasSubPage}"
+                                Command="{Binding BackCommand}">
+                            <TextBlock Classes="h4" Text="{l:TrKey {Binding MenuTitleKey}}" />
+                        </Button>
+                        <PathIcon Name="BreadcrumbSeparator" IsVisible="{Binding HasSubPage}"
+                                  Data="{StaticResource IconChevronEnd}" Opacity="0.6" />
+                        <TextBlock Name="BreadcrumbSubPage" Classes="h4" VerticalAlignment="Center"
+                                   IsVisible="{Binding HasSubPage}"
+                                   Text="{l:TrKey {Binding SubPageTitleKey}, Arg={Binding SubPageTitleArg}}" />
+                    </StackPanel>
+                </ui:TopBar.Leading>
                 <ui:TopBar.Actions>
                     <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
                         <ui:PreferencesBar />

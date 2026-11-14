@@ -27,8 +27,12 @@ namespace Mostawsef.Desktop.ViewModels.Admin;
 /// clears the form. The lab-test catalog loads only when the tests step is shown; it comes from the shared
 /// <see cref="LabTestCatalog"/> cache and is searched in memory.
 /// </summary>
-public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusablePage
+public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusablePage, IBreadcrumbPage
 {
+    public string BreadcrumbKey => "NewOrder.Title";
+
+    public string? BreadcrumbArg => null;
+
     public const int PatientStep = 0;
     public const int TestsStep = 1;
     public const int ReviewStep = 2;

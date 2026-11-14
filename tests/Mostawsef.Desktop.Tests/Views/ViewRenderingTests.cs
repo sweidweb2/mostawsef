@@ -80,7 +80,8 @@ public class ViewRenderingTests : UiTestBase
 
         Assert.NotNull(window.FindDescendantOfType<PortalShellView>());
         Assert.NotNull(window.FindDescendantOfType<DashboardView>());
-        Assert.Contains(Texts(window), t => t == "Admin portal");
+        Assert.DoesNotContain(Texts(window), t => t == "Admin portal");
+        Assert.Equal("Dashboard", window.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "BreadcrumbCurrent").Text);
         Assert.Contains(Texts(window), t => t == "Welcome, admin@test.local");
     }
 
@@ -94,7 +95,8 @@ public class ViewRenderingTests : UiTestBase
         var window = app.Show(app.Navigation.CurrentPage!);
 
         Assert.NotNull(window.FindDescendantOfType<DashboardView>());
-        Assert.Contains(Texts(window), t => t == "Super portal");
+        Assert.DoesNotContain(Texts(window), t => t == "Super portal");
+        Assert.Equal("Dashboard", window.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "BreadcrumbCurrent").Text);
         Assert.Contains(Texts(window), t => t == "Welcome, user@test.local");
     }
 
@@ -109,7 +111,7 @@ public class ViewRenderingTests : UiTestBase
         app.Localization.SetLanguage(AppLanguage.Arabic);
 
         var texts = Texts(window);
-        Assert.Contains(app.Localization.Get("Portal.Admin"), texts);
+        Assert.Contains(app.Localization.Get("Nav.Dashboard"), texts);
         Assert.Contains(app.Localization.Format("Dashboard.Welcome", "admin@test.local"), texts);
         Assert.Contains(app.Localization.Get("Nav.Dashboard"), window.GetVisualDescendants().OfType<NavMenuItem>().Select(i => i.Text));
         Assert.DoesNotContain("Admin portal", texts);
