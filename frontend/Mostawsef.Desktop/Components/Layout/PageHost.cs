@@ -46,6 +46,47 @@ public class PageHost : Decorator
     }
 
     /// <summary>Drops a discarded page's view from the cache and the visual tree.</summary>
+    /// <summary>
+    /// Builds and caches the view of <paramref name="page"/> without showing it, so the first visit is instant.
+    /// Hidden controls are never measured (so their templates are not applied yet): this runs one invisible layout
+    /// pass to apply them now. No-op when the view already exists.
+    /// </summary>
+    /// <returns>False when it cannot run yet (not laid out, so there is no size to build at); try again later.</returns>
+    public bool Prebuild(object page)
+    {
+        if (_views.ContainsKey(page))
+        {
+            return true;
+        }
+
+        if (VisualRoot is null || _host.Bounds.Width <= 0 || _host.Bounds.Height <= 0)
+        {
+            return false;
+        }
+
+        var perf = Perf is { IsEnabled: true } enabled ? enabled : null;
+        var sw = perf is null ? null : Stopwatch.StartNew();
+        var view = GetOrCreateView(page, perf: null);
+        _host.Children.Add(view);
+
+        var size = _host.Bounds.Size;
+        view.Opacity = 0;
+        view.IsHitTestVisible = false;
+        view.IsVisible = true;
+        view.Measure(size);
+        view.Arrange(new Rect(size));
+        view.IsVisible = false;
+        view.ClearValue(OpacityProperty);
+        view.ClearValue(IsHitTestVisibleProperty);
+
+        if (sw is not null)
+        {
+            perf!.Record("View", page.GetType().Name, sw.Elapsed, "prebuilt");
+        }
+
+        return true;
+    }
+
     public void Release(object page)
     {
         if (!_views.Remove(page, out var view))

@@ -11,21 +11,21 @@
         <ui:Alert Kind="Danger" Text="{l:TrKey {Binding FormErrorKey}}" />
 
         <ui:ResponsiveGrid MinColumnWidth="220" MaxColumns="2" ColumnSpacing="{StaticResource GapGrid}" RowSpacing="{StaticResource GapGrid}">
-            <ui:FormField ui:ResponsiveGrid.ColumnSpan="0" Label="{l:Tr Patients.Col.FullName}" IsRequired="True" Error="{l:FieldError FullName}">
+            <ui:FormField ui:ResponsiveGrid.ColumnSpan="0" Label="{l:Tr Patients.Col.FullName}" IsRequired="True" Error="{l:FieldError {Binding Errors[FullName]}}">
                 <TextBox Name="FullNameBox"
                          Text="{Binding FullName}"
                          MaxLength="{x:Static rules:PatientRules.FullNameMaxLength}"
                          PlaceholderText="{l:Tr Patients.Field.FullNamePlaceholder}" />
             </ui:FormField>
 
-            <ui:FormField Label="{l:Tr Patients.Col.Phone}" IsRequired="True" Error="{l:FieldError Phone}">
+            <ui:FormField Label="{l:Tr Patients.Col.Phone}" IsRequired="True" Error="{l:FieldError {Binding Errors[Phone]}}">
                 <TextBox Name="PhoneBox"
                          Text="{Binding Phone}"
                          MaxLength="{x:Static rules:PatientRules.PhoneMaxLength}"
                          FlowDirection="LeftToRight"
                          PlaceholderText="{l:Tr Patients.Field.PhonePlaceholder}" />
             </ui:FormField>
-            <ui:FormField Label="{l:Tr Patients.Col.GuardianPhone}" Error="{l:FieldError GuardianPhone}">
+            <ui:FormField Label="{l:Tr Patients.Col.GuardianPhone}" Error="{l:FieldError {Binding Errors[GuardianPhone]}}">
                 <TextBox Name="GuardianPhoneBox"
                          Text="{Binding GuardianPhone}"
                          MaxLength="{x:Static rules:PatientRules.PhoneMaxLength}"
@@ -33,7 +33,7 @@
                          PlaceholderText="{l:Tr Patients.Field.GuardianPhonePlaceholder}" />
             </ui:FormField>
 
-            <ui:FormField Label="{l:Tr Patients.Col.Gender}" IsRequired="True" Error="{l:FieldError Gender}">
+            <ui:FormField Label="{l:Tr Patients.Col.Gender}" IsRequired="True" Error="{l:FieldError {Binding Errors[Gender]}}">
                 <ComboBox Name="GenderBox"
                           ItemsSource="{Binding GenderOptions}"
                           SelectedItem="{Binding Gender}"
@@ -46,7 +46,7 @@
                     </ComboBox.ItemTemplate>
                 </ComboBox>
             </ui:FormField>
-            <ui:FormField Label="{l:Tr Patients.Col.DateOfBirth}" Error="{l:FieldError DateOfBirth}">
+            <ui:FormField Label="{l:Tr Patients.Col.DateOfBirth}" Error="{l:FieldError {Binding Errors[DateOfBirth]}}">
                 <CalendarDatePicker Name="DateOfBirthBox"
                                     SelectedDate="{Binding DateOfBirth, Converter={x:Static conv:ValueConverters.DateOnly}}"
                                     DisplayDateStart="{Binding MinDateOfBirth}"
@@ -57,7 +57,7 @@
 
             <CheckBox Name="IsInsuredBox" ui:ResponsiveGrid.ColumnSpan="0" Content="{l:Tr Patients.Field.IsInsured}" IsChecked="{Binding IsInsured}" />
 
-            <ui:FormField ui:ResponsiveGrid.ColumnSpan="0" Label="{l:Tr Patients.Col.Notes}" Error="{l:FieldError Notes}">
+            <ui:FormField ui:ResponsiveGrid.ColumnSpan="0" Label="{l:Tr Patients.Col.Notes}" Error="{l:FieldError {Binding Errors[Notes]}}">
                 <TextBox Name="NotesBox"
                          Classes="textarea"
                          Text="{Binding Notes}"

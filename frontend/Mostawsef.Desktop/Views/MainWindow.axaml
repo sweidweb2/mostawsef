@@ -21,6 +21,9 @@
 
     <!-- Login screen or the signed-in user's portal shell (see NavigationService). -->
     <Panel>
+        <!-- Invisible: ViewWarmUp builds the main views here once while the login screen is idle. -->
+        <Panel x:Name="WarmUpLayer" Opacity="0" IsHitTestVisible="False" DataContext="{x:Null}" />
+
         <ui:DialogHost x:Name="Host">
             <ContentControl Content="{Binding Navigation.CurrentPage}" />
         </ui:DialogHost>

@@ -1,16 +1,17 @@
 <!--
     RESPONSIVENESS ENGINE
 
-    Rules react to the width of the AppShell content area (container "AppContent"),
-    so they work the same whether the sidebar is expanded or collapsed.
-    Breakpoints (Styles/Tokens/Breakpoints.axaml):  Compact < 900 | Medium 900-1279 | Wide 1280-1599 | XWide >= 1600
+    Rules react to the width of the AppShell content area, so they work the same whether the sidebar is expanded
+    or collapsed. AppShell sets :narrow while that area is below 900 (AppShell.NarrowContentWidth = BreakpointMedium).
 
     Utility classes
-      .page           page root: padding 24, or 16 when compact; content capped at ContentMaxWidth
-      .hide-compact   hidden below 900          .show-compact   visible only below 900
-      .hide-medium    hidden below 1280         .show-medium    visible only below 1280
-      .hide-wide      hidden below 1600         .show-wide      visible only below 1600
-      .stack-compact  horizontal StackPanel becomes vertical below 900
+      .page           page root: padding 24, or 16 when narrow; content capped at ContentMaxWidth
+      .hide-compact   hidden while narrow
+      .stack-compact  horizontal StackPanel becomes vertical while narrow
+
+    Do NOT use ContainerQuery here: Avalonia re-evaluates container queries for every control added to or removed
+    from the container, which made the whole app 20-60x slower on any UI change (e.g. 2 s to switch the New Order
+    patient mode). Add a pseudo-class on AppShell instead, like :narrow.
 
     Layout helpers (code): ResponsiveGrid (auto columns), AppShell (sidebar collapses below AutoCompactWidth).
 -->
@@ -24,56 +25,22 @@
         <Setter Property="MaxWidth" Value="{StaticResource ContentMaxWidth}" />
     </Style>
 
-    <!-- Compact: < 900 -->
-    <ContainerQuery Name="AppContent" Query="max-width:899">
-        <Style Selector=":is(Control).page">
-            <Setter Property="Margin" Value="{StaticResource PaddingPageCompact}" />
-        </Style>
-        <Style Selector=":is(Control).hide-compact">
-            <Setter Property="IsVisible" Value="False" />
-        </Style>
-        <Style Selector="StackPanel.stack-compact">
-            <Setter Property="Orientation" Value="Vertical" />
-        </Style>
+    <!-- Narrow: content area < 900 -->
+    <Style Selector="ui|AppShell:narrow :is(Control).page">
+        <Setter Property="Margin" Value="{StaticResource PaddingPageCompact}" />
+    </Style>
+    <Style Selector="ui|AppShell:narrow :is(Control).hide-compact">
+        <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="ui|AppShell:narrow StackPanel.stack-compact">
+        <Setter Property="Orientation" Value="Vertical" />
+    </Style>
 
-        <!-- Page header actions wrap under the title -->
-        <Style Selector="ui|PageHeader /template/ ContentPresenter#PART_Actions">
-            <Setter Property="Grid.Row" Value="1" />
-            <Setter Property="Grid.Column" Value="0" />
-            <Setter Property="Margin" Value="0,12,0,0" />
-            <Setter Property="HorizontalAlignment" Value="Left" />
-        </Style>
-    </ContainerQuery>
-
-    <ContainerQuery Name="AppContent" Query="min-width:900">
-        <Style Selector=":is(Control).show-compact">
-            <Setter Property="IsVisible" Value="False" />
-        </Style>
-    </ContainerQuery>
-
-    <!-- Medium and below: < 1280 -->
-    <ContainerQuery Name="AppContent" Query="max-width:1279">
-        <Style Selector=":is(Control).hide-medium">
-            <Setter Property="IsVisible" Value="False" />
-        </Style>
-    </ContainerQuery>
-
-    <ContainerQuery Name="AppContent" Query="min-width:1280">
-        <Style Selector=":is(Control).show-medium">
-            <Setter Property="IsVisible" Value="False" />
-        </Style>
-    </ContainerQuery>
-
-    <!-- Wide and below: < 1600 -->
-    <ContainerQuery Name="AppContent" Query="max-width:1599">
-        <Style Selector=":is(Control).hide-wide">
-            <Setter Property="IsVisible" Value="False" />
-        </Style>
-    </ContainerQuery>
-
-    <ContainerQuery Name="AppContent" Query="min-width:1600">
-        <Style Selector=":is(Control).show-wide">
-            <Setter Property="IsVisible" Value="False" />
-        </Style>
-    </ContainerQuery>
+    <!-- Page header actions wrap under the title -->
+    <Style Selector="ui|AppShell:narrow ui|PageHeader /template/ ContentPresenter#PART_Actions">
+        <Setter Property="Grid.Row" Value="1" />
+        <Setter Property="Grid.Column" Value="0" />
+        <Setter Property="Margin" Value="0,12,0,0" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+    </Style>
 </Styles>

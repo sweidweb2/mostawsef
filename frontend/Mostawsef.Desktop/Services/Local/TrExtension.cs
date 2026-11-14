@@ -71,17 +71,19 @@ public class TrKeyExtension(BindingBase value) : MarkupExtension
 }
 
 /// <summary>
-/// The translated error of a form field, for a FormViewModel DataContext: Error="{l:FieldError Username}".
-/// Shows "ErrorCode.&lt;code&gt;" with the code's arguments as {0}, {1} (e.g. "max_length|50"); unknown codes show "ErrorCode.invalid".
+/// The translated error of a form field, for a FormViewModel DataContext: Error="{l:FieldError {Binding Errors[Username]}}"
+/// (a nested {Binding}, compiled under x:DataType). Shows "ErrorCode.&lt;code&gt;" with the code's arguments as {0}, {1}
+/// (e.g. "max_length|50"); unknown codes show "ErrorCode.invalid".
 /// </summary>
-public class FieldErrorExtension(string field) : MarkupExtension
+public class FieldErrorExtension(BindingBase value) : MarkupExtension
 {
-    public string Field { get; set; } = field;
+    /// <summary>Binding of the field's error code, normally Errors[FieldName].</summary>
+    public BindingBase Value { get; set; } = value;
 
     public override object ProvideValue(IServiceProvider serviceProvider) =>
         App.Services is null
-            ? Field
-            : Translation.Bind(new ReflectionBinding($"Errors[{Field}]"), new Translation.ErrorCodeConverter(App.Localization), null);
+            ? string.Empty
+            : Translation.Bind(Value, new Translation.ErrorCodeConverter(App.Localization), null);
 }
 
 /// <summary>

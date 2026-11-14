@@ -395,8 +395,6 @@ public struct PerfScope : IDisposable
         _sw = Stopwatch.StartNew();
     }
 
-    public void SetDetail(string? detail) => _detail = detail;
-
     public void Dispose()
     {
         if (_monitor is null)

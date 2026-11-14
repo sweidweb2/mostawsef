@@ -45,7 +45,7 @@
 
                     <DockPanel Grid.Column="1">
                         <ContentPresenter DockPanel.Dock="Top" Content="{TemplateBinding TopBar}" />
-                        <Border Name="PART_Content" Container.Name="AppContent" Container.Sizing="Width">
+                        <Border Name="PART_Content">
                             <ContentPresenter Content="{TemplateBinding Content}"
                                               ContentTemplate="{TemplateBinding ContentTemplate}"
                                               Padding="{TemplateBinding Padding}" />

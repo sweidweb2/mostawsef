@@ -56,9 +56,6 @@ public class LabTestsApi(ApiClient api)
     public Task<ApiResult<IReadOnlyList<LabTestDto>>> GetAllTestsAsync(CancellationToken cancellationToken = default) =>
         api.GetAsync<IReadOnlyList<LabTestDto>>("api/lab-tests/all", cancellationToken);
 
-    public Task<ApiResult<LabTestDto>> GetTestAsync(Guid id, CancellationToken cancellationToken = default) =>
-        api.GetAsync<LabTestDto>($"api/lab-tests/{id}", cancellationToken);
-
     public Task<ApiResult<LabTestDto>> CreateTestAsync(CreateLabTestRequest request, CancellationToken cancellationToken = default) =>
         api.PostAsync<CreateLabTestRequest, LabTestDto>("api/lab-tests", request, cancellationToken);
 

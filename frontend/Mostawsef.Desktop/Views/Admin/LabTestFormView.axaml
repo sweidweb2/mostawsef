@@ -9,14 +9,14 @@
     <StackPanel Spacing="{StaticResource GapGrid}">
         <ui:Alert Kind="Danger" Text="{l:TrKey {Binding FormErrorKey}}" />
 
-        <ui:FormField Label="{l:Tr LabTests.Col.Name}" IsRequired="True" Error="{l:FieldError Name}">
+        <ui:FormField Label="{l:Tr LabTests.Col.Name}" IsRequired="True" Error="{l:FieldError {Binding Errors[Name]}}">
             <TextBox Name="NameBox"
                      Text="{Binding Name}"
                      MaxLength="{x:Static rules:LabTestRules.NameMaxLength}"
                      PlaceholderText="{l:Tr LabTests.Field.NamePlaceholder}" />
         </ui:FormField>
 
-        <ui:FormField Label="{l:Tr LabTests.Col.Code}" IsRequired="True" Hint="{l:Tr LabTests.Field.CodeHint}" Error="{l:FieldError Code}">
+        <ui:FormField Label="{l:Tr LabTests.Col.Code}" IsRequired="True" Hint="{l:Tr LabTests.Field.CodeHint}" Error="{l:FieldError {Binding Errors[Code]}}">
             <TextBox Name="CodeBox"
                      Text="{Binding Code}"
                      MaxLength="{x:Static rules:LabTestRules.CodeMaxLength}"
@@ -24,7 +24,7 @@
         </ui:FormField>
 
         <ui:ResponsiveGrid MinColumnWidth="180" MaxColumns="2" ColumnSpacing="{StaticResource GapGrid}" RowSpacing="{StaticResource GapGrid}">
-            <ui:FormField Label="{l:Tr LabTests.Col.Price}" IsRequired="True" Hint="{l:Tr LabTests.Field.PriceHint, Arg={Binding MaxAmount}}" Error="{l:FieldError Price}">
+            <ui:FormField Label="{l:Tr LabTests.Col.Price}" IsRequired="True" Hint="{l:Tr LabTests.Field.PriceHint, Arg={Binding MaxAmount}}" Error="{l:FieldError {Binding Errors[Price]}}">
                 <NumericUpDown Name="PriceBox"
                                Value="{Binding Price}"
                                Minimum="0"
@@ -34,7 +34,7 @@
                                PlaceholderText="{l:Tr LabTests.Field.AmountPlaceholder}"
                                HorizontalAlignment="Stretch" />
             </ui:FormField>
-            <ui:FormField Label="{l:Tr LabTests.Col.LabCost}" IsRequired="True" Hint="{l:Tr LabTests.Field.LabCostHint}" Error="{l:FieldError LabCost}">
+            <ui:FormField Label="{l:Tr LabTests.Col.LabCost}" IsRequired="True" Hint="{l:Tr LabTests.Field.LabCostHint}" Error="{l:FieldError {Binding Errors[LabCost]}}">
                 <NumericUpDown Name="LabCostBox"
                                Value="{Binding LabCost}"
                                Minimum="0"

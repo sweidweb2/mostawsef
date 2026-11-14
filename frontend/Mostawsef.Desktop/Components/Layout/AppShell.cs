@@ -2,6 +2,7 @@ using System.Windows.Input;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Metadata;
+using Avalonia.Controls.Primitives;
 using CommunityToolkit.Mvvm.Input;
 
 namespace Mostawsef.Desktop.Components;
@@ -9,9 +10,11 @@ namespace Mostawsef.Desktop.Components;
 /// <summary>
 /// Application frame: sidebar (header, navigation, footer), top bar and content area.
 /// The sidebar collapses to icons automatically when the shell is narrower than AutoCompactWidth.
-/// The content area is the "AppContent" container used by responsive ContainerQuery rules.
+/// <c>:narrow</c> is set while the content area is narrower than <see cref="NarrowContentWidth"/>; the responsive
+/// rules in Styles/Responsive.axaml hang off it (<c>ui|AppShell:narrow .page</c>). It replaces Avalonia container
+/// queries, which made adding or removing any control inside the content area 20-60x slower.
 /// </summary>
-[PseudoClasses(":compact")]
+[PseudoClasses(":compact", ":narrow")]
 public class AppShell : ContentControl
 {
     public static readonly StyledProperty<object?> SidebarHeaderProperty =
@@ -35,7 +38,11 @@ public class AppShell : ContentControl
     public static readonly DirectProperty<AppShell, ICommand> ToggleSidebarCommandProperty =
         AvaloniaProperty.RegisterDirect<AppShell, ICommand>(nameof(ToggleSidebarCommand), o => o.ToggleSidebarCommand);
 
+    /// <summary>Content width below which <c>:narrow</c> applies (BreakpointMedium in Styles/Tokens/Breakpoints.axaml).</summary>
+    public const double NarrowContentWidth = 900;
+
     private bool? _wasNarrow;
+    private Control? _content;
 
     public AppShell()
     {
@@ -80,6 +87,35 @@ public class AppShell : ContentControl
     }
 
     public ICommand ToggleSidebarCommand { get; }
+
+    protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
+    {
+        base.OnApplyTemplate(e);
+
+        if (_content is not null)
+        {
+            _content.PropertyChanged -= OnContentPropertyChanged;
+        }
+
+        _content = e.NameScope.Find<Control>("PART_Content");
+        if (_content is not null)
+        {
+            _content.PropertyChanged += OnContentPropertyChanged;
+        }
+    }
+
+    private void OnContentPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property == BoundsProperty && _content is { } content)
+        {
+            // Only flips at the breakpoint, so resizing does not restyle anything in between.
+            var narrow = content.Bounds.Width < NarrowContentWidth;
+            if (PseudoClasses.Contains(":narrow") != narrow)
+            {
+                PseudoClasses.Set(":narrow", narrow);
+            }
+        }
+    }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {

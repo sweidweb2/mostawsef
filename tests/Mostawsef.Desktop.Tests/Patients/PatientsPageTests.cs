@@ -361,6 +361,55 @@ public class PatientsPageTests : UiTestBase
         Assert.Contains("ذكر", Texts(window));
     }
 
+    [AvaloniaFact]
+    public async Task The_form_view_is_reused_and_always_shows_the_current_patient_unchanged()
+    {
+        using var app = AdminWithPatients(Mona, Omar);
+        var (page, window) = await ShowPage(app);
+
+        async Task<(PatientFormViewModel Form, Control View)> OpenAsync(Func<Task> open)
+        {
+            _ = open();
+            Dispatcher.UIThread.RunJobs();
+            var form = CurrentForm(window);
+            var view = Named<TextBox>(window, "FullNameBox").FindAncestorOfType<UserControl>()!;
+            await Task.Yield();
+            Dispatcher.UIThread.RunJobs();
+            return (form, view);
+        }
+
+        async Task CancelAsync(PatientFormViewModel form)
+        {
+            await form.CancelCommand.ExecuteAsync(null);
+            Dispatcher.UIThread.RunJobs();
+            Assert.Empty(window.GetVisualDescendants().OfType<Modal>());
+        }
+
+        var (monaForm, firstView) = await OpenAsync(() => page.EditCommand.ExecuteAsync(Mona));
+        Assert.False(monaForm.IsDirty);
+        Assert.Equal(Genders.Female, monaForm.Gender);
+        await CancelAsync(monaForm);
+
+        var (omarForm, secondView) = await OpenAsync(() => page.EditCommand.ExecuteAsync(Omar));
+        Assert.Same(firstView, secondView);
+        Assert.False(omarForm.IsDirty);
+        Assert.Equal((Omar.FullName, Omar.Phone, Genders.Male, (DateOnly?)null, false),
+            (omarForm.FullName, omarForm.Phone, omarForm.Gender, omarForm.DateOfBirth, omarForm.IsInsured));
+        Assert.Equal(Omar.FullName, Named<TextBox>(window, "FullNameBox").Text);
+        Assert.Equal(Genders.Male, Named<ComboBox>(window, "GenderBox").SelectedItem);
+        Assert.Null(Named<CalendarDatePicker>(window, "DateOfBirthBox").SelectedDate);
+        Assert.False(Named<CheckBox>(window, "IsInsuredBox").IsChecked);
+        Assert.Equal(Genders.Female, monaForm.Gender);
+        await CancelAsync(omarForm);
+
+        var (newForm, thirdView) = await OpenAsync(() => page.AddCommand.ExecuteAsync(null));
+        Assert.Same(firstView, thirdView);
+        Assert.False(newForm.IsDirty);
+        Assert.Equal(string.Empty, Named<TextBox>(window, "FullNameBox").Text ?? string.Empty);
+        Assert.Null(Named<ComboBox>(window, "GenderBox").SelectedItem);
+        Assert.Empty(app.Api.RequestsTo(HttpMethod.Put, PatientsPath));
+    }
+
     private static TestServices AdminWithPatients(params PatientDto[] patients)
     {
         var app = new TestServices();

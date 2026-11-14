@@ -30,10 +30,11 @@ alwaysApply: false
 - Every new `Window` must call `App.Localization.Apply(window)`.
 
 ## Responsiveness
-- Breakpoints on the AppShell content width (container `AppContent`), not the window: Compact < 900, Medium < 1280,
+- Breakpoints on the AppShell content width (`AppShell:narrow` below 900), not the window: Compact < 900, Medium < 1280,
   Wide < 1600, XWide >= 1600. Values live in `Styles/Tokens/Breakpoints.axaml`; keep `Styles/Responsive.axaml` in sync.
+  Never add `ContainerQuery` (it re-evaluates on every control add/remove: 20-60x slower UI); add an AppShell pseudo-class.
 - Page roots use `Classes="page"` (page padding, content capped at `ContentMaxWidth`). Use `ui:ResponsiveGrid` for card/form
-  grids and utility classes `hide-compact|show-compact|stack-compact|hide-medium|show-medium|hide-wide|show-wide`.
+  grids and utility classes `hide-compact|stack-compact`.
 - No fixed widths/heights on page content; let it stretch and wrap. Text that can be long gets `TextWrapping` or `TextTrimming`.
 - The sidebar collapses to icons below `AppShell.AutoCompactWidth` (1100). The window has `WindowMinWidth`/`WindowMinHeight`
   (720 x 520): every page must stay usable at that size, in both languages.
@@ -56,7 +57,7 @@ alwaysApply: false
   `SubmitAsync` sends it. Save first runs the request's DataAnnotations (the same rules as the API), then maps the API
   problem: field codes go next to their field, anything else becomes `FormErrorKey`. Extra client rules (e.g. confirm
   password) go in `ValidateMore`.
-- View: `<ui:FormField Error="{l:FieldError FullName}">` per field and `<ui:Alert Kind="Danger" Text="{l:TrKey {Binding FormErrorKey}}" />` on top.
+- View: `<ui:FormField Error="{l:FieldError {Binding Errors[FullName]}}">` per field and `<ui:Alert Kind="Danger" Text="{l:TrKey {Binding FormErrorKey}}" />` on top.
 - Call `MarkClean()` at the end of the form constructor: editing marks it dirty, and Cancel / X / Esc ask before discarding.
 - Do not duplicate business rules (uniqueness, allowed states) on the desktop; the API answers with a code.
 - Failed actions outside a form (delete): `ShowError(result)` on list pages shows the code's text as a toast.

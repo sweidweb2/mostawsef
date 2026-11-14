@@ -59,9 +59,6 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
     /// <summary>Shared Order details instance from Orders so PageHost reuses one view after create.</summary>
     public OrderDetailsViewModel? OrderDetailsPage { get; set; }
 
-    /// <summary>Matches the AutoCompleteBox <c>MinimumPopulateDelay</c> so typing does not hit the API every keystroke.</summary>
-    public static readonly TimeSpan PatientSearchDelay = TimeSpan.FromMilliseconds(250);
-
     public NewOrderViewModel(
         OrdersApi orders,
         PatientsApi patients,
@@ -152,8 +149,13 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
 
     public PatientFormViewModel PatientForm { get; }
 
-    /// <summary>Built only in new-patient mode so the date picker is not created on every open.</summary>
-    public PatientFormViewModel? NewPatientFormContent => IsNewPatient ? PatientForm : null;
+    /// <summary>
+    /// Null until new-patient mode is first chosen (most orders never need the form), then kept: the view only shows
+    /// or hides it, because rebuilding the form on every Existing/New switch cost 35-90 ms each time.
+    /// </summary>
+    public PatientFormViewModel? NewPatientFormContent => _newPatientFormBuilt ? PatientForm : null;
+
+    private bool _newPatientFormBuilt;
 
     /// <summary>True while the page is resetting and loading the catalog after navigation.</summary>
     [ObservableProperty]
@@ -162,7 +164,6 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
     public partial bool IsPreparing { get; private set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(NewPatientFormContent))]
     public partial bool IsNewPatient { get; set; }
 
     [ObservableProperty]
@@ -655,6 +656,15 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
 
     [RelayCommand]
     private void ChooseNewPatient() => IsNewPatient = true;
+
+    partial void OnIsNewPatientChanged(bool value)
+    {
+        if (value && !_newPatientFormBuilt)
+        {
+            _newPatientFormBuilt = true;
+            OnPropertyChanged(nameof(NewPatientFormContent));
+        }
+    }
 
     [RelayCommand]
     private void AddTest(CatalogTestItem? item)

@@ -21,8 +21,6 @@ public class DialogHost : ContentControl
     private readonly Dictionary<Modal, LayerEntry> _layers = [];
     private Panel? _overlayLayer;
 
-    public bool HasOpenDialogs => _layers.Count > 0;
-
     /// <summary>Force-closes every layer (skips ConfirmDismiss). Completes pending ShowAsync tasks with null.</summary>
     internal void CloseAll()
     {

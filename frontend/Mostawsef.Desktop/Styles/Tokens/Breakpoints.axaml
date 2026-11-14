@@ -1,12 +1,12 @@
 <!--
     BREAKPOINT TOKENS
 
-    Measured on the width of the AppShell content area (container "AppContent"), not the window.
+    Measured on the width of the AppShell content area, not the window (AppShell sets :narrow below BreakpointMedium).
       Compact  <  900       one column, sidebar collapsed, page padding 16
       Medium   900 - 1279   two columns
       Wide     1280 - 1599  three columns
       XWide    >= 1600      four columns, content capped at ContentMaxWidth
-    Keep in sync with the queries in Styles/Responsive.axaml.
+    Keep in sync with AppShell.NarrowContentWidth and Styles/Responsive.axaml.
 -->
 <ResourceDictionary xmlns="https://github.com/avaloniaui"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">

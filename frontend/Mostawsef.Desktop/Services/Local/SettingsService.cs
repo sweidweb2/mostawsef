@@ -57,7 +57,7 @@ public class SettingsService
         }
     }
 
-    /// <summary>Waits until every saved change is on disk.</summary>
+    /// <summary>Waits until every saved change is on disk, but never longer than <see cref="FlushTimeout"/> (a stalled disk must not hang exit).</summary>
     public void Flush()
     {
         Task writer;
@@ -66,8 +66,10 @@ public class SettingsService
             writer = _writer;
         }
 
-        writer.Wait();
+        writer.Wait(FlushTimeout);
     }
+
+    private static readonly TimeSpan FlushTimeout = TimeSpan.FromSeconds(3);
 
     /// <summary>Sends a deferred corrupt-file fault once DI can resolve <see cref="ErrorReporter"/>.</summary>
     public void ReportLoadFaultIfAny()

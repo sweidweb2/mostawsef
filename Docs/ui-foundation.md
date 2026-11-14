@@ -137,7 +137,8 @@ Layouts react to the **width of the AppShell content area**, not the window or d
 | XWide | >= 1600 | 4 columns, content capped at 1440 |
 
 - `.page` on a page root: correct padding per breakpoint + max width.
-- Visibility: `hide-compact` / `show-compact` (900), `hide-medium` / `show-medium` (1280), `hide-wide` / `show-wide` (1600).
+- Visibility: `hide-compact` (hidden below 900). `AppShell` sets `:narrow` below 900 content width; responsive styles use
+  `ui|AppShell:narrow ...`. Never use `ContainerQuery`: it made every add/remove of a control 20-60x slower.
 - `stack-compact`: horizontal StackPanel becomes vertical below 900.
 - `ResponsiveGrid`: auto columns from `MinColumnWidth` and `MaxColumns`; `ui:ResponsiveGrid.ColumnSpan="0"` spans a row.
 - `AppShell` collapses the sidebar below `AutoCompactWidth` (1100 px).

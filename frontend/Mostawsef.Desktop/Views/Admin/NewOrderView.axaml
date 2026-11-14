@@ -144,7 +144,7 @@
                             </Border>
 
                             <StackPanel Spacing="{StaticResource GapControls}" IsVisible="{Binding !HasSelectedPatient}">
-                                <ui:FormField Error="{l:FieldError PatientId}">
+                                <ui:FormField Error="{l:FieldError {Binding Errors[PatientId]}}">
                                     <AutoCompleteBox Name="PatientSearchBox"
                                                      SelectedItem="{Binding PatientPick}"
                                                      Text="{Binding PatientSearch}"
@@ -172,7 +172,7 @@
                             </StackPanel>
                         </StackPanel>
 
-                        <ContentControl Name="NewPatientForm" Content="{Binding NewPatientFormContent}" />
+                        <ContentControl Name="NewPatientForm" Content="{Binding NewPatientFormContent}" IsVisible="{Binding IsNewPatient}" />
                     </StackPanel>
                 </ScrollViewer>
             </ui:Card>
@@ -189,7 +189,7 @@
                                    Margin="{StaticResource PaddingCardCompact}"
                                    Classes="caption danger"
                                    TextWrapping="Wrap"
-                                   Text="{l:FieldError Items}"
+                                   Text="{l:FieldError {Binding Errors[Items]}}"
                                    IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                         <Panel>
                             <ItemsControl Name="SelectedTestsList"
@@ -203,7 +203,7 @@
                                                 <StackPanel Spacing="{StaticResource SpaceHalf}">
                                                     <TextBlock Classes="caption muted" Text="{Binding Test.Code}" />
                                                     <TextBlock Classes="strong" TextWrapping="Wrap" Text="{Binding Test.Name}" />
-                                                    <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError LabTestId}"
+                                                    <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError {Binding Errors[LabTestId]}}"
                                                                IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                                                 </StackPanel>
                                                 <TextBlock Grid.Column="1" Classes="strong" VerticalAlignment="Center"
@@ -302,7 +302,7 @@
                                                FormatString="0.00"
                                                PlaceholderText="{l:Tr LabTests.Field.AmountPlaceholder}"
                                                ToolTip.Tip="{l:Tr NewOrder.AddonHint}" />
-                                <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError Addon}"
+                                <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError {Binding Errors[Addon]}}"
                                            IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                             </StackPanel>
                         </ui:ResponsiveGrid>
@@ -311,7 +311,7 @@
                         <TextBlock Classes="caption muted" TextWrapping="Wrap" Text="{l:Tr NewOrder.FirstPaymentHint}" />
                         <ui:ResponsiveGrid MinColumnWidth="160" MaxColumns="2"
                                            ColumnSpacing="{StaticResource GapGrid}" RowSpacing="{StaticResource GapGrid}">
-                            <ui:FormField Label="{l:Tr NewOrder.PaymentAmount}" Error="{l:FieldError PaymentAmount}">
+                            <ui:FormField Label="{l:Tr NewOrder.PaymentAmount}" Error="{l:FieldError {Binding Errors[PaymentAmount]}}">
                                 <NumericUpDown Name="PaymentAmountBox"
                                                Value="{Binding PaymentAmount}"
                                                Minimum="0"
@@ -321,7 +321,7 @@
                                                PlaceholderText="{l:Tr LabTests.Field.AmountPlaceholder}"
                                                HorizontalAlignment="Stretch" />
                             </ui:FormField>
-                            <ui:FormField Label="{l:Tr NewOrder.PaymentMethod}" Error="{l:FieldError PaymentMethod}">
+                            <ui:FormField Label="{l:Tr NewOrder.PaymentMethod}" Error="{l:FieldError {Binding Errors[PaymentMethod]}}">
                                 <ComboBox Name="PaymentMethodBox"
                                           ItemsSource="{Binding PaymentMethodOptions}"
                                           SelectedItem="{Binding PaymentMethod}"
@@ -333,7 +333,7 @@
                                     </ComboBox.ItemTemplate>
                                 </ComboBox>
                             </ui:FormField>
-                            <ui:FormField ui:ResponsiveGrid.ColumnSpan="0" Label="{l:Tr NewOrder.PaymentNotes}" Error="{l:FieldError PaymentNotes}">
+                            <ui:FormField ui:ResponsiveGrid.ColumnSpan="0" Label="{l:Tr NewOrder.PaymentNotes}" Error="{l:FieldError {Binding Errors[PaymentNotes]}}">
                                 <TextBox Name="PaymentNotesBox"
                                          Text="{Binding PaymentNotes}"
                                          MaxLength="{x:Static orders:OrderRules.PaymentNotesMaxLength}"
@@ -354,7 +354,7 @@
                                             <StackPanel Spacing="{StaticResource SpaceHalf}">
                                                 <TextBlock Classes="caption muted" Text="{Binding Test.Code}" />
                                                 <TextBlock Classes="strong" TextWrapping="Wrap" Text="{Binding Test.Name}" />
-                                                <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError LabTestId}"
+                                                <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError {Binding Errors[LabTestId]}}"
                                                            IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                                             </StackPanel>
                                             <TextBlock Grid.Column="1" Classes="strong" VerticalAlignment="Center"

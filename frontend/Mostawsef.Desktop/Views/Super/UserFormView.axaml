@@ -8,14 +8,14 @@
     <StackPanel Spacing="{StaticResource GapGrid}">
         <ui:Alert Kind="Danger" Text="{l:TrKey {Binding FormErrorKey}}" />
 
-        <ui:FormField Label="{l:Tr Users.Col.FullName}" IsRequired="True" Error="{l:FieldError FullName}">
+        <ui:FormField Label="{l:Tr Users.Col.FullName}" IsRequired="True" Error="{l:FieldError {Binding Errors[FullName]}}">
             <TextBox Name="FullNameBox" Text="{Binding FullName}" />
         </ui:FormField>
 
         <ui:FormField Label="{l:Tr Users.Col.Username}"
                       IsRequired="True"
                       Hint="{l:Tr Users.Field.UsernameHint}"
-                      Error="{l:FieldError Username}"
+                      Error="{l:FieldError {Binding Errors[Username]}}"
                       IsVisible="{Binding IsNew}">
             <TextBox Name="UsernameBox" Text="{Binding Username}" />
         </ui:FormField>
@@ -23,11 +23,11 @@
             <TextBlock Classes="muted" Text="{Binding Username}" />
         </ui:FormField>
 
-        <ui:FormField Label="{l:Tr Users.Field.Password}" IsRequired="True" Error="{l:FieldError Password}" IsVisible="{Binding IsNew}">
+        <ui:FormField Label="{l:Tr Users.Field.Password}" IsRequired="True" Error="{l:FieldError {Binding Errors[Password]}}" IsVisible="{Binding IsNew}">
             <ui:PasswordField Name="PasswordBox" Text="{Binding Password}" />
         </ui:FormField>
 
-        <ui:FormField Label="{l:Tr Users.Col.Role}" IsRequired="True" Error="{l:FieldError Role}">
+        <ui:FormField Label="{l:Tr Users.Col.Role}" IsRequired="True" Error="{l:FieldError {Binding Errors[Role]}}">
             <ComboBox Name="RoleBox" ItemsSource="{Binding RoleOptions}" SelectedItem="{Binding Role}" HorizontalAlignment="Stretch">
                 <ComboBox.ItemTemplate>
                     <DataTemplate x:DataType="x:String">

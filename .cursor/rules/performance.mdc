@@ -35,6 +35,13 @@ Follow these on every change. Prefer existing patterns (`ListPageItems.ReplaceAl
 - Do not add/remove/`PropertyChanged` per item in a tight loop. Batch: `ListPageItems.ReplaceAll` / `PrependNewest`, or
   build then assign once. High-frequency updates need throttling.
 - Menu pages: reuse view models for the portal visit (`PageHost` caches the view); do not recreate on every navigation.
+  After sign-in, `PortalShellView` pre-builds the other menu pages' views in idle time (`PageHost.Prebuild`, no data load).
+- Form dialogs: `DialogService.ShowFormAsync` reuses one idle view per form type (new DataContext each time). Form views
+  must therefore not keep state outside bindings (no code-behind fields filled on load).
+- New main views go into `ViewWarmUp.ViewModelTypes()` (built once, invisibly, while the login screen is idle: JIT +
+  first-time XAML work) and must build without a DataContext. `ViewWarmUpTests` checks that.
+- Do not toggle a sub-form by swapping its Content to null and back (it rebuilds the view each time): build it on first
+  use, then bind `IsVisible` (see New Order's new-patient form).
   Services are singletons; page VMs are Transient from DI but held by the shell. Sub-pages stay transient unless an
   existing reuse pattern (New order / Order details) applies. Do not invent a second lifetime scheme.
 

@@ -207,28 +207,42 @@ public partial class PortalShellViewModel : ViewModelBase
 
     private void ShowMenuPage(int index)
     {
-        var pageType = MenuItems[index].PageType;
-        if (!_navigation.CanAccess(pageType))
+        if (GetOrCreateMenuPage(index) is not { } page)
         {
             _session.SignOut(SignOutReason.Expired);
             return;
         }
 
-        if (!_menuPages.TryGetValue(index, out var page))
-        {
-            page = _navigation.CreatePage(pageType);
-            if (page is null)
-            {
-                _session.SignOut(SignOutReason.Expired);
-                return;
-            }
-
-            _menuPages[index] = page;
-        }
-
         _menuPage = page;
         DiscardSubPage();
         Show(page);
+    }
+
+    /// <summary>
+    /// The view model of a menu entry, created on first use and kept for the portal visit. It is not shown or
+    /// activated here (no data loads), so the shell view can build its view ahead of time. Null when the user may not
+    /// open that page.
+    /// </summary>
+    public ViewModelBase? GetOrCreateMenuPage(int index)
+    {
+        if (index < 0 || index >= MenuItems.Count)
+        {
+            return null;
+        }
+
+        if (_menuPages.TryGetValue(index, out var page))
+        {
+            return page;
+        }
+
+        var pageType = MenuItems[index].PageType;
+        if (!_navigation.CanAccess(pageType) || _navigation.CreatePage(pageType) is not { } created)
+        {
+            return null;
+        }
+
+        _menuPages[index] = created;
+        return created;
     }
 
     private void RestoreMenuPage()

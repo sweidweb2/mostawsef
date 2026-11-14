@@ -52,7 +52,7 @@ Usage namespace: `xmlns:ui="using:Mostawsef.Desktop.Components"`.
 | RadioGroup | Built-in | `RadioButton` with shared `GroupName` |
 | ToggleSwitch | Built-in | `ToggleSwitch` |
 | FileUpload / ImagePicker | Deferred | Removed while unused |
-| FormField (label + input + validation message) | Built | `ui:FormField` (`Label`, `Hint`, `Error`, `IsRequired`); in a `FormViewModel` form: `Error="{l:FieldError FullName}"` |
+| FormField (label + input + validation message) | Built | `ui:FormField` (`Label`, `Hint`, `Error`, `IsRequired`); in a `FormViewModel` form: `Error="{l:FieldError {Binding Errors[FullName]}}"` |
 | FormSection | Deferred | Use `ui:ResponsiveGrid MaxColumns="2"` of `ui:FormField`s inside a `ui:Section` |
 | ValidationSummary | Deferred | Removed while unused; per-field errors via `ui:FormField Error` |
 

@@ -24,7 +24,6 @@ public static class ActivityActions
     public const string SignedOut = "auth.signed_out";
     public const string PasswordChanged = "auth.password_changed";
 
-    public const string ActivityLogDeleted = "logs.activity_deleted";
     public const string SystemErrorDeleted = "logs.error_deleted";
     public const string LogsPurged = "logs.purged";
 

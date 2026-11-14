@@ -33,6 +33,7 @@ public partial class App : Application
             Services = new ServiceCollection().AddMostawsefDesktop().BuildServiceProvider();
             PageHost.Perf = Services.GetRequiredService<PerformanceMonitor>();
             PageHost.Localization = Services.GetRequiredService<LocalizationService>();
+            Views.Shell.PortalShellView.PrebuildMenuPages = true;
             Services.GetRequiredService<ErrorReporter>().Install();
             Services.GetRequiredService<SettingsService>().ReportLoadFaultIfAny();
             Services.GetRequiredService<ThemeService>().Initialize();

@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Templates;
 using Avalonia.Layout;
 using Mostawsef.Desktop.Components;
 using Mostawsef.Desktop.Services.Auth;
@@ -32,12 +35,19 @@ public class DialogService : IDialogService
 {
     private DialogHost? _host;
 
+    /// <summary>
+    /// One idle view per form type: building a form view costs 50-140 ms, re-pointing an existing one at a new
+    /// view model only a few. A view is taken out while its dialog is open, so two open forms never share one.
+    /// </summary>
+    private readonly Dictionary<Type, Control> _idleFormViews = [];
+
     public DialogService(SessionService session) =>
         session.Changed += (_, _) =>
         {
             if (!session.IsAuthenticated)
             {
                 CloseAll();
+                _idleFormViews.Clear();
             }
         };
 
@@ -80,10 +90,15 @@ public class DialogService : IDialogService
 
     public async Task<bool> ShowFormAsync(FormViewModel form, string title, double maxWidth = 520)
     {
+        var formType = form.GetType();
+        var view = _idleFormViews.Remove(formType, out var idle) ? idle : AppRoutes.Table.CreateView(formType);
+
         var modal = new Modal
         {
             Title = title,
             Content = form,
+            // Content stays the view model; the template hands over the (possibly reused) view instead of building one.
+            ContentTemplate = view is null ? null : new FuncDataTemplate<FormViewModel>((_, _) => view, supportsRecycling: false),
             MaxWidth = maxWidth,
             // Block X/Esc/outside-click while Save is in flight (Cancel button is already CanExecute-gated).
             ConfirmDismiss = async () => !form.IsBusy && await form.ConfirmDiscardAsync(),
@@ -111,6 +126,16 @@ public class DialogService : IDialogService
         {
             form.Closed -= OnClosed;
             form.CancelLifetime();
+            if (view is not null)
+            {
+                // Detach from the closed modal (the view then inherits no DataContext, so it lets go of the old view
+                // model) and keep it for the next form of this type. Never set DataContext = null here: a local value
+                // would block inheriting the next form's view model.
+                modal.Content = null;
+                modal.ContentTemplate = null;
+                view.ClearValue(StyledElement.DataContextProperty);
+                _idleFormViews[formType] = view;
+            }
         }
     }
 

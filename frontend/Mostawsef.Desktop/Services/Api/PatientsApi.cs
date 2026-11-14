@@ -26,9 +26,6 @@ public class PatientsApi(ApiClient api)
     public Task<ApiResult<IReadOnlyList<PatientDto>>> GetAllPatientsAsync(CancellationToken cancellationToken = default) =>
         api.GetAsync<IReadOnlyList<PatientDto>>("api/patients/all", cancellationToken);
 
-    public Task<ApiResult<PatientDto>> GetPatientAsync(Guid id, CancellationToken cancellationToken = default) =>
-        api.GetAsync<PatientDto>($"api/patients/{id}", cancellationToken);
-
     public Task<ApiResult<PatientDto>> CreatePatientAsync(CreatePatientRequest request, CancellationToken cancellationToken = default) =>
         api.PostAsync<CreatePatientRequest, PatientDto>("api/patients", request, cancellationToken);
 

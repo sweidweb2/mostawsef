@@ -92,7 +92,18 @@ public class NewOrderPageTests : UiTestBase
 
         Assert.Same(page.PatientForm, page.NewPatientFormContent);
         Assert.Same(page.PatientForm, Named<ContentControl>(window, "NewPatientForm").Content);
-        Assert.Contains(window.GetVisualDescendants().OfType<Control>(), c => c.Name == "FullNameBox");
+        var fullName = window.GetVisualDescendants().OfType<Control>().Single(c => c.Name == "FullNameBox");
+
+        // Switching back only hides the form; switching again shows the same view instead of rebuilding it.
+        page.ChooseExistingPatientCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(Named<ContentControl>(window, "NewPatientForm").IsVisible);
+        Assert.False(fullName.IsEffectivelyVisible);
+
+        page.ChooseNewPatientCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(fullName.IsEffectivelyVisible);
+        Assert.Same(fullName, window.GetVisualDescendants().OfType<Control>().Single(c => c.Name == "FullNameBox"));
     }
 
     [AvaloniaFact]

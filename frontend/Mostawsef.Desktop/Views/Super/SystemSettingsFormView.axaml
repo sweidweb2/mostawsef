@@ -8,7 +8,7 @@
     <StackPanel Spacing="{StaticResource GapGrid}">
         <ui:Alert Kind="Danger" Text="{l:TrKey {Binding FormErrorKey}}" />
 
-        <ui:FormField Label="{l:Tr SystemSettings.Field.BackupPath}" Error="{l:FieldError BackupPath}">
+        <ui:FormField Label="{l:Tr SystemSettings.Field.BackupPath}" Error="{l:FieldError {Binding Errors[BackupPath]}}">
             <TextBox Name="BackupPathBox" Text="{Binding BackupPath}" PlaceholderText="{l:Tr SystemSettings.BackupPathPlaceholder}" />
         </ui:FormField>
 

@@ -8,19 +8,19 @@
     <StackPanel Spacing="{StaticResource GapGrid}">
         <ui:Alert Kind="Danger" Text="{l:TrKey {Binding FormErrorKey}}" />
 
-        <ui:FormField Label="{l:Tr Settings.Field.Name}" IsRequired="True" Error="{l:FieldError Name}">
+        <ui:FormField Label="{l:Tr Settings.Field.Name}" IsRequired="True" Error="{l:FieldError {Binding Errors[Name]}}">
             <TextBox Name="NameBox" Text="{Binding Name}" PlaceholderText="{l:Tr Settings.NamePlaceholder}" />
         </ui:FormField>
 
-        <ui:FormField Label="{l:Tr Settings.Field.Address}" Error="{l:FieldError Address}">
+        <ui:FormField Label="{l:Tr Settings.Field.Address}" Error="{l:FieldError {Binding Errors[Address]}}">
             <TextBox Name="AddressBox" Text="{Binding Address}" PlaceholderText="{l:Tr Settings.AddressPlaceholder}" />
         </ui:FormField>
 
-        <ui:FormField Label="{l:Tr Settings.Field.Phone}" Error="{l:FieldError Phone}">
+        <ui:FormField Label="{l:Tr Settings.Field.Phone}" Error="{l:FieldError {Binding Errors[Phone]}}">
             <TextBox Name="PhoneBox" Text="{Binding Phone}" PlaceholderText="{l:Tr Settings.PhonePlaceholder}" />
         </ui:FormField>
 
-        <ui:FormField Label="{l:Tr Settings.Field.Currency}" IsRequired="True" Error="{l:FieldError CurrencyCode}">
+        <ui:FormField Label="{l:Tr Settings.Field.Currency}" IsRequired="True" Error="{l:FieldError {Binding Errors[CurrencyCode]}}">
             <ComboBox Name="CurrencyBox" ItemsSource="{Binding CurrencyOptions}" SelectedItem="{Binding CurrencyCode}" HorizontalAlignment="Stretch">
                 <ComboBox.ItemTemplate>
                     <DataTemplate x:DataType="x:String">
