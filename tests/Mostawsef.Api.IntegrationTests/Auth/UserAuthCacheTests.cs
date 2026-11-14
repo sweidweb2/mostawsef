@@ -27,19 +27,23 @@ public class UserAuthCacheTests
     }
 
     [Fact]
-    public void Entry_overflow_clears_generations_with_entries()
+    public void Entry_overflow_evicts_older_entries_but_keeps_the_newest_and_all_generations()
     {
         var cache = new UserAuthCache();
+        var kept = Guid.NewGuid();
+        cache.Invalidate(kept);
+        Assert.True(cache.TrySet(kept, 1, Active));
+
         Guid last = default;
         for (var i = 0; i < UserAuthCache.MaxEntries + 1; i++)
         {
             last = Guid.NewGuid();
-            cache.Invalidate(last);
-            Assert.True(cache.TrySet(last, 1, Active));
+            Assert.True(cache.TrySet(last, 0, Active));
         }
 
         Assert.True(cache.TryGet(last, out _));
-        Assert.Equal(1, cache.Generation(last));
+        Assert.Equal(1, cache.Generation(kept)); // never forgotten: a stale read cannot be stored after Invalidate
+        Assert.False(cache.TrySet(kept, 0, Active));
         Assert.False(cache.TryGet(Guid.NewGuid(), out _));
     }
 }

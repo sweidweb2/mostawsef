@@ -5,7 +5,7 @@ namespace Mostawsef.Infrastructure.Services.Auth;
 
 public sealed class UserAuthCache : IUserAuthCache
 {
-    /// <summary>Soft cap for a local clinic install; clears rather than growing forever if ids churn.</summary>
+    /// <summary>Soft cap for a local clinic install; evicts the older half rather than growing forever if ids churn.</summary>
     public const int MaxEntries = 256;
 
     private readonly ConcurrentDictionary<Guid, UserAuthStatus> _entries = new();
@@ -28,14 +28,13 @@ public sealed class UserAuthCache : IUserAuthCache
             _entries[userId] = status;
             if (_entries.Count > MaxEntries)
             {
-                _entries.Clear();
-                _generations.Clear();
-                if (generation != 0)
+                // Drop the older half instead of everything, so a burst of ids does not empty the whole cache.
+                // Generations stay: they only grow when a user is changed, and keeping them means a read that
+                // started before an Invalidate can never be stored after it.
+                foreach (var key in _entries.Keys.Where(k => k != userId).Take(MaxEntries / 2).ToList())
                 {
-                    _generations[userId] = generation;
+                    _entries.TryRemove(key, out _);
                 }
-
-                _entries[userId] = status;
             }
 
             return true;

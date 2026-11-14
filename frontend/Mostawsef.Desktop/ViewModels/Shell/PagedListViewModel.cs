@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Desktop.Services.Api;
@@ -13,22 +11,13 @@ using Mostawsef.Desktop.Services.Ui;
 namespace Mostawsef.Desktop.ViewModels.Shell;
 
 /// <summary>
-/// Base for list pages backed by a paged API endpoint: items, paging, search, loading/empty/error state.
-/// Subclasses implement FetchPageAsync (and optionally LoadExtrasAsync, e.g. stat cards). Paging is keyset based:
-/// the total is counted only when the filter changes or on Refresh, and the extras only on the first load and Refresh.
-/// The portal shell activates the page when it is shown (first load) and deactivates it when the user leaves,
-/// which cancels its API calls. Rows live in one <see cref="ListPageItems{T}"/> instance so the DataGrid is not
-/// torn down on every reload.
+/// List pages backed by a keyset-paged API endpoint (append-only, newest-first logs). The shared state and
+/// lifecycle live in <see cref="ListPageViewModelBase{TItem}"/>. Subclasses implement FetchPageAsync (and optionally
+/// LoadExtrasAsync, e.g. stat cards). The total is counted only when the filter changes or on Refresh, and the
+/// extras only on the first load and Refresh. Row numbers count from the newest (21 on page 2 of 20 per page).
 /// </summary>
-public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadablePage
+public abstract partial class PagedListViewModel<TItem> : ListPageViewModelBase<TItem>
 {
-    public const int DefaultPageSize = 20;
-
-    private bool _suppressPageReload;
-    private bool _loaded;
-    private readonly PageLifetime _pageLifetime = new();
-    private CancellationTokenSource? _loadCancellation;
-
     // The page on screen: how it was requested, its number and the cursors to its neighbours.
     private CursorQuery? _shownQuery;
     private int _shownPage = 1;
@@ -36,82 +25,11 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
     private string? _previousCursor;
 
     protected PagedListViewModel(IToastService toasts, LocalizationService localization, ErrorReporter errors)
+        : base(toasts, localization, errors)
     {
-        Toasts = toasts;
-        Localization = localization;
-        Errors = errors;
     }
 
-    protected IToastService Toasts { get; }
-
-    protected LocalizationService Localization { get; }
-
-    protected ErrorReporter Errors { get; }
-
-    /// <summary>Bound once for the page lifetime; reloads replace contents in place.</summary>
-    public ListPageItems<TItem> Items { get; } = new();
-
-    [ObservableProperty]
-    public partial int CurrentPage { get; set; } = 1;
-
-    [ObservableProperty]
-    public partial int PageCount { get; private set; } = 1;
-
-    [ObservableProperty]
-    public partial int TotalCount { get; private set; }
-
-    /// <summary>Number of the first shown row, counted from the newest (21 on page 2 of 20 per page). Bind it to DataTable.FirstRowNumber.</summary>
-    [ObservableProperty]
-    public partial int FirstRowNumber { get; private set; } = 1;
-
-    [ObservableProperty]
-    public partial string? Search { get; set; }
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsEmpty))]
-    public partial bool IsLoading { get; private set; }
-
-    /// <summary>Why the last load failed; null after a successful load.</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasLoadError), nameof(LoadErrorTitleKey), nameof(LoadErrorDescriptionKey), nameof(IsEmpty))]
-    public partial ApiError? LoadError { get; private set; }
-
-    public bool HasLoadError => LoadError is not null;
-
-    public string? LoadErrorTitleKey => LoadError switch
-    {
-        null => null,
-        ApiError.Unreachable => "Error.UnreachableTitle",
-        _ => "Error.Title",
-    };
-
-    public string? LoadErrorDescriptionKey => LoadError switch
-    {
-        null => null,
-        ApiError.Unreachable => "Error.UnreachableDescription",
-        _ => "Error.Description",
-    };
-
-    public bool IsEmpty => !IsLoading && !HasLoadError && Items.Count == 0;
-
-    public int PageSize { get; init; } = DefaultPageSize;
-
-    public Task ActivateAsync()
-    {
-        _pageLifetime.EnsureActive();
-        return _loaded ? Task.CompletedTask : ReloadAsync();
-    }
-
-    public void Deactivate()
-    {
-        if (_loadCancellation is not null)
-        {
-            _loaded = false;
-        }
-
-        _pageLifetime.Cancel();
-        IsLoading = false;
-    }
+    protected override Task LoadOnActivateAsync() => ReloadAsync();
 
     [RelayCommand]
     private Task RefreshAsync() => ReloadAsync();
@@ -136,23 +54,18 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
     /// Pagination moves one page at a time (or to the first/last page), so each move is one keyset request from the
     /// shown page's cursors. Moves skip the total and the extras: neither depends on which page is shown.
     /// </summary>
-    partial void OnCurrentPageChanged(int value)
+    protected override void OnPageSelected(int page)
     {
-        if (_suppressPageReload)
-        {
-            return;
-        }
-
         var search = _shownQuery?.Search;
-        var (query, page) =
-            value <= 1 ? (FirstPage(search), 1)
-            : value >= PageCount && value > _shownPage + 1 ? (LastPage(search), PageCount)
-            : value > _shownPage && _nextCursor is not null ? (FirstPage(search) with { After = _nextCursor }, _shownPage + 1)
-            : value < _shownPage && _previousCursor is not null ? (FirstPage(search) with { Before = _previousCursor }, _shownPage - 1)
-            : value > _shownPage ? (LastPage(search), PageCount)
+        var (query, target) =
+            page <= 1 ? (FirstPage(search), 1)
+            : page >= PageCount && page > _shownPage + 1 ? (LastPage(search), PageCount)
+            : page > _shownPage && _nextCursor is not null ? (FirstPage(search) with { After = _nextCursor }, _shownPage + 1)
+            : page < _shownPage && _previousCursor is not null ? (FirstPage(search) with { Before = _previousCursor }, _shownPage - 1)
+            : page > _shownPage ? (LastPage(search), PageCount)
             : (FirstPage(search), 1);
 
-        _ = LoadAsync(query with { IncludeTotal = false }, page, withExtras: false);
+        _ = LoadAsync(query with { IncludeTotal = false }, target, withExtras: false);
     }
 
     protected abstract Task<ApiResult<CursorPage<TItem>>> FetchPageAsync(CursorQuery query, CancellationToken cancellationToken);
@@ -185,19 +98,13 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
     private int PageCountFor(int total) => Math.Max(1, (int)Math.Ceiling(total / (double)PageSize));
 
     /// <summary>
-    /// Starting a load cancels the one still running, so only the newest page and search are shown.
-    /// Leaving the page cancels it too; the next activation loads again.
     /// When extras cover the unfiltered total and there is no search, stats and the page load in parallel
     /// so the list skips COUNT without waiting for stats first.
     /// </summary>
     private async Task LoadAsync(CursorQuery query, int page, bool withExtras)
     {
-        _loadCancellation?.Cancel();
-        var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_pageLifetime.Token);
-        _loadCancellation = cancellation;
+        var cancellation = BeginLoad();
         var cancellationToken = cancellation.Token;
-
-        IsLoading = true;
         var useExtrasTotal = withExtras && string.IsNullOrWhiteSpace(query.Search);
         Task? extras = withExtras ? LoadExtrasAsync(cancellationToken) : null;
         try
@@ -241,13 +148,10 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
             }
             else
             {
-                Items.ReplaceAll([]);
-                TotalCount = 0;
-                LoadError = result.Error;
-                OnPropertyChanged(nameof(IsEmpty));
+                ShowLoadFailure(result.Error);
             }
 
-            _loaded = true;
+            MarkLoaded();
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -255,11 +159,7 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
         }
         catch (Exception ex)
         {
-            Errors.Report(ex, context: $"Loading {GetType().Name}");
-            Items.ReplaceAll([]);
-            TotalCount = 0;
-            LoadError = ApiError.Server;
-            OnPropertyChanged(nameof(IsEmpty));
+            ShowLoadFailure(ex);
         }
         finally
         {
@@ -279,13 +179,7 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
                 }
             }
 
-            if (_loadCancellation == cancellation)
-            {
-                _loadCancellation = null;
-                IsLoading = false;
-            }
-
-            cancellation.Dispose();
+            EndLoad(cancellation);
         }
     }
 
@@ -304,31 +198,6 @@ public abstract partial class PagedListViewModel<TItem> : ViewModelBase, ILoadab
         // The cursors know where the ends are; the total can be older than the rows, since logs keep arriving.
         _shownPage = result.PreviousCursor is null ? 1 : page;
         var pageCount = result.NextCursor is null ? _shownPage : Math.Max(PageCountFor(TotalCount), _shownPage + 1);
-
-        // PageCount first: Pagination clamps CurrentPage to it and writes the clamped value back.
-        _suppressPageReload = true;
-        PageCount = pageCount;
-        CurrentPage = _shownPage;
-        _suppressPageReload = false;
-        FirstRowNumber = (_shownPage - 1) * PageSize + 1;
-        OnPropertyChanged(nameof(IsEmpty));
+        ShowPaging(pageCount, _shownPage);
     }
-
-    /// <summary>An API read tied to the page (e.g. details for a modal): null when the user left the page before it finished.</summary>
-    protected async Task<ApiResult<T>?> ReadAsync<T>(Func<CancellationToken, Task<ApiResult<T>>> read)
-    {
-        var cancellationToken = _pageLifetime.Token;
-        try
-        {
-            var result = await read(cancellationToken);
-            return cancellationToken.IsCancellationRequested ? null : result;
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            return null;
-        }
-    }
-
-    protected void ShowError(ApiError error) =>
-        Toasts.Error(Localization.Get(error == ApiError.Unreachable ? "Login.ServerUnreachable" : "Error.RequestFailed"));
 }

@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Desktop.Services.Api;
@@ -13,108 +11,21 @@ using Mostawsef.Desktop.Services.Ui;
 namespace Mostawsef.Desktop.ViewModels.Shell;
 
 /// <summary>
-/// Base for list pages paged by page number (PageQuery / PagedResult): records sorted by name or another field, e.g. users.
-/// Same bindings as <see cref="PagedListViewModel{TItem}"/>, which is for append-only, newest-first logs (cursor paging).
-/// The portal shell activates the page when it is shown (first load) and deactivates it when the user leaves,
-/// which cancels its API calls. Page flips skip the filtered total; search and refresh ask for it again.
-/// Rows live in one <see cref="ListPageItems{T}"/> instance so the DataGrid is not torn down on every reload.
+/// List pages paged by page number (PageQuery / PagedResult): records sorted by name or another field, e.g. users.
+/// Same bindings as <see cref="PagedListViewModel{TItem}"/>, which is for append-only, newest-first logs (cursor paging);
+/// the shared state and lifecycle live in <see cref="ListPageViewModelBase{TItem}"/>.
+/// Page flips skip the filtered total; search and refresh ask for it again.
 /// </summary>
-public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoadablePage
+public abstract partial class NumberedListViewModel<TItem> : ListPageViewModelBase<TItem>
 {
-    public const int DefaultPageSize = 20;
-
-    private bool _suppressPageReload;
-    private bool _loaded;
-    private readonly PageLifetime _pageLifetime = new();
-    private CancellationTokenSource? _loadCancellation;
-
     protected NumberedListViewModel(IToastService toasts, LocalizationService localization, ErrorReporter errors)
+        : base(toasts, localization, errors)
     {
-        Toasts = toasts;
-        Localization = localization;
-        Errors = errors;
     }
 
-    protected IToastService Toasts { get; }
+    protected override Task LoadOnActivateAsync() => ReloadAsync();
 
-    protected LocalizationService Localization { get; }
-
-    protected ErrorReporter Errors { get; }
-
-    /// <summary>Bound once for the page lifetime; reloads replace contents in place.</summary>
-    public ListPageItems<TItem> Items { get; } = new();
-
-    [ObservableProperty]
-    public partial int CurrentPage { get; set; } = 1;
-
-    [ObservableProperty]
-    public partial int PageCount { get; private set; } = 1;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(DisplayTotal))]
-    public partial int TotalCount { get; private set; }
-
-    /// <summary>
-    /// The total for "{0} records" texts: the number, or "10,000+" when the API stopped counting
-    /// (<see cref="PageQuery.MaxCountedTotal"/>). Formatted with the UI language when shown.
-    /// </summary>
-    public object DisplayTotal => PageQuery.IsTotalCapped(TotalCount) ? new AtLeastCount(TotalCount) : TotalCount;
-
-    /// <summary>Number of the first shown row across all pages (41 on page 3 of 20 per page). Bind it to DataTable.FirstRowNumber.</summary>
-    [ObservableProperty]
-    public partial int FirstRowNumber { get; private set; } = 1;
-
-    [ObservableProperty]
-    public partial string? Search { get; set; }
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsEmpty))]
-    public partial bool IsLoading { get; private set; }
-
-    /// <summary>Why the last load failed; null after a successful load.</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasLoadError), nameof(LoadErrorTitleKey), nameof(LoadErrorDescriptionKey), nameof(IsEmpty))]
-    public partial ApiError? LoadError { get; private set; }
-
-    public bool HasLoadError => LoadError is not null;
-
-    public string? LoadErrorTitleKey => LoadError switch
-    {
-        null => null,
-        ApiError.Unreachable => "Error.UnreachableTitle",
-        _ => "Error.Title",
-    };
-
-    public string? LoadErrorDescriptionKey => LoadError switch
-    {
-        null => null,
-        ApiError.Unreachable => "Error.UnreachableDescription",
-        _ => "Error.Description",
-    };
-
-    public bool IsEmpty => !IsLoading && !HasLoadError && Items.Count == 0;
-
-    public int PageSize { get; init; } = DefaultPageSize;
-
-    public Task ActivateAsync()
-    {
-        _pageLifetime.EnsureActive();
-        return _loaded ? Task.CompletedTask : ReloadAsync();
-    }
-
-    public void Deactivate()
-    {
-        if (_loadCancellation is not null)
-        {
-            _loaded = false;
-        }
-
-        _pageLifetime.Cancel();
-        IsLoading = false;
-    }
-
-    /// <summary>The next activation loads the page again, e.g. when the user comes back from a sub-page that added a record.</summary>
-    public void MarkStale() => _loaded = false;
+    protected override void OnPageSelected(int page) => _ = LoadAsync(page, includeTotal: false);
 
     /// <summary>
     /// Puts a newly created row on page 1 without a server reload. Marks the page stale when a search is active
@@ -122,7 +33,7 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
     /// </summary>
     protected void PrependNewest(TItem item)
     {
-        if (!_loaded || CurrentPage != 1 || !string.IsNullOrWhiteSpace(Search))
+        if (!IsLoaded || CurrentPage != 1 || !string.IsNullOrWhiteSpace(Search))
         {
             MarkStale();
             return;
@@ -141,7 +52,7 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
     /// </summary>
     protected void InsertSorted(TItem item, Comparison<TItem> compare)
     {
-        if (!_loaded || CurrentPage != 1 || !string.IsNullOrWhiteSpace(Search))
+        if (!IsLoaded || CurrentPage != 1 || !string.IsNullOrWhiteSpace(Search))
         {
             MarkStale();
             return;
@@ -198,14 +109,6 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
         return LoadAsync(page: 1, includeTotal: true);
     }
 
-    partial void OnCurrentPageChanged(int value)
-    {
-        if (!_suppressPageReload)
-        {
-            _ = LoadAsync(value, includeTotal: false);
-        }
-    }
-
     protected abstract Task<ApiResult<PagedResult<TItem>>> FetchPageAsync(
         int page, int pageSize, string? search, bool includeTotal, CancellationToken cancellationToken);
 
@@ -215,15 +118,10 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
     /// </summary>
     protected Task ReloadAsync(bool includeTotal = true) => LoadAsync(CurrentPage, includeTotal);
 
-    /// <summary>Starting a load cancels the one still running, so only the newest page and search are shown.</summary>
     private async Task LoadAsync(int page, bool includeTotal)
     {
-        _loadCancellation?.Cancel();
-        var cancellation = CancellationTokenSource.CreateLinkedTokenSource(_pageLifetime.Token);
-        _loadCancellation = cancellation;
+        var cancellation = BeginLoad();
         var cancellationToken = cancellation.Token;
-
-        IsLoading = true;
         try
         {
             var result = await FetchPageAsync(Math.Max(1, page), PageSize, Search, includeTotal, cancellationToken);
@@ -262,13 +160,10 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
             }
             else
             {
-                Items.ReplaceAll([]);
-                TotalCount = 0;
-                LoadError = result.Error;
-                OnPropertyChanged(nameof(IsEmpty));
+                ShowLoadFailure(result.Error);
             }
 
-            _loaded = true;
+            MarkLoaded();
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -276,21 +171,11 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
         }
         catch (Exception ex)
         {
-            Errors.Report(ex, context: $"Loading {GetType().Name}");
-            Items.ReplaceAll([]);
-            TotalCount = 0;
-            LoadError = ApiError.Server;
-            OnPropertyChanged(nameof(IsEmpty));
+            ShowLoadFailure(ex);
         }
         finally
         {
-            if (_loadCancellation == cancellation)
-            {
-                _loadCancellation = null;
-                IsLoading = false;
-            }
-
-            cancellation.Dispose();
+            EndLoad(cancellation);
         }
     }
 
@@ -303,48 +188,13 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
             TotalCount = result.TotalCount;
         }
 
-        // PageCount first: Pagination clamps CurrentPage to it and writes the clamped value back.
-        _suppressPageReload = true;
-        PageCount = Math.Max(1, (int)Math.Ceiling(TotalCount / (double)PageSize));
-        CurrentPage = result.Page;
-        _suppressPageReload = false;
-        FirstRowNumber = (result.Page - 1) * PageSize + 1;
-        OnPropertyChanged(nameof(IsEmpty));
-    }
-
-    /// <summary>An API read tied to the page (e.g. details for a modal): null when the user left the page before it finished.</summary>
-    protected async Task<ApiResult<T>?> ReadAsync<T>(Func<CancellationToken, Task<ApiResult<T>>> read)
-    {
-        var cancellationToken = _pageLifetime.Token;
-        try
+        var pageCount = Math.Max(1, (int)Math.Ceiling(TotalCount / (double)PageSize));
+        if (PageQuery.IsTotalCapped(TotalCount) && result.Page >= pageCount && result.Items.Count >= PageSize)
         {
-            var result = await read(cancellationToken);
-            return cancellationToken.IsCancellationRequested ? null : result;
+            // The count stopped at its cap, so there may be more rows after this full page: keep "next" available.
+            pageCount = result.Page + 1;
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            return null;
-        }
+
+        ShowPaging(pageCount, result.Page);
     }
-
-    /// <summary>Toast for a failed action: the API's error code when it has a text, otherwise a generic message.</summary>
-    protected void ShowError(IApiResult result)
-    {
-        var code = result.Problem?.Code;
-        var codeKey = code is null ? null : "ErrorCode." + code;
-        Toasts.Error(Localization.Get(
-            result.Error == ApiError.Unreachable ? "Login.ServerUnreachable"
-            : codeKey is not null && Localization.Get(codeKey) != codeKey ? codeKey
-            : "Error.RequestFailed"));
-    }
-
-}
-
-/// <summary>A count shown as "at least": 10000 formats as "10,000+" (with the culture of the text it is formatted into).</summary>
-public readonly record struct AtLeastCount(int Value) : IFormattable
-{
-    public string ToString(string? format, IFormatProvider? formatProvider) =>
-        Value.ToString("N0", formatProvider) + "+";
-
-    public override string ToString() => ToString(null, System.Globalization.CultureInfo.CurrentCulture);
 }

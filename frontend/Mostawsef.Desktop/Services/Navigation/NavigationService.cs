@@ -66,7 +66,9 @@ public partial class NavigationService : ObservableObject
             return false;
         }
 
-        CurrentPage = ActivatorUtilities.CreateInstance<PortalShellViewModel>(_services, portal);
+        var shell = ActivatorUtilities.CreateInstance<PortalShellViewModel>(_services, portal);
+        CurrentPage = shell;
+        shell.Start();
         return true;
     }
 

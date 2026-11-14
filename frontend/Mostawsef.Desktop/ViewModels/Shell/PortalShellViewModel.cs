@@ -30,6 +30,7 @@ public partial class PortalShellViewModel : ViewModelBase
     private readonly IToastService _toasts;
     private readonly ErrorReporter _errors;
     private readonly PerformanceMonitor _perf;
+    private readonly ClinicContext _clinic;
 
     /// <summary>Set while the menu goes back to its entry because the user kept a sub-page's changes.</summary>
     private bool _restoringMenu;
@@ -64,20 +65,29 @@ public partial class PortalShellViewModel : ViewModelBase
         _toasts = toasts;
         _errors = errors;
         _perf = perf;
+        _clinic = clinic;
         Connection = connection;
 
         PortalTitleKey = portal.TitleKey;
         MenuItems = portal.Pages;
 
-        connection.Start();
+        SelectedMenuIndex = 0;
+    }
+
+    /// <summary>
+    /// Starts the portal's background work: server monitoring and, for Admin, the clinic details and print warm-up.
+    /// Kept out of the constructor so building the view model (tests, tooling) has no I/O side effects;
+    /// <see cref="NavigationService"/> calls it once after creating the portal.
+    /// </summary>
+    public void Start()
+    {
+        Connection.Start();
         // Money/print need clinic details; Super never shows them. Single-flight in ClinicContext.
         if (_session.CurrentUser?.Role == Roles.Admin)
         {
-            _ = clinic.LoadAsync();
+            _ = _clinic.LoadAsync();
             PrintService.WarmUpInBackground();
         }
-
-        SelectedMenuIndex = 0;
     }
 
     /// <summary>Server reachability and version; the view shows its banner above the page.</summary>
