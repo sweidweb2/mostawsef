@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -33,11 +34,17 @@ public partial class App : Application
             Services = new ServiceCollection().AddMostawsefDesktop().BuildServiceProvider();
             PageHost.Perf = Services.GetRequiredService<PerformanceMonitor>();
             PageHost.Localization = Services.GetRequiredService<LocalizationService>();
-            Views.Shell.PortalShellView.PrebuildMenuPages = true;
+            Views.Shell.PortalShellView.PrebuildMenuPages = Services.GetRequiredService<SettingsService>().Current.PreloadViews;
             Services.GetRequiredService<ErrorReporter>().Install();
             Services.GetRequiredService<SettingsService>().ReportLoadFaultIfAny();
             Services.GetRequiredService<ThemeService>().Initialize();
-            desktop.Exit += (_, _) => Services.GetRequiredService<SettingsService>().Flush();
+            var logDirectory = Services.GetRequiredService<ErrorReporter>().LogDirectory;
+            _ = Task.Run(() => LocalFileCleanup.Run(logDirectory));
+            desktop.Exit += (_, _) =>
+            {
+                Services.GetRequiredService<SettingsService>().Flush();
+                LocalFileCleanup.DeletePrints();
+            };
 
             var window = new MainWindow
             {

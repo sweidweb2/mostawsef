@@ -44,4 +44,5 @@ public static class ActivityActions
     public const string PatientDeleted = "patients.deleted";
 
     public const string OrderCreated = "orders.created";
+    public const string OrderPaymentAdded = "orders.payment_added";
 }

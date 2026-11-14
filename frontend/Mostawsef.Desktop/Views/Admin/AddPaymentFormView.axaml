@@ -1,0 +1,44 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Mostawsef.Desktop.Components"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:orders="using:Mostawsef.Contracts.Orders"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Admin"
+             x:Class="Mostawsef.Desktop.Views.Admin.AddPaymentFormView"
+             x:DataType="vm:AddPaymentFormViewModel">
+    <StackPanel Spacing="{StaticResource GapGrid}">
+        <ui:Alert Kind="Danger" Text="{l:TrKey {Binding FormErrorKey}}" />
+
+        <ui:ResponsiveGrid MinColumnWidth="180" MaxColumns="2" ColumnSpacing="{StaticResource GapGrid}" RowSpacing="{StaticResource GapGrid}">
+            <ui:FormField Label="{l:Tr NewOrder.PaymentAmount}" IsRequired="True" Error="{l:FieldError {Binding Errors[Amount]}}">
+                <NumericUpDown Name="AmountBox"
+                               Value="{Binding Amount}"
+                               Minimum="0"
+                               Maximum="{Binding MaxAmount}"
+                               ClipValueToMinMax="True"
+                               FormatString="0.00"
+                               PlaceholderText="{l:Tr LabTests.Field.AmountPlaceholder}"
+                               HorizontalAlignment="Stretch" />
+            </ui:FormField>
+            <ui:FormField Label="{l:Tr NewOrder.PaymentMethod}" Error="{l:FieldError {Binding Errors[Method]}}">
+                <ComboBox Name="MethodBox"
+                          ItemsSource="{Binding MethodOptions}"
+                          SelectedItem="{Binding Method}"
+                          HorizontalAlignment="Stretch">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                            <TextBlock Text="{l:TrKey {Binding}, Prefix=PaymentMethod.}" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+            </ui:FormField>
+        </ui:ResponsiveGrid>
+
+        <ui:FormField Label="{l:Tr NewOrder.PaymentNotes}" Error="{l:FieldError {Binding Errors[Notes]}}">
+            <TextBox Name="NotesBox"
+                     Text="{Binding Notes}"
+                     MaxLength="{x:Static orders:OrderRules.PaymentNotesMaxLength}"
+                     PlaceholderText="{l:Tr NewOrder.PaymentNotesPlaceholder}" />
+        </ui:FormField>
+    </StackPanel>
+</UserControl>

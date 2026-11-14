@@ -112,7 +112,7 @@ These exist only through the Development seed. Production installs must set thei
 
 | Piece | Responsibility |
 | --- | --- |
-| `Services/Api/ApiClient` | HTTP calls, maps errors (`Unreachable`, `Unauthorized`, `TooManyRequests`, ...). Knows nothing about tokens. API address: `ApiBaseUrl` in `%AppData%\Mostawsef\settings.json` (default `http://localhost:5270`). Timeouts (`ServiceRegistration`): 3 s to connect, so a switched-off API PC shows `Unreachable` quickly, and 15 s for a whole request |
+| `Services/Api/ApiClient` | HTTP calls, maps errors (`Unreachable`, `Unauthorized`, `TooManyRequests`, ...). Knows nothing about tokens. API address: `ApiBaseUrl` in `%AppData%\Mostawsef\settings.json` (default `http://localhost:5270`). Plain `http` is fine only when the API runs on the same PC. For an API on another machine use `https` (the API's `https` launch profile listens on `https://localhost:7027`; a real deployment needs a certificate the desktop PCs trust, for example from a reverse proxy). The login screen shows a warning when `ApiBaseUrl` is plain http to another machine (`Services/Local/ApiAddress`). Timeouts (`ServiceRegistration`): 3 s to connect, so a switched-off API PC shows `Unreachable` quickly, and 15 s for a whole request |
 | `Services/Api/AuthApi` | `LoginAsync`, `MeAsync` |
 | `Services/Auth/AuthHeaderHandler` | `HttpClient` pipeline step: adds the session's bearer token to each request; a `401` for that token expires the session (a late `401` for an earlier session is ignored) |
 | `Services/Auth/SessionService` | Current user + token in memory, auto sign-out at token expiry or when `AuthHeaderHandler` reports a rejected token |

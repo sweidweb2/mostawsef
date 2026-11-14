@@ -38,6 +38,9 @@ public static class ErrorCodes
     /// <summary>A payment larger than the order total.</summary>
     public const string ExceedsTotal = "exceeds_total";
 
+    /// <summary>A payment larger than what the order still owes.</summary>
+    public const string ExceedsBalance = "exceeds_balance";
+
     // Users and passwords
     public const string UsernameTaken = "username_taken";
     public const string OwnAccount = "own_account";

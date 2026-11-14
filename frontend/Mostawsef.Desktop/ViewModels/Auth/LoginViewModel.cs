@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Desktop.Services.Api;
 using Mostawsef.Desktop.Services.Auth;
+using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Navigation;
 using Mostawsef.Desktop.ViewModels.Dev;
 
@@ -16,8 +17,9 @@ public partial class LoginViewModel : ViewModelBase
     private readonly SessionService _session;
     private readonly NavigationService _navigation;
 
-    public LoginViewModel(AuthApi authApi, SessionService session, NavigationService navigation)
+    public LoginViewModel(AuthApi authApi, SessionService session, NavigationService navigation, SettingsService settings)
     {
+        ShowInsecureConnectionWarning = ApiAddress.IsInsecureRemote(settings.Current.ApiBaseUrl);
         _authApi = authApi;
         _session = session;
         _navigation = navigation;
@@ -52,6 +54,9 @@ public partial class LoginViewModel : ViewModelBase
     public partial string? ErrorKey { get; private set; }
 
     public bool HasError => ErrorKey is not null;
+
+    /// <summary>The API address is plain http to another machine, so the password would cross the network unencrypted.</summary>
+    public bool ShowInsecureConnectionWarning { get; }
 
 #if DEBUG
     public bool IsDevBuild => true;

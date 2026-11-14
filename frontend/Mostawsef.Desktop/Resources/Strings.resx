@@ -52,6 +52,7 @@
   <data name="Prescription.Dose" xml:space="preserve"><value>Dose</value></data>
   <data name="Prescription.Frequency" xml:space="preserve"><value>Frequency</value></data>
   <data name="Prescription.Duration" xml:space="preserve"><value>Duration</value></data>
+  <data name="Invoice.SaveTitle" xml:space="preserve"><value>Save invoice</value></data>
   <data name="Invoice.Title" xml:space="preserve"><value>Invoice summary</value></data>
   <data name="Invoice.Subtotal" xml:space="preserve"><value>Subtotal</value></data>
   <data name="Invoice.Discount" xml:space="preserve"><value>Discount</value></data>
@@ -81,6 +82,7 @@
   <data name="Login.TooMany" xml:space="preserve"><value>Too many attempts. Please wait a minute and try again.</value></data>
   <data name="Login.ServerUnreachable" xml:space="preserve"><value>Cannot reach the server. Make sure the Mostawsef service is running.</value></data>
   <data name="Login.Failed" xml:space="preserve"><value>Sign in failed. Please try again.</value></data>
+  <data name="Login.InsecureConnection" xml:space="preserve"><value>This connection to the server is not encrypted. Ask your administrator to set up HTTPS before signing in over the network.</value></data>
   <data name="Login.Maintenance" xml:space="preserve"><value>The system is under maintenance. Please try again later.</value></data>
   <data name="Login.SessionExpired" xml:space="preserve"><value>Your session has expired. Please sign in again.</value></data>
   <data name="Login.OpenGallery" xml:space="preserve"><value>Component gallery (development)</value></data>
@@ -391,6 +393,25 @@
   <data name="OrderDetails.Col.Type" xml:space="preserve"><value>Type</value></data>
   <data name="PaymentType.Payment" xml:space="preserve"><value>Payment</value></data>
   <data name="PaymentType.Refund" xml:space="preserve"><value>Refund</value></data>
+  <data name="ErrorCode.exceeds_balance" xml:space="preserve"><value>The payment can't be more than what is still due.</value></data>
+  <data name="Action.orders.payment_added" xml:space="preserve"><value>Order payment added</value></data>
+  <data name="OrderDetails.AddPayment" xml:space="preserve"><value>Add payment</value></data>
+  <data name="OrderDetails.AddPaymentTitle" xml:space="preserve"><value>Add a payment</value></data>
+  <data name="OrderDetails.PaymentAdded" xml:space="preserve"><value>Payment added.</value></data>
+  <data name="OrderDetails.Due" xml:space="preserve"><value>Still due: {0}</value></data>
+  <data name="OrderDetails.RefundNeeded" xml:space="preserve"><value>Needs a refund of {0}</value></data>
+  <data name="OrderDetails.PrintInvoice" xml:space="preserve"><value>Print invoice</value></data>
+  <data name="OrderDetails.ExportInvoice" xml:space="preserve"><value>Export invoice</value></data>
+  <data name="Invoice.Title" xml:space="preserve"><value>Invoice</value></data>
+  <data name="Invoice.BilledTo" xml:space="preserve"><value>BILLED TO</value></data>
+  <data name="Invoice.Details" xml:space="preserve"><value>INVOICE DETAILS</value></data>
+  <data name="Invoice.TestsTotal" xml:space="preserve"><value>Tests subtotal</value></data>
+  <data name="Invoice.Addon" xml:space="preserve"><value>Additional charge</value></data>
+  <data name="Invoice.BalanceDue" xml:space="preserve"><value>Balance due</value></data>
+  <data name="Invoice.RefundDue" xml:space="preserve"><value>Refund due</value></data>
+  <data name="Invoice.Payments" xml:space="preserve"><value>Payments received</value></data>
+  <data name="Invoice.Thanks" xml:space="preserve"><value>Thank you for choosing us.</value></data>
+  <data name="Invoice.Exported" xml:space="preserve"><value>Invoice saved: {0}</value></data>
   <data name="OrderDetails.Tests" xml:space="preserve"><value>Tests ({0})</value></data>
   <data name="OrderDetails.NotFound" xml:space="preserve"><value>This order no longer exists.</value></data>
   <data name="Action.orders.created" xml:space="preserve"><value>Order created</value></data>

@@ -438,6 +438,81 @@ public class OrdersTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task An_added_payment_updates_the_paid_amount_status_and_payments()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var patient = await CreatePatientAsync(admin);
+        var test = await CreateTestAsync(admin, price: 10000);
+        var order = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id) with
+        {
+            FirstPayment = new() { Amount = 2500, Method = PaymentMethods.Cash },
+        });
+
+        var partly = await PayAsync(admin, order.Id, new() { Amount = 3000, Method = PaymentMethods.Card, Notes = " Visa " });
+        Assert.Equal((OrderStatuses.PartiallyPaid, 5500L, 4500L), (partly.Status, partly.Paid, partly.Balance));
+        Assert.Equal(
+            [(PaymentTypes.Payment, PaymentMethods.Cash, 2500L, (string?)null), (PaymentTypes.Payment, PaymentMethods.Card, 3000L, "Visa")],
+            partly.Payments.Select(p => (p.Type, p.Method, p.Amount, p.Notes)).ToList());
+
+        var settled = await PayAsync(admin, order.Id, new() { Amount = 4500, Method = PaymentMethods.Transfer });
+        Assert.Equal((OrderStatuses.Paid, 10000L, 0L), (settled.Status, settled.Paid, settled.Balance));
+
+        var listed = (await admin.GetJsonAsync<PagedResult<OrderListItemDto>>($"{Url}?search={order.Number}")).Items.Single();
+        Assert.Equal((10000L, OrderStatuses.Paid), (listed.Paid, listed.Status));
+    }
+
+    [Fact]
+    public async Task A_payment_over_what_is_still_due_returns_400_and_saves_nothing()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var patient = await CreatePatientAsync(admin);
+        var test = await CreateTestAsync(admin, price: 10000);
+        var order = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id) with
+        {
+            FirstPayment = new() { Amount = 4000, Method = PaymentMethods.Cash },
+        });
+
+        var problem = await ProblemResponse.ReadAsync(
+            await admin.PostAsJsonAsync($"{Url}/{order.Id}/payments", new AddPaymentRequest { Amount = 6001, Method = PaymentMethods.Cash }, Ct));
+
+        Assert.Equal(HttpStatusCode.BadRequest, problem.Status);
+        Assert.Equal([ErrorCodes.ExceedsBalance], problem.Errors["Amount"]);
+        Assert.Equal(4000L, (await admin.GetJsonAsync<OrderDetailsDto>($"{Url}/{order.Id}")).Paid);
+
+        var settled = await PayAsync(admin, order.Id, new() { Amount = 6000, Method = PaymentMethods.Cash });
+        var again = await ProblemResponse.ReadAsync(
+            await admin.PostAsJsonAsync($"{Url}/{order.Id}/payments", new AddPaymentRequest { Amount = 1, Method = PaymentMethods.Cash }, Ct));
+        Assert.Equal(OrderStatuses.Paid, settled.Status);
+        Assert.Equal([ErrorCodes.ExceedsBalance], again.Errors["Amount"]);
+    }
+
+    [Fact]
+    public async Task An_added_payment_is_validated_and_needs_an_existing_order_and_the_admin_role()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+
+        var invalid = await ProblemResponse.ReadAsync(
+            await admin.PostAsJsonAsync($"{Url}/{Guid.NewGuid()}/payments", new AddPaymentRequest { Amount = 0, Method = "Gold" }, Ct));
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.Status);
+
+        var missing = await ProblemResponse.ReadAsync(
+            await admin.PostAsJsonAsync($"{Url}/{Guid.NewGuid()}/payments", new AddPaymentRequest { Amount = 100, Method = PaymentMethods.Cash }, Ct));
+        Assert.Equal((HttpStatusCode.NotFound, ErrorCodes.NotFound), (missing.Status, missing.Code));
+
+        var super = await factory.CreateClientAsAsync(TestUsers.Super);
+        var forbidden = await super.PostAsJsonAsync(
+            $"{Url}/{Guid.NewGuid()}/payments", new AddPaymentRequest { Amount = 100, Method = PaymentMethods.Cash }, Ct);
+        Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+    }
+
+    private static async Task<OrderDetailsDto> PayAsync(HttpClient admin, Guid orderId, AddPaymentRequest request)
+    {
+        var response = await admin.PostAsJsonAsync($"{Url}/{orderId}/payments", request, Ct);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        return (await response.Content.ReadFromJsonAsync<OrderDetailsDto>(Ct))!;
+    }
+
+    [Fact]
     public async Task Unknown_order_returns_404()
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);

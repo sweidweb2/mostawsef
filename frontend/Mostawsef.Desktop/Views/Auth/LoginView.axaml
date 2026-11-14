@@ -37,6 +37,26 @@
                                               PlaceholderText="{l:Tr Login.PasswordPlaceholder}" />
                         </ui:FormField>
 
+                        <Border Background="{DynamicResource BrushWarningSubtle}"
+                                BorderBrush="{DynamicResource BrushWarningBorder}"
+                                BorderThickness="{StaticResource BorderWidth}"
+                                CornerRadius="{StaticResource RadiusMd}"
+                                Padding="{StaticResource PaddingControl}"
+                                IsVisible="{Binding ShowInsecureConnectionWarning}">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{StaticResource GapControls}">
+                                <PathIcon Data="{StaticResource IconWarning}"
+                                          Width="{StaticResource IconSizeSm}"
+                                          Height="{StaticResource IconSizeSm}"
+                                          Margin="0,3,0,0"
+                                          VerticalAlignment="Top"
+                                          Foreground="{DynamicResource BrushWarning}" />
+                                <TextBlock Grid.Column="1"
+                                           Text="{l:Tr Login.InsecureConnection}"
+                                           Foreground="{DynamicResource BrushWarningText}"
+                                           TextWrapping="Wrap" />
+                            </Grid>
+                        </Border>
+
                         <Border Background="{DynamicResource BrushDangerSubtle}"
                                 BorderBrush="{DynamicResource BrushDangerBorder}"
                                 BorderThickness="{StaticResource BorderWidth}"

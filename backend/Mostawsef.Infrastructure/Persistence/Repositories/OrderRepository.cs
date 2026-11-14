@@ -72,6 +72,11 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
             .ToListAsync(cancellationToken))
         .ToDictionary(g => g.Status, g => g.Count);
 
+    public Task<Order?> GetWithPaymentsAsync(Guid id, CancellationToken cancellationToken) =>
+        db.Orders.Include(o => o.Payments).FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
+
+    public void AddPayment(Payment payment) => db.Set<Payment>().Add(payment);
+
     public void Add(Order order) => db.Orders.Add(order);
 
     public Task SaveChangesAsync(CancellationToken cancellationToken) => db.SaveChangesAsync(cancellationToken);

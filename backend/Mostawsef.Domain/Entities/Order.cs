@@ -95,10 +95,12 @@ public class Order : Entity
     public void SetTotal(long total) => Total = total;
 
     /// <summary>A payment in the order currency (exchange rate 1).</summary>
-    public void AddPayment(PaymentMethod method, long amount, DateTime paidAt, string? notes)
+    public Payment AddPayment(PaymentMethod method, long amount, DateTime paidAt, string? notes)
     {
-        _payments.Add(new Payment(PaymentType.Payment, method, Currency, amount, 1m, paidAt, notes));
+        var payment = new Payment(PaymentType.Payment, method, Currency, amount, 1m, paidAt, notes);
+        _payments.Add(payment);
         Paid = SumPayments();
+        return payment;
     }
 
     /// <summary>Paid once nothing is owed, PartiallyPaid after a first payment, Pending before.</summary>

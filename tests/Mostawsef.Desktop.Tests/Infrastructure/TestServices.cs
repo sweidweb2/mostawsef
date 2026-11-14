@@ -22,11 +22,12 @@ public sealed class TestServices : IDisposable
     public TestServices(AppLanguage language = AppLanguage.English)
     {
         SettingsFile = Path.Combine(_settingsDirectory, "settings.json");
+        DownloadsFolder = Path.Combine(_settingsDirectory, "Downloads");
         Directory.CreateDirectory(_settingsDirectory);
         File.WriteAllText(SettingsFile, $$"""{ "Theme": "Light", "Language": "{{language}}" }""");
 
         Provider = new ServiceCollection()
-            .AddMostawsefDesktop(new DesktopServiceOptions { HttpHandler = Api, SettingsFilePath = SettingsFile, OpenFile = OpenedFiles.Add })
+            .AddMostawsefDesktop(new DesktopServiceOptions { HttpHandler = Api, SettingsFilePath = SettingsFile, OpenFile = OpenedFiles.Add, PickSavePath = PickSavePath })
             .BuildServiceProvider();
         App.Services = Provider;
         PageHost.Perf = Provider.GetRequiredService<PerformanceMonitor>();
@@ -39,6 +40,21 @@ public sealed class TestServices : IDisposable
 
     /// <summary>Files the app asked to open (printouts) instead of launching a viewer.</summary>
     public List<string> OpenedFiles { get; } = [];
+
+    /// <summary>A folder inside this test's temp folder, for files the test "saves".</summary>
+    public string DownloadsFolder { get; }
+
+    /// <summary>What the "Save as" dialog answers: a full path, or null for Cancel (the default).</summary>
+    public string? PickedSavePath { get; set; }
+
+    /// <summary>The file names the app suggested in the "Save as" dialog.</summary>
+    public List<string> SaveSuggestions { get; } = [];
+
+    private Task<string?> PickSavePath(string suggestedFileName, string title)
+    {
+        SaveSuggestions.Add(suggestedFileName);
+        return Task.FromResult(PickedSavePath);
+    }
 
     /// <summary>This test's own settings.json (a temp file).</summary>
     public string SettingsFile { get; }

@@ -22,6 +22,9 @@ public class DesktopServiceOptions
 
     /// <summary>Opens a printed PDF; the default opens it in the system viewer.</summary>
     public Action<string>? OpenFile { get; init; }
+
+    /// <summary>Asks where to save an exported file; the default shows the system "Save as" dialog.</summary>
+    public SavePathPicker? PickSavePath { get; init; }
 }
 
 public static class ServiceRegistration
@@ -91,6 +94,14 @@ public static class ServiceRegistration
             sp.GetRequiredService<ClinicContext>(),
             options.OpenFile ?? PrintService.OpenWithDefaultApp,
             sp.GetRequiredService<PerformanceMonitor>()));
+
+        services.AddSingleton(sp => new InvoiceService(
+            sp.GetRequiredService<OrdersApi>(),
+            sp.GetRequiredService<PrintService>(),
+            sp.GetRequiredService<IToastService>(),
+            sp.GetRequiredService<LocalizationService>(),
+            sp.GetRequiredService<ErrorReporter>(),
+            options.PickSavePath ?? SaveFilePicker.PickPdfAsync));
 
         // Auth + navigation
         services.AddSingleton<SessionService>();

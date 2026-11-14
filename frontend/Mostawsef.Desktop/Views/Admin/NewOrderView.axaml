@@ -375,14 +375,35 @@
 
         <Grid Name="StepRow" DockPanel.Dock="Top" ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource GapGrid}"
               Margin="{StaticResource PaddingCardCompact}">
-            <Button Name="NextStepButton" Grid.Column="1" Classes="primary" VerticalAlignment="Top"
-                    Command="{Binding NextStepCommand}"
-                    IsVisible="{Binding ShowNext}">
-                <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space1}">
-                    <TextBlock Text="{l:Tr NewOrder.Next}" VerticalAlignment="Center" />
-                    <PathIcon Data="{StaticResource IconChevronEnd}" />
-                </StackPanel>
-            </Button>
+            <StackPanel Name="StepActions" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top"
+                        Spacing="{StaticResource GapControls}">
+                <Button Name="PreviousStepButton" Classes="secondary"
+                        Command="{Binding PreviousStepCommand}"
+                        IsVisible="{Binding CanGoBack}">
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space1}">
+                        <PathIcon Data="{StaticResource IconChevronStart}" />
+                        <TextBlock Text="{l:Tr NewOrder.Previous}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <Button Name="NextStepButton" Classes="primary"
+                        Command="{Binding NextStepCommand}"
+                        IsVisible="{Binding ShowNext}">
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space1}">
+                        <TextBlock Text="{l:Tr NewOrder.Next}" VerticalAlignment="Center" />
+                        <PathIcon Data="{StaticResource IconChevronEnd}" />
+                    </StackPanel>
+                </Button>
+                <Button Name="CreateButton" Classes="primary" Command="{Binding SaveCommand}"
+                        IsVisible="{Binding ShowSave}">
+                    <Panel>
+                        <TextBlock Text="{l:Tr NewOrder.Create}" IsVisible="{Binding !IsBusy}" />
+                        <ui:Spinner Width="20"
+                                    Height="20"
+                                    Foreground="{DynamicResource BrushOnPrimary}"
+                                    IsVisible="{Binding IsBusy}" />
+                    </Panel>
+                </Button>
+            </StackPanel>
             <Grid Name="StepIndicator">
             <ItemsControl ItemsSource="{Binding Steps}">
                 <ItemsControl.ItemsPanel>
@@ -433,26 +454,6 @@
             </ItemsControl>
             </Grid>
         </Grid>
-
-        <Border DockPanel.Dock="Bottom" Margin="0,12,0,0" Padding="{StaticResource PaddingCardCompact}"
-                Background="{DynamicResource BrushSurface}" CornerRadius="{StaticResource RadiusMd}">
-            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{StaticResource GapGrid}">
-                <Button Name="PreviousStepButton" Classes="secondary"
-                        Content="{l:Tr NewOrder.Previous}"
-                        Command="{Binding PreviousStepCommand}"
-                        IsVisible="{Binding CanGoBack}" />
-                <Button Name="CreateButton" Grid.Column="2" Classes="primary" Command="{Binding SaveCommand}"
-                        IsVisible="{Binding ShowSave}">
-                    <Panel>
-                        <TextBlock Text="{l:Tr NewOrder.Create}" IsVisible="{Binding !IsBusy}" />
-                        <ui:Spinner Width="20"
-                                    Height="20"
-                                    Foreground="{DynamicResource BrushOnPrimary}"
-                                    IsVisible="{Binding IsBusy}" />
-                    </Panel>
-                </Button>
-            </Grid>
-        </Border>
 
         <ui:LoadingOverlay Name="PreparingOverlay" IsLoading="{Binding IsPreparing}">
             <!-- Caches each step's view; ContentControl was rebuilding the Tests catalog on every Next/Back. -->

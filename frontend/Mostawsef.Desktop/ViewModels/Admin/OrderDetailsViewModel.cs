@@ -5,23 +5,43 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Mostawsef.Contracts.Orders;
 using Mostawsef.Desktop.Services.Api;
+using Mostawsef.Desktop.Converters;
+using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Navigation;
+using Mostawsef.Desktop.Services.Printing;
+using Mostawsef.Desktop.Services.Ui;
 using Mostawsef.Desktop.ViewModels.Shell;
 
 namespace Mostawsef.Desktop.ViewModels.Admin;
 
 /// <summary>Admin portal sub-page: one order's main details and tests (read-only). Set <see cref="OrderId"/> before it opens; optionally <see cref="Seed"/> to skip the first GET.</summary>
-public partial class OrderDetailsViewModel(OrdersApi orders, NavigationService navigation) : ViewModelBase, ILoadablePage, IReusablePage, IBreadcrumbPage
+public partial class OrderDetailsViewModel(
+    OrdersApi orders,
+    NavigationService navigation,
+    InvoiceService invoices,
+    IDialogService dialogs,
+    LocalizationService localization,
+    IToastService toasts) : ViewModelBase, ILoadablePage, IReusablePage, IBreadcrumbPage
 {
     private CancellationTokenSource? _loadCancellation;
 
     public Guid OrderId { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasOrder), nameof(HasAddon), nameof(HasPayments), nameof(BreadcrumbArg))]
+    [NotifyPropertyChangedFor(nameof(HasOrder), nameof(HasAddon), nameof(HasPayments), nameof(CanAddPayment), nameof(NeedsRefund), nameof(RefundText), nameof(BreadcrumbArg))]
     public partial OrderDetailsDto? Order { get; private set; }
 
     public bool HasOrder => Order is not null;
+
+    /// <summary>Money still owed on the order can be paid with an additional payment.</summary>
+    public bool CanAddPayment => Order is { Balance: > 0 };
+
+    /// <summary>The order total fell below what was paid (e.g. it was altered): the difference must be given back.</summary>
+    public bool NeedsRefund => Order is { Balance: < 0 };
+
+    public string RefundText => Order is { Balance: < 0 } order
+        ? localization.Format("OrderDetails.RefundNeeded", ValueConverters.FormatMoney(-order.Balance))
+        : string.Empty;
 
     public bool HasPayments => Order is { Payments.Count: > 0 };
 
@@ -86,6 +106,57 @@ public partial class OrderDetailsViewModel(OrdersApi orders, NavigationService n
         _loadCancellation?.Cancel();
         IsLoading = false;
         Order = null;
+    }
+
+    /// <summary>True while an invoice is being rendered; its buttons show a spinner and wait.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanUseInvoice))]
+    public partial bool IsInvoiceBusy { get; private set; }
+
+    public bool CanUseInvoice => !IsInvoiceBusy;
+
+    [RelayCommand]
+    private Task PrintInvoiceAsync() => Order is { } order ? WithInvoiceBusyAsync(() => invoices.PrintAsync(order)) : Task.CompletedTask;
+
+    [RelayCommand]
+    private async Task ExportInvoiceAsync()
+    {
+        if (Order is not { } order || await invoices.AskExportPathAsync(order.Number) is not { } path)
+        {
+            return;
+        }
+
+        await WithInvoiceBusyAsync(() => invoices.ExportAsync(order, path));
+    }
+
+    private async Task WithInvoiceBusyAsync(Func<Task> action)
+    {
+        IsInvoiceBusy = true;
+        try
+        {
+            await action();
+        }
+        finally
+        {
+            IsInvoiceBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task AddPaymentAsync()
+    {
+        if (Order is not { Balance: > 0 } order)
+        {
+            return;
+        }
+
+        var form = new AddPaymentFormViewModel(orders, dialogs, localization, order.Id, order.Balance);
+        if (await dialogs.ShowFormAsync(form, localization.Get("OrderDetails.AddPaymentTitle")) && form.SavedValue is OrderDetailsDto updated)
+        {
+            Order = updated;
+            LoadError = null;
+            toasts.Success(localization.Get("OrderDetails.PaymentAdded"));
+        }
     }
 
     [RelayCommand]

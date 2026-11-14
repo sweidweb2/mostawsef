@@ -19,6 +19,9 @@ public interface IOrderService
 
     Task<OrderStatsDto> GetStatsAsync(CancellationToken cancellationToken);
 
+    /// <summary>Adds a payment of at most what the order still owes; returns the updated order.</summary>
+    Task<OrderDetailsDto> AddPaymentAsync(Guid id, AddPaymentRequest request, CancellationToken cancellationToken);
+
     /// <summary>Creates the patient (if new), the order, its items and the first payment in one transaction.</summary>
     Task<OrderDetailsDto> CreateAsync(CreateOrderRequest request, CancellationToken cancellationToken);
 }
@@ -45,6 +48,32 @@ public class OrderService(
             query.SafePage,
             query.SafePageSize,
             total);
+    }
+
+    public async Task<OrderDetailsDto> AddPaymentAsync(Guid id, AddPaymentRequest request, CancellationToken cancellationToken)
+    {
+        var order = await orders.GetWithPaymentsAsync(id, cancellationToken) ?? throw AppException.NotFound();
+        var amount = request.Amount!.Value;
+        if (amount > order.Balance)
+        {
+            throw AppException.Validation(nameof(AddPaymentRequest.Amount), ErrorCodes.ExceedsBalance);
+        }
+
+        var payment = order.AddPayment(Enum.Parse<PaymentMethod>(request.Method), amount, time.GetUtcNow().UtcDateTime, request.Notes);
+        orders.AddPayment(payment);
+        order.UpdateStatus();
+        await orders.SaveChangesAsync(cancellationToken);
+
+        await activity.LogAsync(
+            new ActivityEntry(ActivityActions.OrderPaymentAdded, ActivityModules.Orders, "Added a payment to an order")
+            {
+                EntityType = nameof(Order),
+                EntityId = order.Id.ToString(),
+                Details = new { order.Number, Amount = amount, request.Method, order.Total, order.Paid },
+            },
+            cancellationToken);
+
+        return await GetAsync(id, cancellationToken);
     }
 
     public async Task<OrderStatsDto> GetStatsAsync(CancellationToken cancellationToken)

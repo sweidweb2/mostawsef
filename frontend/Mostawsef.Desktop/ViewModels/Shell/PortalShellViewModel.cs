@@ -187,8 +187,11 @@ public partial class PortalShellViewModel : ViewModelBase
         ShowMenuPage(newValue);
     }
 
-    /// <summary>Shows <paramref name="page"/> in place of the current page; false if the open sub-page kept unsaved changes.</summary>
-    public async Task<bool> ShowSubPageAsync(ViewModelBase page)
+    /// <summary>
+    /// Shows <paramref name="page"/> in place of the current page; false if the open sub-page kept unsaved changes.
+    /// <paramref name="isNewInstance"/>: nobody keeps this instance for reuse, so its view is released when it closes.
+    /// </summary>
+    public async Task<bool> ShowSubPageAsync(ViewModelBase page, bool isNewInstance = false)
     {
         if (SubPage is FormViewModel form && !await form.ConfirmDiscardAsync())
         {
@@ -197,6 +200,7 @@ public partial class PortalShellViewModel : ViewModelBase
 
         DiscardSubPage();
         _menuPage ??= CurrentPage;
+        _subPageIsNewInstance = isNewInstance;
         Show(page);
         SubPage = page;
         return true;
@@ -228,11 +232,13 @@ public partial class PortalShellViewModel : ViewModelBase
 
         var gone = SubPage;
         SubPage = null;
-        if (gone is not IReusablePage)
+        if (gone is not IReusablePage || _subPageIsNewInstance)
         {
             PageDiscarded?.Invoke(gone);
         }
     }
+
+    private bool _subPageIsNewInstance;
 
     private async Task LeaveDirtySubPageAsync(FormViewModel form, int oldValue, int newValue)
     {

@@ -52,6 +52,7 @@
   <data name="Prescription.Dose" xml:space="preserve"><value>الجرعة</value></data>
   <data name="Prescription.Frequency" xml:space="preserve"><value>التكرار</value></data>
   <data name="Prescription.Duration" xml:space="preserve"><value>المدة</value></data>
+  <data name="Invoice.SaveTitle" xml:space="preserve"><value>حفظ الفاتورة</value></data>
   <data name="Invoice.Title" xml:space="preserve"><value>ملخص الفاتورة</value></data>
   <data name="Invoice.Subtotal" xml:space="preserve"><value>المجموع الفرعي</value></data>
   <data name="Invoice.Discount" xml:space="preserve"><value>الخصم</value></data>
@@ -81,6 +82,7 @@
   <data name="Login.TooMany" xml:space="preserve"><value>محاولات كثيرة. يرجى الانتظار دقيقة ثم المحاولة مرة أخرى.</value></data>
   <data name="Login.ServerUnreachable" xml:space="preserve"><value>تعذّر الاتصال بالخادم. تأكد من تشغيل خدمة مستوصف.</value></data>
   <data name="Login.Failed" xml:space="preserve"><value>تعذّر تسجيل الدخول. يرجى المحاولة مرة أخرى.</value></data>
+  <data name="Login.InsecureConnection" xml:space="preserve"><value>الاتصال بالخادم غير مشفّر. اطلب من المسؤول تفعيل HTTPS قبل تسجيل الدخول عبر الشبكة.</value></data>
   <data name="Login.Maintenance" xml:space="preserve"><value>النظام تحت الصيانة. يرجى المحاولة لاحقًا.</value></data>
   <data name="Login.SessionExpired" xml:space="preserve"><value>انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.</value></data>
   <data name="Login.OpenGallery" xml:space="preserve"><value>معرض المكونات (للتطوير)</value></data>
@@ -390,6 +392,25 @@
   <data name="OrderDetails.Col.Type" xml:space="preserve"><value>النوع</value></data>
   <data name="PaymentType.Payment" xml:space="preserve"><value>دفعة</value></data>
   <data name="PaymentType.Refund" xml:space="preserve"><value>استرداد</value></data>
+  <data name="ErrorCode.exceeds_balance" xml:space="preserve"><value>لا يمكن أن تزيد الدفعة عن المبلغ المتبقي.</value></data>
+  <data name="Action.orders.payment_added" xml:space="preserve"><value>إضافة دفعة لطلب</value></data>
+  <data name="OrderDetails.AddPayment" xml:space="preserve"><value>إضافة دفعة</value></data>
+  <data name="OrderDetails.AddPaymentTitle" xml:space="preserve"><value>إضافة دفعة</value></data>
+  <data name="OrderDetails.PaymentAdded" xml:space="preserve"><value>تمت إضافة الدفعة.</value></data>
+  <data name="OrderDetails.Due" xml:space="preserve"><value>المتبقي: {0}</value></data>
+  <data name="OrderDetails.RefundNeeded" xml:space="preserve"><value>يحتاج إلى استرداد {0}</value></data>
+  <data name="OrderDetails.PrintInvoice" xml:space="preserve"><value>طباعة الفاتورة</value></data>
+  <data name="OrderDetails.ExportInvoice" xml:space="preserve"><value>تصدير الفاتورة</value></data>
+  <data name="Invoice.Title" xml:space="preserve"><value>فاتورة</value></data>
+  <data name="Invoice.BilledTo" xml:space="preserve"><value>الفاتورة إلى</value></data>
+  <data name="Invoice.Details" xml:space="preserve"><value>تفاصيل الفاتورة</value></data>
+  <data name="Invoice.TestsTotal" xml:space="preserve"><value>مجموع التحاليل</value></data>
+  <data name="Invoice.Addon" xml:space="preserve"><value>مبلغ إضافي</value></data>
+  <data name="Invoice.BalanceDue" xml:space="preserve"><value>المبلغ المتبقي</value></data>
+  <data name="Invoice.RefundDue" xml:space="preserve"><value>مبلغ مستحق الاسترداد</value></data>
+  <data name="Invoice.Payments" xml:space="preserve"><value>المدفوعات المستلمة</value></data>
+  <data name="Invoice.Thanks" xml:space="preserve"><value>شكراً لاختياركم لنا.</value></data>
+  <data name="Invoice.Exported" xml:space="preserve"><value>تم حفظ الفاتورة: {0}</value></data>
   <data name="OrderDetails.Tests" xml:space="preserve"><value>التحاليل ({0})</value></data>
   <data name="OrderDetails.NotFound" xml:space="preserve"><value>هذا الطلب لم يعد موجوداً.</value></data>
   <data name="Action.orders.created" xml:space="preserve"><value>إنشاء طلب</value></data>

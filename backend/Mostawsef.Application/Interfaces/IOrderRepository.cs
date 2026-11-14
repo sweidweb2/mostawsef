@@ -49,6 +49,12 @@ public interface IOrderRepository
     /// <summary>Order counts per status (statuses without orders are absent).</summary>
     Task<IReadOnlyDictionary<OrderStatus, int>> GetStatusCountsAsync(CancellationToken cancellationToken);
 
+    /// <summary>The tracked order with its payments, to add a payment; null when it does not exist.</summary>
+    Task<Order?> GetWithPaymentsAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>Marks a payment added to an already saved order as new (its id is set up front, so it is not found by tracking).</summary>
+    void AddPayment(Payment payment);
+
     void Add(Order order);
 
     /// <summary>Saves every change of the request's unit of work (e.g. a new patient and its order) in one transaction.</summary>

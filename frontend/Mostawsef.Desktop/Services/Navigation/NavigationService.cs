@@ -78,12 +78,14 @@ public partial class NavigationService : ObservableObject
     /// </summary>
     public Task<bool> OpenAsync<TViewModel>(Action<TViewModel>? setup = null) where TViewModel : ViewModelBase
     {
-        if (CreatePage(typeof(TViewModel)) is not TViewModel page)
+        if (CurrentPage is not PortalShellViewModel shell || CreatePage(typeof(TViewModel)) is not TViewModel page)
         {
             return Task.FromResult(false);
         }
 
-        return OpenAsync(page, setup);
+        // A new instance nobody holds on to: the shell must release its view when it closes, even for a reusable page type.
+        setup?.Invoke(page);
+        return shell.ShowSubPageAsync(page, isNewInstance: true);
     }
 
     /// <summary>

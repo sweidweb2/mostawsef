@@ -160,14 +160,21 @@
                         </DataGrid.Columns>
                     </DataGrid>
 
-                    <ItemsControl Classes="virtualizing"
+                    <ItemsControl Name="CardsGrid"
                                   Margin="{StaticResource PaddingCardCompact}"
                                   IsVisible="{Binding IsGridView}"
                                   ItemsSource="{Binding Items}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="patients:PatientDto">
                                 <ui:Card Classes="outlined"
-                                         Margin="0,0,0,8"
+                                         Width="220"
+                                         Height="220"
+                                         Margin="0,0,12,12"
                                          Title="{Binding FullName}">
                                     <ui:Card.HeaderActions>
                                         <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space1}" VerticalAlignment="Top">

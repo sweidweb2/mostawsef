@@ -1,12 +1,15 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
+using System.Text;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Platform;
 using Mostawsef.Desktop.Services.Diagnostics;
 using Mostawsef.Desktop.Services.Local;
+using QuestPDF.Drawing;
 using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
 
@@ -84,6 +87,47 @@ public class PrintService(
         return document.GeneratePdf();
     }
 
+    /// <summary>Renders the document and writes it to <paramref name="path"/> (the folder is created if missing; an existing file is replaced).</summary>
+    public async Task SaveAsync(IDocument document, string path)
+    {
+        using var scope = perf.Measure("Export", Path.GetFileNameWithoutExtension(path));
+        await Task.Run(() =>
+        {
+            var pdf = Render(document);
+            if (Path.GetDirectoryName(path) is { Length: > 0 } folder)
+            {
+                Directory.CreateDirectory(folder);
+            }
+
+            File.WriteAllBytes(path, pdf);
+        });
+    }
+
+    /// <summary>
+    /// Opens the browser's print window with the document: its pages are rendered as images into a small web page that
+    /// starts printing as soon as it opens (a PDF viewer cannot be told to show its print window). Returns the page's path.
+    /// </summary>
+    public async Task<string> PrintDialogAsync(IDocument document, string name)
+    {
+        using var scope = perf.Measure("Print", name);
+        var path = await Task.Run(() =>
+        {
+            _ = Setup.Value;
+            var pages = document.GenerateImages(new ImageGenerationSettings { ImageFormat = ImageFormat.Png, RasterDpi = 150 });
+            var html = PrintPage.Build(WebUtility.HtmlEncode(name), pages);
+
+            Directory.CreateDirectory(PrintFolder);
+            LocalFileCleanup.DeletePrints();
+
+            var file = Path.Combine(PrintFolder, $"{name}-{DateTime.Now:yyyyMMdd-HHmmss-fff}.html");
+            File.WriteAllText(file, html, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            return file;
+        });
+
+        openFile(path);
+        return path;
+    }
+
     /// <summary>Renders, cleans old PDFs and writes the file off the UI thread, then opens it. Returns its path.</summary>
     public async Task<string> PrintAsync(IDocument document, string name)
     {
@@ -92,7 +136,7 @@ public class PrintService(
         {
             var pdf = Render(document);
             Directory.CreateDirectory(PrintFolder);
-            DeleteOldPrints();
+            LocalFileCleanup.DeletePrints();
 
             var file = Path.Combine(PrintFolder, $"{name}-{DateTime.Now:yyyyMMdd-HHmmss-fff}.pdf");
             File.WriteAllBytes(file, pdf);
@@ -101,20 +145,5 @@ public class PrintService(
 
         openFile(path);
         return path;
-    }
-
-    private static void DeleteOldPrints()
-    {
-        foreach (var old in new DirectoryInfo(PrintFolder).GetFiles("*.pdf").Where(f => f.LastWriteTime < DateTime.Now.AddDays(-1)))
-        {
-            try
-            {
-                old.Delete();
-            }
-            catch (IOException)
-            {
-                // Still open in a viewer: try again next time.
-            }
-        }
     }
 }

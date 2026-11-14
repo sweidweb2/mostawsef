@@ -1,3 +1,5 @@
+using System;
+using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -8,13 +10,20 @@ using Mostawsef.Desktop.Services.Api;
 using Mostawsef.Desktop.Services.Diagnostics;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Navigation;
+using Mostawsef.Desktop.Services.Printing;
 using Mostawsef.Desktop.Services.Ui;
 using Mostawsef.Desktop.ViewModels.Shell;
 
 namespace Mostawsef.Desktop.ViewModels.Admin;
 
 /// <summary>Admin portal: orders, newest first, with search (patient name, phone or number) and paging; opens New order and Order details.</summary>
-public partial class OrdersViewModel(OrdersApi orders, NavigationService navigation, IToastService toasts, LocalizationService localization, ErrorReporter errors)
+public partial class OrdersViewModel(
+    OrdersApi orders,
+    NavigationService navigation,
+    InvoiceService invoices,
+    IToastService toasts,
+    LocalizationService localization,
+    ErrorReporter errors)
     : NumberedListViewModel<OrderListItemDto>(toasts, localization, errors)
 {
     /// <summary>One New order page for this portal visit; reset on each open so PageHost can reuse its view.</summary>
@@ -60,6 +69,53 @@ public partial class OrdersViewModel(OrdersApi orders, NavigationService navigat
         finally
         {
             IsOpeningNewOrder = false;
+        }
+    }
+
+    /// <summary>True while an invoice is being fetched and rendered; the table shows its spinner meanwhile.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowLoading))]
+    public partial bool IsInvoiceBusy { get; private set; }
+
+    /// <summary>The table's loading overlay: the list is loading or an invoice is being prepared.</summary>
+    public bool ShowLoading => IsLoading || IsInvoiceBusy;
+
+    protected override void OnPropertyChanged(PropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+        if (e.PropertyName == nameof(IsLoading))
+        {
+            OnPropertyChanged(nameof(ShowLoading));
+        }
+    }
+
+    /// <summary>Opens the print window with the order's invoice.</summary>
+    [RelayCommand]
+    private Task PrintInvoiceAsync(OrderListItemDto? item) =>
+        item is null ? Task.CompletedTask : WithInvoiceBusyAsync(() => invoices.PrintAsync(item.Id));
+
+    /// <summary>Asks where to save the order's invoice, then saves it there as a PDF.</summary>
+    [RelayCommand]
+    private async Task ExportInvoiceAsync(OrderListItemDto? item)
+    {
+        if (item is null || await invoices.AskExportPathAsync(item.Number) is not { } path)
+        {
+            return;
+        }
+
+        await WithInvoiceBusyAsync(() => invoices.ExportAsync(item.Id, path));
+    }
+
+    private async Task WithInvoiceBusyAsync(Func<Task> action)
+    {
+        IsInvoiceBusy = true;
+        try
+        {
+            await action();
+        }
+        finally
+        {
+            IsInvoiceBusy = false;
         }
     }
 

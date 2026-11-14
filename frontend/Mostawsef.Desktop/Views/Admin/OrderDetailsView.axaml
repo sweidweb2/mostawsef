@@ -11,10 +11,32 @@
         <StackPanel Classes="page">
             <ui:PageHeader Title="{l:Tr OrderDetails.Title, Arg={Binding Order.Number}}" Subtitle="{l:Tr OrderDetails.Subtitle}">
                 <ui:PageHeader.Actions>
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
+                    <Button Name="PrintInvoiceButton" Classes="secondary" Command="{Binding PrintInvoiceCommand}"
+                            IsVisible="{Binding HasOrder}" IsEnabled="{Binding CanUseInvoice}">
+                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
+                            <PathIcon Data="{StaticResource IconPrinter}" IsVisible="{Binding CanUseInvoice}" />
+                            <ui:Spinner Width="16" Height="16" IsVisible="{Binding IsInvoiceBusy}" />
+                            <TextBlock Text="{l:Tr OrderDetails.PrintInvoice}" />
+                        </StackPanel>
+                    </Button>
+                    <Button Name="ExportInvoiceButton" Classes="secondary" Command="{Binding ExportInvoiceCommand}"
+                            IsVisible="{Binding HasOrder}" IsEnabled="{Binding CanUseInvoice}">
+                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
+                            <PathIcon Data="{StaticResource IconDownload}" IsVisible="{Binding CanUseInvoice}" />
+                            <ui:Spinner Width="16" Height="16" IsVisible="{Binding IsInvoiceBusy}" />
+                            <TextBlock Text="{l:Tr OrderDetails.ExportInvoice}" />
+                        </StackPanel>
+                    </Button>
+                    <ui:Badge Name="RefundBadge"
+                              IsVisible="{Binding NeedsRefund}"
+                              Kind="Info"
+                              Text="{Binding RefundText}" />
                     <ui:Badge Name="StatusBadge"
                               IsVisible="{Binding HasOrder}"
                               Kind="{Binding Order.Status, Converter={x:Static conv:ValueConverters.OrderStatusToBadgeKind}, FallbackValue={x:Static ui:BadgeKind.Neutral}}"
                               Text="{l:TrKey {Binding Order.Status}, Prefix=OrderStatus.}" />
+                    </StackPanel>
                 </ui:PageHeader.Actions>
             </ui:PageHeader>
 
@@ -58,8 +80,17 @@
                     <StackPanel Grid.Column="1" Spacing="{StaticResource GapGrid}">
                         <ui:Card Name="PaymentsCard" Classes="outlined" Padding="0"
                                  Title="{l:Tr OrderDetails.Payments, Arg={Binding Order.Payments.Count}}">
+                            <ui:Card.HeaderActions>
+                                <Button Name="AddPaymentButton" Classes="primary sm" Command="{Binding AddPaymentCommand}"
+                                        IsVisible="{Binding CanAddPayment}">
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
+                                        <PathIcon Data="{StaticResource IconPlus}" />
+                                        <TextBlock Text="{l:Tr OrderDetails.AddPayment}" />
+                                    </StackPanel>
+                                </Button>
+                            </ui:Card.HeaderActions>
                             <Panel>
-                                <DataGrid Name="PaymentsGrid" ItemsSource="{Binding Order.Payments}" IsReadOnly="True"
+                                <DataGrid Name="PaymentsGrid" Margin="0,12,0,0" ItemsSource="{Binding Order.Payments}" IsReadOnly="True"
                                           CanUserSortColumns="False" IsVisible="{Binding HasPayments}">
                                     <DataGrid.Columns>
                                         <DataGridTextColumn x:DataType="orders:OrderPaymentDto" Header="{l:Tr OrderDetails.Col.PaidAt}" Width="170"
@@ -93,7 +124,7 @@
 
                         <ui:Card Name="TestsCard" Classes="outlined" Padding="0"
                                  Title="{l:Tr OrderDetails.Tests, Arg={Binding Order.Items.Count}}">
-                            <DataGrid Name="TestsGrid" ItemsSource="{Binding Order.Items}" IsReadOnly="True" CanUserSortColumns="False">
+                            <DataGrid Name="TestsGrid" Margin="0,12,0,0" ItemsSource="{Binding Order.Items}" IsReadOnly="True" CanUserSortColumns="False">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn x:DataType="orders:OrderItemDto" Header="{l:Tr LabTests.Col.Code}" Width="140"
                                                         Binding="{Binding Code}" />

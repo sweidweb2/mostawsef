@@ -121,6 +121,21 @@ public record CreateOrderItemRequest
     public Guid? LabTestId { get; init; }
 }
 
+/// <summary>An additional payment on an existing order, in the order currency. At most what the order still owes.</summary>
+public record AddPaymentRequest
+{
+    [Required(ErrorMessage = ErrorCodes.Required)]
+    [Range(1, OrderRules.MaxPaymentAmount, ErrorMessage = ErrorCodes.Range)]
+    public long? Amount { get; init; }
+
+    [Required(ErrorMessage = ErrorCodes.Required)]
+    [AllowedValues(PaymentMethods.Cash, PaymentMethods.Card, PaymentMethods.Transfer, PaymentMethods.Insurance, ErrorMessage = ErrorCodes.Invalid)]
+    public string Method { get; init; } = PaymentMethods.Cash;
+
+    [MaxLength(OrderRules.PaymentNotesMaxLength, ErrorMessage = ErrorCodes.MaxLength)]
+    public string? Notes { get; init; }
+}
+
 /// <summary>Paid in the clinic currency when the order is created.</summary>
 public record CreateFirstPaymentRequest
 {

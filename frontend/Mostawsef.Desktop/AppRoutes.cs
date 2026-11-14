@@ -32,6 +32,7 @@ public static class AppRoutes
         .View<SystemSettingsFormViewModel, SystemSettingsFormView>()
         .View<LabTestFormViewModel, LabTestFormView>()
         .View<PatientFormViewModel, PatientFormView>()
+        .View<AddPaymentFormViewModel, AddPaymentFormView>()
         .Portal(Roles.Admin, "Portal.Admin", portal => portal
             .Page<DashboardViewModel, DashboardView>("IconDashboard", "Nav.Dashboard")
             .Page<PatientsViewModel, PatientsView>("IconUser", "Nav.Patients")

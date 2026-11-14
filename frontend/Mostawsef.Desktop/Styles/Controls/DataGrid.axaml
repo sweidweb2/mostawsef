@@ -52,6 +52,13 @@
     <Style Selector="DataGridRow.unpaid /template/ Rectangle#BackgroundRectangle">
         <Setter Property="Fill" Value="{DynamicResource BrushWarningSubtle}" />
     </Style>
+    <!-- Orders paid beyond their total: a refund is due (see OrdersView.OnLoadingRow). -->
+    <Style Selector="DataGridRow.refund /template/ Rectangle#BackgroundRectangle">
+        <Setter Property="Fill" Value="{DynamicResource BrushInfoSubtle}" />
+    </Style>
+    <Style Selector="DataGrid.clickable-rows DataGridRow">
+        <Setter Property="Cursor" Value="Hand" />
+    </Style>
     <Style Selector="DataGridRow:pointerover">
         <Setter Property="BorderBrush" Value="{DynamicResource BrushPrimary}" />
     </Style>

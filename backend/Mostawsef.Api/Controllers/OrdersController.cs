@@ -26,6 +26,13 @@ public class OrdersController(IOrderService orders) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public Task<OrderDetailsDto> Get(Guid id, CancellationToken cancellationToken) => orders.GetAsync(id, cancellationToken);
 
+    [HttpPost("{id:guid}/payments")]
+    [ProducesResponseType<OrderDetailsDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<OrderDetailsDto> AddPayment(Guid id, AddPaymentRequest request, CancellationToken cancellationToken) =>
+        orders.AddPaymentAsync(id, request, cancellationToken);
+
     [HttpPost]
     [ProducesResponseType<OrderDetailsDto>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

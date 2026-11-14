@@ -38,7 +38,7 @@
             </ui:PageHeader>
 
             <ui:DataTable Height="560"
-                          IsLoading="{Binding IsLoading}"
+                          IsLoading="{Binding ShowLoading}"
                           IsEmpty="{Binding IsEmpty}"
                           HasError="{Binding HasLoadError}"
                           ErrorTitle="{l:TrKey {Binding LoadErrorTitleKey}}"
@@ -62,7 +62,8 @@
                     </Grid>
                 </ui:DataTable.Toolbar>
 
-                <DataGrid ItemsSource="{Binding Items}" IsReadOnly="True" CanUserSortColumns="False" LoadingRow="OnLoadingRow">
+                <DataGrid Name="OrdersGrid" Classes="clickable-rows" ItemsSource="{Binding Items}" IsReadOnly="True" CanUserSortColumns="False"
+                          LoadingRow="OnLoadingRow" Tapped="OnRowTapped">
                     <DataGrid.Columns>
                         <DataGridTemplateColumn Header="{l:Tr Common.RowNumber}" Width="56">
                             <DataGridTemplateColumn.CellTemplate>
@@ -97,17 +98,27 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="{l:Tr Common.Actions}" Width="80">
+                        <DataGridTemplateColumn Header="{l:Tr Common.Actions}" Width="140">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate x:DataType="orders:OrderListItemDto">
-                                    <ui:IconButton Classes="ghost sm"
-                                                   Margin="8,0"
-                                                   VerticalAlignment="Center"
-                                                   HorizontalAlignment="Left"
-                                                   Icon="{StaticResource IconEye}"
-                                                   ToolTip.Tip="{l:Tr Common.View}"
-                                                   Command="{Binding $parent[DataGrid].((vm:OrdersViewModel)DataContext).ViewCommand}"
-                                                   CommandParameter="{Binding}" />
+                                    <StackPanel Orientation="Horizontal" Margin="8,0" Spacing="{StaticResource Space1}"
+                                                VerticalAlignment="Center" HorizontalAlignment="Left">
+                                        <ui:IconButton Classes="ghost sm"
+                                                       Icon="{StaticResource IconEye}"
+                                                       ToolTip.Tip="{l:Tr Common.View}"
+                                                       Command="{Binding $parent[DataGrid].((vm:OrdersViewModel)DataContext).ViewCommand}"
+                                                       CommandParameter="{Binding}" />
+                                        <ui:IconButton Classes="ghost sm"
+                                                       Icon="{StaticResource IconPrinter}"
+                                                       ToolTip.Tip="{l:Tr OrderDetails.PrintInvoice}"
+                                                       Command="{Binding $parent[DataGrid].((vm:OrdersViewModel)DataContext).PrintInvoiceCommand}"
+                                                       CommandParameter="{Binding}" />
+                                        <ui:IconButton Classes="ghost sm"
+                                                       Icon="{StaticResource IconDownload}"
+                                                       ToolTip.Tip="{l:Tr OrderDetails.ExportInvoice}"
+                                                       Command="{Binding $parent[DataGrid].((vm:OrdersViewModel)DataContext).ExportInvoiceCommand}"
+                                                       CommandParameter="{Binding}" />
+                                    </StackPanel>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
