@@ -5,11 +5,15 @@ namespace Mostawsef.Api.Middleware;
 
 /// <summary>
 /// Times every HTTP request, adds a Server-Timing header the desktop can show, and logs the duration.
-/// Skips the health check so the connection monitor does not flood the log.
+/// Skips the health check so the connection monitor does not flood the log. Requests slower than
+/// <see cref="SlowRequest"/> are warnings; the rest are Information, which production config hides
+/// (writing a console line per request is slow on Windows).
 /// </summary>
 public partial class RequestTimingMiddleware(RequestDelegate next, ILogger<RequestTimingMiddleware> logger)
 {
     private static readonly object TimingKey = new();
+
+    public static readonly TimeSpan SlowRequest = TimeSpan.FromSeconds(1);
 
     public async Task InvokeAsync(HttpContext context)
     {
@@ -37,12 +41,14 @@ public partial class RequestTimingMiddleware(RequestDelegate next, ILogger<Reque
         finally
         {
             sw.Stop();
-            LogRequest(
-                logger,
-                context.Request.Method,
-                context.Request.Path.Value,
-                context.Response.StatusCode,
-                sw.ElapsedMilliseconds);
+            if (sw.Elapsed >= SlowRequest)
+            {
+                LogSlowRequest(logger, context.Request.Method, context.Request.Path.Value, context.Response.StatusCode, sw.ElapsedMilliseconds);
+            }
+            else if (logger.IsEnabled(LogLevel.Information))
+            {
+                LogRequest(logger, context.Request.Method, context.Request.Path.Value, context.Response.StatusCode, sw.ElapsedMilliseconds);
+            }
         }
     }
 
@@ -51,4 +57,7 @@ public partial class RequestTimingMiddleware(RequestDelegate next, ILogger<Reque
 
     [LoggerMessage(EventId = 1, Level = LogLevel.Information, Message = "HTTP {Method} {Path} -> {StatusCode} in {ElapsedMs}ms")]
     private static partial void LogRequest(ILogger logger, string method, string? path, int statusCode, long elapsedMs);
+
+    [LoggerMessage(EventId = 2, Level = LogLevel.Warning, Message = "Slow HTTP {Method} {Path} -> {StatusCode} in {ElapsedMs}ms")]
+    private static partial void LogSlowRequest(ILogger logger, string method, string? path, int statusCode, long elapsedMs);
 }

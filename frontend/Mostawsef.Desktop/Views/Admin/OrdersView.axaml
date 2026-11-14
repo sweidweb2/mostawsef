@@ -41,8 +41,8 @@
                           IsLoading="{Binding IsLoading}"
                           IsEmpty="{Binding IsEmpty}"
                           HasError="{Binding HasLoadError}"
-                          ErrorTitle="{l:TrKey LoadErrorTitleKey}"
-                          ErrorDescription="{l:TrKey LoadErrorDescriptionKey}"
+                          ErrorTitle="{l:TrKey {Binding LoadErrorTitleKey}}"
+                          ErrorDescription="{l:TrKey {Binding LoadErrorDescriptionKey}}"
                           RetryCommand="{Binding RefreshCommand}"
                           FirstRowNumber="{Binding FirstRowNumber}">
                 <ui:DataTable.Toolbar>
@@ -58,7 +58,7 @@
                                    Classes="caption muted"
                                    HorizontalAlignment="Right"
                                    VerticalAlignment="Center"
-                                   Text="{l:Tr Orders.Records, Arg=TotalCount}" />
+                                   Text="{l:Tr Orders.Records, Arg={Binding DisplayTotal}}" />
                     </Grid>
                 </ui:DataTable.Toolbar>
 
@@ -93,7 +93,7 @@
                                 <DataTemplate x:DataType="orders:OrderListItemDto">
                                     <ui:Badge Margin="12,0" VerticalAlignment="Center" HorizontalAlignment="Left"
                                               Kind="{Binding Status, Converter={x:Static conv:ValueConverters.OrderStatusToBadgeKind}}"
-                                              Text="{l:TrKey Status, Prefix=OrderStatus.}" />
+                                              Text="{l:TrKey {Binding Status}, Prefix=OrderStatus.}" />
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>

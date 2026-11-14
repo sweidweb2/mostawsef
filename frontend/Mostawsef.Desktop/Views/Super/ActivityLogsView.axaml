@@ -37,8 +37,8 @@
                           IsLoading="{Binding IsLoading}"
                           IsEmpty="{Binding IsEmpty}"
                           HasError="{Binding HasLoadError}"
-                          ErrorTitle="{l:TrKey LoadErrorTitleKey}"
-                          ErrorDescription="{l:TrKey LoadErrorDescriptionKey}"
+                          ErrorTitle="{l:TrKey {Binding LoadErrorTitleKey}}"
+                          ErrorDescription="{l:TrKey {Binding LoadErrorDescriptionKey}}"
                           RetryCommand="{Binding RefreshCommand}"
                           FirstRowNumber="{Binding FirstRowNumber}">
                 <ui:DataTable.Toolbar>
@@ -47,7 +47,7 @@
                                       HorizontalAlignment="Left"
                                       Text="{Binding Search}"
                                       SearchCommand="{Binding SearchCommand}" />
-                        <TextBlock Grid.Column="1" Classes="caption muted" Text="{l:Tr Logs.Records, Arg=TotalCount}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Classes="caption muted" Text="{l:Tr Logs.Records, Arg={Binding TotalCount}}" VerticalAlignment="Center" />
                     </Grid>
                 </ui:DataTable.Toolbar>
 
@@ -76,7 +76,7 @@
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate x:DataType="logs:ActivityLogListItemDto">
                                     <TextBlock Margin="12,0" VerticalAlignment="Center" FontWeight="Medium"
-                                               Text="{l:TrKey Action, Prefix=Action.}"
+                                               Text="{l:TrKey {Binding Action}, Prefix=Action.}"
                                                ToolTip.Tip="{Binding Action}" />
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>

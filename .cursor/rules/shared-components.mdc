@@ -32,7 +32,7 @@ Pass a cancellation token to every API read a page makes (`PagedListViewModel.Re
 List pages derive from `ViewModels/Shell/NumberedListViewModel` (page numbers; records sorted by a field, e.g. users) or
 `PagedListViewModel` (cursor paging; append-only newest-first logs). Both expose the same bindings and keep rows in one
 `ListPageItems<T>` instance (`ReplaceAll` on reload; `PrependNewest` after create when the new row can sit on page 1).
-A failed load shows the `DataTable` error state (bind `HasError`, `ErrorTitle`/`ErrorDescription` via `{l:TrKey LoadError...Key}`
+A failed load shows the `DataTable` error state (bind `HasError`, `ErrorTitle`/`ErrorDescription` via `{l:TrKey {Binding LoadError...Key}}`
 and `RetryCommand="{Binding RefreshCommand}"`). Use toasts for failed actions (save, delete), the error state for content
 that could not load. Prefer `DataGridTextColumn` + `ValueConverters` for money/dates in tables; keep template columns for
 badges, actions and `RowNumber`.

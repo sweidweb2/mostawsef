@@ -8,7 +8,7 @@
              x:Class="Mostawsef.Desktop.Views.Admin.PatientFormView"
              x:DataType="vm:PatientFormViewModel">
     <StackPanel Spacing="{StaticResource GapGrid}">
-        <ui:Alert Kind="Danger" Text="{l:TrKey FormErrorKey}" />
+        <ui:Alert Kind="Danger" Text="{l:TrKey {Binding FormErrorKey}}" />
 
         <ui:ResponsiveGrid MinColumnWidth="220" MaxColumns="2" ColumnSpacing="{StaticResource GapGrid}" RowSpacing="{StaticResource GapGrid}">
             <ui:FormField ui:ResponsiveGrid.ColumnSpan="0" Label="{l:Tr Patients.Col.FullName}" IsRequired="True" Error="{l:FieldError FullName}">
@@ -41,7 +41,7 @@
                           HorizontalAlignment="Stretch">
                     <ComboBox.ItemTemplate>
                         <DataTemplate x:DataType="x:String">
-                            <TextBlock Text="{l:TrKey ., Prefix=Gender.}" />
+                            <TextBlock Text="{l:TrKey {Binding}, Prefix=Gender.}" />
                         </DataTemplate>
                     </ComboBox.ItemTemplate>
                 </ComboBox>

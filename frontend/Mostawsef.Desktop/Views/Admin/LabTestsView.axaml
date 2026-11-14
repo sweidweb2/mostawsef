@@ -39,8 +39,8 @@
                           IsLoading="{Binding IsLoading}"
                           IsEmpty="{Binding IsEmpty}"
                           HasError="{Binding HasLoadError}"
-                          ErrorTitle="{l:TrKey LoadErrorTitleKey}"
-                          ErrorDescription="{l:TrKey LoadErrorDescriptionKey}"
+                          ErrorTitle="{l:TrKey {Binding LoadErrorTitleKey}}"
+                          ErrorDescription="{l:TrKey {Binding LoadErrorDescriptionKey}}"
                           RetryCommand="{Binding RefreshCommand}"
                           FirstRowNumber="{Binding FirstRowNumber}">
                 <ui:DataTable.Toolbar>
@@ -56,7 +56,7 @@
                                     Orientation="Horizontal"
                                     HorizontalAlignment="Right"
                                     Spacing="{StaticResource GapControls}">
-                            <TextBlock Classes="caption muted" Text="{l:Tr LabTests.Records, Arg=TotalCount}" VerticalAlignment="Center" />
+                            <TextBlock Classes="caption muted" Text="{l:Tr LabTests.Records, Arg={Binding DisplayTotal}}" VerticalAlignment="Center" />
                             <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space1}">
                                 <ui:IconButton Name="TableViewButton"
                                                Classes="ghost sm"
@@ -175,7 +175,7 @@
                                             <ui:Badge Kind="Success" Text="{l:Tr LabTests.Active}" IsVisible="{Binding IsActive}" />
                                             <ui:Badge Text="{l:Tr LabTests.Inactive}" IsVisible="{Binding !IsActive}" />
                                         </Panel>
-                                        <TextBlock Classes="h3" Text="{l:Money Price}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                        <TextBlock Classes="h3" Text="{l:Money {Binding Price}}" TextWrapping="Wrap" VerticalAlignment="Center" />
                                     </DockPanel>
                                 </ui:Card>
                             </DataTemplate>

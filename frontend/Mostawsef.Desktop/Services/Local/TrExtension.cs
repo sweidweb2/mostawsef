@@ -13,20 +13,20 @@ namespace Mostawsef.Desktop.Services.Local;
 /// <summary>
 /// Translated text that refreshes when the language changes.
 /// Usage: Text="{l:Tr Common.Save}" with xmlns:l="using:Mostawsef.Desktop.Services.Local".
-/// With a bound {0} argument: Text="{l:Tr Dashboard.Welcome, Arg=UserName}".
+/// With a bound {0} argument: Text="{l:Tr Dashboard.Welcome, Arg={Binding UserName}}" (compiled under x:DataType).
 /// </summary>
 public class TrExtension(string key) : MarkupExtension
 {
     public string Key { get; set; } = key;
 
-    /// <summary>Path of a DataContext property passed as {0} to the translated text.</summary>
-    public string? Arg { get; set; }
+    /// <summary>Binding of the value passed as {0} to the translated text.</summary>
+    public BindingBase? Arg { get; set; }
 
     // App.Services is null only in the XAML previewer, which then shows the raw key.
     public override object ProvideValue(IServiceProvider serviceProvider) =>
         App.Services is null ? Key
         : Arg is null ? CreateBinding(Key)
-        : Translation.Bind(new ReflectionBinding(Arg), new Translation.FormatConverter(App.Localization), Key);
+        : Translation.Bind(Arg, new Translation.FormatConverter(App.Localization), Key);
 
     /// <summary>Binding for code-behind: control.Bind(TextBlock.TextProperty, TrExtension.CreateBinding("Common.Save")).</summary>
     public static BindingBase CreateBinding(string key)
@@ -53,20 +53,21 @@ public class TrExtension(string key) : MarkupExtension
 
 /// <summary>
 /// Translates the resource key held by a DataContext property, so view models expose keys
-/// and never listen for language changes. Usage: Text="{l:TrKey ErrorKey}".
-/// With Prefix, the property holds a code: Text="{l:TrKey Action, Prefix=Action.}" translates "Action.&lt;code&gt;"
+/// and never listen for language changes. Usage: Text="{l:TrKey {Binding ErrorKey}}".
+/// With Prefix, the property holds a code: Text="{l:TrKey {Binding Action}, Prefix=Action.}" translates "Action.&lt;code&gt;"
 /// and shows the code itself when no translation exists.
 /// </summary>
-public class TrKeyExtension(string path) : MarkupExtension
+public class TrKeyExtension(BindingBase value) : MarkupExtension
 {
-    public string Path { get; set; } = path;
+    /// <summary>Binding of the key (or code); compiled by the XAML compiler under x:DataType.</summary>
+    public BindingBase Value { get; set; } = value;
 
     public string? Prefix { get; set; }
 
     public override object ProvideValue(IServiceProvider serviceProvider) =>
         App.Services is null
-            ? Path
-            : Translation.Bind(new ReflectionBinding(Path), new Translation.KeyConverter(App.Localization), Prefix);
+            ? Prefix ?? string.Empty
+            : Translation.Bind(Value, new Translation.KeyConverter(App.Localization), Prefix);
 }
 
 /// <summary>
@@ -84,18 +85,19 @@ public class FieldErrorExtension(string field) : MarkupExtension
 }
 
 /// <summary>
-/// An amount in minor units shown with the clinic currency: Text="{l:Money Total}" -> "1,250.50 EGP".
+/// An amount in minor units shown with the clinic currency: Text="{l:Money {Binding Total}}" -> "1,250.50 EGP".
 /// Refreshes when the language or the clinic currency changes.
 /// </summary>
-public class MoneyExtension(string path) : MarkupExtension
+public class MoneyExtension(BindingBase value) : MarkupExtension
 {
-    public string Path { get; set; } = path;
+    /// <summary>Binding of the amount; compiled by the XAML compiler under x:DataType.</summary>
+    public BindingBase Value { get; set; } = value;
 
     public override object ProvideValue(IServiceProvider serviceProvider)
     {
         if (App.Services is null)
         {
-            return Path;
+            return string.Empty;
         }
 
         var clinic = App.Services.GetRequiredService<ClinicContext>();
@@ -103,9 +105,9 @@ public class MoneyExtension(string path) : MarkupExtension
         {
             Bindings =
             {
-                new ReflectionBinding(Path),
+                Value,
                 new CompiledBinding(Translation.VersionPath) { Source = App.Localization },
-                new ReflectionBinding(nameof(ClinicContext.Settings)) { Source = clinic },
+                new CompiledBinding(Translation.ClinicSettingsPath) { Source = clinic },
             },
             Mode = BindingMode.OneWay,
             Converter = new Translation.MoneyConverter(App.Localization, clinic),
@@ -120,6 +122,11 @@ internal static class Translation
     /// re-reads it, so it must not go through reflection.
     /// </summary>
     public static readonly CompiledBindingPath VersionPath = CompiledBinding.Create<LocalizationService, int>(l => l.Version).Path!;
+
+    /// <summary>ClinicContext.Settings as a compiled path (every money text listens to it for currency changes).</summary>
+    public static readonly CompiledBindingPath ClinicSettingsPath =
+        CompiledBinding.Create<ClinicContext, Contracts.Settings.ClinicSettingsDto?>(c => c.Settings).Path!;
+
 
     /// <summary>Combines a DataContext binding with LocalizationService.Version so the text refreshes on language changes.</summary>
     public static MultiBinding Bind(BindingBase value, Converter converter, string? parameter) =>

@@ -6,7 +6,7 @@
              x:Class="Mostawsef.Desktop.Views.Admin.ClinicSettingsFormView"
              x:DataType="vm:ClinicSettingsFormViewModel">
     <StackPanel Spacing="{StaticResource GapGrid}">
-        <ui:Alert Kind="Danger" Text="{l:TrKey FormErrorKey}" />
+        <ui:Alert Kind="Danger" Text="{l:TrKey {Binding FormErrorKey}}" />
 
         <ui:FormField Label="{l:Tr Settings.Field.Name}" IsRequired="True" Error="{l:FieldError Name}">
             <TextBox Name="NameBox" Text="{Binding Name}" PlaceholderText="{l:Tr Settings.NamePlaceholder}" />
@@ -24,7 +24,7 @@
             <ComboBox Name="CurrencyBox" ItemsSource="{Binding CurrencyOptions}" SelectedItem="{Binding CurrencyCode}" HorizontalAlignment="Stretch">
                 <ComboBox.ItemTemplate>
                     <DataTemplate x:DataType="x:String">
-                        <TextBlock Text="{l:TrKey ., Prefix=Currency.}" />
+                        <TextBlock Text="{l:TrKey {Binding}, Prefix=Currency.}" />
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>

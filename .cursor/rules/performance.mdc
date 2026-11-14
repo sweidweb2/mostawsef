@@ -21,11 +21,13 @@ Follow these on every change. Prefer existing patterns (`ListPageItems.ReplaceAl
 - Lists: use `DataTable`/`DataGrid` (virtualizing). Never put an items control inside `ScrollViewer` or `StackPanel` in a
   way that disables virtualization; do not use a non-virtualizing panel for long lists; keep item templates light.
 - Compiled bindings stay on: every view/`DataTemplate` has `x:DataType`; fix broken paths; expensive work does not belong
-  in converters.
+  in converters. `{l:Money}`, `{l:TrKey}` and `{l:Tr ..., Arg=}` take a nested `{Binding}` so they stay compiled too.
+- Forms: only properties named like request fields (or listed in `AffectsRequest`) rebuild the request for `IsDirty`.
 - Prefer `{StaticResource}` unless the value must track theme (`Brush*`, theme shadows → `{DynamicResource}`). Do not
   duplicate resource dictionaries or grow broad style selectors without need.
 - Keep XAML nesting shallow; avoid expensive effects (blur, heavy shadows, elaborate geometries) unless a token/pattern
   already uses them.
+- Small lists that are already loaded (e.g. the New Order catalog) are filtered in memory with `SearchText.Normalize`.
 - Search/filter that hits the API or rebuilds a large list: debounce/throttle, or Enter-to-search (`ui:SearchBox`).
   Do not fire a network/reload on every keystroke.
 
@@ -39,7 +41,7 @@ Follow these on every change. Prefer existing patterns (`ListPageItems.ReplaceAl
 ## Data loading and caching
 - Load on first need (or page `ActivateAsync`), not at app/portal startup. Prefer paging over full dumps; only fetch
   columns/fields the UI shows. Prefetch only where an existing pattern does (`ClinicContext` on Admin portal).
-- Cache repeated identical reads with clear ownership and invalidation (see `ClinicContext`, catalog version). No
+- Cache repeated identical reads with clear ownership and invalidation (see `ClinicContext`, `LabTestCatalog` + catalog version). No
   unbounded caches; clear on sign-out / edit / version bump.
 - Do not keep large objects (images, full result sets, bitmaps) longer than needed; dispose `IDisposable`s.
 
@@ -58,9 +60,16 @@ Follow these on every change. Prefer existing patterns (`ListPageItems.ReplaceAl
 - Startup/DI: register cheaply; defer DB/network/file/heavy init until first use (migrations/seed stay on API startup as
   today). Do not load every page VM or catalog at process start.
 
+## JSON
+- Every API request/response type (and each closed `PagedResult<T>` / `CursorPage<T>` / list) is listed in
+  `Contracts/Common/ContractsJsonContext` (compile-time metadata on both sides). A missing type still works through the
+  reflection fallback, but its first call is slower.
+
 ## EF Core and API reads
 - Reads that do not update entities: `AsNoTracking()`. Page with `PageQueryExecutor` / `KeysetPaging` (or the feature’s
   existing pager); never return unbounded lists to the UI.
+- Numbered list totals stop at `PageQuery.MaxCountedTotal` (pass the unsorted filtered query to `ToPageAsync`);
+  the desktop shows "10,000+" via `DisplayTotal`. Everyday query shapes are run once at startup (`DatabaseWarmUp`).
 - No N+1: shape list queries with a single projection/`Select`, or an intentional `Include`/`AsSplitQuery` when needed.
   Do not load graphs larger than the screen needs.
 - Application stays free of EF types; query details live in Infrastructure repositories.

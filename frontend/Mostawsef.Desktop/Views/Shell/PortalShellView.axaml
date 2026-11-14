@@ -19,7 +19,7 @@
                         IsCompact="{Binding #Shell.IsSidebarCompact}">
                 <ui:NavMenu.Styles>
                     <Style Selector="ui|NavMenuItem" x:DataType="nav:PortalPage">
-                        <Setter Property="Text" Value="{l:TrKey TitleKey}" />
+                        <Setter Property="Text" Value="{l:TrKey {Binding TitleKey}}" />
                         <Setter Property="Icon" Value="{Binding Icon}" />
                     </Style>
                 </ui:NavMenu.Styles>
@@ -34,7 +34,7 @@
         </ui:AppShell.SidebarFooter>
 
         <ui:AppShell.TopBar>
-            <ui:TopBar Title="{l:TrKey PortalTitleKey}">
+            <ui:TopBar Title="{l:TrKey {Binding PortalTitleKey}}">
                 <ui:TopBar.Actions>
                     <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
                         <ui:PreferencesBar />
@@ -58,7 +58,7 @@
                                 <ui:Avatar DisplayName="{Binding DisplayName}" Size="{StaticResource AvatarSizeSm}" />
                                 <StackPanel VerticalAlignment="Center" Classes="hide-compact">
                                     <TextBlock Classes="strong" Text="{Binding DisplayName}" />
-                                    <TextBlock Classes="caption muted" Text="{l:TrKey RoleKey}" />
+                                    <TextBlock Classes="caption muted" Text="{l:TrKey {Binding RoleKey}}" />
                                 </StackPanel>
                             </StackPanel>
                         </Button>
@@ -72,7 +72,7 @@
                       DockPanel.Dock="Top"
                       Margin="{StaticResource PaddingPageCompact}"
                       Kind="{Binding Connection.AlertKind}"
-                      Text="{l:TrKey Connection.MessageKey}" />
+                      Text="{l:TrKey {Binding Connection.MessageKey}}" />
             <ui:PageHost Name="PageHost" Page="{Binding CurrentPage}" />
         </DockPanel>
     </ui:AppShell>

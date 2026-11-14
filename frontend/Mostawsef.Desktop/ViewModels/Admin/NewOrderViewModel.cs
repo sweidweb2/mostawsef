@@ -24,7 +24,8 @@ namespace Mostawsef.Desktop.ViewModels.Admin;
 /// <summary>
 /// Admin portal sub-page: a new order in three steps (patient, tests, review). Saving sends one request;
 /// the API saves it all or nothing. Orders reuses one instance per portal visit; <see cref="BeginReuse"/>
-/// clears the form. The lab-test catalog loads only when the tests step is shown.
+/// clears the form. The lab-test catalog loads only when the tests step is shown; it comes from the shared
+/// <see cref="LabTestCatalog"/> cache and is searched in memory.
 /// </summary>
 public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusablePage
 {
@@ -34,19 +35,19 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
 
     private readonly OrdersApi _orders;
     private readonly PatientsApi _patients;
-    private readonly LabTestsApi _tests;
+    private readonly LabTestCatalog _catalog;
     private readonly LabTestCatalogVersion _catalogVersion;
     private readonly NavigationService _navigation;
     private readonly IToastService _toasts;
     private readonly ErrorReporter _errors;
 
     private readonly PageLifetime _pageLifetime = new();
-    private CancellationTokenSource? _catalogSearchDelay;
     private CancellationTokenSource? _catalogLoadCancellation;
     private CancellationTokenSource? _patientLoadCancellation;
-    private bool _catalogLoaded;
+
+    /// <summary>Every active test (unfiltered); <see cref="Catalog"/> is the part matching <see cref="CatalogSearch"/>.</summary>
+    private List<CatalogTestItem>? _allCatalog;
     private int _loadedCatalogVersion;
-    private string? _loadedCatalogSearch;
     private string? _loadedPatientSearch;
     private OrderDetailsDto? _created;
     private bool _patientIncomplete;
@@ -58,15 +59,13 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
     /// <summary>Shared Order details instance from Orders so PageHost reuses one view after create.</summary>
     public OrderDetailsViewModel? OrderDetailsPage { get; set; }
 
-    public static readonly TimeSpan CatalogSearchDelay = TimeSpan.FromMilliseconds(250);
-
     /// <summary>Matches the AutoCompleteBox <c>MinimumPopulateDelay</c> so typing does not hit the API every keystroke.</summary>
-    public static readonly TimeSpan PatientSearchDelay = CatalogSearchDelay;
+    public static readonly TimeSpan PatientSearchDelay = TimeSpan.FromMilliseconds(250);
 
     public NewOrderViewModel(
         OrdersApi orders,
         PatientsApi patients,
-        LabTestsApi tests,
+        LabTestCatalog catalog,
         LabTestCatalogVersion catalogVersion,
         NavigationService navigation,
         IDialogService dialogs,
@@ -77,7 +76,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
     {
         _orders = orders;
         _patients = patients;
-        _tests = tests;
+        _catalog = catalog;
         _catalogVersion = catalogVersion;
         _navigation = navigation;
         _toasts = toasts;
@@ -289,8 +288,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
         _pageLifetime.Cancel();
         IsPreparing = false;
         Catalog = [];
-        _catalogLoaded = false;
-        _loadedCatalogSearch = null;
+        _allCatalog = null;
         _created = null;
     }
 
@@ -316,7 +314,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
         _patientIncomplete = false;
         _testsIncomplete = false;
         SelectedTests.Clear();
-        foreach (var item in Catalog)
+        foreach (var item in _allCatalog ?? [])
         {
             item.IsSelected = false;
         }
@@ -338,8 +336,6 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
     private void CancelInFlightWork()
     {
         CancelLifetime();
-        _catalogSearchDelay?.Cancel();
-        _catalogSearchDelay = null;
         _catalogLoadCancellation?.Cancel();
         _patientLoadCancellation?.Cancel();
     }
@@ -375,14 +371,12 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
             : null,
     };
 
-    protected override bool IsStateProperty(string propertyName) =>
-        base.IsStateProperty(propertyName)
-        || propertyName is nameof(HasPatient) or nameof(HasSelectedTests) or nameof(IsPatientSatisfied)
-            or nameof(IsTestsSatisfied) or nameof(CatalogTotal) or nameof(Total)
-            or nameof(MaxPayableAmount) or nameof(Remaining) or nameof(HasPayment)
-            or nameof(IsCatalogEmpty) or nameof(IsCatalogLoading) or nameof(IsPreparing)
-            or nameof(SelectedStep) or nameof(Catalog) or nameof(CatalogSearch)
-            or nameof(CatalogLoadError) or nameof(Steps);
+    /// <summary>
+    /// The inputs of this form are not named like the request fields. Patient and test changes call RefreshDirty from
+    /// NotifyPatientInputsChanged / NotifyTestsInputsChanged; step, catalog and search changes never touch the request.
+    /// </summary>
+    protected override bool AffectsRequest(string propertyName) =>
+        propertyName is nameof(Addon) or nameof(PaymentAmount) or nameof(PaymentMethod) or nameof(PaymentNotes);
 
     /// <summary>Items is a list (reference equality), so compare field-by-field instead of JSON.</summary>
     protected override bool HasChanges(object request, object savedRequest)
@@ -521,7 +515,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
                 OnPropertyChanged(nameof(Remaining));
                 break;
             case nameof(CatalogSearch):
-                ScheduleCatalogSearch();
+                ApplyCatalogSearch();
                 break;
             case nameof(SelectedStep):
                 RefreshStepContent();
@@ -686,61 +680,24 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
     [RelayCommand]
     private Task RetryCatalogAsync() => LoadCatalogAsync();
 
-    private void ScheduleCatalogSearch()
-    {
-        if (SelectedStep != TestsStep)
-        {
-            return;
-        }
-
-        _catalogSearchDelay?.Cancel();
-        var delay = new CancellationTokenSource();
-        _catalogSearchDelay = delay;
-        _ = DebouncedCatalogSearchAsync(delay);
-    }
-
-    private async Task DebouncedCatalogSearchAsync(CancellationTokenSource delay)
-    {
-        try
-        {
-            await Task.Delay(CatalogSearchDelay, delay.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            return;
-        }
-        finally
-        {
-            if (_catalogSearchDelay == delay)
-            {
-                _catalogSearchDelay = null;
-            }
-
-            delay.Dispose();
-        }
-
-        await LoadCatalogAsync();
-    }
-
     private Task EnsureCatalogAsync() =>
-        _catalogLoaded
-        && _loadedCatalogSearch == CatalogSearch
-        && _loadedCatalogVersion == _catalogVersion.Current
+        _allCatalog is not null && _loadedCatalogVersion == _catalogVersion.Current
             ? Task.CompletedTask
             : LoadCatalogAsync();
 
+    /// <summary>Gets the catalog (from the shared cache when it is current), then shows the part matching the search.</summary>
     private async Task LoadCatalogAsync()
     {
-        var search = CatalogSearch;
         _catalogLoadCancellation?.Cancel();
         var load = CancellationTokenSource.CreateLinkedTokenSource(_pageLifetime.Token);
         _catalogLoadCancellation = load;
         var cancellationToken = load.Token;
 
+        var version = _catalogVersion.Current;
         IsCatalogLoading = true;
         try
         {
-            var result = await _tests.GetCatalogAsync(search, cancellationToken);
+            var result = await _catalog.GetAsync(cancellationToken);
             if (cancellationToken.IsCancellationRequested)
             {
                 return;
@@ -752,11 +709,10 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
                 return;
             }
 
-            Catalog = BuildCatalog(result.Value!.Items);
+            _allCatalog = BuildCatalog(result.Value!);
+            _loadedCatalogVersion = version;
             CatalogLoadError = null;
-            _catalogLoaded = true;
-            _loadedCatalogVersion = _catalogVersion.Current;
-            _loadedCatalogSearch = search;
+            ApplyCatalogSearch();
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -778,6 +734,33 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
         }
     }
 
+    /// <summary>Filters the loaded catalog in memory: instant, and no request per keystroke.</summary>
+    private void ApplyCatalogSearch()
+    {
+        if (_allCatalog is not { } all)
+        {
+            return;
+        }
+
+        var term = SearchText.Normalize(CatalogSearch);
+        if (term.Length == 0)
+        {
+            Catalog = all;
+            return;
+        }
+
+        var matches = new List<CatalogTestItem>();
+        foreach (var item in all)
+        {
+            if (item.Matches(term))
+            {
+                matches.Add(item);
+            }
+        }
+
+        Catalog = matches;
+    }
+
     private void NotifyPatientInputsChanged(string propertyName)
     {
         OnPropertyChanged(nameof(HasPatient));
@@ -790,6 +773,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
 
         RefreshStepStatuses();
         SaveCommand.NotifyCanExecuteChanged();
+        RefreshDirty();
     }
 
     private void NotifyTestsInputsChanged()
@@ -815,6 +799,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
 
         RefreshStepStatuses();
         SaveCommand.NotifyCanExecuteChanged();
+        RefreshDirty();
     }
 
     private List<CatalogTestItem> BuildCatalog(IReadOnlyList<LabTestDto> incoming)
@@ -826,7 +811,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
         }
 
         Dictionary<Guid, CatalogTestItem>? prior = null;
-        if (Catalog is { Count: > 0 } existing)
+        if (_allCatalog is { Count: > 0 } existing)
         {
             prior = new Dictionary<Guid, CatalogTestItem>(existing.Count);
             foreach (var item in existing)

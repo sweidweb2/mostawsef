@@ -121,7 +121,7 @@ Tests and docs
     (`NumberedListViewModel<<Entity>ListItemDto>`, `FetchPageAsync`, Add/Edit/Delete commands, edit loads the details
     first with `ReadAsync`). View `Views/<Role>/<Feature>View.axaml` + `.axaml.cs`, copy of `UsersView`: `PageHeader`
     with Refresh/Add, `DataTable` with `SearchBox`, record count, columns, row action `IconButton`s and `Pagination`.
-    Dates: `ValueConverters.LocalDateTime`; money: `MoneyFormat`; translated values: `{l:TrKey ..., Prefix=...}`.
+    Dates: `ValueConverters.LocalDateTime`; money: `MoneyFormat`; translated values: `{l:TrKey {Binding ...}, Prefix=...}`.
 11. **Form**: `ViewModels/<Role>/<Entity>FormViewModel.cs`, copy of `UserFormViewModel.cs` (`FormViewModel`;
     properties named like the request properties; `BuildRequest` trims text and passes `Version` on edit; `SubmitAsync`;
     `MarkClean()` last in the constructor). View `Views/<Role>/<Entity>FormView.axaml` + `.axaml.cs`, copy of

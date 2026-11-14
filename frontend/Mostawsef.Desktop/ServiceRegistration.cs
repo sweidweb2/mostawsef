@@ -85,6 +85,7 @@ public static class ServiceRegistration
         // Clinic details + printing
         services.AddSingleton<ClinicContext>();
         services.AddSingleton<LabTestCatalogVersion>();
+        services.AddSingleton<LabTestCatalog>();
         services.AddSingleton(sp => new PrintService(
             sp.GetRequiredService<LocalizationService>(),
             sp.GetRequiredService<ClinicContext>(),

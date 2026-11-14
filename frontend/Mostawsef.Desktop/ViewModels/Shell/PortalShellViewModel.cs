@@ -10,6 +10,7 @@ using Mostawsef.Desktop.Services.Auth;
 using Mostawsef.Desktop.Services.Diagnostics;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Navigation;
+using Mostawsef.Desktop.Services.Printing;
 using Mostawsef.Desktop.Services.Ui;
 using Mostawsef.Desktop.ViewModels.Auth;
 
@@ -73,6 +74,7 @@ public partial class PortalShellViewModel : ViewModelBase
         if (_session.CurrentUser?.Role == Roles.Admin)
         {
             _ = clinic.LoadAsync();
+            PrintService.WarmUpInBackground();
         }
 
         SelectedMenuIndex = 0;

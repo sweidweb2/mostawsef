@@ -7,7 +7,7 @@
              x:DataType="vm:DashboardViewModel">
     <ScrollViewer>
         <StackPanel Classes="page">
-            <ui:PageHeader Title="{l:Tr Nav.Dashboard}" Subtitle="{l:Tr Dashboard.Welcome, Arg=UserName}" />
+            <ui:PageHeader Title="{l:Tr Nav.Dashboard}" Subtitle="{l:Tr Dashboard.Welcome, Arg={Binding UserName}}" />
             <ui:Card>
                 <ui:EmptyState Margin="0,32"
                                Icon="{StaticResource IconDashboard}"

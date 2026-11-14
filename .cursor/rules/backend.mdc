@@ -81,7 +81,7 @@ alwaysApply: false
 - **Money**: `long` minor units in entities, contracts and columns (`Contracts/Common/Money`: `ToMinor`/`ToMajor`, 100 per
   unit). The currency is `ClinicSettings.CurrencyCode` (one of `Currencies.All`); amounts never carry their own currency.
 - **Reference lists**: fixed workflow values (order status, payment method) are C# enums stored as strings
-  (`HasConversion<string>()`), sent as strings, and translated on the desktop (`{l:TrKey Status, Prefix=OrderStatus.}`).
+  (`HasConversion<string>()`), sent as strings, and translated on the desktop (`{l:TrKey {Binding Status}, Prefix=OrderStatus.}`).
   Lists the staff edit (lab tests, drugs) are real entities with their own module (copy the users module, `SearchName`
   for search). No generic lookup table.
 - **Clinic settings** (`IClinicSettingsService`): name, address, phone, currency. One row, created at startup; everyone

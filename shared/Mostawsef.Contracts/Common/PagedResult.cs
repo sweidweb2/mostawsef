@@ -24,6 +24,15 @@ public record PageQuery(int Page = 1, int PageSize = 20, string? Search = null, 
     /// <summary>Same floor as <see cref="CursorQuery.MinSearchLength"/>: trigram search needs three characters.</summary>
     public const int MinSearchLength = CursorQuery.MinSearchLength;
 
+    /// <summary>
+    /// The filtered total stops counting here, so opening or searching a huge table stays fast.
+    /// A total equal to this means "at least this many": the client shows "10,000+" and pages up to it.
+    /// </summary>
+    public const int MaxCountedTotal = 10_000;
+
+    /// <summary>True when <paramref name="total"/> hit <see cref="MaxCountedTotal"/> (more rows may exist).</summary>
+    public static bool IsTotalCapped(int total) => total >= MaxCountedTotal;
+
     /// <summary>Sentinel when <see cref="IncludeTotal"/> is false: the client keeps its previous total.</summary>
     public const int TotalNotComputed = -1;
 

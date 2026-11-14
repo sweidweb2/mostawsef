@@ -51,7 +51,14 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
     public partial int PageCount { get; private set; } = 1;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(DisplayTotal))]
     public partial int TotalCount { get; private set; }
+
+    /// <summary>
+    /// The total for "{0} records" texts: the number, or "10,000+" when the API stopped counting
+    /// (<see cref="PageQuery.MaxCountedTotal"/>). Formatted with the UI language when shown.
+    /// </summary>
+    public object DisplayTotal => PageQuery.IsTotalCapped(TotalCount) ? new AtLeastCount(TotalCount) : TotalCount;
 
     /// <summary>Number of the first shown row across all pages (41 on page 3 of 20 per page). Bind it to DataTable.FirstRowNumber.</summary>
     [ObservableProperty]
@@ -331,4 +338,13 @@ public abstract partial class NumberedListViewModel<TItem> : ViewModelBase, ILoa
             : "Error.RequestFailed"));
     }
 
+}
+
+/// <summary>A count shown as "at least": 10000 formats as "10,000+" (with the culture of the text it is formatted into).</summary>
+public readonly record struct AtLeastCount(int Value) : IFormattable
+{
+    public string ToString(string? format, IFormatProvider? formatProvider) =>
+        Value.ToString("N0", formatProvider) + "+";
+
+    public override string ToString() => ToString(null, System.Globalization.CultureInfo.CurrentCulture);
 }

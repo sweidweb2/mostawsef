@@ -55,7 +55,7 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
                 o.Paid,
                 o.Status));
 
-        return await rows.ToPageAsync(query, cancellationToken);
+        return await rows.ToPageAsync(orders, query, cancellationToken);
     }
 
     public void Add(Order order) => db.Orders.Add(order);

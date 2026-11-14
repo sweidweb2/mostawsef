@@ -51,7 +51,7 @@ public class UserRepository(AppDbContext db) : IUserRepository
             .Select(u => new UserListRow(
                 u.Id, u.Username, u.FullName, u.Role, u.IsActive, u.LastLoginAt, u.CreatedAt, u.Version));
 
-        return await rows.ToPageAsync(query, cancellationToken);
+        return await rows.ToPageAsync(users, query, cancellationToken);
     }
 
     public void Add(User user) => db.Users.Add(user);

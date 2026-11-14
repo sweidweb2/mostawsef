@@ -40,6 +40,29 @@ public class PrintService(
         return true;
     });
 
+    /// <summary>
+    /// The first PDF of a session is slow: QuestPDF loads its native renderer and the fonts. This does that once per
+    /// process on a background thread (a one-line PDF that is thrown away), so the user's first print is quick.
+    /// A failure is only traced: the real print hits the same problem and reports it.
+    /// </summary>
+    private static readonly Lazy<Task> Warm = new(() => Task.Run(() =>
+    {
+        try
+        {
+            _ = Setup.Value;
+            Document.Create(c => c.Page(page =>
+                    page.Content().Text("م m").FontFamily(FontFamily)))
+                .GeneratePdf();
+        }
+        catch (Exception ex)
+        {
+            Trace.TraceWarning("PDF warm-up failed: {0}", ex);
+        }
+    }));
+
+    /// <summary>Starts <see cref="Warm"/> (once per process). Call it where printing becomes possible (Admin portal).</summary>
+    public static void WarmUpInBackground() => _ = Warm.Value;
+
     public static string PrintFolder { get; } = Path.Combine(Path.GetTempPath(), "Mostawsef", "print");
 
     /// <summary>Opens a file with the program Windows associates with it (the PDF viewer).</summary>

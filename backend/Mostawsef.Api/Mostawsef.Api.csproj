@@ -1,5 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
+  <!-- ReadyToRun: a published API starts with precompiled code instead of JIT-compiling every endpoint on first use.
+       It needs a target runtime: a publish without -r targets the clinic server (win-x64). Build and run stay portable. -->
+  <PropertyGroup Condition="'$(_IsPublishing)' == 'true' And '$(RuntimeIdentifier)' == ''">
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
+    <PublishReadyToRun>true</PublishReadyToRun>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />

@@ -51,7 +51,7 @@
                                           VerticalAlignment="Top"
                                           Foreground="{DynamicResource BrushDanger}" />
                                 <TextBlock Grid.Column="1"
-                                           Text="{l:TrKey ErrorKey}"
+                                           Text="{l:TrKey {Binding ErrorKey}}"
                                            Foreground="{DynamicResource BrushDangerText}"
                                            TextWrapping="Wrap" />
                             </Grid>

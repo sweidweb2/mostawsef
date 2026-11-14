@@ -450,7 +450,7 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("Phone");
 
-                    b.HasIndex("SearchName");
+                    b.HasIndex("SearchName", "Id");
 
                     b.HasIndex("SearchText");
 

@@ -147,7 +147,8 @@ Layouts react to the **width of the AppShell content area**, not the window or d
 - Languages: **Arabic** (default, RTL) and **English**, switchable at runtime with `ui:PreferencesBar` (or `LocalizationService.Toggle()`).
 - `LocalizationService` is a DI singleton: inject it into view models/services; code not created by DI (controls) uses `App.Localization`.
 - Strings in `Resources/Strings.resx` + `Resources/Strings.ar.resx`. XAML: `{l:Tr Key}`, with a bound argument
-  `{l:Tr Dashboard.Welcome, Arg=UserName}`, or a key held by the view model `{l:TrKey ErrorKey}`. Code: `localization.Get(key)`.
+  `{l:Tr Dashboard.Welcome, Arg={Binding UserName}}`, or a key held by the view model `{l:TrKey {Binding ErrorKey}}`.
+  The value is a nested `{Binding}` so the XAML compiler compiles it under `x:DataType` (no reflection per row). Code: `localization.Get(key)`.
 - View models expose resource keys, not translated text, and never subscribe to `LanguageChanged` (only attached controls may).
 - Culture: `ar-EG` (Gregorian, Latin digits) / `en-US`. Layout, margins, borders and icons mirror automatically.
 - New windows must call `App.Localization.Apply(window)`.
@@ -166,7 +167,7 @@ Layouts react to the **width of the AppShell content area**, not the window or d
 | `NavigationService` | Portals and access checks; `OpenAsync<Vm>(setup)` / `BackAsync()` show a sub-page (`AppRoutes` `.SubPage`) inside the portal, e.g. New order and Order details |
 | `PrintService` | Renders QuestPDF documents (`ClinicPage` layout) to a PDF and opens it in the default viewer |
 
-Money: `Text="{l:Money Total}"` (minor units -> "1,250.50 EGP" / "1,250.50 ج.م"). Calendar dates: `ValueConverters.DateOnly` on `CalendarDatePicker`.
+Money: `Text="{l:Money {Binding Total}}"` (minor units -> "1,250.50 EGP" / "1,250.50 ج.م"). Calendar dates: `ValueConverters.DateOnly` on `CalendarDatePicker`.
 
 ## 13. Gallery and tools
 

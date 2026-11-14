@@ -14,7 +14,9 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? throw new InvalidOperationException("Connection string 'Default' is not configured.");
 
-builder.Services.AddControllers();
+// Compile-time JSON metadata for the contracts (no reflection on each type's first use); reflection stays as the fallback.
+builder.Services.AddControllers()
+    .AddJsonOptions(options => options.JsonSerializerOptions.TypeInfoResolverChain.Insert(0, ContractsJsonContext.Default));
 builder.Services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>
 {
     // Automatic 400s from [ApiController] model validation: their "errors" values are ErrorCodes (attribute ErrorMessage).
@@ -39,6 +41,7 @@ var app = builder.Build();
 
 var seedUsers = builder.Configuration.GetSection("Seed:Users").Get<List<SeedUser>>() ?? [];
 await app.Services.InitializeDatabaseAsync(seedUsers);
+await app.Services.WarmUpDatabaseAsync();
 
 app.UseMiddleware<RequestTimingMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();

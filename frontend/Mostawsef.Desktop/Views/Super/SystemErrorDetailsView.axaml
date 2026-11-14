@@ -7,7 +7,7 @@
              x:DataType="vm:SystemErrorDetailsViewModel">
     <ui:DetailsView>
         <ui:DetailsItem Label="{l:Tr Logs.Col.Time}" Value="{Binding OccurredAt}" />
-        <ui:DetailsItem Label="{l:Tr Logs.Col.Level}" Value="{l:TrKey Error.Level, Prefix=ErrorLevel.}" />
+        <ui:DetailsItem Label="{l:Tr Logs.Col.Level}" Value="{l:TrKey {Binding Error.Level}, Prefix=ErrorLevel.}" />
         <ui:DetailsItem Label="{l:Tr Logs.Col.Source}" Value="{Binding Error.Source}" />
         <ui:DetailsItem Label="{l:Tr Logs.Col.Message}" Value="{Binding Error.Message}" />
         <ui:DetailsItem Label="{l:Tr Logs.Field.ExceptionType}" Value="{Binding Error.ExceptionType}" />

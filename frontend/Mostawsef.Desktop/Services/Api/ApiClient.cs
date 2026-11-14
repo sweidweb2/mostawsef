@@ -7,6 +7,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 using Mostawsef.Contracts.Common;
@@ -20,7 +21,11 @@ namespace Mostawsef.Desktop.Services.Api;
 /// </summary>
 public class ApiClient(Lazy<HttpClient> http, PerformanceMonitor perf)
 {
-    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+    /// <summary>Compile-time metadata for the contracts first (fast first call per type), reflection for anything else.</summary>
+    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
+    {
+        TypeInfoResolver = JsonTypeInfoResolver.Combine(ContractsJsonContext.Default, new DefaultJsonTypeInfoResolver()),
+    };
 
     /// <summary>Raised (on the calling thread) whenever a call fails because the API could not be reached.</summary>
     public event EventHandler? Unreachable;

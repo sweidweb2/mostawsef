@@ -18,14 +18,14 @@
                 </ui:PageHeader.Actions>
             </ui:PageHeader>
 
-            <ui:Alert Kind="Warning" Text="{l:TrKey MaintenanceNoticeKey}" />
+            <ui:Alert Kind="Warning" Text="{l:TrKey {Binding MaintenanceNoticeKey}}" />
 
             <ui:Card>
                 <ui:LoadingOverlay IsLoading="{Binding IsLoading}">
                     <Panel>
                         <ui:DetailsView IsVisible="{Binding HasSettings}">
                             <ui:DetailsItem Label="{l:Tr SystemSettings.Field.BackupPath}" Value="{Binding Settings.BackupPath, FallbackValue=''}" />
-                            <ui:DetailsItem Label="{l:Tr SystemSettings.Field.MaintenanceMode}" Value="{l:TrKey MaintenanceModeKey}" />
+                            <ui:DetailsItem Label="{l:Tr SystemSettings.Field.MaintenanceMode}" Value="{l:TrKey {Binding MaintenanceModeKey}}" />
                             <ui:DetailsItem Label="{l:Tr Settings.Field.UpdatedBy}" Value="{Binding Settings.UpdatedBy, FallbackValue=''}" />
                         </ui:DetailsView>
                         <ui:ErrorState Margin="0,24"

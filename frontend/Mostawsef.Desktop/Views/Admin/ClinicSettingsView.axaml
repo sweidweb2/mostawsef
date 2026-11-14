@@ -26,7 +26,7 @@
                             <ui:DetailsItem Label="{l:Tr Settings.Field.Name}" Value="{Binding Clinic.Settings.Name, FallbackValue=''}" />
                             <ui:DetailsItem Label="{l:Tr Settings.Field.Address}" Value="{Binding Clinic.Settings.Address, FallbackValue=''}" />
                             <ui:DetailsItem Label="{l:Tr Settings.Field.Phone}" Value="{Binding Clinic.Settings.Phone, FallbackValue=''}" />
-                            <ui:DetailsItem Label="{l:Tr Settings.Field.Currency}" Value="{l:TrKey Clinic.Settings.CurrencyCode, Prefix=Currency.}" />
+                            <ui:DetailsItem Label="{l:Tr Settings.Field.Currency}" Value="{l:TrKey {Binding Clinic.Settings.CurrencyCode}, Prefix=Currency.}" />
                             <ui:DetailsItem Label="{l:Tr Settings.Field.UpdatedBy}" Value="{Binding Clinic.Settings.UpdatedBy, FallbackValue=''}" />
                         </ui:DetailsView>
                         <ui:ErrorState Margin="0,24"

@@ -9,7 +9,7 @@
              x:DataType="vm:OrderDetailsViewModel">
     <ScrollViewer>
         <StackPanel Classes="page">
-            <ui:PageHeader Title="{l:Tr OrderDetails.Title, Arg=Order.Number}" Subtitle="{l:Tr OrderDetails.Subtitle}">
+            <ui:PageHeader Title="{l:Tr OrderDetails.Title, Arg={Binding Order.Number}}" Subtitle="{l:Tr OrderDetails.Subtitle}">
                 <ui:PageHeader.Breadcrumb>
                     <Button Name="BackButton" Classes="ghost sm" Command="{Binding BackCommand}">
                         <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space1}">
@@ -22,22 +22,22 @@
                     <ui:Badge Name="StatusBadge"
                               IsVisible="{Binding HasOrder}"
                               Kind="{Binding Order.Status, Converter={x:Static conv:ValueConverters.OrderStatusToBadgeKind}, FallbackValue={x:Static ui:BadgeKind.Neutral}}"
-                              Text="{l:TrKey Order.Status, Prefix=OrderStatus.}" />
+                              Text="{l:TrKey {Binding Order.Status}, Prefix=OrderStatus.}" />
                 </ui:PageHeader.Actions>
             </ui:PageHeader>
 
             <Panel MinHeight="240">
                 <ui:ErrorState IsVisible="{Binding HasLoadError}"
-                               Title="{l:TrKey LoadErrorTitleKey}"
-                               Description="{l:TrKey LoadErrorDescriptionKey}"
+                               Title="{l:TrKey {Binding LoadErrorTitleKey}}"
+                               Description="{l:TrKey {Binding LoadErrorDescriptionKey}}"
                                RetryCommand="{Binding RefreshCommand}" />
 
                 <StackPanel Spacing="{StaticResource GapGrid}" IsVisible="{Binding HasOrder}">
                     <ui:ResponsiveGrid MinColumnWidth="180" MaxColumns="3"
                                        ColumnSpacing="{StaticResource GapGrid}" RowSpacing="{StaticResource GapGrid}">
-                        <ui:StatCard Name="TotalCard" Title="{l:Tr Orders.Col.Total}" Value="{l:Money Order.Total}" />
-                        <ui:StatCard Name="PaidCard" Kind="Success" Title="{l:Tr Orders.Col.Paid}" Value="{l:Money Order.Paid}" />
-                        <ui:StatCard Name="BalanceCard" Kind="Warning" Title="{l:Tr OrderDetails.Balance}" Value="{l:Money Order.Balance}" />
+                        <ui:StatCard Name="TotalCard" Title="{l:Tr Orders.Col.Total}" Value="{l:Money {Binding Order.Total}}" />
+                        <ui:StatCard Name="PaidCard" Kind="Success" Title="{l:Tr Orders.Col.Paid}" Value="{l:Money {Binding Order.Paid}}" />
+                        <ui:StatCard Name="BalanceCard" Kind="Warning" Title="{l:Tr OrderDetails.Balance}" Value="{l:Money {Binding Order.Balance}}" />
                     </ui:ResponsiveGrid>
 
                     <ui:Card Title="{l:Tr OrderDetails.Info}">
@@ -47,12 +47,12 @@
                                             Value="{Binding Order.CreatedAt, Converter={x:Static conv:ValueConverters.LocalDateTime}, FallbackValue=''}" />
                             <ui:DetailsItem Label="{l:Tr Orders.Col.Patient}" Value="{Binding Order.PatientName, FallbackValue=''}" />
                             <ui:DetailsItem Label="{l:Tr Orders.Col.Phone}" Value="{Binding Order.PatientPhone, FallbackValue=''}" />
-                            <ui:DetailsItem Label="{l:Tr Orders.Col.Status}" Value="{l:TrKey Order.Status, Prefix=OrderStatus.}" />
+                            <ui:DetailsItem Label="{l:Tr Orders.Col.Status}" Value="{l:TrKey {Binding Order.Status}, Prefix=OrderStatus.}" />
                             <ui:DetailsItem Label="{l:Tr OrderDetails.CreatedBy}" Value="{Binding Order.CreatedBy, FallbackValue=''}" />
                         </ui:DetailsView>
                     </ui:Card>
 
-                    <ui:Card Title="{l:Tr OrderDetails.Tests, Arg=Order.Items.Count}">
+                    <ui:Card Title="{l:Tr OrderDetails.Tests, Arg={Binding Order.Items.Count}}">
                         <StackPanel Spacing="{StaticResource GapControls}">
                             <ItemsControl Name="TestsList"
                                           Classes="virtualizing"
@@ -64,7 +64,7 @@
                                             <TextBlock Classes="muted" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Text="{Binding Code}" />
                                             <TextBlock Grid.Column="1" VerticalAlignment="Center" FontWeight="Medium"
                                                        TextWrapping="Wrap" Text="{Binding Name}" />
-                                            <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="{l:Money Price}" />
+                                            <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="{l:Money {Binding Price}}" />
                                         </Grid>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
@@ -74,7 +74,7 @@
                                 <Grid ColumnDefinitions="120,*,Auto" ColumnSpacing="{StaticResource GapControls}">
                                     <TextBlock Classes="muted" VerticalAlignment="Center" Text="{l:Tr NewOrder.Addon}" />
                                     <TextBlock Name="AddonText" Grid.Column="2" VerticalAlignment="Center" FontWeight="Medium"
-                                               Text="{l:Money Order.Addon}" />
+                                               Text="{l:Money {Binding Order.Addon}}" />
                                 </Grid>
                             </StackPanel>
                         </StackPanel>

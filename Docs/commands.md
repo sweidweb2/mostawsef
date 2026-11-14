@@ -87,6 +87,20 @@ orders (default 80):
 
 The API applies new migrations when it starts: restart it after pulling changes.
 
+## Checking speed
+
+Judge speed on Release builds only: Debug builds of Avalonia and the API are much slower and give a wrong picture.
+
+```powershell
+dotnet run --project backend/Mostawsef.Api --launch-profile http --configuration Release
+```
+```powershell
+$env:MOSTAWSEF_PERF = "1"; dotnet run --project frontend/Mostawsef.Desktop --configuration Release
+```
+
+`MOSTAWSEF_PERF=1` turns on the performance overlay and log (API calls show their server time from `Server-Timing`).
+The API logs every request in Development and only slow ones (1 s or more) in production.
+
 ## Database migrations
 
 ```powershell
@@ -104,3 +118,12 @@ dotnet publish frontend/Mostawsef.Desktop
 
 Output: `frontend/Mostawsef.Desktop/bin/Release/net10.0/win-x64/publish/`. A publish targets the clinic PCs (`win-x64`)
 unless `-r` says otherwise, and turns on ReadyToRun (precompiled code), so the app starts faster on older clinic PCs.
+
+## Publish the API
+
+```powershell
+dotnet publish backend/Mostawsef.Api
+```
+
+Same rules as the desktop: `win-x64` unless `-r` says otherwise, with ReadyToRun so the first requests after a start
+are not slowed down by JIT compilation. At start the API also runs the everyday queries once (`DatabaseWarmUp`).

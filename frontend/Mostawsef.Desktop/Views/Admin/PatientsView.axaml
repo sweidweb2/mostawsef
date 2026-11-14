@@ -39,8 +39,8 @@
                           IsLoading="{Binding IsLoading}"
                           IsEmpty="{Binding IsEmpty}"
                           HasError="{Binding HasLoadError}"
-                          ErrorTitle="{l:TrKey LoadErrorTitleKey}"
-                          ErrorDescription="{l:TrKey LoadErrorDescriptionKey}"
+                          ErrorTitle="{l:TrKey {Binding LoadErrorTitleKey}}"
+                          ErrorDescription="{l:TrKey {Binding LoadErrorDescriptionKey}}"
                           RetryCommand="{Binding RefreshCommand}"
                           FirstRowNumber="{Binding FirstRowNumber}">
                 <ui:DataTable.Toolbar>
@@ -56,7 +56,7 @@
                                     Orientation="Horizontal"
                                     HorizontalAlignment="Right"
                                     Spacing="{StaticResource GapControls}">
-                            <TextBlock Classes="caption muted" Text="{l:Tr Patients.Records, Arg=TotalCount}" VerticalAlignment="Center" />
+                            <TextBlock Classes="caption muted" Text="{l:Tr Patients.Records, Arg={Binding DisplayTotal}}" VerticalAlignment="Center" />
                             <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space1}">
                                 <ui:IconButton Name="TableViewButton"
                                                Classes="ghost sm"
@@ -122,7 +122,7 @@
                             <DataGridTemplateColumn Header="{l:Tr Patients.Col.Gender}" Width="90">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate x:DataType="patients:PatientDto">
-                                        <TextBlock Margin="12,0" VerticalAlignment="Center" Text="{l:TrKey Gender, Prefix=Gender.}" />
+                                        <TextBlock Margin="12,0" VerticalAlignment="Center" Text="{l:TrKey {Binding Gender}, Prefix=Gender.}" />
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
@@ -185,7 +185,7 @@
                                     </ui:Card.HeaderActions>
                                     <DockPanel>
                                         <WrapPanel DockPanel.Dock="Bottom" ItemSpacing="{StaticResource Space1}" LineSpacing="{StaticResource Space1}">
-                                            <ui:Badge Text="{l:TrKey Gender, Prefix=Gender.}" />
+                                            <ui:Badge Text="{l:TrKey {Binding Gender}, Prefix=Gender.}" />
                                             <ui:Badge Kind="Info" Text="{l:Tr Patients.Insured}" IsVisible="{Binding IsInsured}" />
                                         </WrapPanel>
                                         <StackPanel Spacing="{StaticResource Space2}" VerticalAlignment="Center">

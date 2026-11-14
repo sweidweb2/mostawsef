@@ -32,8 +32,8 @@
                           IsLoading="{Binding IsLoading}"
                           IsEmpty="{Binding IsEmpty}"
                           HasError="{Binding HasLoadError}"
-                          ErrorTitle="{l:TrKey LoadErrorTitleKey}"
-                          ErrorDescription="{l:TrKey LoadErrorDescriptionKey}"
+                          ErrorTitle="{l:TrKey {Binding LoadErrorTitleKey}}"
+                          ErrorDescription="{l:TrKey {Binding LoadErrorDescriptionKey}}"
                           RetryCommand="{Binding RefreshCommand}"
                           FirstRowNumber="{Binding FirstRowNumber}">
                 <ui:DataTable.Toolbar>
@@ -42,7 +42,7 @@
                                       HorizontalAlignment="Left"
                                       Text="{Binding Search}"
                                       SearchCommand="{Binding SearchCommand}" />
-                        <TextBlock Grid.Column="1" Classes="caption muted" Text="{l:Tr Users.Records, Arg=TotalCount}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Classes="caption muted" Text="{l:Tr Users.Records, Arg={Binding DisplayTotal}}" VerticalAlignment="Center" />
                     </Grid>
                 </ui:DataTable.Toolbar>
 
@@ -74,7 +74,7 @@
                         <DataGridTemplateColumn Header="{l:Tr Users.Col.Role}" Width="130">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate x:DataType="users:UserListItemDto">
-                                    <ui:Badge Margin="12,0" Kind="Primary" Text="{l:TrKey Role, Prefix=Role.}" />
+                                    <ui:Badge Margin="12,0" Kind="Primary" Text="{l:TrKey {Binding Role}, Prefix=Role.}" />
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>

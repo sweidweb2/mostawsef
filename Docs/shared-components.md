@@ -87,7 +87,7 @@ Usage namespace: `xmlns:ui="using:Mostawsef.Desktop.Components"`.
 | Component | Status | Use |
 | --- | --- | --- |
 | Toast / Notification | Built | `ToastService.Show(...)` |
-| Alert / Banner | Built | `ui:Alert Kind="Danger" Text="..."` (`Info`, `Success`, `Warning`, `Danger`; hidden while `Text` is empty). Form-level errors: `Text="{l:TrKey FormErrorKey}"` |
+| Alert / Banner | Built | `ui:Alert Kind="Danger" Text="..."` (`Info`, `Success`, `Warning`, `Danger`; hidden while `Text` is empty). Form-level errors: `Text="{l:TrKey {Binding FormErrorKey}}"` |
 | LoadingSpinner | Built | `ui:Spinner` |
 | LoadingOverlay | Built | `ui:LoadingOverlay IsLoading="..."` |
 | SkeletonLoader | Deferred | |

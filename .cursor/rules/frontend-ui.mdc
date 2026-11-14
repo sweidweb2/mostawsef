@@ -20,7 +20,8 @@ alwaysApply: false
 
 ## Localization + RTL
 - No user-visible literal text in views or components: use `{l:Tr Key}` (`xmlns:l="using:Mostawsef.Desktop.Services.Local"`),
-  `{l:Tr Key, Arg=Property}` for a bound `{0}`, or `{l:TrKey Property}` when the view model holds the key.
+  `{l:Tr Key, Arg={Binding Property}}` for a bound `{0}`, or `{l:TrKey {Binding Property}}` when the view model holds the key
+  (always a nested `{Binding}`: it is compiled, a plain path would need reflection).
 - View models expose resource keys and never subscribe to `LanguageChanged`. `LocalizationService` comes from DI;
   controls use `App.Localization` (subscribe on attach, unsubscribe on detach). No static `Instance`.
 - Every new key goes into **both** `Resources/Strings.resx` (English) and `Resources/Strings.ar.resx` (Arabic).
@@ -55,13 +56,13 @@ alwaysApply: false
   `SubmitAsync` sends it. Save first runs the request's DataAnnotations (the same rules as the API), then maps the API
   problem: field codes go next to their field, anything else becomes `FormErrorKey`. Extra client rules (e.g. confirm
   password) go in `ValidateMore`.
-- View: `<ui:FormField Error="{l:FieldError FullName}">` per field and `<ui:Alert Kind="Danger" Text="{l:TrKey FormErrorKey}" />` on top.
+- View: `<ui:FormField Error="{l:FieldError FullName}">` per field and `<ui:Alert Kind="Danger" Text="{l:TrKey {Binding FormErrorKey}}" />` on top.
 - Call `MarkClean()` at the end of the form constructor: editing marks it dirty, and Cancel / X / Esc ask before discarding.
 - Do not duplicate business rules (uniqueness, allowed states) on the desktop; the API answers with a code.
 - Failed actions outside a form (delete): `ShowError(result)` on list pages shows the code's text as a toast.
 
 ## Money, dates, printing
-- Money arrives as `long` minor units: show it with `Text="{l:Money Total}"` (or `MoneyFormat.Format` in code). Digits
+- Money arrives as `long` minor units: show it with `Text="{l:Money {Binding Total}}"` (or `MoneyFormat.Format` in code). Digits
   stay Latin in both languages; only the currency name is translated (`Currency.<code>`). Forms bind a `decimal` and
   convert with `Money.ToMinor` in `BuildRequest`.
 - Calendar dates (`DateOnly`) bind to `CalendarDatePicker` with `Converter={x:Static conv:ValueConverters.DateOnly}`;

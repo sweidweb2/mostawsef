@@ -7,7 +7,7 @@
              x:DataType="vm:ActivityLogDetailsViewModel">
     <ui:DetailsView>
         <ui:DetailsItem Label="{l:Tr Logs.Col.Time}" Value="{Binding OccurredAt}" />
-        <ui:DetailsItem Label="{l:Tr Logs.Col.Action}" Value="{l:TrKey Log.Action, Prefix=Action.}" />
+        <ui:DetailsItem Label="{l:Tr Logs.Col.Action}" Value="{l:TrKey {Binding Log.Action}, Prefix=Action.}" />
         <ui:DetailsItem Label="{l:Tr Logs.Field.Code}" Value="{Binding Log.Action}" />
         <ui:DetailsItem Label="{l:Tr Logs.Col.Module}" Value="{Binding Log.Module}" />
         <ui:DetailsItem Label="{l:Tr Logs.Col.Description}" Value="{Binding Log.Description}" />

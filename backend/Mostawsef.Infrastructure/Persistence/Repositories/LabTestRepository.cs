@@ -62,7 +62,7 @@ public class LabTestRepository(AppDbContext db) : ILabTestRepository
             .Select(t => new LabTestListRow(
                 t.Id, t.Code, t.Name, t.Price, t.LabCost, t.IsActive, t.CreatedAt, t.UpdatedAt, t.UpdatedBy, t.Version));
 
-        return await rows.ToPageAsync(query, cancellationToken);
+        return await rows.ToPageAsync(tests, query, cancellationToken);
     }
 
     public async Task<IReadOnlyList<LabTestExportRow>> ListAllAsync(CancellationToken cancellationToken) =>

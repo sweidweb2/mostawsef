@@ -41,7 +41,7 @@ public class PatientRepository(AppDbContext db) : IPatientRepository
                 p.Id, p.FullName, p.Phone, p.GuardianPhone, p.IsInsured, p.Gender, p.DateOfBirth,
                 p.CreatedAt, p.UpdatedAt, p.UpdatedBy, p.Version));
 
-        return await rows.ToPageAsync(query, cancellationToken);
+        return await rows.ToPageAsync(patients, query, cancellationToken);
     }
 
     public async Task<IReadOnlyList<PatientExportRow>> ListAllAsync(CancellationToken cancellationToken) =>

@@ -6,7 +6,7 @@
              x:Class="Mostawsef.Desktop.Views.Super.SystemSettingsFormView"
              x:DataType="vm:SystemSettingsFormViewModel">
     <StackPanel Spacing="{StaticResource GapGrid}">
-        <ui:Alert Kind="Danger" Text="{l:TrKey FormErrorKey}" />
+        <ui:Alert Kind="Danger" Text="{l:TrKey {Binding FormErrorKey}}" />
 
         <ui:FormField Label="{l:Tr SystemSettings.Field.BackupPath}" Error="{l:FieldError BackupPath}">
             <TextBox Name="BackupPathBox" Text="{Binding BackupPath}" PlaceholderText="{l:Tr SystemSettings.BackupPathPlaceholder}" />

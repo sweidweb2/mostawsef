@@ -182,7 +182,7 @@
         <DataTemplate x:DataType="vm:NewOrderTestsStep">
             <Panel>
             <Grid DataContext="{Binding Order}" ColumnDefinitions="*,1.4*" ColumnSpacing="{StaticResource GapGrid}">
-                <ui:Card Name="TestsColumn" Classes="outlined" Padding="0" Title="{l:Tr NewOrder.SelectedTestsCount, Arg=SelectedTests.Count}">
+                <ui:Card Name="TestsColumn" Classes="outlined" Padding="0" Title="{l:Tr NewOrder.SelectedTestsCount, Arg={Binding SelectedTests.Count}}">
                     <DockPanel>
                         <TextBlock Name="ItemsError"
                                    DockPanel.Dock="Top"
@@ -207,7 +207,7 @@
                                                                IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                                                 </StackPanel>
                                                 <TextBlock Grid.Column="1" Classes="strong" VerticalAlignment="Center"
-                                                           Text="{l:Money Test.Price}" />
+                                                           Text="{l:Money {Binding Test.Price}}" />
                                                 <ui:IconButton Grid.Column="2"
                                                                Classes="ghost destructive sm"
                                                                VerticalAlignment="Center"
@@ -254,7 +254,7 @@
                                                 <TextBlock Classes="caption muted" TextTrimming="CharacterEllipsis" Text="{Binding Test.Code}" />
                                                 <TextBlock FontWeight="Medium" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
                                                            Text="{Binding Test.Name}" />
-                                                <TextBlock Classes="caption" Text="{l:Money Test.Price}" />
+                                                <TextBlock Classes="caption" Text="{l:Money {Binding Test.Price}}" />
                                             </StackPanel>
                                         </Button>
                                     </DataTemplate>
@@ -265,8 +265,8 @@
                                            Icon="{StaticResource IconSearch}"
                                            Title="{l:Tr NewOrder.CatalogEmpty}" />
                             <ui:ErrorState IsVisible="{Binding HasCatalogError}"
-                                           Title="{l:TrKey CatalogErrorTitleKey}"
-                                           Description="{l:TrKey CatalogErrorDescriptionKey}"
+                                           Title="{l:TrKey {Binding CatalogErrorTitleKey}}"
+                                           Description="{l:TrKey {Binding CatalogErrorDescriptionKey}}"
                                            RetryCommand="{Binding RetryCatalogCommand}" />
                             <ui:LoadingOverlay IsLoading="{Binding IsCatalogLoading}" />
                         </Panel>
@@ -285,10 +285,10 @@
                                            ColumnSpacing="{StaticResource GapGrid}" RowSpacing="{StaticResource GapGrid}">
                             <StackPanel Spacing="{StaticResource SpaceHalf}">
                                 <TextBlock Classes="muted" Text="{l:Tr NewOrder.Total}" />
-                                <TextBlock Name="TotalText" Classes="h3" Text="{l:Money Total}" />
+                                <TextBlock Name="TotalText" Classes="h3" Text="{l:Money {Binding Total}}" />
                                 <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}" IsVisible="{Binding HasPayment}">
                                     <TextBlock Classes="caption muted" Text="{l:Tr NewOrder.Remaining}" />
-                                    <TextBlock Name="RemainingText" Classes="caption strong" Text="{l:Money Remaining}" />
+                                    <TextBlock Name="RemainingText" Classes="caption strong" Text="{l:Money {Binding Remaining}}" />
                                 </StackPanel>
                             </StackPanel>
                             <StackPanel Spacing="{StaticResource SpaceHalf}">
@@ -328,7 +328,7 @@
                                           HorizontalAlignment="Stretch">
                                     <ComboBox.ItemTemplate>
                                         <DataTemplate x:DataType="x:String">
-                                            <TextBlock Text="{l:TrKey ., Prefix=PaymentMethod.}" />
+                                            <TextBlock Text="{l:TrKey {Binding}, Prefix=PaymentMethod.}" />
                                         </DataTemplate>
                                     </ComboBox.ItemTemplate>
                                 </ComboBox>
@@ -343,7 +343,7 @@
 
                         <ui:Divider />
 
-                        <TextBlock Classes="h4" Text="{l:Tr NewOrder.SelectedTestsCount, Arg=SelectedTests.Count}" />
+                        <TextBlock Classes="h4" Text="{l:Tr NewOrder.SelectedTestsCount, Arg={Binding SelectedTests.Count}}" />
                         <ItemsControl Classes="virtualizing"
                                       MaxHeight="320"
                                       ItemsSource="{Binding SelectedTests}">
@@ -358,7 +358,7 @@
                                                            IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                                             </StackPanel>
                                             <TextBlock Grid.Column="1" Classes="strong" VerticalAlignment="Center"
-                                                       Text="{l:Money Test.Price}" />
+                                                       Text="{l:Money {Binding Test.Price}}" />
                                         </Grid>
                                     </Border>
                                 </DataTemplate>
@@ -380,7 +380,7 @@
             </StackPanel>
         </Button>
 
-        <ui:Alert Name="FormError" DockPanel.Dock="Top" Margin="0,0,0,12" Kind="Danger" Text="{l:TrKey FormErrorKey}" />
+        <ui:Alert Name="FormError" DockPanel.Dock="Top" Margin="0,0,0,12" Kind="Danger" Text="{l:TrKey {Binding FormErrorKey}}" />
 
         <Grid Name="StepIndicator" DockPanel.Dock="Top" Margin="{StaticResource PaddingCardCompact}">
             <ItemsControl ItemsSource="{Binding Steps}">
@@ -423,7 +423,7 @@
                                     <TextBlock Classes="step-label"
                                                Classes.current="{Binding IsCurrent}"
                                                Classes.missing="{Binding ShowMissing}"
-                                               Text="{l:TrKey TitleKey}" />
+                                               Text="{l:TrKey {Binding TitleKey}}" />
                                 </StackPanel>
                             </Button>
                         </Grid>

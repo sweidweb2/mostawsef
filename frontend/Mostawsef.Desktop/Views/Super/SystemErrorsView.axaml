@@ -37,8 +37,8 @@
                           IsLoading="{Binding IsLoading}"
                           IsEmpty="{Binding IsEmpty}"
                           HasError="{Binding HasLoadError}"
-                          ErrorTitle="{l:TrKey LoadErrorTitleKey}"
-                          ErrorDescription="{l:TrKey LoadErrorDescriptionKey}"
+                          ErrorTitle="{l:TrKey {Binding LoadErrorTitleKey}}"
+                          ErrorDescription="{l:TrKey {Binding LoadErrorDescriptionKey}}"
                           RetryCommand="{Binding RefreshCommand}"
                           FirstRowNumber="{Binding FirstRowNumber}">
                 <ui:DataTable.Toolbar>
@@ -47,7 +47,7 @@
                                       HorizontalAlignment="Left"
                                       Text="{Binding Search}"
                                       SearchCommand="{Binding SearchCommand}" />
-                        <TextBlock Grid.Column="1" Classes="caption muted" Text="{l:Tr Logs.Records, Arg=TotalCount}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Classes="caption muted" Text="{l:Tr Logs.Records, Arg={Binding TotalCount}}" VerticalAlignment="Center" />
                     </Grid>
                 </ui:DataTable.Toolbar>
 
@@ -67,7 +67,7 @@
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate x:DataType="logs:SystemErrorListItemDto">
                                     <ui:Badge Margin="12,0"
-                                              Text="{l:TrKey Level, Prefix=ErrorLevel.}"
+                                              Text="{l:TrKey {Binding Level}, Prefix=ErrorLevel.}"
                                               Kind="{Binding Level, Converter={x:Static conv:ValueConverters.ErrorLevelToBadgeKind}}" />
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>

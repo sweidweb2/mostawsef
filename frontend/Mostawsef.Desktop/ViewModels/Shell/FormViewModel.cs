@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
@@ -21,13 +22,18 @@ namespace Mostawsef.Desktop.ViewModels.Shell;
 /// (checked here before sending) and the API's field errors land on the same <see cref="Errors"/> entry.</item>
 /// <item>Save: validates, sends, maps a failure to field errors or <see cref="FormErrorKey"/>, closes on success.</item>
 /// <item>IsDirty compares the current request with the one at load/save time (requests are records, so equality is by value);
-/// Cancel and closing the dialog ask before discarding changes.</item>
+/// Cancel and closing the dialog ask before discarding changes. Only a change to a property named like a request field
+/// rebuilds the request for that check; override <see cref="AffectsRequest"/> for inputs named otherwise.</item>
 /// </list>
 /// Subclasses fill their fields, then call <see cref="MarkClean"/> at the end of the constructor.
 /// </summary>
 public abstract partial class FormViewModel : ViewModelBase
 {
+    /// <summary>Property names of each request type, read once per type.</summary>
+    private static readonly ConcurrentDictionary<Type, HashSet<string>> RequestFields = new();
+
     private object? _savedRequest;
+    private HashSet<string>? _requestFields;
     private CancellationTokenSource _lifetime = new();
 
     protected FormViewModel(IDialogService dialogs, LocalizationService localization)
@@ -77,8 +83,33 @@ public abstract partial class FormViewModel : ViewModelBase
     protected void MarkClean()
     {
         _savedRequest = BuildRequest();
+        _requestFields = FieldsOf(_savedRequest.GetType());
         IsDirty = false;
     }
+
+    /// <summary>Re-checks <see cref="IsDirty"/>; call it when an input changes without raising a request-field property.</summary>
+    protected void RefreshDirty()
+    {
+        if (_savedRequest is not null)
+        {
+            IsDirty = HasChanges(BuildRequest(), _savedRequest);
+        }
+    }
+
+    /// <summary>True when a change of this property can change the request (so IsDirty must be checked again).</summary>
+    protected virtual bool AffectsRequest(string propertyName) => _requestFields?.Contains(propertyName) == true;
+
+    private static HashSet<string> FieldsOf(Type requestType) =>
+        RequestFields.GetOrAdd(requestType, static type =>
+        {
+            var names = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                names.Add(property.Name);
+            }
+
+            return names;
+        });
 
     /// <summary>Cancels an in-flight save (and any override work that uses <see cref="LifetimeToken"/>).</summary>
     public void CancelLifetime()
@@ -137,7 +168,10 @@ public abstract partial class FormViewModel : ViewModelBase
         }
 
         Errors.Clear(e.PropertyName);
-        IsDirty = HasChanges(BuildRequest(), _savedRequest);
+        if (AffectsRequest(e.PropertyName))
+        {
+            RefreshDirty();
+        }
     }
 
     /// <summary>Busy/dirty/error flags (and page-only UI props in subclasses) skip the dirty check.</summary>
@@ -189,6 +223,7 @@ public abstract partial class FormViewModel : ViewModelBase
             if (result.IsSuccess)
             {
                 _savedRequest = request;
+                _requestFields = FieldsOf(request.GetType());
                 IsDirty = false;
                 SavedValue = result.Body;
                 Closed?.Invoke(this, true);

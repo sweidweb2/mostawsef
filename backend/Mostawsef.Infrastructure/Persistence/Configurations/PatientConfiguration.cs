@@ -20,7 +20,8 @@ public class PatientConfiguration : IEntityTypeConfiguration<Patient>
         builder.Property(p => p.IsInsured).IsRequired();
         builder.Property(p => p.Gender).HasConversion<string>().HasMaxLength(10).IsRequired();
 
-        builder.HasIndex(p => p.SearchName);
+        // Matches the list order (SearchName, then Id), so a page is read straight from the index without a sort.
+        builder.HasIndex(p => new { p.SearchName, p.Id });
         builder.HasIndex(p => p.Phone);
         // Index-only PostgreSQL exception (SQLite ignores it): substring search stays plain Contains/LIKE.
         builder.HasIndex(p => p.SearchText).HasMethod("gin").HasOperators("gin_trgm_ops");

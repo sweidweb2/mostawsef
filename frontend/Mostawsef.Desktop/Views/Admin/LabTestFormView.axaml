@@ -7,7 +7,7 @@
              x:Class="Mostawsef.Desktop.Views.Admin.LabTestFormView"
              x:DataType="vm:LabTestFormViewModel">
     <StackPanel Spacing="{StaticResource GapGrid}">
-        <ui:Alert Kind="Danger" Text="{l:TrKey FormErrorKey}" />
+        <ui:Alert Kind="Danger" Text="{l:TrKey {Binding FormErrorKey}}" />
 
         <ui:FormField Label="{l:Tr LabTests.Col.Name}" IsRequired="True" Error="{l:FieldError Name}">
             <TextBox Name="NameBox"
@@ -24,7 +24,7 @@
         </ui:FormField>
 
         <ui:ResponsiveGrid MinColumnWidth="180" MaxColumns="2" ColumnSpacing="{StaticResource GapGrid}" RowSpacing="{StaticResource GapGrid}">
-            <ui:FormField Label="{l:Tr LabTests.Col.Price}" IsRequired="True" Hint="{l:Tr LabTests.Field.PriceHint, Arg=MaxAmount}" Error="{l:FieldError Price}">
+            <ui:FormField Label="{l:Tr LabTests.Col.Price}" IsRequired="True" Hint="{l:Tr LabTests.Field.PriceHint, Arg={Binding MaxAmount}}" Error="{l:FieldError Price}">
                 <NumericUpDown Name="PriceBox"
                                Value="{Binding Price}"
                                Minimum="0"

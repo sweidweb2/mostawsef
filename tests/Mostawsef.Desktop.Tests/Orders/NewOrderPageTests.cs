@@ -113,6 +113,30 @@ public class NewOrderPageTests : UiTestBase
     }
 
     [AvaloniaFact]
+    public async Task A_second_order_uses_the_cached_catalog()
+    {
+        using var app = Admin();
+        var (shell, orders, window) = await ShowOrdersPageAsync(app);
+        await orders.NewOrderCommand.ExecuteAsync(null);
+        var page = Assert.IsType<NewOrderViewModel>(shell.CurrentPage);
+        await WaitUntil(() => !page.IsPreparing && page.StepContent is not null);
+        await GoToTestsAsync(page);
+
+        var discard = page.BackCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+        window.GetVisualDescendants().OfType<ConfirmDialog>().Single().Close(true);
+        await discard;
+        await WaitUntil(() => shell.CurrentPage == orders);
+        await orders.NewOrderCommand.ExecuteAsync(null);
+        await WaitUntil(() => !page.IsPreparing && page.StepContent is not null);
+        await GoToTestsAsync(page);
+
+        Assert.Single(app.Api.RequestsTo(HttpMethod.Get, TestsPath));
+        Assert.Equal([Cbc.Id, Sugar.Id], page.Catalog.Select(t => t.Test.Id));
+        Assert.All(page.Catalog, t => Assert.False(t.IsSelected));
+    }
+
+    [AvaloniaFact]
     public async Task Catalog_reloads_after_lab_tests_are_mutated()
     {
         using var app = Admin();
@@ -129,7 +153,7 @@ public class NewOrderPageTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task Searching_the_catalog_asks_the_server_after_a_short_delay()
+    public async Task Searching_the_catalog_filters_it_in_memory_without_asking_the_server()
     {
         using var app = Admin();
         var (_, page, window) = await ShowNewOrderAsync(app);
@@ -151,7 +175,7 @@ public class NewOrderPageTests : UiTestBase
         page.CatalogSearch = "";
         await WaitUntil(() => page.Catalog.Count == 2);
         Assert.Equal(2, CatalogCards(window).Count());
-        Assert.True(app.Api.RequestsTo(HttpMethod.Get, TestsPath).Count() >= 4);
+        Assert.Single(app.Api.RequestsTo(HttpMethod.Get, TestsPath));
     }
 
     [AvaloniaFact]
@@ -493,7 +517,8 @@ public class NewOrderPageTests : UiTestBase
     {
         using var app = Admin();
         var (shell, page, window) = await ShowNewOrderAsync(app);
-        page.SelectPatientCommand.Execute(Mona);
+
+        // Moving between steps and searching the catalog are not changes (picking a patient would be one).
         page.NextStepCommand.Execute(null);
         await WaitUntil(() => page.SelectedStep == NewOrderViewModel.TestsStep && !page.IsCatalogLoading);
         page.CatalogSearch = "cbc";

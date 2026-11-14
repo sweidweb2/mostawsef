@@ -41,8 +41,9 @@ public class MoneyAndDateTests : UiTestBase
         using var app = new TestServices();
         var clinic = app.Get<ClinicContext>();
         clinic.Update(Settings(Currencies.Egp));
-        var text = new TextBlock { DataContext = new { Total = 990L } };
-        text.Bind(TextBlock.TextProperty, (Avalonia.Data.BindingBase)new MoneyExtension("Total").ProvideValue(null!));
+        var text = new TextBlock { DataContext = new AmountRow(990) };
+        var amount = Avalonia.Data.CompiledBinding.Create<AmountRow, long>(r => r.Total);
+        text.Bind(TextBlock.TextProperty, (Avalonia.Data.BindingBase)new MoneyExtension(amount).ProvideValue(null!));
         app.Show(text);
 
         Assert.Equal("9.90 EGP", text.Text);
@@ -70,6 +71,8 @@ public class MoneyAndDateTests : UiTestBase
         Assert.Null(converter.Convert(null, typeof(DateTime?), null, System.Globalization.CultureInfo.InvariantCulture));
         Assert.Null(converter.ConvertBack(null, typeof(DateOnly?), null, System.Globalization.CultureInfo.InvariantCulture));
     }
+
+    private sealed record AmountRow(long Total);
 
     private static ClinicSettingsDto Settings(string currency) => new("Clinic", null, null, currency, 0, null, null);
 }

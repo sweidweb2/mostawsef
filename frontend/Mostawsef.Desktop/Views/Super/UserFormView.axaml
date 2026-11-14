@@ -6,7 +6,7 @@
              x:Class="Mostawsef.Desktop.Views.Super.UserFormView"
              x:DataType="vm:UserFormViewModel">
     <StackPanel Spacing="{StaticResource GapGrid}">
-        <ui:Alert Kind="Danger" Text="{l:TrKey FormErrorKey}" />
+        <ui:Alert Kind="Danger" Text="{l:TrKey {Binding FormErrorKey}}" />
 
         <ui:FormField Label="{l:Tr Users.Col.FullName}" IsRequired="True" Error="{l:FieldError FullName}">
             <TextBox Name="FullNameBox" Text="{Binding FullName}" />
@@ -31,7 +31,7 @@
             <ComboBox Name="RoleBox" ItemsSource="{Binding RoleOptions}" SelectedItem="{Binding Role}" HorizontalAlignment="Stretch">
                 <ComboBox.ItemTemplate>
                     <DataTemplate x:DataType="x:String">
-                        <TextBlock Text="{l:TrKey ., Prefix=Role.}" />
+                        <TextBlock Text="{l:TrKey {Binding}, Prefix=Role.}" />
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>

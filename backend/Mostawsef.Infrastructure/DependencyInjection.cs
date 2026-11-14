@@ -7,6 +7,7 @@ using Mostawsef.Infrastructure.Persistence.Repositories;
 using Mostawsef.Infrastructure.Services;
 using Mostawsef.Infrastructure.Services.Auth;
 using Mostawsef.Infrastructure.Services.Logging;
+using Npgsql;
 
 namespace Mostawsef.Infrastructure;
 
@@ -21,6 +22,15 @@ public static class DependencyInjection
         // The one clock of the backend: inject TimeProvider instead of reading DateTime.UtcNow / DateTime.Today.
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<AuditInterceptor>();
+
+        // Npgsql closes idle connections after 5 minutes; keep one open so the first request after a quiet spell
+        // does not wait for a new connection and sign-in handshake. An explicit "Minimum Pool Size" wins.
+        var npgsqlSettings = new NpgsqlConnectionStringBuilder(connectionString);
+        if (npgsqlSettings.MinPoolSize == 0)
+        {
+            npgsqlSettings.MinPoolSize = 1;
+            connectionString = npgsqlSettings.ConnectionString;
+        }
 
         // Pooled: registers a scoped AppDbContext (repositories) and IDbContextFactory (log engines), both renting from one pool.
         services.AddPooledDbContextFactory<AppDbContext>((sp, options) => options
