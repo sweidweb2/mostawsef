@@ -27,6 +27,7 @@ public partial class PatientsViewModel : NumberedListViewModel<PatientDto>
     private readonly PatientsApi _patients;
     private readonly IDialogService _dialogs;
     private readonly PrintService _print;
+    private readonly SavePathPicker _pickSavePath;
     private readonly ErrorReporter _errors;
     private readonly NavigationService _navigation;
 
@@ -39,6 +40,7 @@ public partial class PatientsViewModel : NumberedListViewModel<PatientDto>
         IToastService toasts,
         LocalizationService localization,
         PrintService print,
+        SavePathPicker pickSavePath,
         NavigationService navigation,
         ErrorReporter errors)
         : base(toasts, localization, errors)
@@ -50,6 +52,7 @@ public partial class PatientsViewModel : NumberedListViewModel<PatientDto>
         _patients = patients;
         _dialogs = dialogs;
         _print = print;
+        _pickSavePath = pickSavePath;
         _errors = errors;
         PageSize = PatientsPerPage;
     }
@@ -170,35 +173,65 @@ public partial class PatientsViewModel : NumberedListViewModel<PatientDto>
         await ReloadAsync();
     }
 
-    /// <summary>Up to <see cref="PageQuery.MaxExportRows"/> patients as a PDF opened in the default viewer.</summary>
-    [RelayCommand]
+    /// <summary>True while the export is fetching and writing the PDF (its button shows a spinner).</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ExportCommand))]
+    public partial bool IsExporting { get; private set; }
+
+    private bool CanExport() => !IsExporting;
+
+    /// <summary>Asks where to save, then writes up to <see cref="PageQuery.MaxExportRows"/> patients there as a PDF.</summary>
+    [RelayCommand(CanExecute = nameof(CanExport))]
     private async Task ExportAsync()
     {
-        if (await ReadAsync(ct => _patients.GetAllPatientsAsync(ct)) is not { } result)
-        {
-            return;
-        }
-
-        if (!result.IsSuccess)
-        {
-            ShowError(result);
-            return;
-        }
-
+        string? path;
         try
         {
+            path = await _pickSavePath("patients.pdf", Localization.Get("Print.SaveTitle"));
+        }
+        catch (Exception ex)
+        {
+            _errors.Report(ex, context: "Choosing where to save the patients export");
+            Toasts.Error(Localization.Get("Print.Failed"));
+            return;
+        }
+
+        if (path is null)
+        {
+            return;
+        }
+
+        IsExporting = true;
+        try
+        {
+            if (await ReadAsync(ct => _patients.GetAllPatientsAsync(ct)) is not { } result)
+            {
+                return;
+            }
+
+            if (!result.IsSuccess)
+            {
+                ShowError(result);
+                return;
+            }
+
             var rows = result.Value!;
             if (rows.Count >= PageQuery.MaxExportRows)
             {
                 Toasts.Show(Localization.Get("Print.ExportTruncated"), kind: ToastKind.Warning);
             }
 
-            await _print.PrintAsync(new PatientsDocument(await _print.CreateContextAsync(), rows), "patients");
+            await _print.SaveAsync(new PatientsDocument(await _print.CreateContextAsync(), rows), path);
+            Toasts.Success(Localization.Format("Print.Exported", path));
         }
         catch (Exception ex)
         {
             _errors.Report(ex, context: "Exporting the patients");
             Toasts.Error(Localization.Get("Print.Failed"));
+        }
+        finally
+        {
+            IsExporting = false;
         }
     }
 

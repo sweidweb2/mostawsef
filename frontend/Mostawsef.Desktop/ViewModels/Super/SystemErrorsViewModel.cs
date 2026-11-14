@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -13,10 +15,20 @@ using Mostawsef.Desktop.ViewModels.Shell;
 
 namespace Mostawsef.Desktop.ViewModels.Super;
 
-/// <summary>Super portal: system errors with stats, paging, search, details modal and delete. Access via AppRoutes.</summary>
+/// <summary>Super portal: system errors with stats, paging, search, details modal, delete and bulk delete. Access via AppRoutes.</summary>
 public partial class SystemErrorsViewModel(LogsApi logs, IDialogService dialogs, IToastService toasts, LocalizationService localization, ErrorReporter errors)
-    : PagedListViewModel<SystemErrorListItemDto>(toasts, localization, errors)
+    : SelectableLogListViewModel<SystemErrorListItemDto>(dialogs, toasts, localization, errors)
 {
+    protected override string DeleteAllConfirmKey => "Logs.DeleteAllErrorsConfirm";
+
+    protected override Guid IdOf(SystemErrorListItemDto item) => item.Id;
+
+    protected override Task<ApiResult<DeleteLogsResultDto>> DeleteManyAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken) =>
+        logs.DeleteSystemErrorsAsync(ids, cancellationToken);
+
+    protected override Task<ApiResult<bool>> DeleteEverythingAsync(CancellationToken cancellationToken) =>
+        logs.DeleteAllSystemErrorsAsync(cancellationToken);
+
     [ObservableProperty]
     public partial SystemErrorStatsDto? Stats { get; private set; }
 
@@ -54,7 +66,7 @@ public partial class SystemErrorsViewModel(LogsApi logs, IDialogService dialogs,
             return;
         }
 
-        await dialogs.ShowAsync(new Modal
+        await Dialogs.ShowAsync(new Modal
         {
             Title = Localization.Get("Logs.ErrorDetails"),
             Content = new SystemErrorDetailsViewModel(result.Value!),
@@ -66,7 +78,7 @@ public partial class SystemErrorsViewModel(LogsApi logs, IDialogService dialogs,
     private async Task DeleteAsync(SystemErrorListItemDto? item)
     {
         if (item is null
-            || !await dialogs.ConfirmAsync(Localization.Get("Logs.DeleteErrorConfirm"), confirmText: Localization.Get("Common.Delete"), isDanger: true))
+            || !await Dialogs.ConfirmAsync(Localization.Get("Logs.DeleteErrorConfirm"), confirmText: Localization.Get("Common.Delete"), isDanger: true))
         {
             return;
         }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -30,6 +31,18 @@ public class LogsApi(ApiClient api)
 
     public Task<ApiResult<bool>> DeleteSystemErrorAsync(Guid id, CancellationToken cancellationToken = default) =>
         api.DeleteAsync($"api/system-errors/{id}", cancellationToken);
+
+    public Task<ApiResult<DeleteLogsResultDto>> DeleteActivityLogsAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken = default) =>
+        api.PostAsync<DeleteLogsRequest, DeleteLogsResultDto>("api/activity-logs/bulk-delete", new DeleteLogsRequest { Ids = ids }, cancellationToken);
+
+    public Task<ApiResult<bool>> DeleteAllActivityLogsAsync(CancellationToken cancellationToken = default) =>
+        api.DeleteAsync("api/activity-logs", cancellationToken);
+
+    public Task<ApiResult<DeleteLogsResultDto>> DeleteSystemErrorsAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken = default) =>
+        api.PostAsync<DeleteLogsRequest, DeleteLogsResultDto>("api/system-errors/bulk-delete", new DeleteLogsRequest { Ids = ids }, cancellationToken);
+
+    public Task<ApiResult<bool>> DeleteAllSystemErrorsAsync(CancellationToken cancellationToken = default) =>
+        api.DeleteAsync("api/system-errors", cancellationToken);
 
     public Task<ApiResult<bool>> ReportErrorAsync(ReportClientErrorRequest request, CancellationToken cancellationToken = default) =>
         api.PostAsync("api/system-errors/report", request, cancellationToken);

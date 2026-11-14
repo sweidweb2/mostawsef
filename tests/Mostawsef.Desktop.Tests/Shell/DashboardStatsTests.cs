@@ -109,17 +109,4 @@ public class DashboardStatsTests : UiTestBase
     [InlineData(13, 16)]
     public void The_axis_top_is_a_multiple_of_the_gridlines_so_every_gridline_is_a_whole_number(int largest, int expected) =>
         Assert.Equal(expected, LineChart.AxisMaximum(largest));
-
-    [AvaloniaFact]
-    public async Task Super_dashboard_does_not_load_order_statistics()
-    {
-        using var app = new TestServices();
-        app.SignInAs(Roles.Super);
-
-        var page = Assert.IsType<DashboardViewModel>(app.Navigation.CreatePage(typeof(DashboardViewModel)));
-        await page.ActivateAsync();
-
-        Assert.False(page.ShowOrderStats);
-        Assert.DoesNotContain(app.Api.Requests, r => r.RequestUri!.AbsolutePath.StartsWith("/api/orders", StringComparison.Ordinal));
-    }
 }

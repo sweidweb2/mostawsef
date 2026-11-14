@@ -43,7 +43,10 @@ public class SessionService
     {
         CurrentUser = login.User;
         _accessToken = login.AccessToken;
-        _expiresAt = login.ExpiresAt.ToUniversalTime();
+        // Count the lifetime from now on this PC's clock; comparing the server's absolute time with it breaks on a wrong PC clock.
+        _expiresAt = login.ExpiresInSeconds > 0
+            ? DateTime.UtcNow.AddSeconds(login.ExpiresInSeconds)
+            : login.ExpiresAt.ToUniversalTime();
         LastSignOutReason = SignOutReason.None;
 
         _expiryTimer.Stop();

@@ -34,13 +34,14 @@ public class PageLifecycleTests : UiTestBase
 
         shell.SelectedMenuIndex = ActivityLogs;
         var page = shell.CurrentPage;
-        var requests = app.Api.Requests.Count;
+        var requests = app.Api.RequestsTo(HttpMethod.Get, ActivityPath).Count();
 
+        // The dashboard reloads its figures each time it is shown; the activity log must not.
         shell.SelectedMenuIndex = Dashboard;
         shell.SelectedMenuIndex = ActivityLogs;
 
         Assert.Same(page, shell.CurrentPage);
-        Assert.Equal(requests, app.Api.Requests.Count);
+        Assert.Equal(requests, app.Api.RequestsTo(HttpMethod.Get, ActivityPath).Count());
     }
 
     [AvaloniaFact]

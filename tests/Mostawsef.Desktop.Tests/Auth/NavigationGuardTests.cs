@@ -6,6 +6,7 @@ using Mostawsef.Desktop.Services.Auth;
 using Mostawsef.Desktop.Tests.Infrastructure;
 using Mostawsef.Desktop.ViewModels.Auth;
 using Mostawsef.Desktop.ViewModels.Shell;
+using Mostawsef.Desktop.ViewModels.Super;
 
 namespace Mostawsef.Desktop.Tests.Auth;
 
@@ -60,7 +61,7 @@ public class NavigationGuardTests : UiTestBase
         app.Navigation.NavigateToHome();
         var super = Assert.IsType<PortalShellViewModel>(app.Navigation.CurrentPage);
         Assert.Equal("Portal.Super", super.PortalTitleKey);
-        Assert.IsType<DashboardViewModel>(super.CurrentPage);
+        Assert.IsType<SuperDashboardViewModel>(super.CurrentPage);
     }
 
     [AvaloniaFact]

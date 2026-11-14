@@ -34,6 +34,10 @@ public class LineChart : Control
     public static readonly StyledProperty<string?> TooltipFormatProperty =
         AvaloniaProperty.Register<LineChart, string?>(nameof(TooltipFormat), "{0}: {1}");
 
+    /// <summary>The line, dot and fill color; the theme's primary brush when not set.</summary>
+    public static readonly StyledProperty<IBrush?> StrokeProperty =
+        AvaloniaProperty.Register<LineChart, IBrush?>(nameof(Stroke));
+
     private const double MinLeftMargin = 36;
     private const double RightMargin = 12;
     private const double TopMargin = 12;
@@ -46,7 +50,7 @@ public class LineChart : Control
 
     static LineChart()
     {
-        AffectsRender<LineChart>(PointsProperty);
+        AffectsRender<LineChart>(PointsProperty, StrokeProperty);
         AffectsMeasure<LineChart>(PointsProperty);
     }
 
@@ -60,6 +64,12 @@ public class LineChart : Control
     {
         get => GetValue(PointsProperty);
         set => SetValue(PointsProperty, value);
+    }
+
+    public IBrush? Stroke
+    {
+        get => GetValue(StrokeProperty);
+        set => SetValue(StrokeProperty, value);
     }
 
     public string? TooltipFormat
@@ -114,14 +124,16 @@ public class LineChart : Control
     /// <summary>The drawing area inside the axes. Named points need room below and to the left for their slanted labels.</summary>
     private Rect PlotArea(IReadOnlyList<ChartPoint>? points)
     {
-        var left = MinLeftMargin;
+        // Room for the widest gridline label (the top one), e.g. large money totals.
+        var top = AxisMaximum(points is { Count: > 0 } ? points.Max(p => p.Value) : 0);
+        var left = Math.Max(MinLeftMargin, Text(top.ToString(CultureInfo.InvariantCulture), Brushes.Black).Width + 14);
         var bottom = DayBottomMargin;
         if (points is { Count: > 0 } && IsNamed(points))
         {
             var widest = points.Max(p => Text(AxisLabel(p), Brushes.Black).Width);
             var first = Text(AxisLabel(points[0]), Brushes.Black).Width;
             bottom = Math.Min(Bounds.Height * 0.5, widest * Slant + 18);
-            left = Math.Min(Bounds.Width * 0.3, Math.Max(MinLeftMargin, first * Slant + 10));
+            left = Math.Min(Bounds.Width * 0.3, Math.Max(left, first * Slant + 10));
         }
 
         return new Rect(left, TopMargin, Math.Max(1, Bounds.Width - left - RightMargin), Math.Max(1, Bounds.Height - TopMargin - bottom));
@@ -135,7 +147,7 @@ public class LineChart : Control
         base.Render(context);
         var points = Points;
         var plot = PlotArea(points);
-        var line = Themed("BrushPrimary", Brushes.SteelBlue);
+        var line = Stroke ?? Themed("BrushPrimary", Brushes.SteelBlue);
         var grid = Themed("BrushDivider", Brushes.LightGray);
         var muted = Themed("BrushTextMuted", Brushes.Gray);
 

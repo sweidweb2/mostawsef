@@ -312,3 +312,16 @@ Ref: order_items.LabTestId > lab_tests.Id [delete: restrict]
 Ref: payments.OrderId > orders.Id [delete: restrict]
 Ref: scheduled_payments.OrderId > orders.Id [delete: restrict]
 Ref: scheduled_payments.PaymentId - payments.Id [delete: set null]
+
+Table backup_records {
+  Id uuid [pk]
+  Table varchar(100) [note: 'exported table; null means every table']
+  Format varchar(20) [not null, note: 'Csv, Json, Sql or PostgreSql']
+  CreatedAt timestamptz [not null, note: 'indexed, history is newest first']
+  CreatedBy varchar(50)
+  UpdatedAt timestamptz
+  UpdatedBy varchar(50)
+  Version integer [not null]
+
+  Note: 'The settings of one backup export, never the exported data.'
+}

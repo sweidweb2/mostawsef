@@ -53,7 +53,6 @@
   <data name="Prescription.Frequency" xml:space="preserve"><value>التكرار</value></data>
   <data name="Prescription.Duration" xml:space="preserve"><value>المدة</value></data>
   <data name="Invoice.SaveTitle" xml:space="preserve"><value>حفظ الفاتورة</value></data>
-  <data name="Invoice.Title" xml:space="preserve"><value>ملخص الفاتورة</value></data>
   <data name="Invoice.Subtotal" xml:space="preserve"><value>المجموع الفرعي</value></data>
   <data name="Invoice.Discount" xml:space="preserve"><value>الخصم</value></data>
   <data name="Invoice.Tax" xml:space="preserve"><value>الضريبة</value></data>
@@ -168,7 +167,7 @@
   <data name="Action.auth.sign_in_failed" xml:space="preserve"><value>محاولة دخول فاشلة</value></data>
   <data name="Action.auth.sign_in_blocked" xml:space="preserve"><value>منع تسجيل الدخول (وضع الصيانة)</value></data>
   <data name="Action.auth.signed_out" xml:space="preserve"><value>تسجيل خروج</value></data>
-  <data name="Action.logs.activity_deleted" xml:space="preserve"><value>حذف سجل نشاط</value></data>
+  <data name="Action.logs.activity_deleted" xml:space="preserve"><value>حذف سجلات نشاط</value></data>
   <data name="Action.logs.error_deleted" xml:space="preserve"><value>حذف سجل خطأ</value></data>
   <data name="Action.logs.purged" xml:space="preserve"><value>حذف السجلات القديمة تلقائيًا</value></data>
   <data name="Action.auth.password_changed" xml:space="preserve"><value>تغيير كلمة المرور الخاصة به</value></data>
@@ -222,6 +221,8 @@
   <data name="Print.Page" xml:space="preserve"><value>صفحة</value></data>
   <data name="Print.Of" xml:space="preserve"><value>من</value></data>
   <data name="Print.PrintedAt" xml:space="preserve"><value>طُبعت في</value></data>
+  <data name="Print.SaveTitle" xml:space="preserve"><value>حفظ كملف PDF</value></data>
+  <data name="Print.Exported" xml:space="preserve"><value>تم التصدير: {0}</value></data>
   <data name="Print.Failed" xml:space="preserve"><value>تعذّر إنشاء المطبوع. تم الإبلاغ عن الخطأ.</value></data>
   <data name="Print.ExportTruncated" xml:space="preserve"><value>تم تصدير أول 10,000 صف فقط.</value></data>
 
@@ -434,4 +435,73 @@
   <data name="ErrorCode.inactive" xml:space="preserve"><value>هذا التحليل لم يعد متاحاً.</value></data>
   <data name="ErrorCode.duplicate" xml:space="preserve"><value>هذا التحليل موجود بالفعل في الطلب.</value></data>
   <data name="ErrorCode.exceeds_total" xml:space="preserve"><value>لا يمكن أن تزيد الدفعة عن إجمالي الطلب.</value></data>
+  <data name="Nav.Backups" xml:space="preserve"><value>النسخ الاحتياطي</value></data>
+  <data name="Backups.Subtitle" xml:space="preserve"><value>صدّر قاعدة البيانات إلى ملف تحتفظ به. تُحفظ إعدادات التصدير فقط، ولا تُحفظ البيانات.</value></data>
+  <data name="Backups.NewTitle" xml:space="preserve"><value>نسخة احتياطية جديدة</value></data>
+  <data name="Backups.NewSubtitle" xml:space="preserve"><value>اختر ما تريد تصديره وصيغة الملف، ثم حدّد مكان الحفظ.</value></data>
+  <data name="Backups.Field.Scope" xml:space="preserve"><value>ما المطلوب نسخه</value></data>
+  <data name="Backups.Field.Table" xml:space="preserve"><value>الجدول</value></data>
+  <data name="Backups.Field.Format" xml:space="preserve"><value>الصيغة</value></data>
+  <data name="Backups.AllTables" xml:space="preserve"><value>كل الجداول</value></data>
+  <data name="Backups.OneTable" xml:space="preserve"><value>جدول واحد</value></data>
+  <data name="Backups.Export" xml:space="preserve"><value>تصدير</value></data>
+  <data name="Backups.History" xml:space="preserve"><value>سجل النسخ الاحتياطي</value></data>
+  <data name="Backups.Records" xml:space="preserve"><value>{0} نسخة</value></data>
+  <data name="Backups.Col.Date" xml:space="preserve"><value>التاريخ</value></data>
+  <data name="Backups.Col.Scope" xml:space="preserve"><value>الجداول</value></data>
+  <data name="Backups.Col.Format" xml:space="preserve"><value>الصيغة</value></data>
+  <data name="Backups.Col.By" xml:space="preserve"><value>بواسطة</value></data>
+  <data name="Backups.SaveTitle" xml:space="preserve"><value>حفظ النسخة الاحتياطية</value></data>
+  <data name="Backups.Exported" xml:space="preserve"><value>تم حفظ النسخة الاحتياطية: {0}</value></data>
+  <data name="Backups.Failed" xml:space="preserve"><value>تعذّر تصدير النسخة الاحتياطية. تم تسجيل الخطأ.</value></data>
+  <data name="BackupFormat.Csv" xml:space="preserve"><value>CSV</value></data>
+  <data name="BackupFormat.Json" xml:space="preserve"><value>JSON</value></data>
+  <data name="BackupFormat.Sql" xml:space="preserve"><value>SQL</value></data>
+  <data name="BackupFormat.PostgreSql" xml:space="preserve"><value>PostgreSQL</value></data>
+  <data name="BackupFormat.Csv.Hint" xml:space="preserve"><value>يُفتح في Excel. ملف لكل جدول، وكل الجداول تأتي في ملف ZIP من ملفات CSV.</value></data>
+  <data name="BackupFormat.Json.Hint" xml:space="preserve"><value>ملف واحد يضم صفوف كل الجداول المحددة.</value></data>
+  <data name="BackupFormat.Sql.Hint" xml:space="preserve"><value>أوامر INSERT، واحد لكل صف. شغّله على قاعدة بيانات فيها الجداول مسبقاً.</value></data>
+  <data name="BackupFormat.PostgreSql.Hint" xml:space="preserve"><value>سكربت لـ PostgreSQL: ينشئ الجداول ويحمّل الصفوف. استعده بواسطة psql.</value></data>
+  <data name="Action.backups.created" xml:space="preserve"><value>حفظ إعداد نسخة احتياطية</value></data>
+  <data name="Action.backups.exported" xml:space="preserve"><value>تصدير نسخة احتياطية</value></data>
+  <!-- Super: dashboard, bulk log delete, data reset -->
+  <data name="Confirm.TypeWord" xml:space="preserve"><value>للتأكيد، اكتب {0} أدناه.</value></data>
+  <data name="Logs.Select" xml:space="preserve"><value>تحديد</value></data>
+  <data name="Logs.SelectPage" xml:space="preserve"><value>تحديد هذه الصفحة</value></data>
+  <data name="Logs.SelectedCount" xml:space="preserve"><value>{0} محدد</value></data>
+  <data name="Logs.DeleteSelected" xml:space="preserve"><value>حذف المحدد</value></data>
+  <data name="Logs.DeleteAll" xml:space="preserve"><value>حذف الكل</value></data>
+  <data name="Logs.DeleteSelectedConfirm" xml:space="preserve"><value>حذف {0} من السجلات المحددة؟ لا يمكن التراجع عن ذلك.</value></data>
+  <data name="Logs.DeleteAllActivityConfirm" xml:space="preserve"><value>حذف جميع سجلات النشاط؟ لا يمكن التراجع عن ذلك.</value></data>
+  <data name="Logs.DeleteAllErrorsConfirm" xml:space="preserve"><value>حذف جميع سجلات أخطاء النظام؟ لا يمكن التراجع عن ذلك.</value></data>
+  <data name="Logs.DeletedMany" xml:space="preserve"><value>تم حذف {0} من السجلات.</value></data>
+  <data name="Logs.DeletedAll" xml:space="preserve"><value>تم حذف جميع السجلات.</value></data>
+  <data name="Action.logs.activity_cleared" xml:space="preserve"><value>حذف جميع سجلات النشاط</value></data>
+  <data name="Action.logs.errors_deleted" xml:space="preserve"><value>حذف سجلات أخطاء النظام</value></data>
+  <data name="Action.logs.errors_cleared" xml:space="preserve"><value>حذف جميع أخطاء النظام</value></data>
+  <data name="Action.system.data_reset" xml:space="preserve"><value>إعادة تعيين قاعدة البيانات</value></data>
+  <data name="SystemSettings.DangerZone" xml:space="preserve"><value>منطقة الخطر</value></data>
+  <data name="SystemSettings.ResetTitle" xml:space="preserve"><value>إعادة تعيين قاعدة البيانات</value></data>
+  <data name="SystemSettings.ResetDescription" xml:space="preserve"><value>يحذف جميع المرضى والطلبات والمدفوعات والتحاليل وسجلات النشاط وأخطاء النظام. تبقى حسابات المستخدمين وإعدادات العيادة والنظام وسجل النسخ الاحتياطية.</value></data>
+  <data name="SystemSettings.ResetButton" xml:space="preserve"><value>إعادة تعيين قاعدة البيانات</value></data>
+  <data name="SystemSettings.ResetConfirm" xml:space="preserve"><value>سيؤدي هذا إلى حذف جميع المرضى والطلبات والمدفوعات والتحاليل وسجلات النشاط وأخطاء النظام نهائيًا. تبقى حسابات المستخدمين والإعدادات فقط. خذ نسخة احتياطية أولًا إذا كنت قد تحتاج هذه البيانات.</value></data>
+  <data name="SystemSettings.ResetDone" xml:space="preserve"><value>تمت إعادة تعيين قاعدة البيانات: حُذف {0} مريض و{1} طلب و{2} تحليل و{3} سجل.</value></data>
+  <data name="SystemSettings.ResetFailed" xml:space="preserve"><value>تعذرت إعادة تعيين قاعدة البيانات. لم يُحذف أي شيء.</value></data>
+  <data name="SuperDashboard.Revenue" xml:space="preserve"><value>إجمالي الإيرادات</value></data>
+  <data name="SuperDashboard.Outstanding" xml:space="preserve"><value>المبالغ المستحقة</value></data>
+  <data name="SuperDashboard.ActiveUsers" xml:space="preserve"><value>{0} نشط</value></data>
+  <data name="SuperDashboard.ActivityToday" xml:space="preserve"><value>النشاط اليوم</value></data>
+  <data name="SuperDashboard.ErrorsToday" xml:space="preserve"><value>الأخطاء اليوم</value></data>
+  <data name="SuperDashboard.Statuses" xml:space="preserve"><value>الطلبات حسب الحالة</value></data>
+  <data name="SuperDashboard.StatusesHint" xml:space="preserve"><value>جميع الطلبات حسب حالة الدفع</value></data>
+  <data name="SuperDashboard.RevenuePerDay" xml:space="preserve"><value>الإيرادات اليومية</value></data>
+  <data name="SuperDashboard.RevenuePerDayHint" xml:space="preserve"><value>تم تحصيل {0} خلال آخر 30 يومًا (المدفوعات ناقص المستردات)</value></data>
+  <data name="SuperDashboard.RevenueTooltip" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="SuperDashboard.PeriodTotal" xml:space="preserve"><value>{0} خلال آخر 30 يومًا</value></data>
+  <data name="SuperDashboard.PatientsPerDay" xml:space="preserve"><value>المرضى الجدد يوميًا</value></data>
+  <data name="SuperDashboard.PatientsTooltip" xml:space="preserve"><value>{0}: {1} مريض جديد</value></data>
+  <data name="SuperDashboard.ActivityPerDay" xml:space="preserve"><value>النشاط اليومي</value></data>
+  <data name="SuperDashboard.ActivityTooltip" xml:space="preserve"><value>{0}: {1} نشاط</value></data>
+  <data name="SuperDashboard.ErrorsPerDay" xml:space="preserve"><value>الأخطاء اليومية</value></data>
+  <data name="SuperDashboard.ErrorsTooltip" xml:space="preserve"><value>{0}: {1} خطأ</value></data>
 </root>

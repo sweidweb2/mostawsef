@@ -71,6 +71,8 @@ public static class ServiceRegistration
         services.AddSingleton<UsersApi>();
         services.AddSingleton<ClinicSettingsApi>();
         services.AddSingleton<SystemSettingsApi>();
+        services.AddSingleton<SystemApi>();
+        services.AddSingleton<BackupsApi>();
         services.AddSingleton<LabTestsApi>();
         services.AddSingleton<PatientsApi>();
         services.AddSingleton<OrdersApi>();
@@ -95,13 +97,14 @@ public static class ServiceRegistration
             options.OpenFile ?? PrintService.OpenWithDefaultApp,
             sp.GetRequiredService<PerformanceMonitor>()));
 
+        services.AddSingleton<SavePathPicker>(options.PickSavePath ?? SaveFilePicker.PickAsync);
         services.AddSingleton(sp => new InvoiceService(
             sp.GetRequiredService<OrdersApi>(),
             sp.GetRequiredService<PrintService>(),
             sp.GetRequiredService<IToastService>(),
             sp.GetRequiredService<LocalizationService>(),
             sp.GetRequiredService<ErrorReporter>(),
-            options.PickSavePath ?? SaveFilePicker.PickPdfAsync));
+            sp.GetRequiredService<SavePathPicker>()));
 
         // Auth + navigation
         services.AddSingleton<SessionService>();

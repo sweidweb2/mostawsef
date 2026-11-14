@@ -94,7 +94,7 @@ public class ViewRenderingTests : UiTestBase
 
         var window = app.Show(app.Navigation.CurrentPage!);
 
-        Assert.NotNull(window.FindDescendantOfType<DashboardView>());
+        Assert.NotNull(window.FindDescendantOfType<Mostawsef.Desktop.Views.Super.SuperDashboardView>());
         Assert.DoesNotContain(Texts(window), t => t == "Super portal");
         Assert.Equal("Dashboard", window.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "BreadcrumbCurrent").Text);
         Assert.Contains(Texts(window), t => t == "Welcome, user@test.local");

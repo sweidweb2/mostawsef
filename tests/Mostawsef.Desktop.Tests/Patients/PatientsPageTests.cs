@@ -306,7 +306,7 @@ public class PatientsPageTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task Export_reads_every_patient_whatever_the_search_and_opens_a_pdf()
+    public async Task Export_reads_every_patient_whatever_the_search_and_saves_a_pdf_where_the_user_chose()
     {
         using var app = new TestServices();
         app.SignInAs(Roles.Admin);
@@ -317,14 +317,31 @@ public class PatientsPageTests : UiTestBase
         app.Api.OnGet($"{PatientsPath}/all", (IReadOnlyList<PatientDto>)everyone);
         var (page, _) = await ShowPage(app);
         page.Search = "Patient 001";
+        app.PickedSavePath = Path.Combine(app.DownloadsFolder, "chosen", "my-patients.pdf");
 
         await page.ExportCommand.ExecuteAsync(null);
 
         Assert.Single(app.Api.RequestsTo(HttpMethod.Get, $"{PatientsPath}/all"));
-        var file = Assert.Single(app.OpenedFiles);
-        Assert.StartsWith("patients-", Path.GetFileName(file));
-        Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(File.ReadAllBytes(file), 0, 4));
-        File.Delete(file);
+        Assert.Equal(["patients.pdf"], app.SaveSuggestions);
+        Assert.Empty(app.OpenedFiles);
+        Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(File.ReadAllBytes(app.PickedSavePath), 0, 4));
+        Assert.False(page.IsExporting);
+    }
+
+    [AvaloniaFact]
+    public async Task Cancelling_the_save_dialog_exports_no_patients()
+    {
+        using var app = new TestServices();
+        app.SignInAs(Roles.Admin);
+        app.Api.OnGet(PatientsPath, new PagedResult<PatientDto>([Omar], 1, 40, 1));
+        var (page, _) = await ShowPage(app);
+        app.PickedSavePath = null;
+
+        await page.ExportCommand.ExecuteAsync(null);
+
+        Assert.Equal(["patients.pdf"], app.SaveSuggestions);
+        Assert.Empty(app.Api.RequestsTo(HttpMethod.Get, $"{PatientsPath}/all"));
+        Assert.Empty(app.OpenedFiles);
     }
 
     [AvaloniaFact]

@@ -60,7 +60,15 @@ public class UserService(
         var user = new User(
             username, request.FullName, SearchText.Normalize(request.FullName), passwordHasher.Hash(request.Password), ParseRole(request.Role));
         users.Add(user);
-        await users.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await users.SaveChangesAsync(cancellationToken);
+        }
+        catch (AppException ex) when (ex.Kind == AppErrorKind.Conflict && ex.Code == ErrorCodes.Taken)
+        {
+            // Lost a race with another request creating the same username after the check above.
+            throw AppException.Conflict(ErrorCodes.UsernameTaken, nameof(CreateUserRequest.Username));
+        }
 
         await LogAsync(ActivityActions.UserCreated, "Created a user", user, cancellationToken);
         return ToDetails(user);

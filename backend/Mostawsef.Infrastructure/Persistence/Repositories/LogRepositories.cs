@@ -25,6 +25,12 @@ public class ActivityLogRepository(AppDbContext db) : IActivityLogRepository
                 l.EntityType, l.EntityId, l.IpAddress, l.UserAgent, l.Details))
             .FirstOrDefaultAsync(cancellationToken);
 
+    public Task<int> DeleteManyAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken) =>
+        db.ActivityLogs.Where(l => ids.Contains(l.Id)).ExecuteDeleteAsync(cancellationToken);
+
+    public Task<int> DeleteAllAsync(CancellationToken cancellationToken) =>
+        Retention.DeleteInBatchesAsync(db.ActivityLogs.OrderBy(l => l.OccurredAt), cancellationToken);
+
     public Task<int> DeleteOlderThanAsync(DateTime cutoffUtc, CancellationToken cancellationToken) =>
         Retention.DeleteInBatchesAsync(
             db.ActivityLogs.Where(l => l.OccurredAt < cutoffUtc).OrderBy(l => l.OccurredAt), cancellationToken);
@@ -68,6 +74,12 @@ public class SystemErrorRepository(AppDbContext db) : ISystemErrorRepository
 
     public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken) =>
         await db.SystemErrors.Where(e => e.Id == id).ExecuteDeleteAsync(cancellationToken) > 0;
+
+    public Task<int> DeleteManyAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken) =>
+        db.SystemErrors.Where(e => ids.Contains(e.Id)).ExecuteDeleteAsync(cancellationToken);
+
+    public Task<int> DeleteAllAsync(CancellationToken cancellationToken) =>
+        Retention.DeleteInBatchesAsync(db.SystemErrors.OrderBy(e => e.OccurredAt), cancellationToken);
 
     public Task<int> DeleteOlderThanAsync(DateTime cutoffUtc, CancellationToken cancellationToken) =>
         Retention.DeleteInBatchesAsync(

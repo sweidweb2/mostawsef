@@ -1,6 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Mostawsef.Application.Modules.Auth;
+using Mostawsef.Application.Modules.Backups;
 using Mostawsef.Application.Modules.LabTests;
+using Mostawsef.Application.Modules.Maintenance;
 using Mostawsef.Application.Modules.Logs;
 using Mostawsef.Application.Modules.Orders;
 using Mostawsef.Application.Modules.Patients;
@@ -23,6 +25,8 @@ public static class DependencyInjection
         services.AddScoped<ILabTestService, LabTestService>();
         services.AddScoped<IPatientService, PatientService>();
         services.AddScoped<IOrderService, OrderService>();
+        services.AddScoped<IBackupService, BackupService>();
+        services.AddScoped<ISystemMaintenanceService, SystemMaintenanceService>();
 
         return services;
     }

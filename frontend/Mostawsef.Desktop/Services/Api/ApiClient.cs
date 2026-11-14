@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -47,6 +48,39 @@ public class ApiClient(Lazy<HttpClient> http, PerformanceMonitor perf)
 
     public Task<ApiResult<bool>> DeleteAsync(string path, CancellationToken cancellationToken = default) =>
         SendAsync("DELETE", path, () => Http.DeleteAsync(path, cancellationToken), NoContent, cancellationToken);
+
+    /// <summary>
+    /// Downloads the response body into <paramref name="destinationPath"/>. The bytes go to "path.part" first and replace the
+    /// destination only when the download is complete, so a failure never leaves a half-written file under the real name.
+    /// Value is true on success.
+    /// </summary>
+    public Task<ApiResult<bool>> DownloadAsync(string path, string destinationPath, CancellationToken cancellationToken = default) =>
+        SendAsync(
+            "GET",
+            path,
+            () => Http.GetAsync(path, HttpCompletionOption.ResponseHeadersRead, cancellationToken),
+            (response, token) => SaveToFileAsync(response, destinationPath, token),
+            cancellationToken);
+
+    private static async Task<ApiResult<bool>> SaveToFileAsync(HttpResponseMessage response, string destinationPath, CancellationToken cancellationToken)
+    {
+        var partPath = destinationPath + ".part";
+        try
+        {
+            await using (var source = await response.Content.ReadAsStreamAsync(cancellationToken))
+            await using (var target = new FileStream(partPath, FileMode.Create, FileAccess.Write, FileShare.None, 64 * 1024, useAsync: true))
+            {
+                await source.CopyToAsync(target, cancellationToken);
+            }
+
+            File.Move(partPath, destinationPath, overwrite: true);
+            return ApiResult<bool>.Ok(true);
+        }
+        finally
+        {
+            File.Delete(partPath);
+        }
+    }
 
     private async Task<ApiResult<T>> SendAsync<T>(
         string method,

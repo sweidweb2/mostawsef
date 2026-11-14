@@ -23,6 +23,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
 
+    public DbSet<BackupRecord> BackupRecords => Set<BackupRecord>();
+
     /// <summary>
     /// Stale Version → 409 concurrency_conflict. Unique/FK races (check-then-act under concurrent requests) → 409
     /// instead of a generic 500.

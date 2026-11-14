@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -13,10 +15,20 @@ using Mostawsef.Desktop.ViewModels.Shell;
 
 namespace Mostawsef.Desktop.ViewModels.Super;
 
-/// <summary>Super portal: activity log with stats, paging, search and details modal. Access via AppRoutes.</summary>
+/// <summary>Super portal: activity log with stats, paging, search, details modal and bulk delete. Access via AppRoutes.</summary>
 public partial class ActivityLogsViewModel(LogsApi logs, IDialogService dialogs, IToastService toasts, LocalizationService localization, ErrorReporter errors)
-    : PagedListViewModel<ActivityLogListItemDto>(toasts, localization, errors)
+    : SelectableLogListViewModel<ActivityLogListItemDto>(dialogs, toasts, localization, errors)
 {
+    protected override string DeleteAllConfirmKey => "Logs.DeleteAllActivityConfirm";
+
+    protected override Guid IdOf(ActivityLogListItemDto item) => item.Id;
+
+    protected override Task<ApiResult<DeleteLogsResultDto>> DeleteManyAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken) =>
+        logs.DeleteActivityLogsAsync(ids, cancellationToken);
+
+    protected override Task<ApiResult<bool>> DeleteEverythingAsync(CancellationToken cancellationToken) =>
+        logs.DeleteAllActivityLogsAsync(cancellationToken);
+
     [ObservableProperty]
     public partial ActivityLogStatsDto? Stats { get; private set; }
 
@@ -54,7 +66,7 @@ public partial class ActivityLogsViewModel(LogsApi logs, IDialogService dialogs,
             return;
         }
 
-        await dialogs.ShowAsync(new Modal
+        await Dialogs.ShowAsync(new Modal
         {
             Title = Localization.Get("Logs.ActivityDetails"),
             Content = new ActivityLogDetailsViewModel(result.Value!),

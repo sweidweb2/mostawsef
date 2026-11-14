@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Mostawsef.Contracts.Maintenance;
 using Mostawsef.Contracts.Settings;
 using Mostawsef.Desktop.Services.Api;
 using Mostawsef.Desktop.Services.Local;
@@ -11,9 +12,10 @@ using Mostawsef.Desktop.ViewModels.Shell;
 
 namespace Mostawsef.Desktop.ViewModels.Super;
 
-/// <summary>Super portal: the backup folder and maintenance mode, with an edit form.</summary>
+/// <summary>Super portal: the backup folder and maintenance mode, with an edit form, and the data reset (danger zone).</summary>
 public partial class SystemSettingsViewModel(
     SystemSettingsApi api,
+    SystemApi system,
     IDialogService dialogs,
     IToastService toasts,
     LocalizationService localization) : ViewModelBase, ILoadablePage
@@ -37,6 +39,11 @@ public partial class SystemSettingsViewModel(
 
     [ObservableProperty]
     public partial bool HasLoadError { get; private set; }
+
+    /// <summary>A data reset is running: its button is disabled.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ResetDataCommand))]
+    public partial bool IsResetting { get; private set; }
 
     public Task ActivateAsync() => _loaded ? Task.CompletedTask : LoadAsync();
 
@@ -69,6 +76,47 @@ public partial class SystemSettingsViewModel(
             toasts.Success(localization.Get("SystemSettings.Saved"));
         }
     }
+
+    /// <summary>
+    /// Deletes every patient, order, payment, lab test and log record; accounts and settings stay. The user must type
+    /// <see cref="DataResetRules.ConfirmationWord"/> in the confirmation dialog, and the API checks the word again.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(CanResetData))]
+    private async Task ResetDataAsync()
+    {
+        if (!await dialogs.ConfirmWithWordAsync(
+                localization.Get("SystemSettings.ResetConfirm"),
+                DataResetRules.ConfirmationWord,
+                localization.Get("SystemSettings.ResetTitle"),
+                localization.Get("SystemSettings.ResetButton")))
+        {
+            return;
+        }
+
+        IsResetting = true;
+        try
+        {
+            var result = await system.ResetDataAsync(DataResetRules.ConfirmationWord);
+            if (result.IsSuccess)
+            {
+                var removed = result.Value!;
+                toasts.Success(localization.Format(
+                    "SystemSettings.ResetDone",
+                    removed.Patients, removed.Orders, removed.LabTests, removed.ActivityLogs + removed.SystemErrors));
+            }
+            else
+            {
+                toasts.Error(localization.Get(
+                    result.Error == ApiError.Unreachable ? "Login.ServerUnreachable" : "SystemSettings.ResetFailed"));
+            }
+        }
+        finally
+        {
+            IsResetting = false;
+        }
+    }
+
+    private bool CanResetData() => !IsResetting;
 
     private async Task LoadAsync()
     {

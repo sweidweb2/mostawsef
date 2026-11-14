@@ -39,7 +39,7 @@ public class JwtTokenService(IOptions<JwtOptions> jwtOptions, TimeProvider time)
             ]),
         });
 
-        return new AccessToken(token, expiresAt);
+        return new AccessToken(token, expiresAt, expiresAt - now);
     }
 
     /// <summary>

@@ -34,6 +34,24 @@
                     </Panel>
                 </ui:LoadingOverlay>
             </ui:Card>
+
+            <!-- Danger zone: wipe all data except the user accounts. -->
+            <ui:Card Name="DangerZone" Title="{l:Tr SystemSettings.DangerZone}"
+                     BorderBrush="{DynamicResource BrushDangerBorder}" BorderThickness="1">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource GapGrid}">
+                    <StackPanel Spacing="4" VerticalAlignment="Center">
+                        <TextBlock Classes="strong" Text="{l:Tr SystemSettings.ResetTitle}" />
+                        <TextBlock Classes="muted" TextWrapping="Wrap" Text="{l:Tr SystemSettings.ResetDescription}" />
+                    </StackPanel>
+                    <Button Name="ResetDataButton" Grid.Column="1" Classes="danger" VerticalAlignment="Center"
+                            Command="{Binding ResetDataCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
+                            <PathIcon Data="{StaticResource IconDelete}" />
+                            <TextBlock Text="{l:Tr SystemSettings.ResetButton}" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </ui:Card>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

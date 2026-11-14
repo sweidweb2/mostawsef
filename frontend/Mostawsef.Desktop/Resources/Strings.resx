@@ -53,7 +53,6 @@
   <data name="Prescription.Frequency" xml:space="preserve"><value>Frequency</value></data>
   <data name="Prescription.Duration" xml:space="preserve"><value>Duration</value></data>
   <data name="Invoice.SaveTitle" xml:space="preserve"><value>Save invoice</value></data>
-  <data name="Invoice.Title" xml:space="preserve"><value>Invoice summary</value></data>
   <data name="Invoice.Subtotal" xml:space="preserve"><value>Subtotal</value></data>
   <data name="Invoice.Discount" xml:space="preserve"><value>Discount</value></data>
   <data name="Invoice.Tax" xml:space="preserve"><value>Tax</value></data>
@@ -169,7 +168,7 @@
   <data name="Action.auth.sign_in_failed" xml:space="preserve"><value>Failed sign-in</value></data>
   <data name="Action.auth.sign_in_blocked" xml:space="preserve"><value>Sign-in blocked (maintenance mode)</value></data>
   <data name="Action.auth.signed_out" xml:space="preserve"><value>Signed out</value></data>
-  <data name="Action.logs.activity_deleted" xml:space="preserve"><value>Deleted activity record</value></data>
+  <data name="Action.logs.activity_deleted" xml:space="preserve"><value>Deleted activity log records</value></data>
   <data name="Action.logs.error_deleted" xml:space="preserve"><value>Deleted error record</value></data>
   <data name="Action.logs.purged" xml:space="preserve"><value>Removed old log records</value></data>
   <data name="Action.auth.password_changed" xml:space="preserve"><value>Changed own password</value></data>
@@ -223,6 +222,8 @@
   <data name="Print.Page" xml:space="preserve"><value>Page</value></data>
   <data name="Print.Of" xml:space="preserve"><value>of</value></data>
   <data name="Print.PrintedAt" xml:space="preserve"><value>Printed</value></data>
+  <data name="Print.SaveTitle" xml:space="preserve"><value>Save as PDF</value></data>
+  <data name="Print.Exported" xml:space="preserve"><value>Exported: {0}</value></data>
   <data name="Print.Failed" xml:space="preserve"><value>Could not create the printout. The error was reported.</value></data>
   <data name="Print.ExportTruncated" xml:space="preserve"><value>Only the first 10,000 rows were exported.</value></data>
 
@@ -435,4 +436,73 @@
   <data name="ErrorCode.inactive" xml:space="preserve"><value>This test is no longer offered.</value></data>
   <data name="ErrorCode.duplicate" xml:space="preserve"><value>This test is already in the order.</value></data>
   <data name="ErrorCode.exceeds_total" xml:space="preserve"><value>The payment can't be more than the order total.</value></data>
+  <data name="Nav.Backups" xml:space="preserve"><value>Backups</value></data>
+  <data name="Backups.Subtitle" xml:space="preserve"><value>Export the database to a file you keep. Only the export settings are stored, never the data.</value></data>
+  <data name="Backups.NewTitle" xml:space="preserve"><value>New backup</value></data>
+  <data name="Backups.NewSubtitle" xml:space="preserve"><value>Choose what to export and in which format, then pick where to save the file.</value></data>
+  <data name="Backups.Field.Scope" xml:space="preserve"><value>What to back up</value></data>
+  <data name="Backups.Field.Table" xml:space="preserve"><value>Table</value></data>
+  <data name="Backups.Field.Format" xml:space="preserve"><value>Format</value></data>
+  <data name="Backups.AllTables" xml:space="preserve"><value>All tables</value></data>
+  <data name="Backups.OneTable" xml:space="preserve"><value>One table</value></data>
+  <data name="Backups.Export" xml:space="preserve"><value>Export</value></data>
+  <data name="Backups.History" xml:space="preserve"><value>Backup history</value></data>
+  <data name="Backups.Records" xml:space="preserve"><value>{0} backups</value></data>
+  <data name="Backups.Col.Date" xml:space="preserve"><value>Date</value></data>
+  <data name="Backups.Col.Scope" xml:space="preserve"><value>Tables</value></data>
+  <data name="Backups.Col.Format" xml:space="preserve"><value>Format</value></data>
+  <data name="Backups.Col.By" xml:space="preserve"><value>By</value></data>
+  <data name="Backups.SaveTitle" xml:space="preserve"><value>Save backup</value></data>
+  <data name="Backups.Exported" xml:space="preserve"><value>Backup saved: {0}</value></data>
+  <data name="Backups.Failed" xml:space="preserve"><value>Could not export the backup. The error was reported.</value></data>
+  <data name="BackupFormat.Csv" xml:space="preserve"><value>CSV</value></data>
+  <data name="BackupFormat.Json" xml:space="preserve"><value>JSON</value></data>
+  <data name="BackupFormat.Sql" xml:space="preserve"><value>SQL</value></data>
+  <data name="BackupFormat.PostgreSql" xml:space="preserve"><value>PostgreSQL</value></data>
+  <data name="BackupFormat.Csv.Hint" xml:space="preserve"><value>Opens in Excel. One file per table; all tables come as a ZIP of CSV files.</value></data>
+  <data name="BackupFormat.Json.Hint" xml:space="preserve"><value>One file with the rows of every selected table.</value></data>
+  <data name="BackupFormat.Sql.Hint" xml:space="preserve"><value>INSERT statements, one per row. Run it on a database that already has the tables.</value></data>
+  <data name="BackupFormat.PostgreSql.Hint" xml:space="preserve"><value>A script for PostgreSQL: creates the tables and loads the rows. Restore it with psql.</value></data>
+  <data name="Action.backups.created" xml:space="preserve"><value>Saved a backup setting</value></data>
+  <data name="Action.backups.exported" xml:space="preserve"><value>Exported a backup</value></data>
+  <!-- Super: dashboard, bulk log delete, data reset -->
+  <data name="Confirm.TypeWord" xml:space="preserve"><value>To confirm, type {0} below.</value></data>
+  <data name="Logs.Select" xml:space="preserve"><value>Select</value></data>
+  <data name="Logs.SelectPage" xml:space="preserve"><value>Select this page</value></data>
+  <data name="Logs.SelectedCount" xml:space="preserve"><value>{0} selected</value></data>
+  <data name="Logs.DeleteSelected" xml:space="preserve"><value>Delete selected</value></data>
+  <data name="Logs.DeleteAll" xml:space="preserve"><value>Delete all</value></data>
+  <data name="Logs.DeleteSelectedConfirm" xml:space="preserve"><value>Delete the {0} selected records? This cannot be undone.</value></data>
+  <data name="Logs.DeleteAllActivityConfirm" xml:space="preserve"><value>Delete ALL activity log records? This cannot be undone.</value></data>
+  <data name="Logs.DeleteAllErrorsConfirm" xml:space="preserve"><value>Delete ALL system error records? This cannot be undone.</value></data>
+  <data name="Logs.DeletedMany" xml:space="preserve"><value>{0} records deleted.</value></data>
+  <data name="Logs.DeletedAll" xml:space="preserve"><value>All records deleted.</value></data>
+  <data name="Action.logs.activity_cleared" xml:space="preserve"><value>Deleted all activity logs</value></data>
+  <data name="Action.logs.errors_deleted" xml:space="preserve"><value>Deleted system error records</value></data>
+  <data name="Action.logs.errors_cleared" xml:space="preserve"><value>Deleted all system errors</value></data>
+  <data name="Action.system.data_reset" xml:space="preserve"><value>Reset the database</value></data>
+  <data name="SystemSettings.DangerZone" xml:space="preserve"><value>Danger zone</value></data>
+  <data name="SystemSettings.ResetTitle" xml:space="preserve"><value>Reset database</value></data>
+  <data name="SystemSettings.ResetDescription" xml:space="preserve"><value>Deletes all patients, orders, payments, lab tests, activity logs and system errors. User accounts, the clinic and system settings and the backup history are kept.</value></data>
+  <data name="SystemSettings.ResetButton" xml:space="preserve"><value>Reset database</value></data>
+  <data name="SystemSettings.ResetConfirm" xml:space="preserve"><value>This permanently deletes all patients, orders, payments, lab tests, activity logs and system errors. Only user accounts and settings are kept. Take a backup first if you may need this data.</value></data>
+  <data name="SystemSettings.ResetDone" xml:space="preserve"><value>Database reset: {0} patients, {1} orders, {2} lab tests and {3} log records deleted.</value></data>
+  <data name="SystemSettings.ResetFailed" xml:space="preserve"><value>The database could not be reset. Nothing was deleted.</value></data>
+  <data name="SuperDashboard.Revenue" xml:space="preserve"><value>Total revenue</value></data>
+  <data name="SuperDashboard.Outstanding" xml:space="preserve"><value>Outstanding balance</value></data>
+  <data name="SuperDashboard.ActiveUsers" xml:space="preserve"><value>{0} active</value></data>
+  <data name="SuperDashboard.ActivityToday" xml:space="preserve"><value>Activity today</value></data>
+  <data name="SuperDashboard.ErrorsToday" xml:space="preserve"><value>Errors today</value></data>
+  <data name="SuperDashboard.Statuses" xml:space="preserve"><value>Orders by status</value></data>
+  <data name="SuperDashboard.StatusesHint" xml:space="preserve"><value>Every order, by its payment status</value></data>
+  <data name="SuperDashboard.RevenuePerDay" xml:space="preserve"><value>Revenue per day</value></data>
+  <data name="SuperDashboard.RevenuePerDayHint" xml:space="preserve"><value>{0} collected in the last 30 days (payments minus refunds)</value></data>
+  <data name="SuperDashboard.RevenueTooltip" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="SuperDashboard.PeriodTotal" xml:space="preserve"><value>{0} in the last 30 days</value></data>
+  <data name="SuperDashboard.PatientsPerDay" xml:space="preserve"><value>New patients per day</value></data>
+  <data name="SuperDashboard.PatientsTooltip" xml:space="preserve"><value>{0}: {1} new patients</value></data>
+  <data name="SuperDashboard.ActivityPerDay" xml:space="preserve"><value>Activity per day</value></data>
+  <data name="SuperDashboard.ActivityTooltip" xml:space="preserve"><value>{0}: {1} activities</value></data>
+  <data name="SuperDashboard.ErrorsPerDay" xml:space="preserve"><value>Errors per day</value></data>
+  <data name="SuperDashboard.ErrorsTooltip" xml:space="preserve"><value>{0}: {1} errors</value></data>
 </root>

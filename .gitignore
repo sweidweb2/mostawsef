@@ -481,3 +481,9 @@ $RECYCLE.BIN/
 
 # Database copies made by scripts/wipe.ps1
 backups/
+
+# The Backups feature folders (the Visual Studio patterns above would hide them; the root backups/ dump folder stays ignored)
+!**/Modules/Backups/
+!shared/Mostawsef.Contracts/Backups/
+!**/Services/Backup/
+!tests/**/Backups/

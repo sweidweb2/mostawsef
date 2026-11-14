@@ -34,6 +34,17 @@ public class SystemErrorsController(ISystemErrorService errors) : ControllerBase
     public async Task<IActionResult> Get(Guid id, CancellationToken cancellationToken) =>
         await errors.GetAsync(id, cancellationToken) is { } error ? Ok(error) : NotFound();
 
+    /// <summary>Deletes the selected errors (at most <see cref="LogRules.MaxBulkDelete"/> per request).</summary>
+    [HttpPost("bulk-delete")]
+    [ProducesResponseType<DeleteLogsResultDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public Task<DeleteLogsResultDto> DeleteMany(DeleteLogsRequest request, CancellationToken cancellationToken) =>
+        errors.DeleteManyAsync(request, cancellationToken);
+
+    /// <summary>Deletes every error.</summary>
+    [HttpDelete]
+    public Task<DeleteLogsResultDto> DeleteAll(CancellationToken cancellationToken) => errors.DeleteAllAsync(cancellationToken);
+
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

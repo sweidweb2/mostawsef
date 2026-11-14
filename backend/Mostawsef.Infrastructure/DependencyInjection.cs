@@ -6,6 +6,7 @@ using Mostawsef.Infrastructure.Persistence.Context;
 using Mostawsef.Infrastructure.Persistence.Repositories;
 using Mostawsef.Infrastructure.Services;
 using Mostawsef.Infrastructure.Services.Auth;
+using Mostawsef.Infrastructure.Services.Backup;
 using Mostawsef.Infrastructure.Services.Logging;
 using Npgsql;
 
@@ -46,6 +47,9 @@ public static class DependencyInjection
         services.AddScoped<ILabTestRepository, LabTestRepository>();
         services.AddScoped<IPatientRepository, PatientRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();
+        services.AddScoped<IBackupRepository, BackupRepository>();
+        services.AddScoped<ISystemMaintenanceRepository, SystemMaintenanceRepository>();
+        services.AddSingleton<IBackupExporter, DatabaseBackupExporter>();
 
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<ITokenService, JwtTokenService>();

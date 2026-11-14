@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Mostawsef.Contracts.Common;
 
 namespace Mostawsef.Contracts.Logs;
 
@@ -75,3 +76,21 @@ public static class ErrorLevels
     public const string Error = "Error";
     public const string Critical = "Critical";
 }
+
+public static class LogRules
+{
+    /// <summary>Most records one bulk delete request may name.</summary>
+    public const int MaxBulkDelete = 1000;
+}
+
+/// <summary>Deletes the named activity logs or system errors; ids that no longer exist are skipped.</summary>
+public record DeleteLogsRequest
+{
+    [Required(ErrorMessage = ErrorCodes.Required)]
+    [MinLength(1, ErrorMessage = ErrorCodes.Required)]
+    [MaxLength(LogRules.MaxBulkDelete, ErrorMessage = ErrorCodes.MaxLength)]
+    public IReadOnlyList<Guid> Ids { get; init; } = [];
+}
+
+/// <summary>How many records a bulk delete or "delete all" removed.</summary>
+public record DeleteLogsResultDto(int Deleted);

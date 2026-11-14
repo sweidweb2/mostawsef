@@ -5,6 +5,7 @@
              xmlns:conv="using:Mostawsef.Desktop.Converters"
              xmlns:logs="using:Mostawsef.Contracts.Logs"
              xmlns:vm="using:Mostawsef.Desktop.ViewModels.Super"
+             xmlns:shell="using:Mostawsef.Desktop.ViewModels.Shell"
              x:Class="Mostawsef.Desktop.Views.Super.SystemErrorsView"
              x:DataType="vm:SystemErrorsViewModel">
     <ScrollViewer>
@@ -42,17 +43,67 @@
                           RetryCommand="{Binding RefreshCommand}"
                           FirstRowNumber="{Binding FirstRowNumber}">
                 <ui:DataTable.Toolbar>
-                    <Grid ColumnDefinitions="*,Auto">
-                        <ui:SearchBox MaxWidth="360"
-                                      HorizontalAlignment="Left"
-                                      Text="{Binding Search}"
-                                      SearchCommand="{Binding SearchCommand}" />
-                        <TextBlock Grid.Column="1" Classes="caption muted" Text="{l:Tr Logs.Records, Arg={Binding TotalCount}}" VerticalAlignment="Center" />
-                    </Grid>
+                    <StackPanel Spacing="{StaticResource GapControls}">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{StaticResource GapGrid}">
+                            <ui:SearchBox MaxWidth="360"
+                                          HorizontalAlignment="Left"
+                                          Text="{Binding Search}"
+                                          SearchCommand="{Binding SearchCommand}" />
+                            <TextBlock Grid.Column="1" Classes="caption muted" Text="{l:Tr Logs.Records, Arg={Binding TotalCount}}" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{StaticResource GapControls}">
+                                <Button Name="SelectModeButton" Classes="secondary" Command="{Binding ToggleSelectModeCommand}">
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
+                                        <PathIcon Data="{StaticResource IconCheck}" />
+                                        <TextBlock Text="{l:TrKey {Binding SelectModeKey}}" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Name="DeleteAllButton" Classes="danger" Command="{Binding DeleteAllCommand}">
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
+                                        <PathIcon Data="{StaticResource IconDelete}" />
+                                        <TextBlock Text="{l:Tr Logs.DeleteAll}" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Select mode: select the shown page, the count, and delete the selection. -->
+                        <Border Name="SelectionBar" IsVisible="{Binding Selection.IsActive}"
+                                Background="{DynamicResource BrushPrimarySubtle}" CornerRadius="8" Padding="12,8">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{StaticResource GapGrid}">
+                                <CheckBox Name="SelectPageBox" IsChecked="{Binding IsPageSelected}" Content="{l:Tr Logs.SelectPage}" />
+                                <TextBlock Grid.Column="1" VerticalAlignment="Center" Classes="strong"
+                                           Text="{l:Tr Logs.SelectedCount, Arg={Binding Selection.Count}}" />
+                                <Button Name="DeleteSelectedButton" Grid.Column="2" Classes="danger" Command="{Binding DeleteSelectedCommand}">
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
+                                        <PathIcon Data="{StaticResource IconDelete}" />
+                                        <TextBlock Text="{l:Tr Logs.DeleteSelected}" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                        </Border>
+                    </StackPanel>
                 </ui:DataTable.Toolbar>
 
-                <DataGrid ItemsSource="{Binding Items}" IsReadOnly="True" CanUserSortColumns="False">
+                <DataGrid ItemsSource="{Binding Items}" IsReadOnly="True" CanUserSortColumns="False" ui:SelectionColumn.IsEnabled="True">
                     <DataGrid.Columns>
+                        <!-- Row checkboxes: shown only in select mode (ui:SelectionColumn). Keep it the first column. -->
+                        <DataGridTemplateColumn Width="48" IsVisible="False">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="logs:SystemErrorListItemDto">
+                                    <CheckBox Classes="row-select" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="12,0,0,0"
+                                              Command="{Binding $parent[DataGrid].((vm:SystemErrorsViewModel)DataContext).ToggleRowCommand}"
+                                              CommandParameter="{Binding}">
+                                        <CheckBox.IsChecked>
+                                            <MultiBinding Converter="{x:Static shell:RowSelection.IsSelectedConverter}" Mode="OneWay">
+                                                <Binding Path="$parent[DataGrid].((vm:SystemErrorsViewModel)DataContext).Selection" />
+                                                <Binding Path="$parent[DataGrid].((vm:SystemErrorsViewModel)DataContext).Selection.Version" />
+                                                <Binding Path="Id" />
+                                            </MultiBinding>
+                                        </CheckBox.IsChecked>
+                                    </CheckBox>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
                         <DataGridTemplateColumn Header="{l:Tr Common.RowNumber}" Width="56">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>

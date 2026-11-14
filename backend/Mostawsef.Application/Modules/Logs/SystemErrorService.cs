@@ -18,6 +18,12 @@ public interface ISystemErrorService
 
     Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken);
 
+    /// <summary>Deletes the named errors (missing ids are skipped) and records the deletion as an activity.</summary>
+    Task<DeleteLogsResultDto> DeleteManyAsync(DeleteLogsRequest request, CancellationToken cancellationToken);
+
+    /// <summary>Deletes every error and records the clearing as an activity.</summary>
+    Task<DeleteLogsResultDto> DeleteAllAsync(CancellationToken cancellationToken);
+
     /// <summary>Stores an error reported by the desktop app.</summary>
     Task ReportClientErrorAsync(ReportClientErrorRequest request, CancellationToken cancellationToken);
 }
@@ -72,6 +78,35 @@ public class SystemErrorService(ISystemErrorRepository errors, ISystemErrorLogge
             cancellationToken);
 
         return true;
+    }
+
+    public async Task<DeleteLogsResultDto> DeleteManyAsync(DeleteLogsRequest request, CancellationToken cancellationToken)
+    {
+        var deleted = await errors.DeleteManyAsync(request.Ids.Distinct().ToList(), cancellationToken);
+        if (deleted > 0)
+        {
+            await activity.LogAsync(
+                new ActivityEntry(ActivityActions.SystemErrorsDeleted, ActivityModules.Logs, $"Deleted {deleted} system error records")
+                {
+                    Details = new { Deleted = deleted },
+                },
+                cancellationToken);
+        }
+
+        return new DeleteLogsResultDto(deleted);
+    }
+
+    public async Task<DeleteLogsResultDto> DeleteAllAsync(CancellationToken cancellationToken)
+    {
+        var deleted = await errors.DeleteAllAsync(cancellationToken);
+        await activity.LogAsync(
+            new ActivityEntry(ActivityActions.SystemErrorsCleared, ActivityModules.Logs, $"Deleted all system error records ({deleted})")
+            {
+                Details = new { Deleted = deleted },
+            },
+            cancellationToken);
+
+        return new DeleteLogsResultDto(deleted);
     }
 
     public Task ReportClientErrorAsync(ReportClientErrorRequest request, CancellationToken cancellationToken)

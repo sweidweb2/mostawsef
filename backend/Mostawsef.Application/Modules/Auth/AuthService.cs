@@ -82,7 +82,7 @@ public class AuthService(
         await RecordSignInAsync(user, request.Password, check, cancellationToken);
 
         var token = tokens.CreateAccessToken(user);
-        return new LoginResponse(token.Token, token.ExpiresAt, ToDto(user));
+        return new LoginResponse(token.Token, token.ExpiresAt, ToDto(user), (int)token.Lifetime.TotalSeconds);
     }
 
     /// <summary>
@@ -170,7 +170,7 @@ public class AuthService(
             cancellationToken);
 
         var token = tokens.CreateAccessToken(user);
-        return new LoginResponse(token.Token, token.ExpiresAt, ToDto(user));
+        return new LoginResponse(token.Token, token.ExpiresAt, ToDto(user), (int)token.Lifetime.TotalSeconds);
     }
 
     private Task LogFailedSignInAsync(string attemptedUsername, CancellationToken cancellationToken)

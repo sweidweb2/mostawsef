@@ -128,7 +128,7 @@ public class LabTestsPageTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task Export_reads_every_test_whatever_the_search_and_opens_a_pdf()
+    public async Task Export_reads_every_test_whatever_the_search_and_saves_a_pdf_where_the_user_chose()
     {
         using var app = new TestServices();
         app.SignInAs(Roles.Admin);
@@ -139,14 +139,61 @@ public class LabTestsPageTests : UiTestBase
         app.Api.OnGet($"{TestsPath}/all", (IReadOnlyList<LabTestDto>)catalog);
         var (page, _) = await ShowPage(app);
         page.Search = "T001";
+        app.PickedSavePath = Path.Combine(app.DownloadsFolder, "chosen", "my-tests.pdf");
 
         await page.ExportCommand.ExecuteAsync(null);
 
         Assert.Single(app.Api.RequestsTo(HttpMethod.Get, $"{TestsPath}/all"));
-        var file = Assert.Single(app.OpenedFiles);
-        Assert.StartsWith("lab-tests-", Path.GetFileName(file));
-        Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(File.ReadAllBytes(file), 0, 4));
-        File.Delete(file);
+        Assert.Equal(["lab-tests.pdf"], app.SaveSuggestions);
+        Assert.Empty(app.OpenedFiles);
+        Assert.Equal("%PDF", System.Text.Encoding.ASCII.GetString(File.ReadAllBytes(app.PickedSavePath), 0, 4));
+        Assert.False(page.IsExporting);
+    }
+
+    [AvaloniaFact]
+    public async Task Cancelling_the_save_dialog_exports_nothing_and_asks_the_server_for_nothing()
+    {
+        using var app = new TestServices();
+        app.SignInAs(Roles.Admin);
+        app.Api.OnGet(TestsPath, new PagedResult<LabTestDto>([Cbc], 1, 40, 1));
+        var (page, _) = await ShowPage(app);
+        app.PickedSavePath = null;
+
+        await page.ExportCommand.ExecuteAsync(null);
+
+        Assert.Equal(["lab-tests.pdf"], app.SaveSuggestions);
+        Assert.Empty(app.Api.RequestsTo(HttpMethod.Get, $"{TestsPath}/all"));
+        Assert.Empty(app.OpenedFiles);
+    }
+
+    [AvaloniaFact]
+    public async Task The_export_button_shows_a_spinner_while_the_pdf_is_prepared()
+    {
+        using var app = new TestServices();
+        app.SignInAs(Roles.Admin);
+        var release = new TaskCompletionSource();
+        app.Api.OnGet(TestsPath, new PagedResult<LabTestDto>([Cbc], 1, 40, 1));
+        app.Api.On(HttpMethod.Get, $"{TestsPath}/all", async (_, _) =>
+        {
+            await release.Task;
+            return FakeApiHandler.Json((IReadOnlyList<LabTestDto>)[Cbc]);
+        });
+        var (page, window) = await ShowPage(app);
+        app.PickedSavePath = Path.Combine(app.DownloadsFolder, "spin.pdf");
+
+        var running = page.ExportCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+        var button = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "ExportButton");
+        Assert.True(page.IsExporting);
+        Assert.False(page.ExportCommand.CanExecute(null));
+        Assert.Contains(button.GetVisualDescendants().OfType<Mostawsef.Desktop.Components.Spinner>(), s => s.IsEffectivelyVisible);
+
+        release.SetResult();
+        await running;
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(page.IsExporting);
+        Assert.DoesNotContain(button.GetVisualDescendants().OfType<Mostawsef.Desktop.Components.Spinner>(), s => s.IsEffectivelyVisible);
+        Assert.True(File.Exists(app.PickedSavePath));
     }
 
     [AvaloniaFact]
@@ -157,11 +204,13 @@ public class LabTestsPageTests : UiTestBase
         app.Api.OnGet(TestsPath, new PagedResult<LabTestDto>([Cbc], 1, 40, 1));
         app.Api.On(HttpMethod.Get, $"{TestsPath}/all", _ => throw new HttpRequestException("Connection refused"));
         var (page, window) = await ShowPage(app);
+        app.PickedSavePath = Path.Combine(app.DownloadsFolder, "down.pdf");
 
         await page.ExportCommand.ExecuteAsync(null);
         Dispatcher.UIThread.RunJobs();
 
         Assert.Empty(app.OpenedFiles);
+        Assert.False(File.Exists(app.PickedSavePath));
         Assert.Contains(app.Localization.Get("Login.ServerUnreachable"), Toasts(window));
     }
 

@@ -1,8 +1,10 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Mostawsef.Contracts.Auth;
+using Mostawsef.Contracts.Backups;
 using Mostawsef.Contracts.LabTests;
 using Mostawsef.Contracts.Logs;
+using Mostawsef.Contracts.Maintenance;
 using Mostawsef.Contracts.Orders;
 using Mostawsef.Contracts.Patients;
 using Mostawsef.Contracts.Settings;
@@ -57,4 +59,13 @@ namespace Mostawsef.Contracts.Common;
 [JsonSerializable(typeof(SystemErrorStatsDto))]
 [JsonSerializable(typeof(CursorPage<SystemErrorListItemDto>))]
 [JsonSerializable(typeof(ReportClientErrorRequest))]
+[JsonSerializable(typeof(DeleteLogsRequest))]
+[JsonSerializable(typeof(DeleteLogsResultDto))]
+[JsonSerializable(typeof(ResetDataRequest))]
+[JsonSerializable(typeof(ResetDataResultDto))]
+[JsonSerializable(typeof(SuperDashboardDto))]
+[JsonSerializable(typeof(BackupRecordDto))]
+[JsonSerializable(typeof(CreateBackupRequest))]
+[JsonSerializable(typeof(PagedResult<BackupRecordDto>))]
+[JsonSerializable(typeof(IReadOnlyList<string>))]
 public sealed partial class ContractsJsonContext : JsonSerializerContext;

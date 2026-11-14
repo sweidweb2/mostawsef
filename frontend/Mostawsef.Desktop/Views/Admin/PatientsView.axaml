@@ -21,7 +21,8 @@
                         </Button>
                         <Button Name="ExportButton" Classes="secondary" Command="{Binding ExportCommand}" ToolTip.Tip="{l:Tr Patients.ExportHint}">
                             <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
-                                <PathIcon Data="{StaticResource IconDownload}" />
+                                <PathIcon Data="{StaticResource IconDownload}" IsVisible="{Binding !IsExporting}" />
+                                <ui:Spinner Width="16" Height="16" IsVisible="{Binding IsExporting}" />
                                 <TextBlock Text="{l:Tr Common.Export}" />
                             </StackPanel>
                         </Button>

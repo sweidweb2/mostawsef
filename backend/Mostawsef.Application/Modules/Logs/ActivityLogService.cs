@@ -12,10 +12,45 @@ public interface IActivityLogService
     Task<ActivityLogDto?> GetAsync(Guid id, CancellationToken cancellationToken);
 
     Task<ActivityLogStatsDto> GetStatsAsync(CancellationToken cancellationToken);
+
+    /// <summary>Deletes the named records; the deletion itself is then recorded as a new activity.</summary>
+    Task<DeleteLogsResultDto> DeleteManyAsync(DeleteLogsRequest request, CancellationToken cancellationToken);
+
+    /// <summary>Deletes every record; the clearing itself is then recorded as the first new activity.</summary>
+    Task<DeleteLogsResultDto> DeleteAllAsync(CancellationToken cancellationToken);
 }
 
-public class ActivityLogService(IActivityLogRepository logs, TimeProvider time) : IActivityLogService
+public class ActivityLogService(IActivityLogRepository logs, IActivityLogger activity, TimeProvider time) : IActivityLogService
 {
+    public async Task<DeleteLogsResultDto> DeleteManyAsync(DeleteLogsRequest request, CancellationToken cancellationToken)
+    {
+        var deleted = await logs.DeleteManyAsync(request.Ids.Distinct().ToList(), cancellationToken);
+        if (deleted > 0)
+        {
+            await activity.LogAsync(
+                new ActivityEntry(ActivityActions.ActivityLogsDeleted, ActivityModules.Logs, $"Deleted {deleted} activity log records")
+                {
+                    Details = new { Deleted = deleted },
+                },
+                cancellationToken);
+        }
+
+        return new DeleteLogsResultDto(deleted);
+    }
+
+    public async Task<DeleteLogsResultDto> DeleteAllAsync(CancellationToken cancellationToken)
+    {
+        var deleted = await logs.DeleteAllAsync(cancellationToken);
+        await activity.LogAsync(
+            new ActivityEntry(ActivityActions.ActivityLogsCleared, ActivityModules.Logs, $"Deleted all activity log records ({deleted})")
+            {
+                Details = new { Deleted = deleted },
+            },
+            cancellationToken);
+
+        return new DeleteLogsResultDto(deleted);
+    }
+
     public async Task<CursorPage<ActivityLogListItemDto>> GetPageAsync(PageRequest request, CancellationToken cancellationToken)
     {
         request.EnsureSearchable();

@@ -10,6 +10,8 @@ public static class ActivityModules
     public const string LabTests = "LabTests";
     public const string Patients = "Patients";
     public const string Orders = "Orders";
+    public const string Backups = "Backups";
+    public const string System = "System";
 }
 
 /// <summary>
@@ -26,6 +28,10 @@ public static class ActivityActions
 
     public const string SystemErrorDeleted = "logs.error_deleted";
     public const string LogsPurged = "logs.purged";
+    public const string ActivityLogsDeleted = "logs.activity_deleted";
+    public const string ActivityLogsCleared = "logs.activity_cleared";
+    public const string SystemErrorsDeleted = "logs.errors_deleted";
+    public const string SystemErrorsCleared = "logs.errors_cleared";
 
     public const string UserCreated = "users.created";
     public const string UserUpdated = "users.updated";
@@ -46,4 +52,9 @@ public static class ActivityActions
 
     public const string OrderCreated = "orders.created";
     public const string OrderPaymentAdded = "orders.payment_added";
+
+    public const string BackupCreated = "backups.created";
+    public const string BackupExported = "backups.exported";
+
+    public const string DataReset = "system.data_reset";
 }

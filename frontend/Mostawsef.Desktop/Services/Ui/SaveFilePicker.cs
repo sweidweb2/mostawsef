@@ -20,7 +20,8 @@ public static class SaveFilePicker
     public static string DownloadsFolder { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
 
-    public static async Task<string?> PickPdfAsync(string suggestedFileName, string title)
+    /// <summary>Asks where to save <paramref name="suggestedFileName"/>; the type filter follows its extension (.pdf, .csv, .json, .sql, .zip).</summary>
+    public static async Task<string?> PickAsync(string suggestedFileName, string title)
     {
         if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime { MainWindow: { } window })
         {
@@ -28,16 +29,27 @@ public static class SaveFilePicker
         }
 
         var storage = window.StorageProvider;
+        var extension = Path.GetExtension(suggestedFileName).TrimStart('.').ToLowerInvariant();
         var file = await storage.SaveFilePickerAsync(new FilePickerSaveOptions
         {
             Title = title,
             SuggestedFileName = suggestedFileName,
-            DefaultExtension = "pdf",
+            DefaultExtension = extension,
             ShowOverwritePrompt = true,
-            FileTypeChoices = [FilePickerFileTypes.Pdf],
+            FileTypeChoices = [FileTypeFor(extension)],
             SuggestedStartLocation = Directory.Exists(DownloadsFolder) ? await storage.TryGetFolderFromPathAsync(DownloadsFolder) : null,
         });
 
         return file?.TryGetLocalPath();
     }
+
+    private static FilePickerFileType FileTypeFor(string extension) => extension switch
+    {
+        "pdf" => FilePickerFileTypes.Pdf,
+        "csv" => new FilePickerFileType("CSV") { Patterns = ["*.csv"], MimeTypes = ["text/csv"] },
+        "json" => new FilePickerFileType("JSON") { Patterns = ["*.json"], MimeTypes = ["application/json"] },
+        "zip" => new FilePickerFileType("ZIP") { Patterns = ["*.zip"], MimeTypes = ["application/zip"] },
+        "sql" => new FilePickerFileType("SQL") { Patterns = ["*.sql"], MimeTypes = ["application/sql"] },
+        _ => FilePickerFileTypes.All,
+    };
 }

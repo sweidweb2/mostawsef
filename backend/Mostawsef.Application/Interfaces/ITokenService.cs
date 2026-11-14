@@ -2,7 +2,7 @@ using Mostawsef.Domain.Entities;
 
 namespace Mostawsef.Application.Interfaces;
 
-public record AccessToken(string Token, DateTime ExpiresAt);
+public record AccessToken(string Token, DateTime ExpiresAt, TimeSpan Lifetime);
 
 public interface ITokenService
 {

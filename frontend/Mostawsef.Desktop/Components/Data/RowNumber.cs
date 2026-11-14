@@ -6,18 +6,22 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 
 namespace Mostawsef.Desktop.Components;
 
 /// <summary>
-/// Cell content of a "#" column: the row's position in the DataGrid's items plus the enclosing
-/// DataTable's FirstRowNumber, so numbering continues across pages.
+/// Cell content of a "#" column: the row's position in the DataGrid plus the enclosing DataTable's FirstRowNumber,
+/// so numbering continues across pages. The position is the DataGrid row's own index, which the grid keeps right
+/// when rows are recycled while scrolling or shift when the list changes; the items lookup below is only the fallback
+/// for a cell that is not (yet) inside a row.
 /// </summary>
 public class RowNumber : TextBlock
 {
     private DataTable? _table;
     private DataGrid? _grid;
+    private DataGridRow? _row;
     private INotifyCollectionChanged? _items;
 
     protected override Type StyleKeyOverride => typeof(TextBlock);
@@ -27,6 +31,7 @@ public class RowNumber : TextBlock
         base.OnAttachedToVisualTree(e);
         _table = this.FindAncestorOfType<DataTable>();
         _grid = this.FindAncestorOfType<DataGrid>();
+        _row = this.FindAncestorOfType<DataGridRow>();
         if (_table is not null)
         {
             _table.PropertyChanged += OnSourceChanged;
@@ -56,6 +61,7 @@ public class RowNumber : TextBlock
         DetachItems();
         _table = null;
         _grid = null;
+        _row = null;
         base.OnDetachedFromVisualTree(e);
     }
 
@@ -107,13 +113,22 @@ public class RowNumber : TextBlock
         _items = null;
     }
 
-    private void OnItemsChanged(object? sender, NotifyCollectionChangedEventArgs e) => Refresh();
+    private void OnItemsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        Refresh();
+
+        // The grid updates its row indexes in its own change handler, which may run after this one: look again once it has.
+        Dispatcher.UIThread.Post(Refresh, DispatcherPriority.Loaded);
+    }
 
     private void Refresh()
     {
-        var index = DataContext is null || _grid?.ItemsSource is not IList items
-            ? -1
-            : RowIndexLookup.IndexOf(items, DataContext);
+        var index = _row is { Index: >= 0 } row ? row.Index : -1;
+        if (index < 0 && DataContext is not null && _grid?.ItemsSource is IList items)
+        {
+            index = RowIndexLookup.IndexOf(items, DataContext);
+        }
+
         var next = index < 0 ? string.Empty : ((_table?.FirstRowNumber ?? 1) + index).ToString(CultureInfo.InvariantCulture);
         if (Text != next)
         {

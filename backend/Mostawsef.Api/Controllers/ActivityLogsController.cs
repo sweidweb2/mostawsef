@@ -24,6 +24,17 @@ public class ActivityLogsController(IActivityLogService logs) : ControllerBase
     [HttpGet("stats")]
     public Task<ActivityLogStatsDto> Stats(CancellationToken cancellationToken) => logs.GetStatsAsync(cancellationToken);
 
+    /// <summary>Deletes the selected records (at most <see cref="LogRules.MaxBulkDelete"/> per request).</summary>
+    [HttpPost("bulk-delete")]
+    [ProducesResponseType<DeleteLogsResultDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public Task<DeleteLogsResultDto> DeleteMany(DeleteLogsRequest request, CancellationToken cancellationToken) =>
+        logs.DeleteManyAsync(request, cancellationToken);
+
+    /// <summary>Deletes every record (the clearing is then logged as a new activity).</summary>
+    [HttpDelete]
+    public Task<DeleteLogsResultDto> DeleteAll(CancellationToken cancellationToken) => logs.DeleteAllAsync(cancellationToken);
+
     [HttpGet("{id:guid}")]
     [ProducesResponseType<ActivityLogDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

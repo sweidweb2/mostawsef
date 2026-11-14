@@ -43,9 +43,10 @@ public static class AppRoutes
             .Page<LabTestsViewModel, LabTestsView>("IconLab", "Nav.LabTests")
             .Page<ClinicSettingsViewModel, ClinicSettingsView>("IconSettings", "Nav.ClinicSettings"))
         .Portal(Roles.Super, "Portal.Super", portal => portal
-            .Page<DashboardViewModel, DashboardView>("IconDashboard", "Nav.Dashboard")
+            .Page<SuperDashboardViewModel, SuperDashboardView>("IconDashboard", "Nav.Dashboard")
             .Page<UsersViewModel, UsersView>("IconUsers", "Nav.Users")
             .Page<ActivityLogsViewModel, ActivityLogsView>("IconClock", "Nav.ActivityLogs")
             .Page<SystemErrorsViewModel, SystemErrorsView>("IconWarning", "Nav.SystemErrors")
+            .Page<BackupsViewModel, BackupsView>("IconDownload", "Nav.Backups")
             .Page<SystemSettingsViewModel, SystemSettingsView>("IconSettings", "Nav.SystemSettings"));
 }

@@ -25,6 +25,12 @@ public interface IDialogService
         bool isDanger = false);
 
     /// <summary>
+    /// A danger confirmation for an action that cannot be undone: true only once the user typed <paramref name="word"/>
+    /// exactly and confirmed.
+    /// </summary>
+    Task<bool> ConfirmWithWordAsync(string message, string word, string? title = null, string? confirmText = null);
+
+    /// <summary>
     /// Shows a form in a Modal with Cancel / Save. True once it saved; false when the user cancelled or closed it
     /// (closing with unsaved changes asks first).
     /// </summary>
@@ -87,6 +93,9 @@ public class DialogService : IDialogService
         var result = await ShowAsync(new ConfirmDialog(message, title, confirmText, cancelText, isDanger));
         return result is true;
     }
+
+    public async Task<bool> ConfirmWithWordAsync(string message, string word, string? title = null, string? confirmText = null) =>
+        await ShowAsync(new TypeToConfirmDialog(message, word, title, confirmText)) is true;
 
     public async Task<bool> ShowFormAsync(FormViewModel form, string title, double maxWidth = 520)
     {

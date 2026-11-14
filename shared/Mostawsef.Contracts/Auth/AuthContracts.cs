@@ -7,7 +7,11 @@ namespace Mostawsef.Contracts.Auth;
 /// <summary>Both fields are required and may not be empty or whitespace (the API answers 400 otherwise).</summary>
 public record LoginRequest([Required] string Username, [Required] string Password);
 
-public record LoginResponse(string AccessToken, DateTime ExpiresAt, UserDto User);
+/// <summary>
+/// ExpiresInSeconds is the session length as the server sees it. The desktop counts it from its own receipt of the
+/// reply, so a PC whose clock is wrong does not read the session as already expired. 0 (older servers) means: use ExpiresAt.
+/// </summary>
+public record LoginResponse(string AccessToken, DateTime ExpiresAt, UserDto User, int ExpiresInSeconds = 0);
 
 public record UserDto(Guid Id, string Username, string Role, string? FullName = null);
 

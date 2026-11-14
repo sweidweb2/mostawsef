@@ -1,0 +1,145 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Mostawsef.Desktop.Components"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:conv="using:Mostawsef.Desktop.Converters"
+             xmlns:backups="using:Mostawsef.Contracts.Backups"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Super"
+             x:Class="Mostawsef.Desktop.Views.Super.BackupsView"
+             x:DataType="vm:BackupsViewModel">
+    <ScrollViewer>
+        <StackPanel Classes="page">
+            <ui:PageHeader Title="{l:Tr Nav.Backups}" Subtitle="{l:Tr Backups.Subtitle}">
+                <ui:PageHeader.Actions>
+                    <Button Classes="secondary" Command="{Binding RefreshCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
+                            <PathIcon Data="{StaticResource IconRefresh}" />
+                            <TextBlock Text="{l:Tr Common.Refresh}" />
+                        </StackPanel>
+                    </Button>
+                </ui:PageHeader.Actions>
+            </ui:PageHeader>
+
+            <!-- New backup -->
+            <ui:Card Title="{l:Tr Backups.NewTitle}" Subtitle="{l:Tr Backups.NewSubtitle}" Margin="0,0,0,24">
+                <StackPanel Spacing="{StaticResource GapGrid}">
+                    <ui:FormField Label="{l:Tr Backups.Field.Scope}">
+                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapGrid}">
+                            <RadioButton Name="AllTablesOption" GroupName="BackupScope"
+                                         Content="{l:Tr Backups.AllTables}"
+                                         IsChecked="{Binding IsAllTables}" />
+                            <RadioButton Name="OneTableOption" GroupName="BackupScope"
+                                         Content="{l:Tr Backups.OneTable}"
+                                         IsChecked="{Binding IsOneTable}" />
+                        </StackPanel>
+                    </ui:FormField>
+
+                    <ui:FormField Label="{l:Tr Backups.Field.Table}" IsVisible="{Binding IsOneTable}">
+                        <ComboBox Name="TableBox"
+                                  MinWidth="260"
+                                  HorizontalAlignment="Left"
+                                  ItemsSource="{Binding Tables}"
+                                  SelectedItem="{Binding SelectedTable}" />
+                    </ui:FormField>
+
+                    <ui:FormField Label="{l:Tr Backups.Field.Format}" Hint="{l:TrKey {Binding SelectedFormatHintKey}}">
+                        <ComboBox Name="FormatBox"
+                                  MinWidth="260"
+                                  HorizontalAlignment="Left"
+                                  ItemsSource="{x:Static vm:BackupsViewModel.FormatOptions}"
+                                  SelectedItem="{Binding SelectedFormat}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:BackupFormatOption">
+                                    <TextBlock Text="{l:TrKey {Binding Format}, Prefix=BackupFormat.}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </ui:FormField>
+
+                    <Button Name="ExportNewButton" Classes="primary" HorizontalAlignment="Left" Command="{Binding ExportNewCommand}">
+                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
+                            <PathIcon Data="{StaticResource IconDownload}" />
+                            <TextBlock Text="{l:Tr Backups.Export}" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </ui:Card>
+
+            <!-- History -->
+            <ui:DataTable Height="460"
+                          IsLoading="{Binding IsLoading}"
+                          IsEmpty="{Binding IsEmpty}"
+                          HasError="{Binding HasLoadError}"
+                          ErrorTitle="{l:TrKey {Binding LoadErrorTitleKey}}"
+                          ErrorDescription="{l:TrKey {Binding LoadErrorDescriptionKey}}"
+                          RetryCommand="{Binding RefreshCommand}"
+                          FirstRowNumber="{Binding FirstRowNumber}">
+                <ui:DataTable.Toolbar>
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Classes="h4" Text="{l:Tr Backups.History}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="1" Classes="caption muted" Text="{l:Tr Backups.Records, Arg={Binding DisplayTotal}}" VerticalAlignment="Center" />
+                    </Grid>
+                </ui:DataTable.Toolbar>
+
+                <DataGrid ItemsSource="{Binding Items}" IsReadOnly="True" CanUserSortColumns="False">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="{l:Tr Common.RowNumber}" Width="56">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <ui:RowNumber Margin="12,0" VerticalAlignment="Center" Classes="muted" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn x:DataType="backups:BackupRecordDto" Header="{l:Tr Backups.Col.Date}" Width="170"
+                                            Binding="{Binding CreatedAt, Converter={x:Static conv:ValueConverters.LocalDateTime}}"
+                                            IsReadOnly="True" />
+                        <DataGridTemplateColumn Header="{l:Tr Backups.Col.Scope}" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="backups:BackupRecordDto">
+                                    <Panel Margin="12,0" VerticalAlignment="Center">
+                                        <TextBlock Text="{l:Tr Backups.AllTables}"
+                                                   IsVisible="{Binding Table, Converter={x:Static ObjectConverters.IsNull}}" />
+                                        <TextBlock Text="{Binding Table}"
+                                                   IsVisible="{Binding Table, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                    </Panel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="{l:Tr Backups.Col.Format}" Width="150">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="backups:BackupRecordDto">
+                                    <ui:Badge Margin="12,0" Text="{l:TrKey {Binding Format}, Prefix=BackupFormat.}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="{l:Tr Backups.Col.By}" Width="200">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="backups:BackupRecordDto">
+                                    <TextBlock Margin="12,0" VerticalAlignment="Center" Classes="muted" Text="{Binding CreatedBy}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="{l:Tr Common.Actions}" Width="100">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate x:DataType="backups:BackupRecordDto">
+                                    <StackPanel Orientation="Horizontal" Margin="8,0" VerticalAlignment="Center">
+                                        <ui:IconButton Name="ExportRowButton"
+                                                       Classes="ghost sm"
+                                                       Icon="{StaticResource IconDownload}"
+                                                       ToolTip.Tip="{l:Tr Common.Export}"
+                                                       Command="{Binding $parent[DataGrid].((vm:BackupsViewModel)DataContext).ExportCommand}"
+                                                       CommandParameter="{Binding}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <ui:DataTable.Footer>
+                    <ui:Pagination CurrentPage="{Binding CurrentPage}" PageCount="{Binding PageCount}" IsEnabled="{Binding !IsLoading}" />
+                </ui:DataTable.Footer>
+            </ui:DataTable>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

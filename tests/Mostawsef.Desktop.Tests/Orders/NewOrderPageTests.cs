@@ -1,3 +1,4 @@
+using Avalonia;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -606,6 +607,27 @@ public class NewOrderPageTests : UiTestBase
         }
 
         await WaitUntil(() => page.SelectedStep == NewOrderViewModel.TestsStep && !page.IsCatalogLoading);
+    }
+
+    [AvaloniaFact]
+    public async Task Our_price_has_its_own_row_above_the_first_payment_fields()
+    {
+        using var app = Admin();
+        var (_, page, window) = await ShowNewOrderAsync(app);
+        await GoToReviewAsync(page, Cbc);
+        Dispatcher.UIThread.RunJobs();
+        window.UpdateLayout();
+
+        var addon = Named<NumericUpDown>(window, "AddonBox");
+        var amount = Named<NumericUpDown>(window, "PaymentAmountBox");
+        var method = Named<ComboBox>(window, "PaymentMethodBox");
+
+        // Not in the grid of the first payment, and above it (not beside it).
+        Assert.Null(addon.FindAncestorOfType<ResponsiveGrid>());
+        Assert.Same(amount.FindAncestorOfType<ResponsiveGrid>(), method.FindAncestorOfType<ResponsiveGrid>());
+        var addonY = addon.TranslatePoint(default, window)!.Value.Y;
+        var amountY = amount.TranslatePoint(default, window)!.Value.Y;
+        Assert.True(addonY + addon.Bounds.Height <= amountY, $"our price at {addonY}, first payment at {amountY}");
     }
 
     private static async Task GoToReviewAsync(NewOrderViewModel page, params Contracts.LabTests.LabTestDto[] tests)

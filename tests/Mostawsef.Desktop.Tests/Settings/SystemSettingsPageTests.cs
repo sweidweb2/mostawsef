@@ -6,6 +6,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Mostawsef.Contracts.Auth;
 using Mostawsef.Contracts.Common;
+using Mostawsef.Contracts.Maintenance;
 using Mostawsef.Contracts.Settings;
 using Mostawsef.Desktop.Components;
 using Mostawsef.Desktop.Services.Local;
@@ -19,6 +20,7 @@ namespace Mostawsef.Desktop.Tests.Settings;
 public class SystemSettingsPageTests : UiTestBase
 {
     private const string SettingsPath = "/api/system-settings";
+    private const string ResetPath = "/api/system/reset-data";
 
     private static readonly SystemSettingsDto Current = new(@"D:\Backups", false, 2, DateTime.UtcNow, "super@test.local");
 
@@ -139,6 +141,55 @@ public class SystemSettingsPageTests : UiTestBase
         var alert = window.GetVisualDescendants().OfType<Alert>().Single(a => a.IsVisible);
         Assert.StartsWith("Someone else changed this record", alert.Text);
         Assert.False(page.Settings!.MaintenanceMode);
+    }
+
+    [AvaloniaFact]
+    public async Task Reset_stays_disabled_until_the_confirmation_word_is_typed_then_resets_and_reports_what_went()
+    {
+        using var app = SuperWithSettings(Current);
+        ResetDataRequest? sent = null;
+        app.Api.On(HttpMethod.Post, ResetPath, request =>
+        {
+            sent = request.Content!.ReadFromJsonAsync<ResetDataRequest>().GetAwaiter().GetResult();
+            return FakeApiHandler.Json(new ResetDataResultDto(12, 30, 41, 8, 200, 5));
+        });
+        var (page, window) = await ShowPage(app);
+
+        var reset = page.ResetDataCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+        var dialog = window.GetVisualDescendants().OfType<TypeToConfirmDialog>().Single();
+        Assert.Contains("To confirm, type RESET below.", TestServices.Texts(window));
+        Assert.False(dialog.ConfirmButton.IsEnabled);
+
+        dialog.Input.Text = "reset";
+        Assert.False(dialog.ConfirmButton.IsEnabled);
+        dialog.Input.Text = DataResetRules.ConfirmationWord;
+        Assert.True(dialog.ConfirmButton.IsEnabled);
+
+        dialog.ConfirmButton.Command!.Execute(dialog.ConfirmButton.CommandParameter);
+        await reset;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(DataResetRules.ConfirmationWord, sent!.Confirmation);
+        Assert.Contains(
+            "Database reset: 12 patients, 30 orders, 8 lab tests and 205 log records deleted.",
+            window.GetVisualDescendants().OfType<Toast>().Select(t => t.Message));
+    }
+
+    [AvaloniaFact]
+    public async Task Cancelling_the_reset_dialog_deletes_nothing()
+    {
+        using var app = SuperWithSettings(Current);
+        var (page, window) = await ShowPage(app);
+
+        var reset = page.ResetDataCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+        var dialog = window.GetVisualDescendants().OfType<TypeToConfirmDialog>().Single();
+        dialog.Input.Text = DataResetRules.ConfirmationWord;
+        dialog.Close(false);
+        await reset;
+
+        Assert.Empty(app.Api.RequestsTo(HttpMethod.Post, ResetPath));
     }
 
     private static TestServices SuperWithSettings(SystemSettingsDto settings)

@@ -294,9 +294,26 @@
                 </ui:Card.HeaderActions>
                 <ScrollViewer>
                     <StackPanel Margin="{StaticResource PaddingCard}" Spacing="{StaticResource GapStack}">
+                        <!-- The order's own amount: its row, apart from the first payment. -->
+                        <ui:FormField Label="{l:Tr NewOrder.Addon}" Error="{l:FieldError {Binding Errors[Addon]}}"
+                                      HorizontalAlignment="Left" Width="260">
+                            <NumericUpDown Name="AddonBox"
+                                           Value="{Binding Addon}"
+                                           Minimum="0"
+                                           Maximum="{Binding MaxAddon}"
+                                           ClipValueToMinMax="True"
+                                           ShowButtonSpinner="False"
+                                           FormatString="0.00"
+                                           PlaceholderText="{l:Tr LabTests.Field.AmountPlaceholder}"
+                                           HorizontalAlignment="Stretch"
+                                           ToolTip.Tip="{l:Tr NewOrder.AddonHint}" />
+                        </ui:FormField>
+
+                        <ui:Divider />
+
                         <TextBlock Classes="h4" Text="{l:Tr NewOrder.FirstPayment}" />
                         <TextBlock Classes="caption muted" TextWrapping="Wrap" Text="{l:Tr NewOrder.FirstPaymentHint}" />
-                        <ui:ResponsiveGrid MinColumnWidth="160" MaxColumns="3"
+                        <ui:ResponsiveGrid MinColumnWidth="160" MaxColumns="2"
                                            ColumnSpacing="{StaticResource GapGrid}" RowSpacing="{StaticResource GapGrid}">
                             <ui:FormField Label="{l:Tr NewOrder.PaymentAmount}" Error="{l:FieldError {Binding Errors[PaymentAmount]}}">
                                 <NumericUpDown Name="PaymentAmountBox"
@@ -319,18 +336,6 @@
                                         </DataTemplate>
                                     </ComboBox.ItemTemplate>
                                 </ComboBox>
-                            </ui:FormField>
-                            <ui:FormField Label="{l:Tr NewOrder.Addon}" Error="{l:FieldError {Binding Errors[Addon]}}">
-                                <NumericUpDown Name="AddonBox"
-                                               Value="{Binding Addon}"
-                                               Minimum="0"
-                                               Maximum="{Binding MaxAddon}"
-                                               ClipValueToMinMax="True"
-                                               ShowButtonSpinner="False"
-                                               FormatString="0.00"
-                                               PlaceholderText="{l:Tr LabTests.Field.AmountPlaceholder}"
-                                               HorizontalAlignment="Stretch"
-                                               ToolTip.Tip="{l:Tr NewOrder.AddonHint}" />
                             </ui:FormField>
                             <ui:FormField ui:ResponsiveGrid.ColumnSpan="0" Label="{l:Tr NewOrder.PaymentNotes}" Error="{l:FieldError {Binding Errors[PaymentNotes]}}">
                                 <TextBox Name="PaymentNotesBox"

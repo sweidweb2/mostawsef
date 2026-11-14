@@ -56,6 +56,12 @@ public interface IActivityLogRepository
 
     Task<ActivityLogDetails?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
+    /// <summary>Deletes the records with these ids (missing ones are skipped). Returns how many.</summary>
+    Task<int> DeleteManyAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
+
+    /// <summary>Deletes every record, in batches. Returns how many.</summary>
+    Task<int> DeleteAllAsync(CancellationToken cancellationToken);
+
     /// <summary>Deletes every record that occurred before <paramref name="cutoffUtc"/>, in batches. Returns how many.</summary>
     Task<int> DeleteOlderThanAsync(DateTime cutoffUtc, CancellationToken cancellationToken);
 
@@ -72,6 +78,12 @@ public interface ISystemErrorRepository
 
     /// <summary>True when a row was deleted.</summary>
     Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>Deletes the errors with these ids (missing ones are skipped). Returns how many.</summary>
+    Task<int> DeleteManyAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
+
+    /// <summary>Deletes every error, in batches. Returns how many.</summary>
+    Task<int> DeleteAllAsync(CancellationToken cancellationToken);
 
     /// <summary>Deletes every error that occurred before <paramref name="cutoffUtc"/>, in batches. Returns how many.</summary>
     Task<int> DeleteOlderThanAsync(DateTime cutoffUtc, CancellationToken cancellationToken);

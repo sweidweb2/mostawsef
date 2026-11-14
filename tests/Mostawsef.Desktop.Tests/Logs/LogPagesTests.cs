@@ -25,7 +25,7 @@ public class LogPagesTests : UiTestBase
         new(Guid.NewGuid(), DateTime.UtcNow, "auth.signed_in", "Auth", "Signed in", "admin@test.local");
 
     [AvaloniaFact]
-    public void Super_portal_menu_has_dashboard_users_activity_logs_and_system_errors()
+    public void Super_portal_menu_has_dashboard_users_activity_logs_system_errors_and_backups()
     {
         using var app = new TestServices();
         app.SignInAs(Roles.Super);
@@ -34,7 +34,7 @@ public class LogPagesTests : UiTestBase
         var shell = Assert.IsType<PortalShellViewModel>(app.Navigation.CurrentPage);
 
         Assert.Equal(
-            ["Nav.Dashboard", "Nav.Users", "Nav.ActivityLogs", "Nav.SystemErrors", "Nav.SystemSettings"],
+            ["Nav.Dashboard", "Nav.Users", "Nav.ActivityLogs", "Nav.SystemErrors", "Nav.Backups", "Nav.SystemSettings"],
             shell.MenuItems.Select(i => i.TitleKey));
     }
 

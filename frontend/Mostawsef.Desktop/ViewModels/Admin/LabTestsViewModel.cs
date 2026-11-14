@@ -26,6 +26,7 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
     private readonly LabTestCatalogVersion _catalogVersion;
     private readonly IDialogService _dialogs;
     private readonly PrintService _print;
+    private readonly SavePathPicker _pickSavePath;
     private readonly ErrorReporter _errors;
 
     public LabTestsViewModel(
@@ -35,6 +36,7 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
         IToastService toasts,
         LocalizationService localization,
         PrintService print,
+        SavePathPicker pickSavePath,
         ErrorReporter errors)
         : base(toasts, localization, errors)
     {
@@ -42,6 +44,7 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
         _catalogVersion = catalogVersion;
         _dialogs = dialogs;
         _print = print;
+        _pickSavePath = pickSavePath;
         _errors = errors;
         PageSize = TestsPerPage;
     }
@@ -123,35 +126,65 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
         await ReloadAsync();
     }
 
-    /// <summary>Up to <see cref="PageQuery.MaxExportRows"/> tests as a PDF opened in the default viewer.</summary>
-    [RelayCommand]
+    /// <summary>True while the export is fetching and writing the PDF (its button shows a spinner).</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ExportCommand))]
+    public partial bool IsExporting { get; private set; }
+
+    private bool CanExport() => !IsExporting;
+
+    /// <summary>Asks where to save, then writes up to <see cref="PageQuery.MaxExportRows"/> tests there as a PDF.</summary>
+    [RelayCommand(CanExecute = nameof(CanExport))]
     private async Task ExportAsync()
     {
-        if (await ReadAsync(ct => _tests.GetAllTestsAsync(ct)) is not { } result)
-        {
-            return;
-        }
-
-        if (!result.IsSuccess)
-        {
-            ShowError(result);
-            return;
-        }
-
+        string? path;
         try
         {
+            path = await _pickSavePath("lab-tests.pdf", Localization.Get("Print.SaveTitle"));
+        }
+        catch (Exception ex)
+        {
+            _errors.Report(ex, context: "Choosing where to save the tests export");
+            Toasts.Error(Localization.Get("Print.Failed"));
+            return;
+        }
+
+        if (path is null)
+        {
+            return;
+        }
+
+        IsExporting = true;
+        try
+        {
+            if (await ReadAsync(ct => _tests.GetAllTestsAsync(ct)) is not { } result)
+            {
+                return;
+            }
+
+            if (!result.IsSuccess)
+            {
+                ShowError(result);
+                return;
+            }
+
             var rows = result.Value!;
             if (rows.Count >= PageQuery.MaxExportRows)
             {
                 Toasts.Show(Localization.Get("Print.ExportTruncated"), kind: ToastKind.Warning);
             }
 
-            await _print.PrintAsync(new LabTestsDocument(await _print.CreateContextAsync(), rows), "lab-tests");
+            await _print.SaveAsync(new LabTestsDocument(await _print.CreateContextAsync(), rows), path);
+            Toasts.Success(Localization.Format("Print.Exported", path));
         }
         catch (Exception ex)
         {
             _errors.Report(ex, context: "Exporting the lab tests");
             Toasts.Error(Localization.Get("Print.Failed"));
+        }
+        finally
+        {
+            IsExporting = false;
         }
     }
 
