@@ -14,6 +14,9 @@ namespace Mostawsef.Api.Controllers;
 [Authorize(Policy = AuthPolicies.SuperOnly)]
 public class SystemErrorsController(ISystemErrorService errors) : ControllerBase
 {
+    /// <summary>Largest accepted body of an (anonymous) client error report; the stored fields are truncated further.</summary>
+    private const int MaxReportBytes = 128 * 1024;
+
     [HttpGet]
     [ProducesResponseType<CursorPage<SystemErrorListItemDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -41,6 +44,7 @@ public class SystemErrorsController(ISystemErrorService errors) : ControllerBase
     [HttpPost("report")]
     [AllowAnonymous]
     [EnableRateLimiting(AuthPolicies.ClientErrorRateLimit)]
+    [RequestSizeLimit(MaxReportBytes)]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Report(ReportClientErrorRequest request, CancellationToken cancellationToken)

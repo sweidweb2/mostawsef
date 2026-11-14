@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Mostawsef.Api.Extensions;
 using Mostawsef.Api.Middleware;
@@ -37,11 +38,25 @@ builder.Services.AddOptions<LogRetentionOptions>()
     .ValidateOnStart();
 builder.Services.AddHostedService<LogRetentionWorker>();
 
+// Behind a reverse proxy the client address is in X-Forwarded-For; without this every client shares one rate-limit bucket.
+// Only loopback proxies are trusted unless ForwardedHeaders:KnownProxies is configured (the defaults of ForwardedHeadersOptions).
+var useForwardedHeaders = builder.Configuration.GetValue<bool>("ForwardedHeaders:Enabled");
+if (useForwardedHeaders)
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto);
+}
+
 var app = builder.Build();
 
 var seedUsers = builder.Configuration.GetSection("Seed:Users").Get<List<SeedUser>>() ?? [];
 await app.Services.InitializeDatabaseAsync(seedUsers);
 await app.Services.WarmUpDatabaseAsync();
+
+if (useForwardedHeaders)
+{
+    app.UseForwardedHeaders();
+}
 
 app.UseMiddleware<RequestTimingMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();

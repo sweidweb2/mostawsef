@@ -51,7 +51,7 @@ public class SystemErrorLogger(
                 entry.Username ?? currentUser.Username,
                 entry.IncludeRequestInfo ? currentUser.TraceId : null,
                 currentUser.IpAddress,
-                entry.Details is null ? null : JsonSerializer.Serialize(entry.Details, ActivityLogger.Json));
+                entry.Details is null ? null : JsonSerializer.Serialize(entry.Details, LogJson.Options));
             error.FillSearchText();
             db.SystemErrors.Add(error);
 

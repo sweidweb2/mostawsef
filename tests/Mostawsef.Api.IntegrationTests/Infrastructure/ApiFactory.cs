@@ -59,6 +59,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         Environment.SetEnvironmentVariable("ConnectionStrings__Default", _postgres.GetConnectionString());
         Environment.SetEnvironmentVariable("Jwt__Key", "integration-tests-signing-key-0123456789abcdef");
         Environment.SetEnvironmentVariable("RateLimit__LoginPermitLimit", "1000");
+        Environment.SetEnvironmentVariable("RateLimit__LoginFailuresPerUser", "1000");
+        Environment.SetEnvironmentVariable("RateLimit__HealthPermitLimit", "100000");
 
         for (var i = 0; i < TestUsers.All.Length; i++)
         {

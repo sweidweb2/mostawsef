@@ -84,6 +84,34 @@ public class OrdersTests(ApiFactory factory)
         Assert.Equal(test.Code, reloaded.Items[0].Code);
     }
 
+    /// <summary>The list row keeps copies (patient, counts, totals) so the list needs no joins: they must agree with the details.</summary>
+    [Fact]
+    public async Task The_list_row_agrees_with_the_order_details_on_every_copied_value()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var patient = await CreatePatientAsync(admin, phone: "01234567890");
+        var first = await CreateTestAsync(admin, price: 1500);
+        var second = await CreateTestAsync(admin, price: 2500);
+        var third = await CreateTestAsync(admin, price: 500);
+
+        var order = await CreateOrderAsync(admin, new CreateOrderRequest
+        {
+            PatientId = patient.Id,
+            Items = [new() { LabTestId = first.Id }, new() { LabTestId = second.Id }, new() { LabTestId = third.Id }],
+            Addon = 700,
+            FirstPayment = new() { Amount = 1000, Method = PaymentMethods.Cash },
+        });
+
+        var listed = (await admin.GetJsonAsync<PagedResult<OrderListItemDto>>($"{Url}?search={order.Number}")).Items.Single();
+        var details = await admin.GetJsonAsync<OrderDetailsDto>($"{Url}/{order.Id}");
+
+        Assert.Equal(
+            (details.Number, details.PatientName, details.PatientPhone, details.Items.Count, details.Total, details.Paid, details.Status),
+            (listed.Number, listed.PatientName, listed.PatientPhone, listed.TestsCount, listed.Total, listed.Paid, listed.Status));
+        Assert.Equal(first.Price + second.Price + third.Price + 700, details.Total);
+        Assert.Equal(details.Items.Sum(i => i.Price) + details.Addon, details.Total);
+    }
+
     [Fact]
     public async Task Order_details_are_read_in_one_statement()
     {

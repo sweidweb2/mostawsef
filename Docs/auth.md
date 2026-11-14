@@ -45,6 +45,16 @@ Unknown usernames take the same hashing time as wrong passwords, so response tim
 | Endpoint | Auth | Result |
 | --- | --- | --- |
 | `POST /api/auth/login` `{ username, password }` | Anonymous, max 10 requests/min per IP | `200 { accessToken, expiresAt, user }`, `400` empty fields, `401` invalid, `409 maintenance_mode` (non-Super while maintenance mode is on), `429` too many |
+
+Login protection (configuration keys under `RateLimit:`; the API answers like a wrong password, without logging, while blocked):
+- `LoginPermitLimit` (default 10): requests per minute per client IP, then `429`.
+- `LoginFailuresPerUser` (default 10) within `LoginFailureWindowMinutes` (default 5): failed sign-ins per username from any IP;
+  further attempts get `401` even with the right password until the window ends. A successful sign-in clears the count.
+  In memory, per API process.
+- `HealthPermitLimit` (default 120): `GET /api/health` requests per minute per IP.
+- Behind a reverse proxy set `ForwardedHeaders:Enabled` to `true` so the limits use the client address from `X-Forwarded-For`
+  (only loopback proxies are trusted unless `KnownProxies` is configured).
+- `POST /api/system-errors/report` is anonymous: body capped at 128 KB, stored fields truncated.
 | `GET /api/auth/me` | Bearer token | `200 { id, username, role, fullName }`, `401` |
 | `POST /api/auth/change-password` `{ currentPassword, newPassword }` | Bearer token | `200 { accessToken, expiresAt, user }` (old JWT invalidated), `400` (`wrong_password` on `CurrentPassword`, `min_length\|8`...) |
 | `GET /api/users?page=&pageSize=&search=` | Super | Paged list sorted by name; search matches the username or the normalized full name |

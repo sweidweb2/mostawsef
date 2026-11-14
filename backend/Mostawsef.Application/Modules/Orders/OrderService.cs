@@ -65,28 +65,12 @@ public class OrderService(
         }
         catch
         {
-            try
-            {
-                await currencyTask;
-            }
-            catch
-            {
-                // Observe so a racing currency fault is not abandoned when validation fails first.
-            }
-
+            await currencyTask.ObserveAsync();
             throw;
         }
 
         var currencyCode = await currencyTask;
-        var total = lines.Sum(t => t.Price) + (request.Addon ?? 0);
-
-        var payment = request.FirstPayment;
-        if (payment?.Amount > total)
-        {
-            throw AppException.Validation(
-                $"{nameof(CreateOrderRequest.FirstPayment)}.{nameof(CreateFirstPaymentRequest.Amount)}", ErrorCodes.ExceedsTotal);
-        }
-
+        var total = TotalOf(request, lines); // validated before a number is taken, so a refused order never burns one
         var order = new Order(
             DocumentNumber.Format(NumberPrefix, await numbers.NextAsync(NumberSequence, cancellationToken)),
             patient.Id,
@@ -94,20 +78,7 @@ public class OrderService(
             patient.SearchName,
             patient.Phone,
             currencyCode);
-        order.SetSearchText(SearchText.Key(patient.SearchName, patient.Phone, order.Number));
-        foreach (var test in lines)
-        {
-            order.AddItem(test);
-        }
-
-        order.SetTotal(total);
-
-        if (payment is not null)
-        {
-            order.AddPayment(Enum.Parse<PaymentMethod>(payment.Method), payment.Amount!.Value, time.GetUtcNow().UtcDateTime, payment.Notes);
-        }
-
-        order.UpdateStatus();
+        Fill(order, request, lines, total);
 
         if (newPatient is not null)
         {
@@ -117,6 +88,44 @@ public class OrderService(
         orders.Add(order);
         await orders.SaveChangesAsync(cancellationToken);
 
+        await LogCreatedAsync(order, newPatient, cancellationToken);
+        return ToDetails(order);
+    }
+
+    /// <summary>The order total (tests plus add-on). A first payment over it is refused.</summary>
+    private static long TotalOf(CreateOrderRequest request, IReadOnlyList<LabTest> lines)
+    {
+        var total = lines.Sum(t => t.Price) + (request.Addon ?? 0);
+        if (request.FirstPayment?.Amount > total)
+        {
+            throw AppException.Validation(
+                $"{nameof(CreateOrderRequest.FirstPayment)}.{nameof(CreateFirstPaymentRequest.Amount)}", ErrorCodes.ExceedsTotal);
+        }
+
+        return total;
+    }
+
+    /// <summary>Adds the items, total and first payment to a new order.</summary>
+    private void Fill(Order order, CreateOrderRequest request, IReadOnlyList<LabTest> lines, long total)
+    {
+        var payment = request.FirstPayment;
+        order.SetSearchText(SearchText.Key(order.PatientSearchName, order.PatientPhone, order.Number));
+        foreach (var test in lines)
+        {
+            order.AddItem(test);
+        }
+
+        order.SetTotal(total);
+        if (payment is not null)
+        {
+            order.AddPayment(Enum.Parse<PaymentMethod>(payment.Method), payment.Amount!.Value, time.GetUtcNow().UtcDateTime, payment.Notes);
+        }
+
+        order.UpdateStatus();
+    }
+
+    private async Task LogCreatedAsync(Order order, Patient? newPatient, CancellationToken cancellationToken)
+    {
         if (newPatient is not null)
         {
             await activity.LogAsync(
@@ -137,8 +146,6 @@ public class OrderService(
                 Details = new { order.Number, order.PatientName, Tests = order.Items.Count, order.Total, order.Paid },
             },
             cancellationToken);
-
-        return ToDetails(order);
     }
 
     /// <summary>Existing patient snapshot, or a new patient the caller adds to the unit of work.</summary>

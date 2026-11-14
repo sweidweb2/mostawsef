@@ -33,20 +33,26 @@ public class AuthService(
     IPasswordHasher passwordHasher,
     ITokenService tokens,
     IUserAuthCache authCache,
+    ILoginThrottle throttle,
     IActivityLogger activity,
     TimeProvider time) : IAuthService
 {
-    private static readonly object DummyHashGate = new();
     private static string? _dummyHash;
 
     public async Task<LoginResponse?> LoginAsync(LoginRequest request, CancellationToken cancellationToken)
     {
         var username = User.NormalizeUsername(request.Username);
+        if (throttle.IsBlocked(username))
+        {
+            // Too many failures for this name (from any IP): answer like a wrong password, without the PBKDF2 cost or a log row.
+            return null;
+        }
+
         var user = await users.GetByUsernameAsync(username, cancellationToken);
         if (user is null || !user.IsActive)
         {
             // Same hashing cost as a real attempt, so response time does not reveal which usernames exist.
-            passwordHasher.Verify(DummyHash(passwordHasher), request.Password);
+            passwordHasher.Verify(DummyHash(), request.Password);
             await LogFailedSignInAsync(username, cancellationToken);
             return null;
         }
@@ -54,35 +60,9 @@ public class AuthService(
         // Overlap the settings read with PBKDF2 for non-Super users (Super skips maintenance).
         var settingsTask = user.Role == UserRole.Super ? null : systemSettings.GetAsync(cancellationToken);
 
-        PasswordCheck check;
-        try
-        {
-            check = passwordHasher.Verify(user.PasswordHash, request.Password);
-        }
-        catch
-        {
-            if (settingsTask is not null)
-            {
-                try
-                {
-                    await settingsTask;
-                }
-                catch
-                {
-                    // Observe so a racing settings fault is not abandoned when Verify fails first.
-                }
-            }
-
-            throw;
-        }
-
+        var check = await VerifyPasswordAsync(user, request.Password, settingsTask);
         if (check == PasswordCheck.Failed)
         {
-            if (settingsTask is not null)
-            {
-                await settingsTask;
-            }
-
             await LogFailedSignInAsync(username, cancellationToken);
             return null;
         }
@@ -99,30 +79,63 @@ public class AuthService(
             throw AppException.Conflict(ErrorCodes.MaintenanceMode);
         }
 
-        var signedIn = new ActivityEntry(ActivityActions.SignedIn, ActivityModules.Auth, "Signed in")
+        await RecordSignInAsync(user, request.Password, check, cancellationToken);
+
+        var token = tokens.CreateAccessToken(user);
+        return new LoginResponse(token.Token, token.ExpiresAt, ToDto(user));
+    }
+
+    /// <summary>
+    /// Checks the password. The settings read started next to it is always awaited, so a fault in it is observed
+    /// whichever way the check ends.
+    /// </summary>
+    private async Task<PasswordCheck> VerifyPasswordAsync(User user, string password, Task? racingSettings)
+    {
+        PasswordCheck check;
+        try
         {
-            UserId = user.Id,
-            Username = user.Username,
-            Details = new { Role = user.Role.ToString() },
-        };
+            check = passwordHasher.Verify(user.PasswordHash, password);
+        }
+        catch
+        {
+            await racingSettings.ObserveAsync();
+            throw;
+        }
+
+        if (check == PasswordCheck.Failed)
+        {
+            await racingSettings.ObserveAsync();
+        }
+
+        return check;
+    }
+
+    /// <summary>Last login, an upgraded password hash when the hasher asks for one, and the sign-in activity.</summary>
+    private async Task RecordSignInAsync(User user, string password, PasswordCheck check, CancellationToken cancellationToken)
+    {
+        throttle.Reset(user.Username);
 
         // Activity log is buffered in-request; keep these sequential (WhenAll added no real overlap).
         if (check == PasswordCheck.SuccessRehashNeeded)
         {
-            user.ChangePasswordHash(passwordHasher.Hash(request.Password));
+            user.ChangePasswordHash(passwordHasher.Hash(password));
             user.RecordLogin(time.GetUtcNow().UtcDateTime);
             await users.SaveChangesAsync(cancellationToken);
             authCache.Invalidate(user.Id);
-            await activity.LogAsync(signedIn, cancellationToken);
         }
         else
         {
             await users.RecordLoginAsync(user.Id, time.GetUtcNow().UtcDateTime, cancellationToken);
-            await activity.LogAsync(signedIn, cancellationToken);
         }
 
-        var token = tokens.CreateAccessToken(user);
-        return new LoginResponse(token.Token, token.ExpiresAt, ToDto(user));
+        await activity.LogAsync(
+            new ActivityEntry(ActivityActions.SignedIn, ActivityModules.Auth, "Signed in")
+            {
+                UserId = user.Id,
+                Username = user.Username,
+                Details = new { Role = user.Role.ToString() },
+            },
+            cancellationToken);
     }
 
     public async Task<UserDto?> GetUserAsync(Guid userId, CancellationToken cancellationToken)
@@ -160,21 +173,19 @@ public class AuthService(
         return new LoginResponse(token.Token, token.ExpiresAt, ToDto(user));
     }
 
-    private Task LogFailedSignInAsync(string attemptedUsername, CancellationToken cancellationToken) =>
-        activity.LogAsync(
+    private Task LogFailedSignInAsync(string attemptedUsername, CancellationToken cancellationToken)
+    {
+        throttle.RecordFailure(attemptedUsername);
+        return activity.LogAsync(
             new ActivityEntry(ActivityActions.SignInFailed, ActivityModules.Auth, "Failed sign-in attempt")
             {
                 Username = attemptedUsername,
             },
             cancellationToken);
-
-    private static string DummyHash(IPasswordHasher passwordHasher)
-    {
-        lock (DummyHashGate)
-        {
-            return _dummyHash ??= passwordHasher.Hash(Guid.NewGuid().ToString());
-        }
     }
+
+    private string DummyHash() =>
+        LazyInitializer.EnsureInitialized(ref _dummyHash, () => passwordHasher.Hash(Guid.NewGuid().ToString()));
 
     private static UserDto ToDto(User user) =>
         new(user.Id, user.Username, user.Role.ToString(), string.IsNullOrEmpty(user.FullName) ? null : user.FullName);

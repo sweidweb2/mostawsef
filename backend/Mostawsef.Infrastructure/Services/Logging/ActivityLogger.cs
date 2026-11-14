@@ -18,8 +18,6 @@ public sealed class ActivityLogger(
     ICurrentUser currentUser,
     ILogger<ActivityLogger> logger) : IActivityLogger
 {
-    internal static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
-
     private List<ActivityLog> _pending = [];
 
     public Task LogAsync(ActivityEntry entry, CancellationToken cancellationToken = default)
@@ -34,7 +32,7 @@ public sealed class ActivityLogger(
             entry.EntityId,
             currentUser.IpAddress,
             currentUser.UserAgent,
-            entry.Details is null ? null : JsonSerializer.Serialize(entry.Details, Json));
+            entry.Details is null ? null : JsonSerializer.Serialize(entry.Details, LogJson.Options));
         log.FillSearchText();
         _pending.Add(log);
         return Task.CompletedTask;

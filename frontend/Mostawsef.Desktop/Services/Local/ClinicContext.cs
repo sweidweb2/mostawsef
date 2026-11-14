@@ -19,6 +19,11 @@ public partial class ClinicContext : ObservableObject
     private readonly ClinicSettingsApi _api;
     private readonly SessionService _session;
     private readonly ErrorReporter _errors;
+    /// <summary>Prefetch can race the first portal paint or a flaky start: try this many times, waiting longer each time.</summary>
+    private const int MaxAttempts = 3;
+
+    private static readonly TimeSpan RetryDelayStep = TimeSpan.FromMilliseconds(250);
+
     private readonly object _gate = new();
     private Task<bool>? _inFlight;
     private int _epoch;
@@ -49,12 +54,10 @@ public partial class ClinicContext : ObservableObject
     /// <summary>
     /// Reads the settings from the API. Skips the GET when a value is already cached unless <paramref name="force"/>
     /// is true (Refresh). Concurrent non-force callers await the same request. Returns false (keeping the last values)
-    /// when the call fails. Caller cancellation is ignored for the shared flight so one page leaving cannot starve others.
+    /// when the call fails. The shared request cannot be cancelled by a caller, so one page leaving cannot starve the others.
     /// </summary>
-    public Task<bool> LoadAsync(bool force = false, CancellationToken cancellationToken = default)
+    public Task<bool> LoadAsync(bool force = false)
     {
-        _ = cancellationToken;
-
         if (!force && Settings is not null)
         {
             return Task.FromResult(true);
@@ -88,9 +91,7 @@ public partial class ClinicContext : ObservableObject
                 return true;
             }
 
-            // Prefetch can race the first portal paint / a flaky start — retry a couple of times.
-            const int maxAttempts = 3;
-            for (var attempt = 1; attempt <= maxAttempts; attempt++)
+            for (var attempt = 1; attempt <= MaxAttempts; attempt++)
             {
                 var result = await _api.GetAsync(CancellationToken.None);
                 if (result.IsSuccess)
@@ -108,9 +109,9 @@ public partial class ClinicContext : ObservableObject
                     return true;
                 }
 
-                if (attempt < maxAttempts)
+                if (attempt < MaxAttempts)
                 {
-                    await Task.Delay(TimeSpan.FromMilliseconds(250 * attempt));
+                    await Task.Delay(RetryDelayStep * attempt);
                 }
             }
 

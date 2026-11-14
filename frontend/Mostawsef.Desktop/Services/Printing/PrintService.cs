@@ -72,9 +72,9 @@ public class PrintService(
     public PrintContext CreateContext() => new(clinic.Settings, localization, DateTime.Now);
 
     /// <summary>Loads clinic settings if needed, then builds the print context. Prefer this before exports.</summary>
-    public async Task<PrintContext> CreateContextAsync(CancellationToken cancellationToken = default)
+    public async Task<PrintContext> CreateContextAsync()
     {
-        await clinic.LoadAsync(cancellationToken: cancellationToken);
+        await clinic.LoadAsync();
         return CreateContext();
     }
 

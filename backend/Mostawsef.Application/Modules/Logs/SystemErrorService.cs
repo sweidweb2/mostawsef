@@ -2,6 +2,7 @@ using Mostawsef.Application.Common;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.Logs;
+using Mostawsef.Domain.Common;
 using Mostawsef.Domain.Entities;
 using Mostawsef.Domain.Enums;
 
@@ -25,6 +26,9 @@ public class SystemErrorService(ISystemErrorRepository errors, ISystemErrorLogge
     : ISystemErrorService
 {
     public const string DesktopSource = "Desktop";
+
+    /// <summary>Longest kept value of the free-text details an anonymous client report can carry.</summary>
+    private const int ClientDetailMaxLength = 200;
 
     public async Task<CursorPage<SystemErrorListItemDto>> GetPageAsync(PageRequest request, CancellationToken cancellationToken)
     {
@@ -79,7 +83,12 @@ public class SystemErrorService(ISystemErrorRepository errors, ISystemErrorLogge
             {
                 ExceptionType = request.ExceptionType,
                 StackTrace = request.StackTrace,
-                Details = new { request.Context, request.AppVersion, request.OsVersion },
+                Details = new
+                {
+                    Context = Text.Truncate(request.Context, ClientDetailMaxLength),
+                    AppVersion = Text.Truncate(request.AppVersion, ClientDetailMaxLength),
+                    OsVersion = Text.Truncate(request.OsVersion, ClientDetailMaxLength),
+                },
                 IncludeRequestInfo = false,
             },
             cancellationToken);

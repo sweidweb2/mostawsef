@@ -45,7 +45,6 @@ public class PageHost : Decorator
         set => SetValue(PageProperty, value);
     }
 
-    /// <summary>Drops a discarded page's view from the cache and the visual tree.</summary>
     /// <summary>
     /// Builds and caches the view of <paramref name="page"/> without showing it, so the first visit is instant.
     /// Hidden controls are never measured (so their templates are not applied yet): this runs one invisible layout
@@ -87,6 +86,7 @@ public class PageHost : Decorator
         return true;
     }
 
+    /// <summary>Drops a discarded page's view from the cache and the visual tree.</summary>
     public void Release(object page)
     {
         if (!_views.Remove(page, out var view))

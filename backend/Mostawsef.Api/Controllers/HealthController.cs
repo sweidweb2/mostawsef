@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Mostawsef.Api.Extensions;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Infrastructure.Persistence.Context;
 
@@ -6,6 +8,7 @@ namespace Mostawsef.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[EnableRateLimiting(AuthPolicies.HealthRateLimit)]
 public class HealthController(AppDbContext dbContext) : ControllerBase
 {
     [HttpGet]

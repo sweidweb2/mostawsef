@@ -16,6 +16,15 @@ public static class AuthPolicies
     public const string SuperOnly = nameof(SuperOnly);
     public const string LoginRateLimit = "login";
     public const string ClientErrorRateLimit = "client-errors";
+    public const string HealthRateLimit = "health";
+}
+
+/// <summary>Requests per minute per client IP when <c>RateLimit:*</c> is not configured.</summary>
+public static class RateLimitDefaults
+{
+    public const int LoginPerMinute = 10;
+    public const int ClientErrorPerMinute = 30;
+    public const int HealthPerMinute = 120;
 }
 
 public static class AuthExtensions
@@ -60,7 +69,16 @@ public static class AuthExtensions
             options.AddPolicy(AuthPolicies.LoginRateLimit, context =>
             {
                 var permitLimit = context.RequestServices.GetRequiredService<IConfiguration>()
-                    .GetValue("RateLimit:LoginPermitLimit", 10);
+                    .GetValue("RateLimit:LoginPermitLimit", RateLimitDefaults.LoginPerMinute);
+
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    _ => new FixedWindowRateLimiterOptions { PermitLimit = permitLimit, Window = TimeSpan.FromMinutes(1) });
+            });
+            options.AddPolicy(AuthPolicies.HealthRateLimit, context =>
+            {
+                var permitLimit = context.RequestServices.GetRequiredService<IConfiguration>()
+                    .GetValue("RateLimit:HealthPermitLimit", RateLimitDefaults.HealthPerMinute);
 
                 return RateLimitPartition.GetFixedWindowLimiter(
                     context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
@@ -69,7 +87,7 @@ public static class AuthExtensions
             options.AddPolicy(AuthPolicies.ClientErrorRateLimit, context =>
                 RateLimitPartition.GetFixedWindowLimiter(
                     context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-                    _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromMinutes(1) }));
+                    _ => new FixedWindowRateLimiterOptions { PermitLimit = RateLimitDefaults.ClientErrorPerMinute, Window = TimeSpan.FromMinutes(1) }));
         });
 
         return services;

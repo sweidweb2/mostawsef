@@ -50,12 +50,11 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<ITokenService, JwtTokenService>();
         services.AddSingleton<IUserAuthCache, UserAuthCache>();
+        services.AddSingleton<ILoginThrottle, LoginThrottle>();
         services.AddSingleton<IClinicSettingsCache, ClinicSettingsCache>();
         services.AddSingleton<ISystemSettingsCache, SystemSettingsCache>();
 
-        // Same instance for IActivityLogger and the flush middleware.
-        services.AddScoped<ActivityLogger>();
-        services.AddScoped<IActivityLogger>(sp => sp.GetRequiredService<ActivityLogger>());
+        services.AddScoped<IActivityLogger, ActivityLogger>();
         services.AddScoped<ISystemErrorLogger, SystemErrorLogger>();
 
         return services;
