@@ -95,6 +95,21 @@ public class PatientDetailsTests : UiTestBase
     }
 
     [AvaloniaFact]
+    public async Task Enter_on_the_selected_table_row_opens_the_patient()
+    {
+        using var app = new TestServices();
+        var (shell, _, window) = await ShowPatientsAsync(app);
+        var grid = Named<DataGrid>(window, "PatientsGrid");
+        grid.SelectedItem = ((PatientsViewModel)shell.CurrentPage!).Items.Single(p => p.Id == Omar.Id);
+
+        grid.RaiseEvent(new KeyEventArgs { RoutedEvent = InputElement.KeyDownEvent, Key = Key.Enter, Source = grid });
+        await WaitUntil(() => shell.CurrentPage is PatientDetailsViewModel);
+
+        var details = Assert.IsType<PatientDetailsViewModel>(shell.CurrentPage);
+        Assert.Equal(Omar.Id, details.Patient!.Id);
+    }
+
+    [AvaloniaFact]
     public async Task Patients_with_an_order_not_paid_in_full_are_tinted_light_yellow()
     {
         using var app = new TestServices();

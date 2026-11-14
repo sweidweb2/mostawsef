@@ -185,6 +185,7 @@
   <data name="Action.patients.created" xml:space="preserve"><value>Added a patient</value></data>
   <data name="Action.patients.updated" xml:space="preserve"><value>Updated a patient</value></data>
   <data name="Action.patients.deleted" xml:space="preserve"><value>Deleted a patient</value></data>
+  <data name="Action.patients.delete_refused" xml:space="preserve"><value>Refused to delete a patient who has orders</value></data>
 
   <data name="Nav.ClinicSettings" xml:space="preserve"><value>Clinic settings</value></data>
   <data name="Settings.Subtitle" xml:space="preserve"><value>The clinic details shown on printouts, and the currency for all amounts.</value></data>

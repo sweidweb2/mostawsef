@@ -184,6 +184,7 @@
   <data name="Action.patients.created" xml:space="preserve"><value>إضافة مريض</value></data>
   <data name="Action.patients.updated" xml:space="preserve"><value>تعديل مريض</value></data>
   <data name="Action.patients.deleted" xml:space="preserve"><value>حذف مريض</value></data>
+  <data name="Action.patients.delete_refused" xml:space="preserve"><value>رفض حذف مريض لديه طلبات</value></data>
 
   <data name="Nav.ClinicSettings" xml:space="preserve"><value>إعدادات العيادة</value></data>
   <data name="Settings.Subtitle" xml:space="preserve"><value>بيانات العيادة التي تظهر في المطبوعات، والعملة المستخدمة لكل المبالغ.</value></data>

@@ -228,7 +228,7 @@ Table orders {
   Version integer [not null]
 
   Indexes {
-    PatientId
+    (PatientId, Status) [note: 'a patient\'s orders and the unpaid-orders check; replaced the PatientId-only index (migration OrderPatientStatusIndex)']
     (Status, CreatedAt)
     (CreatedAt, Id)
     PatientSearchName

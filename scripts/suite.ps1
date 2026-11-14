@@ -131,6 +131,8 @@ try {
             }
             Start-Sleep -Seconds 1
         }
+    } else {
+        Write-Host "> using the API that is already running at $BaseUrl (keep it, and the app that started it, open until this finishes)" -ForegroundColor Yellow
     }
 
     # --- Wipe -------------------------------------------------------------------------------------------------------

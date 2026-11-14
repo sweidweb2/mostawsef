@@ -18,6 +18,13 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            if (!ActiveProvider.Contains("Npgsql"))
+            {
+                migrationBuilder.DropIndex(name: "IX_orders_PatientId", table: "orders");
+                migrationBuilder.CreateIndex(name: "IX_orders_PatientId_Status", table: "orders", columns: new[] { "PatientId", "Status" });
+                return;
+            }
+
             migrationBuilder.Sql("DROP INDEX CONCURRENTLY IF EXISTS \"IX_orders_PatientId_Status\";", suppressTransaction: true);
             migrationBuilder.Sql(
                 "CREATE INDEX CONCURRENTLY IF NOT EXISTS \"IX_orders_PatientId_Status\" ON orders (\"PatientId\", \"Status\");",
@@ -28,6 +35,13 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            if (!ActiveProvider.Contains("Npgsql"))
+            {
+                migrationBuilder.DropIndex(name: "IX_orders_PatientId_Status", table: "orders");
+                migrationBuilder.CreateIndex(name: "IX_orders_PatientId", table: "orders", column: "PatientId");
+                return;
+            }
+
             migrationBuilder.Sql("DROP INDEX CONCURRENTLY IF EXISTS \"IX_orders_PatientId\";", suppressTransaction: true);
             migrationBuilder.Sql(
                 "CREATE INDEX CONCURRENTLY IF NOT EXISTS \"IX_orders_PatientId\" ON orders (\"PatientId\");",

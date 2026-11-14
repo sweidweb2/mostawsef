@@ -80,6 +80,7 @@ public class PatientService(IPatientRepository patients, IActivityLogger activit
         // A soft delete never trips the foreign key, so the rule is checked here: orders (and money owed) keep their patient.
         if (await patients.HasOrdersAsync(id, cancellationToken))
         {
+            await LogAsync(ActivityActions.PatientDeleteRefused, "Refused to delete a patient who has orders", patient, cancellationToken);
             throw AppException.Conflict(ErrorCodes.PatientHasOrders);
         }
 

@@ -723,6 +723,10 @@ public class OrdersTests(ApiFactory factory)
 
         Assert.Equal((HttpStatusCode.Conflict, ErrorCodes.PatientHasOrders), (problem.Status, problem.Code));
         Assert.Equal(HttpStatusCode.OK, (await admin.GetAsync($"api/patients/{patient.Id}", Ct)).StatusCode);
+
+        var super = await factory.CreateClientAsAsync(TestUsers.Super);
+        var log = await super.GetJsonAsync<CursorPage<ActivityLogListItemDto>>("api/activity-logs?search=patients.&pageSize=100");
+        Assert.Contains(log.Items, i => i.Action == "patients.delete_refused");
     }
 
     private static CreateOrderRequest ForPatient(Guid patientId, Guid testId) =>
