@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Mostawsef.Contracts.Common;
@@ -17,6 +18,12 @@ public class OrdersApi(ApiClient api)
             (string.IsNullOrEmpty(status) ? string.Empty : $"&status={Uri.EscapeDataString(status)}") +
             (patientId is { } patient ? $"&patientId={patient}" : string.Empty),
             cancellationToken);
+
+    public Task<ApiResult<IReadOnlyList<OrderDailyCountDto>>> GetDailyCountsAsync(int days, CancellationToken cancellationToken = default) =>
+        api.GetAsync<IReadOnlyList<OrderDailyCountDto>>($"api/orders/daily?days={days}", cancellationToken);
+
+    public Task<ApiResult<IReadOnlyList<TopTestDto>>> GetTopTestsAsync(int take, CancellationToken cancellationToken = default) =>
+        api.GetAsync<IReadOnlyList<TopTestDto>>($"api/orders/top-tests?take={take}", cancellationToken);
 
     public Task<ApiResult<OrderStatsDto>> GetStatsAsync(CancellationToken cancellationToken = default) =>
         api.GetAsync<OrderStatsDto>("api/orders/stats", cancellationToken);

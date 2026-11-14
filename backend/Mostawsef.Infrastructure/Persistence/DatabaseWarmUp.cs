@@ -43,7 +43,8 @@ public static class DatabaseWarmUp
                      })
             {
                 await users.GetPageAsync(query, cancellationToken);
-                await patients.GetPageAsync(query, cancellationToken);
+                await patients.GetPageAsync(query, includeUnpaid: false, cancellationToken);
+                await patients.GetPageAsync(query, includeUnpaid: true, cancellationToken);
                 await tests.GetPageAsync(query, active: null, cancellationToken);
                 await tests.GetPageAsync(query, active: true, cancellationToken);
                 await orders.GetPageAsync(query, new OrderListFilter(null, null), cancellationToken);

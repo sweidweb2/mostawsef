@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.Orders;
 using Mostawsef.Desktop.Services.Api;
@@ -33,6 +34,17 @@ public partial class OrdersViewModel(
 
     /// <summary>One Order details page for this portal visit; reset on each open so PageHost can reuse its view.</summary>
     private OrderDetailsViewModel? _orderDetails;
+
+    protected override Task LoadOnActivateAsync()
+    {
+        // Weak, so the page is not kept alive by the messenger; registered once, on first activation.
+        if (!WeakReferenceMessenger.Default.IsRegistered<OrderChangedMessage>(this))
+        {
+            WeakReferenceMessenger.Default.Register<OrdersViewModel, OrderChangedMessage>(this, (page, message) => page.OnOrderChanged(message));
+        }
+
+        return base.LoadOnActivateAsync();
+    }
 
     protected override Task<ApiResult<PagedResult<OrderListItemDto>>> FetchPageAsync(
         int page, int pageSize, string? search, bool includeTotal, CancellationToken cancellationToken) =>
@@ -73,11 +85,14 @@ public partial class OrdersViewModel(
         }
     }
 
+    /// <summary>The statuses an order can have today (payments set them); Cancelled and Refunded are never assigned, so they are not offered.</summary>
+    private static readonly string[] FilterableStatuses = [OrderStatuses.Pending, OrderStatuses.PartiallyPaid, OrderStatuses.Paid];
+
     /// <summary>The payment-status filter choices: everything first, then each status.</summary>
     public static IReadOnlyList<OrderStatusOption> StatusOptions { get; } =
     [
         new(null, "Orders.Filter.AllStatuses"),
-        .. OrderStatuses.All.Select(status => new OrderStatusOption(status, "OrderStatus." + status)),
+        .. FilterableStatuses.Select(status => new OrderStatusOption(status, "OrderStatus." + status)),
     ];
 
     /// <summary>The chosen status; changing it shows page 1 of the matching orders.</summary>
@@ -159,15 +174,46 @@ public partial class OrdersViewModel(
     }
 
     /// <summary>Adds the new order on page 1 without wiping the table; falls back to a full reload when needed.</summary>
-    private void InsertCreated(OrderDetailsDto order) =>
-        PrependNewest(new OrderListItemDto(
-            order.Id,
-            order.Number,
-            order.CreatedAt,
-            order.PatientName,
-            order.PatientPhone,
-            order.Items.Count,
-            order.Total,
-            order.Paid,
-            order.Status));
+    private void InsertCreated(OrderDetailsDto order) => PrependNewest(new OrderChangedMessage(order).ToListItem());
+
+    private int IndexOfShown(Guid id)
+    {
+        for (var i = 0; i < Items.Count; i++)
+        {
+            if (Items[i].Id == id)
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    /// <summary>A payment changed an order: update its row in place; reload on return if the status filter no longer fits it.</summary>
+    private void OnOrderChanged(OrderChangedMessage message)
+    {
+        var order = message.Order;
+        // Runs inside the sender's Send (e.g. right after a payment was saved): a failure here must not reach it.
+        try
+        {
+            var index = IndexOfShown(order.Id);
+            if (index < 0)
+            {
+                return;
+            }
+
+            if (SelectedStatus?.Value is { } wanted && wanted != order.Status)
+            {
+                MarkStale();
+                return;
+            }
+
+            Items[index] = message.ToListItem();
+        }
+        catch (Exception ex)
+        {
+            Errors.Report(ex, context: "Refreshing the orders list after an order changed");
+            MarkStale();
+        }
+    }
 }

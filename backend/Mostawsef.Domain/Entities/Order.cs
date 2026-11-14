@@ -42,6 +42,7 @@ public class Order : Entity
 
     public Guid PatientId { get; private set; }
 
+    /// <summary>The patient's name when the order was made, kept as on the invoice: renaming the patient later does not change it.</summary>
     public string PatientName { get; private set; } = string.Empty;
 
     /// <summary>PatientName normalized for search.</summary>

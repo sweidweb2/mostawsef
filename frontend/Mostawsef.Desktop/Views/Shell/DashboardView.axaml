@@ -60,6 +60,32 @@
                         <ui:LoadingOverlay IsLoading="{Binding IsLoading}" />
                     </Panel>
                 </ui:Card>
+
+                <ui:Card Name="DailyOrdersCard" Title="{l:Tr Dashboard.Orders.PerDay}"
+                         Subtitle="{l:Tr Dashboard.Orders.PerDayHint, Arg={Binding DailyTotal}}">
+                    <Panel MinHeight="220">
+                        <ui:LineChart Name="DailyOrdersChart"
+                                      Points="{Binding Daily}"
+                                      TooltipFormat="{l:Tr Dashboard.Orders.PerDayTooltip}"
+                                      IsVisible="{Binding HasDaily}" />
+                        <ui:LoadingOverlay IsLoading="{Binding IsLoading}" />
+                    </Panel>
+                </ui:Card>
+
+                <ui:Card Name="TopTestsCard" Title="{l:Tr Dashboard.Tests.Top}" Subtitle="{l:Tr Dashboard.Tests.TopHint}">
+                    <Panel MinHeight="320">
+                        <ui:LineChart Name="TopTestsChart"
+                                      MinHeight="320"
+                                      Points="{Binding TopTests}"
+                                      TooltipFormat="{l:Tr Dashboard.Tests.Tooltip}"
+                                      IsVisible="{Binding HasTopTests}" />
+                        <ui:EmptyState Name="TopTestsEmpty" Margin="0,16"
+                                       IsVisible="{Binding !HasTopTests}"
+                                       Icon="{StaticResource IconDashboard}"
+                                       Title="{l:Tr Dashboard.Tests.Empty}" />
+                        <ui:LoadingOverlay IsLoading="{Binding IsLoading}" />
+                    </Panel>
+                </ui:Card>
             </StackPanel>
 
             <ui:Card IsVisible="{Binding !ShowOrderStats}">

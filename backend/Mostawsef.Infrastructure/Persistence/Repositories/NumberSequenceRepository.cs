@@ -8,7 +8,8 @@ using Mostawsef.Infrastructure.Persistence.Context;
 namespace Mostawsef.Infrastructure.Persistence.Repositories;
 
 /// <summary>
-/// Increment-then-read inside a transaction: the UPDATE locks the row, so parallel callers queue and each reads its own value.
+/// One UPDATE ... RETURNING: the statement locks the row, so parallel callers queue and each gets its own value, with no
+/// explicit transaction. Only the very first number of a sequence (no row yet) inserts the row inside a transaction.
 /// Uses a context of its own, so it never joins (or commits) the caller's unit of work.
 /// </summary>
 public class NumberSequenceRepository(IDbContextFactory<AppDbContext> dbFactory) : INumberSequence
@@ -18,15 +19,13 @@ public class NumberSequenceRepository(IDbContextFactory<AppDbContext> dbFactory)
         for (var attempt = 0; ; attempt++)
         {
             await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
-            await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-            var sequence = db.Set<NumberSequence>().Where(s => s.Name == name);
-            if (await sequence.ExecuteUpdateAsync(s => s.SetProperty(x => x.NextValue, x => x.NextValue + 1), cancellationToken) > 0)
+            if (await TakeNextAsync(db, name, cancellationToken) is { } taken)
             {
-                var next = await sequence.Select(s => s.NextValue).SingleAsync(cancellationToken);
-                await transaction.CommitAsync(cancellationToken);
-                return next - 1;
+                return taken;
             }
+
+            await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
             try
             {
@@ -44,5 +43,18 @@ public class NumberSequenceRepository(IDbContextFactory<AppDbContext> dbFactory)
                 // SaveChanges maps the unique race to AppException — same retry.
             }
         }
+    }
+
+    /// <summary>The current number of an existing sequence, moving it on by one in the same statement; null when the sequence has no row yet.</summary>
+    private static async Task<long?> TakeNextAsync(AppDbContext db, string name, CancellationToken cancellationToken)
+    {
+        await db.Database.OpenConnectionAsync(cancellationToken);
+        await using var command = db.Database.GetDbConnection().CreateCommand();
+        command.CommandText = "UPDATE number_sequences SET \"NextValue\" = \"NextValue\" + 1 WHERE \"Name\" = @name RETURNING \"NextValue\" - 1";
+        var parameter = command.CreateParameter();
+        parameter.ParameterName = "name";
+        parameter.Value = name;
+        command.Parameters.Add(parameter);
+        return await command.ExecuteScalarAsync(cancellationToken) as long?;
     }
 }

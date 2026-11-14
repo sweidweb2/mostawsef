@@ -4,7 +4,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Mostawsef.Contracts.Auth;
+using System.Collections.Generic;
+using System.Linq;
 using Mostawsef.Contracts.Orders;
+using Mostawsef.Desktop.Components;
 using Mostawsef.Desktop.Services.Api;
 using Mostawsef.Desktop.Services.Auth;
 
@@ -28,6 +31,29 @@ public partial class DashboardViewModel(SessionService session, OrdersApi orders
         nameof(HasOrders), nameof(TotalOrders), nameof(PaidOrders), nameof(PartiallyPaidOrders), nameof(UnpaidOrders),
         nameof(ChartMaximum), nameof(PaidPercent), nameof(PartiallyPaidPercent), nameof(UnpaidPercent))]
     public partial OrderStatsDto? Stats { get; private set; }
+
+    /// <summary>How many days the line graph covers.</summary>
+    public const int DailyDays = 30;
+
+    /// <summary>Orders created per day, oldest first, today last (zero-filled).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasDaily), nameof(DailyTotal))]
+    public partial IReadOnlyList<ChartPoint>? Daily { get; private set; }
+
+    public bool HasDaily => Daily is { Count: > 0 };
+
+    /// <summary>Orders created over the days shown.</summary>
+    public int DailyTotal => Daily?.Sum(p => p.Value) ?? 0;
+
+    /// <summary>How many of the most ordered tests the second graph shows.</summary>
+    public const int TopTestsShown = 20;
+
+    /// <summary>The most ordered tests, most first: each point is a test name and how many times it was ordered.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasTopTests))]
+    public partial IReadOnlyList<ChartPoint>? TopTests { get; private set; }
+
+    public bool HasTopTests => TopTests is { Count: > 0 };
 
     [ObservableProperty]
     public partial bool IsLoading { get; private set; }
@@ -66,11 +92,26 @@ public partial class DashboardViewModel(SessionService session, OrdersApi orders
         IsLoading = Stats is null;
         try
         {
-            var result = await orders.GetStatsAsync(cancellation.Token);
+            var statsTask = orders.GetStatsAsync(cancellation.Token);
+            var dailyTask = orders.GetDailyCountsAsync(DailyDays, cancellation.Token);
+            var result = await statsTask;
+            var topTask = orders.GetTopTestsAsync(TopTestsShown, cancellation.Token);
+            var daily = await dailyTask;
+            var top = await topTask;
             cancellation.Token.ThrowIfCancellationRequested();
             if (result.IsSuccess)
             {
                 Stats = result.Value;
+            }
+
+            if (daily.IsSuccess)
+            {
+                Daily = daily.Value!.Select(d => ChartPoint.Day(d.Date, d.Count)).ToList();
+            }
+
+            if (top.IsSuccess)
+            {
+                TopTests = top.Value!.Select(t => new ChartPoint(t.Name, t.Count)).ToList();
             }
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)

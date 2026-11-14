@@ -61,6 +61,12 @@ public record OrderStatsDto(int Paid, int PartiallyPaid, int Unpaid)
     public int Total => Paid + PartiallyPaid + Unpaid;
 }
 
+/// <summary>How many orders were created on one calendar day (in the server's local time).</summary>
+public record OrderDailyCountDto(DateOnly Date, int Count);
+
+/// <summary>How many times a lab test was ordered (on orders that are not cancelled or refunded).</summary>
+public record TopTestDto(Guid LabTestId, string Code, string Name, int Count);
+
 public record OrderItemDto(Guid LabTestId, string Code, string Name, long Price);
 
 /// <summary>Payment types. The desktop shows "PaymentType.&lt;value&gt;".</summary>

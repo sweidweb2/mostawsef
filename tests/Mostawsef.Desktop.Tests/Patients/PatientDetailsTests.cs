@@ -21,12 +21,16 @@ namespace Mostawsef.Desktop.Tests.Patients;
 [Collection(UiTestCollection.Name)]
 public class PatientDetailsTests : UiTestBase
 {
+    private const string MonaNotes = "Allergic to penicillin";
+
     private static async Task<(PortalShellViewModel Shell, PatientsViewModel Patients, Window Window)> ShowPatientsAsync(
         TestServices app, params OrderListItemDto[]? orders)
     {
         orders ??= [];
         app.SignInAs(Roles.Admin);
         app.Api.OnGet(PatientsPath, new PagedResult<PatientDto>([Mona, Omar], 1, 40, 2));
+        app.Api.OnGet($"{PatientsPath}/{Mona.Id}", Mona with { Notes = MonaNotes });
+        app.Api.OnGet($"{PatientsPath}/{Omar.Id}", Omar);
         app.Api.OnGet(OrdersPath, new PagedResult<OrderListItemDto>(orders, 1, 100, orders.Length));
         app.Api.OnGet($"{OrdersPath}/{Unpaid.Id}", Details(Unpaid.Id));
 
@@ -67,6 +71,7 @@ public class PatientDetailsTests : UiTestBase
         Assert.Equal([PartlyPaid.Number, Unpaid.Number], cards.Select(c => c.Title));
         Assert.Equal(Mona.FullName, Named<TextBlock>(window, "BreadcrumbSubPage").Text);
         Assert.Contains("Orders (2)", Texts(window));
+        Assert.Contains(MonaNotes, Texts(window)); // list rows carry no notes: they come from the full record
     }
 
     [AvaloniaFact]
@@ -114,6 +119,47 @@ public class PatientDetailsTests : UiTestBase
         Assert.Equal(
             [(Mona.Id, true), (Omar.Id, false)],
             cards.Select(c => (((PatientDto)c.DataContext!).Id, c.Classes.Contains("unpaid"))));
+    }
+
+    [AvaloniaFact]
+    public async Task An_unexpected_failure_loading_the_orders_shows_the_error_state_and_the_page_keeps_working()
+    {
+        using var app = new TestServices();
+        app.Api.On(HttpMethod.Get, OrdersPath, _ => throw new InvalidOperationException("boom"));
+        var (shell, patients, _) = await ShowPatientsAsync(app);
+
+        await patients.OpenCommand.ExecuteAsync(Mona);
+        var details = Assert.IsType<PatientDetailsViewModel>(shell.CurrentPage);
+        await WaitUntil(() => !details.IsLoading);
+
+        Assert.True(details.HasLoadError);
+        Assert.False(details.IsEmpty);
+        Assert.Equal(Mona.FullName, details.Patient!.FullName); // the patient still shows
+    }
+
+    [AvaloniaFact]
+    public async Task Many_cards_in_the_grid_view_scroll_instead_of_being_cut_off()
+    {
+        using var app = new TestServices();
+        app.SignInAs(Roles.Admin);
+        var many = Enumerable.Range(0, 40).Select(i => Mona with { Id = Guid.NewGuid(), FullName = $"Patient {i}" }).ToList();
+        app.Api.OnGet(PatientsPath, new PagedResult<PatientDto>(many, 1, 40, 40));
+        app.Navigation.NavigateToHome();
+        var shell = Assert.IsType<PortalShellViewModel>(app.Navigation.CurrentPage);
+        var window = app.Show(shell);
+        shell.SelectedMenuIndex = shell.MenuItems.ToList().FindIndex(p => p.PageType == typeof(PatientsViewModel));
+        var patients = Assert.IsType<PatientsViewModel>(shell.CurrentPage);
+        await WaitUntil(() => !patients.IsLoading);
+        patients.ShowGridCommand.Execute(null);
+        Dispatcher.UIThread.RunJobs();
+        window.UpdateLayout();
+
+        var scroll = Named<ScrollViewer>(window, "CardsScroll");
+        Assert.True(scroll.IsEffectivelyVisible);
+        Assert.True(scroll.Extent.Height > scroll.Viewport.Height, $"extent {scroll.Extent.Height}, viewport {scroll.Viewport.Height}");
+        scroll.ScrollToEnd();
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(scroll.Offset.Y > 0);
     }
 
     [AvaloniaFact]

@@ -77,7 +77,7 @@ public abstract partial class NumberedListViewModel<TItem> : ListPageViewModelBa
     }
 
     /// <summary>True while a search (or a subclass's own filter) may hide a new row; override to add filters.</summary>
-    protected virtual bool HasActiveFilter => !string.IsNullOrWhiteSpace(Search);
+    protected virtual bool HasActiveFilter => !string.IsNullOrWhiteSpace(_appliedSearch);
 
     /// <summary>A subclass's own filter changed: show page 1 of the matching rows and count them again.</summary>
     protected Task ApplyFilterAsync() => LoadAsync(page: 1, includeTotal: true);
@@ -112,8 +112,12 @@ public abstract partial class NumberedListViewModel<TItem> : ListPageViewModelBa
             return Task.CompletedTask;
         }
 
+        _appliedSearch = Search;
         return LoadAsync(page: 1, includeTotal: true);
     }
+
+    /// <summary>The search last submitted (Enter or the button). Loads use it, so half-typed text never filters the list.</summary>
+    private string? _appliedSearch;
 
     protected abstract Task<ApiResult<PagedResult<TItem>>> FetchPageAsync(
         int page, int pageSize, string? search, bool includeTotal, CancellationToken cancellationToken);
@@ -130,7 +134,7 @@ public abstract partial class NumberedListViewModel<TItem> : ListPageViewModelBa
         var cancellationToken = cancellation.Token;
         try
         {
-            var result = await FetchPageAsync(Math.Max(1, page), PageSize, Search, includeTotal, cancellationToken);
+            var result = await FetchPageAsync(Math.Max(1, page), PageSize, _appliedSearch, includeTotal, cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
 
             // Nothing is left on this page (e.g. its last row was deleted): show the new last page.
@@ -143,7 +147,7 @@ public abstract partial class NumberedListViewModel<TItem> : ListPageViewModelBa
                 // Page flips skip the total; reuse the cached count instead of a middle GET.
                 if (total <= 0)
                 {
-                    result = await FetchPageAsync(page, PageSize, Search, includeTotal: true, cancellationToken);
+                    result = await FetchPageAsync(page, PageSize, _appliedSearch, includeTotal: true, cancellationToken);
                     cancellationToken.ThrowIfCancellationRequested();
                     if (result.IsSuccess)
                     {
@@ -154,7 +158,7 @@ public abstract partial class NumberedListViewModel<TItem> : ListPageViewModelBa
                 if (result.IsSuccess && total > 0)
                 {
                     page = Math.Max(1, (int)Math.Ceiling(total / (double)PageSize));
-                    result = await FetchPageAsync(page, PageSize, Search, includeTotal: false, cancellationToken);
+                    result = await FetchPageAsync(page, PageSize, _appliedSearch, includeTotal: false, cancellationToken);
                     cancellationToken.ThrowIfCancellationRequested();
                     includeTotal = false;
                 }

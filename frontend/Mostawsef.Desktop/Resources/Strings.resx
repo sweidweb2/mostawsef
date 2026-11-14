@@ -102,6 +102,13 @@
   <data name="Dashboard.Orders.PartiallyPaid" xml:space="preserve"><value>Partially paid</value></data>
   <data name="Dashboard.Orders.Unpaid" xml:space="preserve"><value>Nothing paid</value></data>
   <data name="Dashboard.Orders.Chart" xml:space="preserve"><value>Orders by payment status</value></data>
+  <data name="Dashboard.Orders.PerDay" xml:space="preserve"><value>Orders per day</value></data>
+  <data name="Dashboard.Orders.PerDayHint" xml:space="preserve"><value>{0} orders created in the last 30 days</value></data>
+  <data name="Dashboard.Orders.PerDayTooltip" xml:space="preserve"><value>{0}: {1} orders</value></data>
+  <data name="Dashboard.Tests.Top" xml:space="preserve"><value>Top 20 most ordered tests</value></data>
+  <data name="Dashboard.Tests.TopHint" xml:space="preserve"><value>How many times each test was ordered (cancelled and refunded orders excluded)</value></data>
+  <data name="Dashboard.Tests.Tooltip" xml:space="preserve"><value>{0}: ordered {1} times</value></data>
+  <data name="Dashboard.Tests.Empty" xml:space="preserve"><value>No tests have been ordered yet</value></data>
   <data name="Dashboard.Orders.Empty" xml:space="preserve"><value>No orders yet</value></data>
   <data name="Dashboard.Empty.Title" xml:space="preserve"><value>Your dashboard is empty</value></data>
   <data name="Dashboard.Empty.Description" xml:space="preserve"><value>Widgets and reports will appear here.</value></data>
@@ -422,6 +429,7 @@
   <data name="OrderDetails.Tests" xml:space="preserve"><value>Tests ({0})</value></data>
   <data name="OrderDetails.NotFound" xml:space="preserve"><value>This order no longer exists.</value></data>
   <data name="Action.orders.created" xml:space="preserve"><value>Order created</value></data>
+  <data name="ErrorCode.patient_has_orders" xml:space="preserve"><value>This patient has orders, so they can't be deleted.</value></data>
   <data name="ErrorCode.in_use" xml:space="preserve"><value>This test is used by orders, so it can't be deleted. Deactivate it instead.</value></data>
   <data name="ErrorCode.inactive" xml:space="preserve"><value>This test is no longer offered.</value></data>
   <data name="ErrorCode.duplicate" xml:space="preserve"><value>This test is already in the order.</value></data>

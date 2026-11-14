@@ -87,6 +87,56 @@ orders (default 80):
 
 The API applies new migrations when it starts: restart it after pulling changes.
 
+## Test data suites (wipe and seed)
+
+Three ready-made data sets for testing the app at different sizes. Each one first wipes the patients, orders, payments
+and logs (the sign-in accounts, the lab tests and the settings always stay), then creates its data through the API and
+moves the dates back so the lists and the dashboard graphs have history. The mix is repeatable.
+
+| Suite    | Patients | Orders | History  | Use it to check                                                      |
+| -------- | -------- | ------ | -------- | -------------------------------------------------------------------- |
+| `low`    | 8        | 20     | 14 days  | an almost empty clinic: empty states, a single page, tiny graphs     |
+| `medium` | 80       | 500    | 60 days  | a normal busy clinic: paging, search, filters, dashboard             |
+| `high`   | 1,500    | 10,500 | 365 days | volume: the "10,000+" count cap, many pages, speed, heavy graphs     |
+
+About 30% of the orders are unpaid, 25% partly paid and 45% paid; some have an extra "our price" amount and some partly
+paid ones got a second payment, so the yellow rows, the status filter and the payment form all have something to show.
+
+```powershell
+./scripts/suite.ps1 low
+```
+```powershell
+./scripts/suite.ps1 medium
+```
+```powershell
+./scripts/suite.ps1 high
+```
+
+Seed and open the app on that data in one go (database, API, seed, then the desktop app):
+
+```powershell
+./scripts/dev.ps1 -Suite medium
+```
+```powershell
+./scripts/suite.ps1 high -Run
+```
+
+`low` and `medium` take seconds, `high` a few minutes (the progress is printed). If the API is not running the script
+starts it for the seeding and stops it afterwards. `-NoWipe` adds a suite on top of the current data instead.
+
+Only the wipe, without seeding anything (it asks first; `-Force` skips the question):
+
+```powershell
+./scripts/wipe.ps1
+```
+
+Before deleting, the wipe saves a copy of the whole database in `backups/` (the three newest are kept; `-NoBackup`
+skips it). Restore with
+`Get-Content backups\<file>.sql | docker exec -i mostawsef-postgres psql -U mostawsef -d mostawsef` after dropping and
+recreating the `public` schema.
+
+`./scripts/seed.ps1` (above) is the older, gentler seeder: it adds to the current data and keeps its dates at "now".
+
 ## Checking speed
 
 Judge speed on Release builds only: Debug builds of Avalonia and the API are much slower and give a wrong picture.

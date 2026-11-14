@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.Patients;
 using Mostawsef.Desktop.Services.Api;
@@ -43,6 +44,9 @@ public partial class PatientsViewModel : NumberedListViewModel<PatientDto>
         : base(toasts, localization, errors)
     {
         _navigation = navigation;
+
+        // An order was created or paid: a patient's unpaid tint may be out of date, so the list reloads when it is shown again.
+        WeakReferenceMessenger.Default.Register<PatientsViewModel, OrderChangedMessage>(this, (page, _) => page.OnOrderChanged());
         _patients = patients;
         _dialogs = dialogs;
         _print = print;
@@ -55,7 +59,23 @@ public partial class PatientsViewModel : NumberedListViewModel<PatientDto>
 
     protected override Task<ApiResult<PagedResult<PatientDto>>> FetchPageAsync(
         int page, int pageSize, string? search, bool includeTotal, CancellationToken cancellationToken) =>
-        _patients.GetPatientsAsync(page, pageSize, search, includeTotal, cancellationToken);
+        _patients.GetPatientsAsync(page, pageSize, search, includeTotal, includeUnpaid: true, cancellationToken);
+
+    /// <summary>An order changed while this list was loaded: reload on return, but keep the count (orders never add or remove patients).</summary>
+    private bool _keepTotalOnReload;
+
+    private void OnOrderChanged()
+    {
+        _keepTotalOnReload = IsLoaded;
+        MarkStale();
+    }
+
+    protected override Task LoadOnActivateAsync()
+    {
+        var keepTotal = _keepTotalOnReload;
+        _keepTotalOnReload = false;
+        return ReloadAsync(includeTotal: !keepTotal);
+    }
 
     /// <summary>Opens the patient's details page (their info and orders).</summary>
     [RelayCommand]
@@ -67,21 +87,8 @@ public partial class PatientsViewModel : NumberedListViewModel<PatientDto>
         }
 
         return _navigation.Reuse(ref _details) is { } details
-            ? _navigation.OpenAsync(details, page => page.Show(patient, SetUnpaid))
+            ? _navigation.OpenAsync(details, page => page.Show(patient))
             : Task.CompletedTask;
-    }
-
-    /// <summary>The details page found out whether the patient has an unpaid order: update the shown row's tint.</summary>
-    private void SetUnpaid(Guid patientId, bool unpaid)
-    {
-        for (var i = 0; i < Items.Count; i++)
-        {
-            if (Items[i].Id == patientId && Items[i].IsUnpaid != unpaid)
-            {
-                Items[i] = Items[i] with { HasUnpaidOrders = unpaid };
-                return;
-            }
-        }
     }
 
     [RelayCommand]
@@ -113,14 +120,25 @@ public partial class PatientsViewModel : NumberedListViewModel<PatientDto>
     [RelayCommand]
     private async Task EditAsync(PatientDto? item)
     {
-        // List rows are already full PatientDto (including Version); no GET needed.
         if (item is null)
         {
             return;
         }
 
+        // List rows leave the notes out; the form is filled from the full record so saving does not wipe them.
+        if (await ReadAsync(ct => _patients.GetPatientAsync(item.Id, ct)) is not { } loaded)
+        {
+            return;
+        }
+
+        if (!loaded.IsSuccess)
+        {
+            ShowError(loaded);
+            return;
+        }
+
         if (await _dialogs.ShowFormAsync(
-                new PatientFormViewModel(_patients, _dialogs, Localization, item), Localization.Get("Patients.EditTitle"), 640))
+                new PatientFormViewModel(_patients, _dialogs, Localization, loaded.Value!), Localization.Get("Patients.EditTitle"), 640))
         {
             Toasts.Success(Localization.Get("Patients.Saved"));
             await ReloadAsync(includeTotal: false);

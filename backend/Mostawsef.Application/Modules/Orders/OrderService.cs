@@ -20,6 +20,12 @@ public interface IOrderService
 
     Task<OrderStatsDto> GetStatsAsync(CancellationToken cancellationToken);
 
+    /// <summary>Orders created per day for the last <paramref name="days"/> days (1 to <see cref="OrderService.MaxDailyDays"/>), today last; days without orders count 0.</summary>
+    Task<IReadOnlyList<OrderDailyCountDto>> GetDailyCountsAsync(int days, CancellationToken cancellationToken);
+
+    /// <summary>The <paramref name="take"/> (1 to <see cref="OrderService.MaxTopTests"/>) most ordered tests, most first.</summary>
+    Task<IReadOnlyList<TopTestDto>> GetTopTestsAsync(int take, CancellationToken cancellationToken);
+
     /// <summary>Adds a payment of at most what the order still owes; returns the updated order.</summary>
     Task<OrderDetailsDto> AddPaymentAsync(Guid id, AddPaymentRequest request, CancellationToken cancellationToken);
 
@@ -59,9 +65,39 @@ public class OrderService(
             total);
     }
 
+    public const int MaxDailyDays = 90;
+
+    public const int MaxTopTests = 50;
+
+    public async Task<IReadOnlyList<TopTestDto>> GetTopTestsAsync(int take, CancellationToken cancellationToken) =>
+        (await orders.GetTopTestsAsync(Math.Clamp(take, 1, MaxTopTests), cancellationToken))
+        .Select(t => new TopTestDto(t.LabTestId, t.Code, t.Name, t.Count))
+        .ToList();
+
+    public async Task<IReadOnlyList<OrderDailyCountDto>> GetDailyCountsAsync(int days, CancellationToken cancellationToken)
+    {
+        days = Math.Clamp(days, 1, MaxDailyDays);
+        var zone = time.LocalTimeZone;
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(time.GetUtcNow(), zone).DateTime);
+        var first = today.AddDays(1 - days);
+
+        // Midnight of the first day in the server's time zone, as UTC.
+        var sinceUtc = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(first.ToDateTime(TimeOnly.MinValue), DateTimeKind.Unspecified), zone);
+        var created = await orders.GetCreatedSinceAsync(sinceUtc, cancellationToken);
+
+        var perDay = created
+            .GroupBy(utc => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), zone)))
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        return Enumerable.Range(0, days)
+            .Select(offset => first.AddDays(offset))
+            .Select(date => new OrderDailyCountDto(date, perDay.GetValueOrDefault(date)))
+            .ToList();
+    }
+
     public async Task<OrderDetailsDto> AddPaymentAsync(Guid id, AddPaymentRequest request, CancellationToken cancellationToken)
     {
-        var order = await orders.GetWithPaymentsAsync(id, cancellationToken) ?? throw AppException.NotFound();
+        var order = await orders.GetForPaymentAsync(id, cancellationToken) ?? throw AppException.NotFound();
         var amount = request.Amount!.Value;
         if (amount > order.Balance)
         {
@@ -82,7 +118,7 @@ public class OrderService(
             },
             cancellationToken);
 
-        return await GetAsync(id, cancellationToken);
+        return ToDetails(order); // the order is already loaded with its items and payments: no second read
     }
 
     public async Task<OrderStatsDto> GetStatsAsync(CancellationToken cancellationToken)
@@ -274,6 +310,6 @@ public class OrderService(
     private static OrderDetailsDto ToDetails(Order o) => new(
         o.Id, o.Number, o.CreatedAt, o.CreatedBy, o.PatientId, o.PatientName, o.PatientPhone, o.Status.ToString(), o.Currency,
         o.Total, o.Paid, o.Balance, o.Addon,
-        o.Items.Select(i => new OrderItemDto(i.LabTestId, i.LabTest?.Code ?? string.Empty, i.LabTest?.Name ?? string.Empty, i.Price)).ToList(),
-        o.Payments.OrderBy(p => p.PaidAt).Select(p => new OrderPaymentDto(p.PaidAt, p.Type.ToString(), p.Method.ToString(), p.Amount, p.Notes)).ToList());
+        o.Items.Select(i => new OrderItemDto(i.LabTestId, i.LabTestCode, i.LabTestName, i.Price)).ToList(),
+        o.Payments.OrderBy(p => p.PaidAt).ThenBy(p => p.Id).Select(p => new OrderPaymentDto(p.PaidAt, p.Type.ToString(), p.Method.ToString(), p.Amount, p.Notes)).ToList());
 }

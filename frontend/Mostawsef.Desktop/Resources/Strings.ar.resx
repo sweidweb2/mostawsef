@@ -102,6 +102,13 @@
   <data name="Dashboard.Orders.PartiallyPaid" xml:space="preserve"><value>مدفوعة جزئياً</value></data>
   <data name="Dashboard.Orders.Unpaid" xml:space="preserve"><value>غير مدفوعة</value></data>
   <data name="Dashboard.Orders.Chart" xml:space="preserve"><value>الطلبات حسب حالة الدفع</value></data>
+  <data name="Dashboard.Orders.PerDay" xml:space="preserve"><value>الطلبات يومياً</value></data>
+  <data name="Dashboard.Orders.PerDayHint" xml:space="preserve"><value>{0} طلب تم إنشاؤه خلال آخر 30 يوماً</value></data>
+  <data name="Dashboard.Orders.PerDayTooltip" xml:space="preserve"><value>{0}: {1} طلب</value></data>
+  <data name="Dashboard.Tests.Top" xml:space="preserve"><value>أكثر 20 تحليلاً طلباً</value></data>
+  <data name="Dashboard.Tests.TopHint" xml:space="preserve"><value>عدد مرات طلب كل تحليل (دون الطلبات الملغاة والمستردة)</value></data>
+  <data name="Dashboard.Tests.Tooltip" xml:space="preserve"><value>{0}: طُلب {1} مرة</value></data>
+  <data name="Dashboard.Tests.Empty" xml:space="preserve"><value>لم يُطلب أي تحليل بعد</value></data>
   <data name="Dashboard.Orders.Empty" xml:space="preserve"><value>لا توجد طلبات بعد</value></data>
   <data name="Dashboard.Empty.Title" xml:space="preserve"><value>لوحة التحكم فارغة</value></data>
   <data name="Dashboard.Empty.Description" xml:space="preserve"><value>ستظهر هنا المؤشرات والتقارير.</value></data>
@@ -421,6 +428,7 @@
   <data name="OrderDetails.Tests" xml:space="preserve"><value>التحاليل ({0})</value></data>
   <data name="OrderDetails.NotFound" xml:space="preserve"><value>هذا الطلب لم يعد موجوداً.</value></data>
   <data name="Action.orders.created" xml:space="preserve"><value>إنشاء طلب</value></data>
+  <data name="ErrorCode.patient_has_orders" xml:space="preserve"><value>لهذا المريض طلبات، لذا لا يمكن حذفه.</value></data>
   <data name="ErrorCode.in_use" xml:space="preserve"><value>هذا التحليل مستخدم في طلبات، لذا لا يمكن حذفه. أوقف تفعيله بدلاً من ذلك.</value></data>
   <data name="ErrorCode.inactive" xml:space="preserve"><value>هذا التحليل لم يعد متاحاً.</value></data>
   <data name="ErrorCode.duplicate" xml:space="preserve"><value>هذا التحليل موجود بالفعل في الطلب.</value></data>

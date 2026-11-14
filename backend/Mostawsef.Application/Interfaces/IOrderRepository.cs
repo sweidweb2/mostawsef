@@ -36,6 +36,8 @@ public record OrderDetailsRow(
 
 public record OrderItemRow(Guid LabTestId, string Code, string Name, long Price);
 
+public record TopTestRow(Guid LabTestId, string Code, string Name, int Count);
+
 public record OrderPaymentRow(DateTime PaidAt, PaymentType Type, PaymentMethod Method, long Amount, string? Notes);
 
 /// <summary>Optional narrowing of the orders list: one status and/or one patient's orders.</summary>
@@ -53,8 +55,14 @@ public interface IOrderRepository
     /// <summary>Order counts per status (statuses without orders are absent).</summary>
     Task<IReadOnlyDictionary<OrderStatus, int>> GetStatusCountsAsync(CancellationToken cancellationToken);
 
-    /// <summary>The tracked order with its payments, to add a payment; null when it does not exist.</summary>
-    Task<Order?> GetWithPaymentsAsync(Guid id, CancellationToken cancellationToken);
+    /// <summary>When each order created at or after <paramref name="sinceUtc"/> was created (UTC), oldest first.</summary>
+    Task<IReadOnlyList<DateTime>> GetCreatedSinceAsync(DateTime sinceUtc, CancellationToken cancellationToken);
+
+    /// <summary>The most ordered tests, most first (ties by name): order lines of cancelled and refunded orders are not counted.</summary>
+    Task<IReadOnlyList<TopTestRow>> GetTopTestsAsync(int take, CancellationToken cancellationToken);
+
+    /// <summary>The tracked order with its items and payments, to add a payment and answer with the updated order; null when it does not exist.</summary>
+    Task<Order?> GetForPaymentAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>Marks a payment added to an already saved order as new (its id is set up front, so it is not found by tracking).</summary>
     void AddPayment(Payment payment);

@@ -476,13 +476,62 @@ public class OrdersTests(ApiFactory factory)
         var open = await CreateOrderAsync(admin, ForPatient(owing.Id, test.Id) with { FirstPayment = new() { Amount = 100, Method = PaymentMethods.Cash } });
 
         async Task<Dictionary<Guid, bool>> FlagsAsync() =>
-            (await admin.GetJsonAsync<PagedResult<PatientDto>>($"api/patients?search={token}")).Items.ToDictionary(p => p.Id, p => p.IsUnpaid);
+            (await admin.GetJsonAsync<PagedResult<PatientDto>>($"api/patients?includeUnpaid=true&search={token}")).Items.ToDictionary(p => p.Id, p => p.IsUnpaid);
 
         var flags = await FlagsAsync();
         Assert.Equal((false, false, true), (flags[none.Id], flags[settled.Id], flags[owing.Id]));
 
         await PayAsync(admin, open.Id, new() { Amount = 9900, Method = PaymentMethods.Cash });
         Assert.False((await FlagsAsync())[owing.Id]);
+        var plain = (await admin.GetJsonAsync<PagedResult<PatientDto>>($"api/patients?search={token}")).Items;
+        Assert.All(plain, p => Assert.Null(p.HasUnpaidOrders)); // the flag is only worked out when asked for
+    }
+
+    [Fact]
+    public async Task Top_tests_counts_how_often_each_test_was_ordered_most_first()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var patient = await CreatePatientAsync(admin);
+        var popular = await CreateTestAsync(admin, price: 10000);
+        var rare = await CreateTestAsync(admin, price: 10000);
+        for (var i = 0; i < 3; i++)
+        {
+            await CreateOrderAsync(admin, ForPatient(patient.Id, popular.Id));
+        }
+
+        await CreateOrderAsync(admin, ForPatient(patient.Id, rare.Id));
+
+        var top = await admin.GetJsonAsync<List<TopTestDto>>($"{Url}/top-tests?take=50");
+
+        var popularRow = Assert.Single(top, t => t.LabTestId == popular.Id);
+        var rareRow = Assert.Single(top, t => t.LabTestId == rare.Id);
+        Assert.Equal((3, popular.Code, popular.Name), (popularRow.Count, popularRow.Code, popularRow.Name));
+        Assert.Equal(1, rareRow.Count);
+        Assert.True(top.IndexOf(popularRow) < top.IndexOf(rareRow));
+        Assert.Equal(top.OrderByDescending(t => t.Count).Select(t => t.Count), top.Select(t => t.Count));
+        Assert.InRange((await admin.GetJsonAsync<List<TopTestDto>>($"{Url}/top-tests")).Count, 1, 20);
+        Assert.Single(await admin.GetJsonAsync<List<TopTestDto>>($"{Url}/top-tests?take=0"));
+    }
+
+    [Fact]
+    public async Task Daily_counts_cover_every_day_up_to_today_and_include_new_orders()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var before = await admin.GetJsonAsync<List<OrderDailyCountDto>>($"{Url}/daily?days=7");
+        var patient = await CreatePatientAsync(admin);
+        var test = await CreateTestAsync(admin, price: 10000);
+        await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id));
+        await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id));
+
+        var after = await admin.GetJsonAsync<List<OrderDailyCountDto>>($"{Url}/daily?days=7");
+
+        Assert.Equal(7, after.Count);
+        Assert.Equal(Enumerable.Range(0, 7).Select(i => after[0].Date.AddDays(i)), after.Select(d => d.Date));
+        Assert.Equal(DateOnly.FromDateTime(DateTime.Now), after[^1].Date);
+        Assert.Equal(2, after[^1].Count - before[^1].Count);
+        Assert.Single(await admin.GetJsonAsync<List<OrderDailyCountDto>>($"{Url}/daily?days=0"));
+        Assert.Equal(90, (await admin.GetJsonAsync<List<OrderDailyCountDto>>($"{Url}/daily?days=1000")).Count);
+        Assert.Equal(30, (await admin.GetJsonAsync<List<OrderDailyCountDto>>($"{Url}/daily")).Count);
     }
 
     [Fact]
@@ -661,6 +710,20 @@ public class OrdersTests(ApiFactory factory)
     {
         FullName = $"Patient {Guid.NewGuid():N}", Phone = "01000000000", Gender = Genders.Male,
     };
+
+    [Fact]
+    public async Task Deleting_a_patient_is_refused_while_they_have_orders()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var patient = await CreatePatientAsync(admin);
+        var test = await CreateTestAsync(admin);
+        await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id));
+
+        var problem = await ProblemResponse.ReadAsync(await admin.DeleteAsync($"api/patients/{patient.Id}", Ct));
+
+        Assert.Equal((HttpStatusCode.Conflict, ErrorCodes.PatientHasOrders), (problem.Status, problem.Code));
+        Assert.Equal(HttpStatusCode.OK, (await admin.GetAsync($"api/patients/{patient.Id}", Ct)).StatusCode);
+    }
 
     private static CreateOrderRequest ForPatient(Guid patientId, Guid testId) =>
         new() { PatientId = patientId, Items = [new() { LabTestId = testId }] };

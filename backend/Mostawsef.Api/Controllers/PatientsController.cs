@@ -14,8 +14,9 @@ namespace Mostawsef.Api.Controllers;
 public class PatientsController(IPatientService patients) : ControllerBase
 {
     [HttpGet]
-    public Task<PagedResult<PatientDto>> List([FromQuery] PageQuery query, CancellationToken cancellationToken) =>
-        patients.GetPageAsync(query, cancellationToken);
+    public Task<PagedResult<PatientDto>> List(
+        [FromQuery] PageQuery query, [FromQuery] bool includeUnpaid, CancellationToken cancellationToken) =>
+        patients.GetPageAsync(query, includeUnpaid, cancellationToken);
 
     /// <summary>Every patient for print/export (no notes).</summary>
     [HttpGet("all")]

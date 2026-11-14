@@ -173,7 +173,7 @@ public class AddPaymentTests : UiTestBase
         var (_, orders, window) = await ShowOrdersPageAsync(app);
         Dispatcher.UIThread.RunJobs();
         var filter = Named<ComboBox>(window, "StatusFilter");
-        Assert.Equal(6, filter.ItemCount);
+        Assert.Equal(4, filter.ItemCount);
         Assert.Equal("All statuses", Texts(window).First(t => t == "All statuses"));
 
         orders.SelectedStatus = OrdersViewModel_Status(orders, OrderStatuses.PartiallyPaid);

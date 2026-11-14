@@ -83,8 +83,32 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
             .ToListAsync(cancellationToken))
         .ToDictionary(g => g.Status, g => g.Count);
 
-    public Task<Order?> GetWithPaymentsAsync(Guid id, CancellationToken cancellationToken) =>
-        db.Orders.Include(o => o.Payments).FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
+    public async Task<IReadOnlyList<DateTime>> GetCreatedSinceAsync(DateTime sinceUtc, CancellationToken cancellationToken) =>
+        await db.Orders.AsNoTracking()
+            .Where(o => o.CreatedAt >= sinceUtc)
+            .OrderBy(o => o.CreatedAt)
+            .Select(o => o.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<TopTestRow>> GetTopTestsAsync(int take, CancellationToken cancellationToken)
+    {
+        var counted = from item in db.OrderItems.AsNoTracking()
+                      join order in db.Orders.AsNoTracking() on item.OrderId equals order.Id
+                      where order.Status != OrderStatus.Cancelled && order.Status != OrderStatus.Refunded
+                      group item by item.LabTestId into g
+                      select new { Id = g.Key, Code = g.Max(i => i.LabTestCode), Name = g.Max(i => i.LabTestName), Count = g.Count() };
+
+        var rows = await counted
+            .OrderByDescending(r => r.Count)
+            .ThenBy(r => r.Name)
+            .Take(take)
+            .ToListAsync(cancellationToken);
+
+        return rows.Select(r => new TopTestRow(r.Id, r.Code ?? string.Empty, r.Name ?? string.Empty, r.Count)).ToList();
+    }
+
+    public Task<Order?> GetForPaymentAsync(Guid id, CancellationToken cancellationToken) =>
+        db.Orders.Include(o => o.Items).Include(o => o.Payments).FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
 
     public void AddPayment(Payment payment) => db.Set<Payment>().Add(payment);
 

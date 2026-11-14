@@ -4,7 +4,7 @@ using Mostawsef.Domain.Enums;
 
 namespace Mostawsef.Application.Interfaces;
 
-/// <summary>One row of the patients list: Notes are omitted (medical data, loaded on GetById). HasUnpaidOrders: some order is pending or partly paid.</summary>
+/// <summary>One row of the patients list: Notes are omitted (medical data, loaded on GetById). HasUnpaidOrders: some order is pending or partly paid; null unless asked for.</summary>
 public record PatientListRow(
     Guid Id,
     string FullName,
@@ -17,7 +17,7 @@ public record PatientListRow(
     DateTime? UpdatedAt,
     string? UpdatedBy,
     int Version,
-    bool HasUnpaidOrders);
+    bool? HasUnpaidOrders);
 
 /// <summary>Columns the patient PDF needs (no notes, no audit/version).</summary>
 public record PatientExportRow(
@@ -59,10 +59,14 @@ public interface IPatientRepository
     Task<OrderPatientRow?> GetOrderPatientAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>Ordered by SearchName. Search is LIKE on SearchText (trigram). Notes are not loaded.</summary>
-    Task<(IReadOnlyList<PatientListRow> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken);
+    /// <param name="includeUnpaid">Also work out <see cref="PatientListRow.HasUnpaidOrders"/> (an extra subquery); other callers, e.g. the new-order picker, leave it off.</param>
+    Task<(IReadOnlyList<PatientListRow> Items, int Total)> GetPageAsync(PageQuery query, bool includeUnpaid, CancellationToken cancellationToken);
 
     /// <summary>Up to <see cref="PageQuery.MaxExportRows"/> patients for print/export (no notes/audit).</summary>
     Task<IReadOnlyList<PatientExportRow>> ListAllAsync(CancellationToken cancellationToken);
+
+    /// <summary>True if any order belongs to the patient (whatever its status).</summary>
+    Task<bool> HasOrdersAsync(Guid id, CancellationToken cancellationToken);
 
     void Add(Patient patient);
 

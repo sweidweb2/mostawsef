@@ -22,6 +22,16 @@ public class OrdersController(IOrderService orders) : ControllerBase
     [HttpGet("stats")]
     public Task<OrderStatsDto> Stats(CancellationToken cancellationToken) => orders.GetStatsAsync(cancellationToken);
 
+    /// <summary>Orders created per day (default the last 30 days), for the dashboard line graph.</summary>
+    [HttpGet("daily")]
+    public Task<IReadOnlyList<OrderDailyCountDto>> Daily([FromQuery] int days = 30, CancellationToken cancellationToken = default) =>
+        orders.GetDailyCountsAsync(days, cancellationToken);
+
+    /// <summary>The most ordered tests (default 20), for the dashboard line graph.</summary>
+    [HttpGet("top-tests")]
+    public Task<IReadOnlyList<TopTestDto>> TopTests([FromQuery] int take = 20, CancellationToken cancellationToken = default) =>
+        orders.GetTopTestsAsync(take, cancellationToken);
+
     [HttpGet("{id:guid}")]
     [ProducesResponseType<OrderDetailsDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

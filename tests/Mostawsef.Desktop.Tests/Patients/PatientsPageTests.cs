@@ -133,6 +133,7 @@ public class PatientsPageTests : UiTestBase
 
         var edit = RowButtons(VisibleCards(window).Single()).First();
         edit.Command!.Execute(edit.CommandParameter);
+        await UiWait.UntilAsync(() => window.GetVisualDescendants().OfType<Modal>().Any());
         Dispatcher.UIThread.RunJobs();
         var form = CurrentForm(window);
         Assert.Equal(
@@ -150,7 +151,7 @@ public class PatientsPageTests : UiTestBase
             FullName = Mona.FullName, Phone = Mona.Phone, GuardianPhone = null, Notes = Mona.Notes, IsInsured = false,
             Gender = Genders.Female, DateOfBirth = Mona.DateOfBirth, Version = Mona.Version,
         }, sent);
-        Assert.Empty(app.Api.RequestsTo(HttpMethod.Get, $"{PatientsPath}/{Mona.Id}"));
+        Assert.Single(app.Api.RequestsTo(HttpMethod.Get, $"{PatientsPath}/{Mona.Id}")); // the full record (with notes) is loaded once for the form
         Assert.Empty(window.GetVisualDescendants().OfType<Modal>());
         Assert.Contains("Patient saved.", Toasts(window));
     }
@@ -370,6 +371,7 @@ public class PatientsPageTests : UiTestBase
         async Task<(PatientFormViewModel Form, Control View)> OpenAsync(Func<Task> open)
         {
             _ = open();
+            await UiWait.UntilAsync(() => window.GetVisualDescendants().OfType<Modal>().Any());
             Dispatcher.UIThread.RunJobs();
             var form = CurrentForm(window);
             var view = Named<TextBox>(window, "FullNameBox").FindAncestorOfType<UserControl>()!;
@@ -415,6 +417,11 @@ public class PatientsPageTests : UiTestBase
         var app = new TestServices();
         app.SignInAs(Roles.Admin);
         app.Api.OnGet(PatientsPath, new PagedResult<PatientDto>(patients, 1, 40, patients.Length));
+        foreach (var patient in patients)
+        {
+            app.Api.OnGet($"{PatientsPath}/{patient.Id}", patient);
+        }
+
         return app;
     }
 

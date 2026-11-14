@@ -27,6 +27,9 @@ public static class ErrorCodes
     /// <summary>The record is referenced elsewhere (e.g. a lab test used by orders) and cannot be deleted.</summary>
     public const string InUse = "in_use";
 
+    /// <summary>The patient has orders, so deleting them would leave those orders (and any balance owed) without a patient.</summary>
+    public const string PatientHasOrders = "patient_has_orders";
+
     // Orders
 
     /// <summary>A lab test that is no longer offered; set on that item's field.</summary>

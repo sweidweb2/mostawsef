@@ -9,7 +9,8 @@ namespace Mostawsef.Application.Modules.Patients;
 /// <summary>Patient records (Admin portal). Failures throw <see cref="AppException"/>.</summary>
 public interface IPatientService
 {
-    Task<PagedResult<PatientDto>> GetPageAsync(PageQuery query, CancellationToken cancellationToken);
+    /// <param name="includeUnpaid">Fills <see cref="PatientDto.HasUnpaidOrders"/> on each row (the Patients page); null otherwise.</param>
+    Task<PagedResult<PatientDto>> GetPageAsync(PageQuery query, bool includeUnpaid, CancellationToken cancellationToken);
 
     /// <summary>Up to <see cref="PageQuery.MaxExportRows"/> patients for print/export (no notes).</summary>
     Task<IReadOnlyList<PatientDto>> ListAllAsync(CancellationToken cancellationToken);
@@ -25,10 +26,10 @@ public interface IPatientService
 
 public class PatientService(IPatientRepository patients, IActivityLogger activity, TimeProvider time) : IPatientService
 {
-    public async Task<PagedResult<PatientDto>> GetPageAsync(PageQuery query, CancellationToken cancellationToken)
+    public async Task<PagedResult<PatientDto>> GetPageAsync(PageQuery query, bool includeUnpaid, CancellationToken cancellationToken)
     {
         query.EnsureSearchable();
-        var (items, total) = await patients.GetPageAsync(query, cancellationToken);
+        var (items, total) = await patients.GetPageAsync(query, includeUnpaid, cancellationToken);
         return new PagedResult<PatientDto>(items.Select(ToListDto).ToList(), query.SafePage, query.SafePageSize, total);
     }
 
@@ -75,6 +76,13 @@ public class PatientService(IPatientRepository patients, IActivityLogger activit
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
         var patient = await FindAsync(id, cancellationToken);
+
+        // A soft delete never trips the foreign key, so the rule is checked here: orders (and money owed) keep their patient.
+        if (await patients.HasOrdersAsync(id, cancellationToken))
+        {
+            throw AppException.Conflict(ErrorCodes.PatientHasOrders);
+        }
+
         patients.Remove(patient);
         await patients.SaveChangesAsync(cancellationToken);
 

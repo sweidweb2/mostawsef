@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.LabTests;
 using Mostawsef.Contracts.Orders;
@@ -985,6 +986,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
         try
         {
             OnOrderCreated?.Invoke(order);
+            WeakReferenceMessenger.Default.Send(new OrderChangedMessage(order));
             _toasts.Success(Localization.Format("Orders.Created", order.Number));
             if (OrderDetailsPage is { } details)
             {

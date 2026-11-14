@@ -3,12 +3,19 @@
     Runs the whole app for development with one command: database, API and desktop.
 
 .DESCRIPTION
-    ./scripts/dev.ps1
+    ./scripts/dev.ps1 [-Suite low|medium|high]
 
     Starts PostgreSQL (Docker), stops any API/desktop instance that is already running, builds both, starts the API
     in this window, waits until it answers, then opens the desktop app. Closing the desktop app (or Ctrl+C) stops
     the API too. Run it again to pick up code changes.
+
+    -Suite wipes the data and fills a test suite (see ./scripts/suite.ps1) once the API is up, before the app opens:
+    ./scripts/dev.ps1 -Suite medium
 #>
+param(
+    [ValidateSet("low", "medium", "high")]
+    [string]$Suite
+)
 $ErrorActionPreference = "Stop"
 $root = Split-Path $PSScriptRoot -Parent
 $healthUrl = "http://localhost:5270/api/health"
@@ -51,6 +58,11 @@ try {
             if ((Get-Date) -gt $deadline) { Write-Host "The API did not answer within 60 seconds." -ForegroundColor Red; exit 1 }
             Start-Sleep -Milliseconds 500
         }
+    }
+
+    if ($Suite) {
+        & "$PSScriptRoot/suite.ps1" $Suite
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     }
 
     Write-Host "> starting the desktop app (close it to stop everything)" -ForegroundColor Cyan

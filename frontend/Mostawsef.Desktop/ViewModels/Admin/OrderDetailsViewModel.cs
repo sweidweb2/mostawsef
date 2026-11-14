@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Mostawsef.Contracts.Orders;
 using Mostawsef.Desktop.Services.Api;
 using Mostawsef.Desktop.Converters;
@@ -23,7 +24,7 @@ public partial class OrderDetailsViewModel(
     LocalizationService localization,
     IToastService toasts) : ViewModelBase, ILoadablePage, IReusablePage, IBreadcrumbPage
 {
-    private CancellationTokenSource? _loadCancellation;
+    private readonly LatestLoad _load = new();
 
     public Guid OrderId { get; set; }
 
@@ -80,8 +81,7 @@ public partial class OrderDetailsViewModel(
     /// <summary>Clears prior order state so Orders can reuse one instance (and its PageHost view) per portal visit.</summary>
     public void BeginReuse()
     {
-        _loadCancellation?.Cancel();
-        _loadCancellation = null;
+        _load.Cancel();
         OrderId = default;
         Order = null;
         LoadError = null;
@@ -91,8 +91,7 @@ public partial class OrderDetailsViewModel(
     /// <summary>Shows <paramref name="order"/> immediately (e.g. after create) so Activate skips the GET.</summary>
     public void Seed(OrderDetailsDto order)
     {
-        _loadCancellation?.Cancel();
-        _loadCancellation = null;
+        _load.Cancel();
         OrderId = order.Id;
         Order = order;
         LoadError = null;
@@ -103,7 +102,7 @@ public partial class OrderDetailsViewModel(
 
     public void Deactivate()
     {
-        _loadCancellation?.Cancel();
+        _load.Cancel();
         IsLoading = false;
         Order = null;
     }
@@ -155,6 +154,7 @@ public partial class OrderDetailsViewModel(
         {
             Order = updated;
             LoadError = null;
+            WeakReferenceMessenger.Default.Send(new OrderChangedMessage(updated));
             toasts.Success(localization.Get("OrderDetails.PaymentAdded"));
         }
     }
@@ -167,9 +167,7 @@ public partial class OrderDetailsViewModel(
 
     private async Task LoadAsync()
     {
-        _loadCancellation?.Cancel();
-        using var cancellation = new CancellationTokenSource();
-        _loadCancellation = cancellation;
+        using var cancellation = _load.Begin();
 
         IsLoading = true;
         try
@@ -185,9 +183,8 @@ public partial class OrderDetailsViewModel(
         }
         finally
         {
-            if (_loadCancellation == cancellation)
+            if (_load.Finish(cancellation))
             {
-                _loadCancellation = null;
                 IsLoading = false;
             }
         }
