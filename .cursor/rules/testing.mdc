@@ -44,6 +44,14 @@ Skip tests only for pure styling/token changes and docs.
 - Time-dependent API behavior: swap the clock with `factory.WithWebHostBuilder(... ConfigureTestServices(s => s.AddSingleton<TimeProvider>(fixed)))`
   (see `ClockAndHealthTests`), never by sleeping.
 - Never call the real API, real settings file or real database from desktop tests.
+- A test that awaits a command which can open a dialog (Back/Cancel on a changed form, delete, sign-out) must start it
+  without awaiting, `RunJobs()`, close the `ConfirmDialog`, then await. Awaiting first hangs the test forever, and with
+  it the whole suite (this happened: `An_untouched_page_closes_without_asking` blocked every run). Run long suites with
+  `--blame-hang-timeout 60s` so a hang names its test instead of freezing.
+- Performance fixes get a guard test of the behavior that makes them fast (e.g. the view instance is reused, the API is
+  called once, a pre-built view exists before navigation). Reuse/caching fixes also test correctness: a reused view
+  must show the new values and must not mark an untouched form as changed (see
+  `The_form_view_is_reused_and_always_shows_the_current_patient_unchanged`).
 - Keep tests independent: no ordering, no shared mutable state between tests.
 
 ## Commands

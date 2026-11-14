@@ -8,6 +8,42 @@ alwaysApply: true
 Follow these on every change. Prefer existing patterns (`ListPageItems.ReplaceAll`, `PagedListViewModel`/`NumberedListViewModel`,
 `ClinicContext` single-flight, `ILoadablePage.Deactivate`, `PerformanceMonitor`, `SearchBox` Enter-to-search).
 
+## Never again: anti-patterns that made this app slow (measured, November 2026)
+Each one below was found by measurement and fixed. Do not reintroduce it; if a change seems to need it, stop and ask.
+
+1. **`ContainerQuery` / `Container.Name` / `Container.Sizing`.** Avalonia re-evaluates container queries whenever any
+   control is added to or removed from the container, so every UI change got slower as more pages were open: removing
+   one TextBox cost 25-65 ms (vs <1 ms), switching New Order to "existing patient" took 1.6-2.0 s, and switching the
+   language took 36-43 s. Instead: `AppShell` pseudo-classes (`ui|AppShell:narrow ...`) in `Styles/Responsive.axaml`.
+2. **Toggling a part of the UI by swapping `Content` between null and a view model.** Every switch destroyed and rebuilt
+   the whole sub-view (35-110 ms each for the new-patient form). Instead: build on first use, then bind `IsVisible`.
+3. **Building a view on every open of something that opens often** (form dialogs: 53-140 ms per open). Instead: reuse
+   one idle view per type with a new DataContext (`DialogService`), or keep it cached (`PageHost`, `CachedContentHost`).
+4. **Setting `view.DataContext = null` to detach a view you want to reuse.** A local null blocks inheriting the next
+   DataContext, so the reused view showed empty fields. Instead: `view.ClearValue(StyledElement.DataContextProperty)`.
+5. **Reflection bindings.** `new ReflectionBinding(path)`, or a markup extension that takes a property path as a string,
+   resolves by reflection on every bind (every row, every form field). Instead: markup extensions take a nested
+   `{Binding ...}` (`{l:Money {Binding Total}}`, `{l:FieldError {Binding Errors[Phone]}}`), compiled under `x:DataType`.
+6. **Re-downloading small reference data on every visit or keystroke** (the New Order catalog: every order and every
+   search, all pages). Instead: one cache with a version/invalidation (`LabTestCatalog`) and filtering in memory.
+7. **Recomputing derived state on every `PropertyChanged`.** The form dirty check rebuilt the whole request for every UI
+   property (step changes, search text, loading flags). Instead: react only to real inputs (`AffectsRequest`).
+8. **Doing first-time work at the moment the user clicks.** JIT + first XAML load made the portal take ~800 ms after
+   sign-in and first menu pages 250-550 ms. Instead: idle-time warm-up (`ViewWarmUp` on the login screen,
+   `PageHost.Prebuild` after sign-in), one item per Background-priority dispatcher job so input always goes first.
+9. **Unbounded `COUNT(*)` for list totals**; it grows with the table. Instead: capped count (`PageQuery.MaxCountedTotal`).
+10. **Logging every request at Information in production** (console writes on Windows are slow). Instead: slow requests
+    (>= 1 s) as warnings; per-request lines only in Development.
+
+### How to check speed (do this before and after a UI performance change)
+- Measure, do not guess: in a headless test, time the action with a `Stopwatch` around the action +
+  `Dispatcher.UIThread.RunJobs()` + `window.UpdateLayout()`, in **Release**, twice (cold = first use incl. JIT, warm).
+- Split a slow action before fixing it: view model only vs dispatcher jobs vs layout; then remove parts of the visual
+  tree one at a time. A cost that grows with how many pages are open points at something global (styles, queries).
+- A fake API that answers synchronously puts data loading inside the "click" time; hold its answer (a
+  `TaskCompletionSource`) to separate showing a page from filling it.
+- Never judge speed in a Debug build or with DevTools attached.
+
 ## UI thread and render
 - No sync I/O, `.Result` / `.Wait()` / `.GetAwaiter().GetResult()`, or heavy CPU in constructors, property getters,
   converters, `OnRender`, `MeasureOverride`/`ArrangeOverride`, or layout callbacks. Offload with `async` and marshal
@@ -35,15 +71,13 @@ Follow these on every change. Prefer existing patterns (`ListPageItems.ReplaceAl
 - Do not add/remove/`PropertyChanged` per item in a tight loop. Batch: `ListPageItems.ReplaceAll` / `PrependNewest`, or
   build then assign once. High-frequency updates need throttling.
 - Menu pages: reuse view models for the portal visit (`PageHost` caches the view); do not recreate on every navigation.
-  After sign-in, `PortalShellView` pre-builds the other menu pages' views in idle time (`PageHost.Prebuild`, no data load).
+  Services are singletons; page VMs are Transient from DI but held by the shell. Sub-pages stay transient unless an
+  existing reuse pattern (New order / Order details) applies. Do not invent a second lifetime scheme.
+- After sign-in, `PortalShellView` pre-builds the other menu pages' views in idle time (`PageHost.Prebuild`, no data load).
 - Form dialogs: `DialogService.ShowFormAsync` reuses one idle view per form type (new DataContext each time). Form views
   must therefore not keep state outside bindings (no code-behind fields filled on load).
 - New main views go into `ViewWarmUp.ViewModelTypes()` (built once, invisibly, while the login screen is idle: JIT +
   first-time XAML work) and must build without a DataContext. `ViewWarmUpTests` checks that.
-- Do not toggle a sub-form by swapping its Content to null and back (it rebuilds the view each time): build it on first
-  use, then bind `IsVisible` (see New Order's new-patient form).
-  Services are singletons; page VMs are Transient from DI but held by the shell. Sub-pages stay transient unless an
-  existing reuse pattern (New order / Order details) applies. Do not invent a second lifetime scheme.
 
 ## Data loading and caching
 - Load on first need (or page `ActivateAsync`), not at app/portal startup. Prefer paging over full dumps; only fetch
