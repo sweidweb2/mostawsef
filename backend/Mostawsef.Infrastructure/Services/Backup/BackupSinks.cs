@@ -34,7 +34,10 @@ internal static class BackupSinks
         new(output, new UTF8Encoding(false), bufferSize: 64 * 1024, leaveOpen: true) { NewLine = "\n" };
 }
 
-/// <summary>One CSV file for a table, or a ZIP with one CSV per table. UTF-8 with a BOM so Excel shows Arabic correctly.</summary>
+/// <summary>
+/// One CSV file for a table, or a ZIP with one CSV per table. UTF-8 with a BOM so Excel shows Arabic correctly.
+/// Made to open in a spreadsheet: formula-like text is defused (<see cref="SpreadsheetSafe"/>).
+/// </summary>
 internal sealed class CsvSink(Stream output, bool allTables) : IBackupSink
 {
     private readonly ZipArchive? _zip = allTables ? new ZipArchive(output, ZipArchiveMode.Create, leaveOpen: true) : null;
@@ -63,7 +66,7 @@ internal sealed class CsvSink(Stream output, bool allTables) : IBackupSink
         foreach (var cell in row)
         {
             // An unquoted empty field is NULL and "" is an empty string, as PostgreSQL's COPY ... CSV reads them.
-            Append(cell.Text, quoteEmpty: cell.Kind != CellKind.Null);
+            Append(cell.Kind == CellKind.Text ? SpreadsheetSafe(cell.Text!) : cell.Text, quoteEmpty: cell.Kind != CellKind.Null);
         }
 
         await _writer!.WriteLineAsync(_line.ToString());
@@ -86,6 +89,13 @@ internal sealed class CsvSink(Stream output, bool allTables) : IBackupSink
 
         _zip?.Dispose();
     }
+
+    /// <summary>
+    /// Text that a spreadsheet would run as a formula (=, +, -, @, tab, CR first: CSV injection) gets a leading
+    /// apostrophe, so Excel shows it as typed. CSV is the spreadsheet format; SQL and PostgreSQL keep the exact text.
+    /// </summary>
+    internal static string SpreadsheetSafe(string text) =>
+        text.Length > 0 && text[0] is '=' or '+' or '-' or '@' or '\t' or '\r' ? "'" + text : text;
 
     private void Append(string? value, bool quoteEmpty)
     {

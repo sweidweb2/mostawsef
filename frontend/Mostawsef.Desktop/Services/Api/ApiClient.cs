@@ -20,8 +20,16 @@ namespace Mostawsef.Desktop.Services.Api;
 /// The only way the desktop app talks to the backend. Maps failures to ApiError.
 /// The bearer token is added by AuthHeaderHandler in the HttpClient pipeline.
 /// </summary>
-public class ApiClient(Lazy<HttpClient> http, PerformanceMonitor perf)
+public class ApiClient(Lazy<HttpClient> http, PerformanceMonitor perf, TimeSpan? requestTimeout = null)
 {
+    /// <summary>
+    /// Limit for the few calls that work through a whole table on the server (export a backup, delete a whole log,
+    /// reset the data). Every other call keeps the normal limit, <see cref="ServiceRegistration.RequestTimeout"/>.
+    /// </summary>
+    public static readonly TimeSpan LongRequestTimeout = TimeSpan.FromMinutes(10);
+
+    private readonly TimeSpan _requestTimeout = requestTimeout ?? ServiceRegistration.RequestTimeout;
+
     /// <summary>Compile-time metadata for the contracts first (fast first call per type), reflection for anything else.</summary>
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
     {
@@ -34,32 +42,42 @@ public class ApiClient(Lazy<HttpClient> http, PerformanceMonitor perf)
     private HttpClient Http => http.Value;
 
     public Task<ApiResult<T>> GetAsync<T>(string path, CancellationToken cancellationToken = default) =>
-        SendAsync("GET", path, () => Http.GetAsync(path, cancellationToken), ReadJson<T>, cancellationToken);
+        SendAsync("GET", path, token => Http.GetAsync(path, token), ReadJson<T>, null, cancellationToken);
 
     public Task<ApiResult<TResponse>> PostAsync<TRequest, TResponse>(string path, TRequest body, CancellationToken cancellationToken = default) =>
-        SendAsync("POST", path, () => Http.PostAsJsonAsync(path, body, Json, cancellationToken), ReadJson<TResponse>, cancellationToken);
+        SendAsync("POST", path, token => Http.PostAsJsonAsync(path, body, Json, token), ReadJson<TResponse>, null, cancellationToken);
+
+    /// <summary>A POST with its own limit: <see cref="LongRequestTimeout"/> for work over a whole table.</summary>
+    public Task<ApiResult<TResponse>> PostAsync<TRequest, TResponse>(
+        string path, TRequest body, TimeSpan timeout, CancellationToken cancellationToken = default) =>
+        SendAsync("POST", path, token => Http.PostAsJsonAsync(path, body, Json, token), ReadJson<TResponse>, timeout, cancellationToken);
 
     /// <summary>POST without a response body (204 / 202). Value is true on success.</summary>
     public Task<ApiResult<bool>> PostAsync<TRequest>(string path, TRequest body, CancellationToken cancellationToken = default) =>
-        SendAsync("POST", path, () => Http.PostAsJsonAsync(path, body, Json, cancellationToken), NoContent, cancellationToken);
+        SendAsync("POST", path, token => Http.PostAsJsonAsync(path, body, Json, token), NoContent, null, cancellationToken);
 
     public Task<ApiResult<TResponse>> PutAsync<TRequest, TResponse>(string path, TRequest body, CancellationToken cancellationToken = default) =>
-        SendAsync("PUT", path, () => Http.PutAsJsonAsync(path, body, Json, cancellationToken), ReadJson<TResponse>, cancellationToken);
+        SendAsync("PUT", path, token => Http.PutAsJsonAsync(path, body, Json, token), ReadJson<TResponse>, null, cancellationToken);
 
     public Task<ApiResult<bool>> DeleteAsync(string path, CancellationToken cancellationToken = default) =>
-        SendAsync("DELETE", path, () => Http.DeleteAsync(path, cancellationToken), NoContent, cancellationToken);
+        SendAsync("DELETE", path, token => Http.DeleteAsync(path, token), NoContent, null, cancellationToken);
+
+    /// <summary>A DELETE with its own limit: <see cref="LongRequestTimeout"/> for work over a whole table.</summary>
+    public Task<ApiResult<bool>> DeleteAsync(string path, TimeSpan timeout, CancellationToken cancellationToken = default) =>
+        SendAsync("DELETE", path, token => Http.DeleteAsync(path, token), NoContent, timeout, cancellationToken);
 
     /// <summary>
     /// Downloads the response body into <paramref name="destinationPath"/>. The bytes go to "path.part" first and replace the
     /// destination only when the download is complete, so a failure never leaves a half-written file under the real name.
-    /// Value is true on success.
+    /// Value is true on success. Uses <see cref="LongRequestTimeout"/>: the server builds the whole file before answering.
     /// </summary>
     public Task<ApiResult<bool>> DownloadAsync(string path, string destinationPath, CancellationToken cancellationToken = default) =>
         SendAsync(
             "GET",
             path,
-            () => Http.GetAsync(path, HttpCompletionOption.ResponseHeadersRead, cancellationToken),
+            token => Http.GetAsync(path, HttpCompletionOption.ResponseHeadersRead, token),
             (response, token) => SaveToFileAsync(response, destinationPath, token),
+            LongRequestTimeout,
             cancellationToken);
 
     private static async Task<ApiResult<bool>> SaveToFileAsync(HttpResponseMessage response, string destinationPath, CancellationToken cancellationToken)
@@ -85,16 +103,21 @@ public class ApiClient(Lazy<HttpClient> http, PerformanceMonitor perf)
     private async Task<ApiResult<T>> SendAsync<T>(
         string method,
         string path,
-        Func<Task<HttpResponseMessage>> send,
+        Func<CancellationToken, Task<HttpResponseMessage>> send,
         Func<HttpResponseMessage, CancellationToken, Task<ApiResult<T>>> read,
+        TimeSpan? timeout,
         CancellationToken cancellationToken)
     {
+        // The limit lives here, not in HttpClient.Timeout, so a single call can be given longer (the HttpClient has none).
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        limit.CancelAfter(timeout ?? _requestTimeout);
+
         var track = perf.IsEnabled;
         var sw = track ? Stopwatch.StartNew() : null;
         HttpResponseMessage response;
         try
         {
-            response = await send();
+            response = await send(limit.Token);
         }
         catch (HttpRequestException)
         {
@@ -130,7 +153,15 @@ public class ApiClient(Lazy<HttpClient> http, PerformanceMonitor perf)
 
             if (response.IsSuccessStatusCode)
             {
-                return await read(response, cancellationToken);
+                try
+                {
+                    return await read(response, limit.Token);
+                }
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                {
+                    // The limit ran out while the body was still arriving (a long download).
+                    return ApiResult<T>.Fail(ApiError.Unreachable);
+                }
             }
 
             var problem = (int)response.StatusCode is >= 400 and < 500 ? await ReadProblemAsync(response, cancellationToken) : null;

@@ -59,7 +59,8 @@ public static class ServiceRegistration
             };
             var http = new HttpClient(auth);
             http.BaseAddress = new Uri(sp.GetRequiredService<SettingsService>().Current.ApiBaseUrl.TrimEnd('/') + "/");
-            http.Timeout = RequestTimeout;
+            // ApiClient applies RequestTimeout per call (longer for whole-table work), so the client itself has no limit.
+            http.Timeout = System.Threading.Timeout.InfiniteTimeSpan;
             return http;
         });
         // HttpClient stays uncreated until the first API call (login, health, or error report).

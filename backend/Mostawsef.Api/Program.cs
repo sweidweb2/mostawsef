@@ -12,6 +12,13 @@ using Mostawsef.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// The address the desktop app expects by default, used only when nothing else names one (launch profile,
+// ASPNETCORE_URLS, --urls, "Urls" or Kestrel endpoints in configuration), so those can always change it.
+if (string.IsNullOrWhiteSpace(builder.Configuration["urls"]) && !builder.Configuration.GetSection("Kestrel:Endpoints").Exists())
+{
+    builder.WebHost.UseUrls("http://localhost:5270");
+}
+
 var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? throw new InvalidOperationException("Connection string 'Default' is not configured.");
 

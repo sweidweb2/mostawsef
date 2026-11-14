@@ -36,13 +36,13 @@ public class LogsApi(ApiClient api)
         api.PostAsync<DeleteLogsRequest, DeleteLogsResultDto>("api/activity-logs/bulk-delete", new DeleteLogsRequest { Ids = ids }, cancellationToken);
 
     public Task<ApiResult<bool>> DeleteAllActivityLogsAsync(CancellationToken cancellationToken = default) =>
-        api.DeleteAsync("api/activity-logs", cancellationToken);
+        api.DeleteAsync("api/activity-logs", ApiClient.LongRequestTimeout, cancellationToken);
 
     public Task<ApiResult<DeleteLogsResultDto>> DeleteSystemErrorsAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken = default) =>
         api.PostAsync<DeleteLogsRequest, DeleteLogsResultDto>("api/system-errors/bulk-delete", new DeleteLogsRequest { Ids = ids }, cancellationToken);
 
     public Task<ApiResult<bool>> DeleteAllSystemErrorsAsync(CancellationToken cancellationToken = default) =>
-        api.DeleteAsync("api/system-errors", cancellationToken);
+        api.DeleteAsync("api/system-errors", ApiClient.LongRequestTimeout, cancellationToken);
 
     public Task<ApiResult<bool>> ReportErrorAsync(ReportClientErrorRequest request, CancellationToken cancellationToken = default) =>
         api.PostAsync("api/system-errors/report", request, cancellationToken);

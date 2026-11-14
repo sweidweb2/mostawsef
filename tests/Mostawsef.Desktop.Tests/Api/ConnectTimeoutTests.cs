@@ -19,7 +19,7 @@ public class ConnectTimeoutTests
         using var http = new HttpClient(handler)
         {
             BaseAddress = new Uri("http://clinic-server:5270/"),
-            Timeout = ServiceRegistration.RequestTimeout,
+            Timeout = Timeout.InfiniteTimeSpan, // as in ServiceRegistration: ApiClient applies the request limit
         };
 
         var stopwatch = Stopwatch.StartNew();

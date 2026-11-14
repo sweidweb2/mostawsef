@@ -1,6 +1,7 @@
 using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Mostawsef.Domain.Entities;
 
 namespace Mostawsef.Infrastructure.Services.Backup;
 
@@ -20,13 +21,17 @@ internal sealed record TableInfo(
     /// <summary>Every column, quoted, for a SELECT or a column list.</summary>
     public string QuotedColumns => string.Join(", ", Columns.Select(c => Sql.Quote(c.Name)));
 
-    /// <summary>Reads every table of the EF model, parents before the tables that reference them (so INSERTs satisfy foreign keys).</summary>
+    /// <summary>
+    /// Reads every table of the EF model, parents before the tables that reference them (so INSERTs satisfy foreign keys).
+    /// User accounts are left out: their password hashes never leave the server, and a users table without its required
+    /// hash column could not be restored anyway. Nothing references users by foreign key, so every other table restores.
+    /// </summary>
     public static IReadOnlyList<TableInfo> ReadModel(IModel model)
     {
         var tables = new List<TableInfo>();
         foreach (var type in model.GetEntityTypes())
         {
-            if (type.IsOwned() || type.GetTableName() is not { } name)
+            if (type.IsOwned() || type.ClrType == typeof(User) || type.GetTableName() is not { } name)
             {
                 continue;
             }

@@ -12,5 +12,5 @@ public class SystemApi(ApiClient api)
 
     public Task<ApiResult<ResetDataResultDto>> ResetDataAsync(string confirmation, CancellationToken cancellationToken = default) =>
         api.PostAsync<ResetDataRequest, ResetDataResultDto>(
-            "api/system/reset-data", new ResetDataRequest { Confirmation = confirmation }, cancellationToken);
+            "api/system/reset-data", new ResetDataRequest { Confirmation = confirmation }, ApiClient.LongRequestTimeout, cancellationToken);
 }

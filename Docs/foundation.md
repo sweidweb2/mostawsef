@@ -317,6 +317,10 @@ Health check: `GET http://localhost:5270/api/health` returns
 { "status": "Healthy", "database": "Connected", "apiVersion": 1 }
 ```
 
+Without a launch profile (installed API) it listens on `http://localhost:5270`, the desktop default. Anything that names
+an address replaces that default: `ASPNETCORE_URLS`, `--urls`, `Urls` or `Kestrel:Endpoints` in `appsettings.json`
+(`Program.cs`). Do not put `Urls` in the shared `appsettings.json`: it would override the launch profiles.
+
 ---
 
 ## 10. Current bedrock (implemented)
@@ -329,7 +333,7 @@ Health check: `GET http://localhost:5270/api/health` returns
 | Connection banner | desktop `Services/Api/ConnectionMonitor`, `PortalShellView` | While signed in: health check every 60 s (3 s while offline); banner when the server is unreachable or runs another API version |
 | Clinic settings | `ClinicSettingsController`, `Application/Modules/Settings`, desktop `ClinicContext` + Admin page | Name, address, phone, currency. Everyone reads, Admin edits. No logo yet (storage still to decide) |
 | System settings | `SystemSettingsController`, `Application/Modules/Settings`, desktop Super "Settings" page | Backup folder (not used by the Backups page yet: exports go where the user picks) and maintenance mode (only Super can sign in). Super only |
-| Backups | `BackupsController`, `Application/Modules/Backups`, `Infrastructure/Services/Backup`, desktop Super "Backups" page | Super exports one table or all tables as CSV (ZIP for all), JSON, portable SQL (INSERTs) or a PostgreSQL script (CREATE TABLE + COPY, restore with psql). Only the settings (table, format, who, when) are stored in `backup_records`; the file is built from the current data on every export and saved where the user picks in the "Save as" dialog. A history row exports again with its saved settings. Exports are read from one repeatable-read snapshot into a temp file. Super only; not a scheduled or restorable pg_dump backup (roadmap 13) |
+| Backups | `BackupsController`, `Application/Modules/Backups`, `Infrastructure/Services/Backup`, desktop Super "Backups" page | Super exports one table or all tables as CSV (ZIP for all), JSON, portable SQL (INSERTs) or a PostgreSQL script (CREATE TABLE + COPY, restore with psql). Only the settings (table, format, who, when) are stored in `backup_records`; the file is built from the current data on every export and saved where the user picks in the "Save as" dialog. A history row exports again with its saved settings. Exports are read from one repeatable-read snapshot into a temp file. The `users` table is never exported (password hashes stay on the server; accounts are recreated by hand after a restore). CSV is the spreadsheet format: text starting with `=`, `+`, `-`, `@` gets a leading `'` so Excel never runs it as a formula; SQL, PostgreSQL and JSON keep the exact text. Super only; not a scheduled or restorable pg_dump backup (roadmap 13) |
 | Readable numbers | `Application/Interfaces/INumberSequence`, `Domain/Common/DocumentNumber` | `P-000123`-style numbers per sequence name, safe across PCs (gaps possible after a failed save) |
 | Clock, dates, money | `TimeProvider` (Infrastructure DI), `Contracts/Common/Money` + `Currencies`, desktop `{l:Money}` and `ValueConverters.DateOnly` | One injectable clock; money as `long` minor units shown with the clinic currency; `DateOnly` for calendar dates |
 | Printing | desktop `Services/Printing` (QuestPDF) | `ClinicPage` layout (clinic header, page footer, RTL in Arabic); first document: the lab test list exported from the Admin lab tests page |

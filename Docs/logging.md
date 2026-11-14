@@ -56,7 +56,8 @@ await activity.LogAsync(
 
 Recorded today: `auth.signed_in`, `auth.sign_in_failed`, `auth.signed_out`, `auth.password_changed`, `users.created`,
 `users.updated`, `users.deleted`, `users.password_reset`, `settings.clinic_updated`, `logs.activity_deleted`,
-`logs.error_deleted`, `logs.purged`.
+`logs.error_deleted`, `logs.errors_deleted`, `logs.activity_cleared`, `logs.errors_cleared`, `logs.purged`,
+`backups.created`, `backups.exported`, `system.data_reset`.
 
 ## System error engine
 
@@ -75,8 +76,10 @@ Recorded today: `auth.signed_in`, `auth.sign_in_failed`, `auth.signed_out`, `aut
 | --- | --- |
 | `GET /api/activity-logs?pageSize=&search=&after=\|before=\|last=true&includeTotal=` | Keyset-paged list, newest first (max page size 100); see below |
 | `GET /api/activity-logs/stats` | Total, today, last 7 days, failed sign-ins today (one statement; each count is read from an index) |
-| `GET /api/activity-logs/{id}` | Full record (no single-entry delete; retention cleanup only) |
-| `GET /api/system-errors...` | List, stats, get, delete for errors (stats: total, today, last 7 days, critical; critical uses the `(Level, OccurredAt)` index) |
+| `GET /api/activity-logs/{id}` | Full record |
+| `POST /api/activity-logs/bulk-delete` `{ ids }` | Deletes up to 1000 named records (`LogRules.MaxBulkDelete`), logged as `logs.activity_deleted` |
+| `DELETE /api/activity-logs` | Deletes every record in batches; the clearing is logged as `logs.activity_cleared`, the first new record |
+| `GET /api/system-errors...` | List, stats, get, delete, `bulk-delete` and delete-all for errors (stats: total, today, last 7 days, critical; critical uses the `(Level, OccurredAt)` index) |
 | `POST /api/system-errors/report` | Desktop error report (anonymous, 30/min per IP) |
 
 Lists use keyset paging (`CursorQuery` / `CursorPage<T>`), because log tables only grow: each page is read from
@@ -114,8 +117,9 @@ Instrumentation is centralized: `ApiClient`, `PageHost`, portal `Show`/`Activate
 ## Desktop pages (Super portal)
 
 `Activity logs` and `System errors`: stat cards, search, table (long text cut with the full text in a tooltip),
-pagination and an eye button (details modal). System errors also have a delete button (with confirmation); activity
-logs do not (audit trail is retention-only).
+pagination and an eye button (details modal). System errors also have a delete button (with confirmation). Both pages
+have a select mode (`SelectableLogListViewModel`: row checkboxes kept across pages, "delete selected") and "delete all";
+every bulk delete is itself recorded as an activity. Delete-all uses `ApiClient.LongRequestTimeout` and, once confirmed, runs to the end on the server even if the client leaves (the data reset too).
 The activity-log list loads only the columns it shows (same idea as system-error summaries); Details and UserAgent stay on the details call.
 If the list cannot load, the table shows an error state with a Retry button (a specific message when the server is unreachable).
 Both pages derive from `ViewModels/Shell/PagedListViewModel`, which a new list page can reuse as well.

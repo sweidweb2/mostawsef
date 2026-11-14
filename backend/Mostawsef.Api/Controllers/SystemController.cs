@@ -21,9 +21,10 @@ public class SystemController(ISystemMaintenanceService maintenance) : Controlle
     /// Deletes every patient, order, payment, lab test, activity log and system error. User accounts, the clinic and
     /// system settings and the backup history stay. The request must carry the confirmation word.
     /// </summary>
+    /// <remarks>Not tied to the request: once confirmed it runs to the end even if the client leaves or disconnects.</remarks>
     [HttpPost("reset-data")]
     [ProducesResponseType<ResetDataResultDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public Task<ResetDataResultDto> ResetData(ResetDataRequest request, CancellationToken cancellationToken) =>
-        maintenance.ResetDataAsync(request, cancellationToken);
+    public Task<ResetDataResultDto> ResetData(ResetDataRequest request) =>
+        maintenance.ResetDataAsync(request, CancellationToken.None);
 }

@@ -69,6 +69,38 @@ public class SuperDashboardTests : UiTestBase
     }
 
     [AvaloniaFact]
+    public async Task Coming_back_soon_reuses_the_figures_and_refresh_always_reloads()
+    {
+        using var app = new TestServices();
+        app.SignInAs(Roles.Super);
+        app.Api.OnGet(DashboardPath, Sample());
+        var page = app.Get<SuperDashboardViewModel>();
+
+        await page.ActivateAsync();
+        page.Deactivate();
+        await page.ActivateAsync();
+        Assert.Single(app.Api.RequestsTo(HttpMethod.Get, DashboardPath));
+
+        await page.RefreshCommand.ExecuteAsync(null);
+        Assert.Equal(2, app.Api.RequestsTo(HttpMethod.Get, DashboardPath).Count());
+    }
+
+    [AvaloniaFact]
+    public async Task A_failed_load_is_tried_again_when_the_page_is_shown_again()
+    {
+        using var app = new TestServices();
+        app.SignInAs(Roles.Super);
+        app.Api.FailWithNetworkError();
+        var page = app.Get<SuperDashboardViewModel>();
+        await page.ActivateAsync();
+
+        app.Api.OnGet(DashboardPath, Sample());
+        await page.ActivateAsync();
+
+        Assert.NotNull(page.Dashboard);
+    }
+
+    [AvaloniaFact]
     public async Task A_failed_load_shows_the_error_state()
     {
         using var app = new TestServices();

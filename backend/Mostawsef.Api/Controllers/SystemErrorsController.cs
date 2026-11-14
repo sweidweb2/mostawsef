@@ -42,8 +42,9 @@ public class SystemErrorsController(ISystemErrorService errors) : ControllerBase
         errors.DeleteManyAsync(request, cancellationToken);
 
     /// <summary>Deletes every error.</summary>
+    /// <remarks>Not tied to the request: once confirmed it runs to the end even if the client leaves or disconnects.</remarks>
     [HttpDelete]
-    public Task<DeleteLogsResultDto> DeleteAll(CancellationToken cancellationToken) => errors.DeleteAllAsync(cancellationToken);
+    public Task<DeleteLogsResultDto> DeleteAll() => errors.DeleteAllAsync(CancellationToken.None);
 
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

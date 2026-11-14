@@ -8,13 +8,6 @@ namespace Mostawsef.Infrastructure.Persistence.Repositories;
 
 public class SystemMaintenanceRepository(AppDbContext db) : ISystemMaintenanceRepository
 {
-    /// <summary>The tables a data reset empties, children before parents. Users, settings and backup records are not listed.</summary>
-    private static readonly Type[] ResetTables =
-    [
-        typeof(Payment), typeof(OrderItem), typeof(Order), typeof(Patient), typeof(LabTest),
-        typeof(ActivityLog), typeof(SystemError), typeof(NumberSequence),
-    ];
-
     public async Task<DashboardTotals> GetTotalsAsync(CancellationToken cancellationToken)
     {
         var users = await db.Users.CountAsync(cancellationToken);
@@ -79,34 +72,21 @@ public class SystemMaintenanceRepository(AppDbContext db) : ISystemMaintenanceRe
         {
             await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-            // Soft-deleted patients go too: count them without the "not deleted" filter.
-            var counts = new DataResetCounts(
-                await db.Patients.IgnoreQueryFilters().CountAsync(cancellationToken),
-                await db.Orders.IgnoreQueryFilters().CountAsync(cancellationToken),
-                await db.Set<Payment>().IgnoreQueryFilters().CountAsync(cancellationToken),
-                await db.LabTests.IgnoreQueryFilters().CountAsync(cancellationToken),
-                await db.ActivityLogs.CountAsync(cancellationToken),
-                await db.SystemErrors.CountAsync(cancellationToken));
-
-            // One TRUNCATE for every table: fast on any size and no foreign key order to respect. Without CASCADE it
-            // fails (and rolls back) rather than silently emptying a table that is not listed, such as users.
-            var tables = string.Join(", ", ResetTables.Select(TableName));
-#pragma warning disable EF1002 // Table names come from the EF model, never from input.
-            await db.Database.ExecuteSqlRawAsync($"TRUNCATE TABLE {tables}", cancellationToken);
-#pragma warning restore EF1002
+            // Plain LINQ deletes (portable, no raw SQL), children before parents so no foreign key blocks a step; each
+            // returns its row count. IgnoreQueryFilters: soft-deleted rows go too.
+            var payments = await db.Set<Payment>().IgnoreQueryFilters().ExecuteDeleteAsync(cancellationToken);
+            await db.OrderItems.IgnoreQueryFilters().ExecuteDeleteAsync(cancellationToken);
+            var orders = await db.Orders.IgnoreQueryFilters().ExecuteDeleteAsync(cancellationToken);
+            var patients = await db.Patients.IgnoreQueryFilters().ExecuteDeleteAsync(cancellationToken);
+            var labTests = await db.LabTests.IgnoreQueryFilters().ExecuteDeleteAsync(cancellationToken);
+            var activityLogs = await db.ActivityLogs.ExecuteDeleteAsync(cancellationToken);
+            var systemErrors = await db.SystemErrors.ExecuteDeleteAsync(cancellationToken);
+            await db.Set<NumberSequence>().ExecuteDeleteAsync(cancellationToken);
 
             await transaction.CommitAsync(cancellationToken);
             db.ChangeTracker.Clear();
-            return counts;
+            return new DataResetCounts(patients, orders, payments, labTests, activityLogs, systemErrors);
         });
-    }
-
-    private string TableName(Type type)
-    {
-        var entity = db.Model.FindEntityType(type) ?? throw new InvalidOperationException($"{type.Name} is not mapped.");
-        var schema = entity.GetSchema();
-        var table = entity.GetTableName() ?? throw new InvalidOperationException($"{type.Name} has no table.");
-        return schema is null ? $"\"{table}\"" : $"\"{schema}\".\"{table}\"";
     }
 
     private static List<HourlyValue> Hours(IEnumerable<HourRow> rows) =>

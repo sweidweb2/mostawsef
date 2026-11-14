@@ -7,6 +7,7 @@ using Mostawsef.Api.IntegrationTests.Infrastructure;
 using Mostawsef.Contracts.Backups;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.Logs;
+using Mostawsef.Contracts.Patients;
 
 namespace Mostawsef.Api.IntegrationTests.Backups;
 
@@ -38,10 +39,25 @@ public class BackupsTests(ApiFactory factory)
 
         var tables = await super.GetJsonAsync<string[]>($"{Url}/tables");
 
-        Assert.Contains("users", tables);
         Assert.Contains("patients", tables);
         Assert.Contains("backup_records", tables);
         Assert.DoesNotContain("__EFMigrationsHistory", tables);
+    }
+
+    [Fact]
+    public async Task User_accounts_and_password_hashes_are_never_exported()
+    {
+        var super = await factory.CreateClientAsAsync(TestUsers.Super);
+
+        var tables = await super.GetJsonAsync<string[]>($"{Url}/tables");
+        var everything = Encoding.UTF8.GetString(await DownloadAsync(super, (await CreateAsync(super, null, BackupFormats.PostgreSql)).Id));
+        var asUsers = await ProblemResponse.ReadAsync(
+            await super.PostAsJsonAsync(Url, new CreateBackupRequest { Table = "users", Format = BackupFormats.Csv }, Ct));
+
+        Assert.DoesNotContain("users", tables);
+        Assert.DoesNotContain("PasswordHash", everything);
+        Assert.DoesNotContain("\"users\"", everything);
+        Assert.Equal("invalid", asUsers.Errors["Table"][0]);
     }
 
     [Fact]
@@ -98,7 +114,7 @@ public class BackupsTests(ApiFactory factory)
     public async Task One_table_as_csv_has_a_header_and_a_utf8_bom()
     {
         var super = await factory.CreateClientAsAsync(TestUsers.Super);
-        var record = await CreateAsync(super, "users", BackupFormats.Csv);
+        var record = await CreateAsync(super, "backup_records", BackupFormats.Csv);
 
         var response = await super.GetAsync($"{Url}/{record.Id}/export", Ct);
         var bytes = await response.Content.ReadAsByteArrayAsync(Ct);
@@ -109,6 +125,25 @@ public class BackupsTests(ApiFactory factory)
         var text = Encoding.UTF8.GetString(bytes);
         Assert.Contains("\"Id\"".Trim('"'), text.Split("\r\n")[0]);
         Assert.Contains(TestUsers.Super.Username, text);
+    }
+
+    [Fact]
+    public async Task Csv_defuses_text_a_spreadsheet_would_run_as_a_formula_but_sql_keeps_it_exact()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var super = await factory.CreateClientAsAsync(TestUsers.Super);
+        var name = $"=HYPERLINK(\"http://x\") {Guid.NewGuid():N}";
+        var created = await admin.PostAsJsonAsync(
+            "api/patients", new CreatePatientRequest { FullName = name, Phone = "+201000000000", Gender = Genders.Male }, Ct);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+
+        var csv = Encoding.UTF8.GetString(await DownloadAsync(super, (await CreateAsync(super, "patients", BackupFormats.Csv)).Id));
+        var sql = Encoding.UTF8.GetString(await DownloadAsync(super, (await CreateAsync(super, "patients", BackupFormats.Sql)).Id));
+
+        Assert.Contains("\"'=HYPERLINK(\"\"http://x\"\")", csv);
+        Assert.Contains("'+201000000000", csv);
+        Assert.DoesNotContain(",=HYPERLINK", csv);
+        Assert.Contains("'=HYPERLINK(\"http://x\")", sql);
     }
 
     [Fact]
@@ -127,13 +162,13 @@ public class BackupsTests(ApiFactory factory)
     public async Task Json_lists_the_rows_of_each_table()
     {
         var super = await factory.CreateClientAsAsync(TestUsers.Super);
-        var record = await CreateAsync(super, "users", BackupFormats.Json);
+        var record = await CreateAsync(super, "backup_records", BackupFormats.Json);
 
         using var json = JsonDocument.Parse(await DownloadAsync(super, record.Id));
 
-        var users = json.RootElement.GetProperty("tables").GetProperty("users");
-        Assert.Contains(users.EnumerateArray(), u => u.GetProperty("Username").GetString() == TestUsers.Super.Username);
-        Assert.Equal(JsonValueKind.False, users[0].GetProperty("IsDeleted").ValueKind);
+        var rows = json.RootElement.GetProperty("tables").GetProperty("backup_records");
+        Assert.Contains(rows.EnumerateArray(), r => r.GetProperty("Id").GetString() == record.Id.ToString());
+        Assert.Equal(JsonValueKind.Number, rows[0].GetProperty("Version").ValueKind);
         Assert.False(json.RootElement.GetProperty("tables").TryGetProperty("patients", out _));
     }
 
@@ -141,13 +176,13 @@ public class BackupsTests(ApiFactory factory)
     public async Task Sql_has_one_insert_per_row_with_quoted_text()
     {
         var super = await factory.CreateClientAsAsync(TestUsers.Super);
-        var record = await CreateAsync(super, "users", BackupFormats.Sql);
+        var record = await CreateAsync(super, "backup_records", BackupFormats.Sql);
 
         var sql = Encoding.UTF8.GetString(await DownloadAsync(super, record.Id));
 
         Assert.StartsWith("-- Mostawsef backup", sql);
-        Assert.Contains("INSERT INTO \"users\" (", sql);
-        Assert.Contains($"'{TestUsers.Super.Username}'", sql);
+        Assert.Contains("INSERT INTO \"backup_records\" (", sql);
+        Assert.Contains($"'{record.Id}'", sql);
         Assert.Contains("BEGIN;", sql);
         Assert.Contains("COMMIT;", sql);
     }
@@ -156,15 +191,15 @@ public class BackupsTests(ApiFactory factory)
     public async Task The_postgresql_format_creates_the_table_and_copies_the_rows()
     {
         var super = await factory.CreateClientAsAsync(TestUsers.Super);
-        var record = await CreateAsync(super, "users", BackupFormats.PostgreSql);
+        var record = await CreateAsync(super, "backup_records", BackupFormats.PostgreSql);
 
         var response = await super.GetAsync($"{Url}/{record.Id}/export", Ct);
         var sql = await response.Content.ReadAsStringAsync(Ct);
 
         Assert.EndsWith(".pg.sql", response.Content.Headers.ContentDisposition!.FileNameStar ?? response.Content.Headers.ContentDisposition.FileName);
-        Assert.Contains("CREATE TABLE IF NOT EXISTS \"users\" (", sql);
+        Assert.Contains("CREATE TABLE IF NOT EXISTS \"backup_records\" (", sql);
         Assert.Contains("PRIMARY KEY (\"Id\")", sql);
-        Assert.Contains("COPY \"users\" (", sql);
+        Assert.Contains("COPY \"backup_records\" (", sql);
         Assert.Contains("FROM stdin;", sql);
         Assert.Contains("\n\\.\n", sql);
         Assert.Contains(TestUsers.Super.Username, sql);
@@ -186,13 +221,13 @@ public class BackupsTests(ApiFactory factory)
     public async Task Exporting_again_uses_the_saved_settings_and_is_audited()
     {
         var super = await factory.CreateClientAsAsync(TestUsers.Super);
-        var record = await CreateAsync(super, "users", BackupFormats.Sql);
+        var record = await CreateAsync(super, "backup_records", BackupFormats.Sql);
 
         var first = Encoding.UTF8.GetString(await DownloadAsync(super, record.Id));
         var second = Encoding.UTF8.GetString(await DownloadAsync(super, record.Id));
 
-        Assert.Contains("INSERT INTO \"users\"", first);
-        Assert.Contains("INSERT INTO \"users\"", second);
+        Assert.Contains("INSERT INTO \"backup_records\"", first);
+        Assert.Contains("INSERT INTO \"backup_records\"", second);
         Assert.DoesNotContain("INSERT INTO \"patients\"", first);
         var log = await super.GetJsonAsync<CursorPage<ActivityLogListItemDto>>("api/activity-logs?search=backups.exported");
         Assert.Contains(log.Items, i => i.Username == TestUsers.Super.Username && i.Module == "Backups");
