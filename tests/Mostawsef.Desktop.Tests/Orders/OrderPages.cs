@@ -43,7 +43,8 @@ internal static class OrderPages
     public static OrderDetailsDto Details(Guid id) => new(
         id, "ORD-000007", DateTime.UtcNow, "admin@test.local", Mona.Id, Mona.FullName, Mona.Phone, OrderStatuses.PartiallyPaid,
         Currencies.Egp, 20000, 5000, 15000, 0L,
-        [new OrderItemDto(Cbc.Id, Cbc.Code, Cbc.Name, 15000), new OrderItemDto(Sugar.Id, Sugar.Code, Sugar.Name, 5000)]);
+        [new OrderItemDto(Cbc.Id, Cbc.Code, Cbc.Name, 15000), new OrderItemDto(Sugar.Id, Sugar.Code, Sugar.Name, 5000)],
+        [new OrderPaymentDto(DateTime.UtcNow, PaymentTypes.Payment, PaymentMethods.Cash, 5000, "Receipt 12")]);
 
     /// <summary>Signed in as Admin; the server knows two orders and a catalog of two active tests and one inactive.</summary>
     public static TestServices Admin(AppLanguage language = AppLanguage.English)

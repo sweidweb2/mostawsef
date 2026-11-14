@@ -18,10 +18,12 @@ public partial class OrderDetailsViewModel(OrdersApi orders, NavigationService n
     public Guid OrderId { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasOrder), nameof(HasAddon), nameof(BreadcrumbArg))]
+    [NotifyPropertyChangedFor(nameof(HasOrder), nameof(HasAddon), nameof(HasPayments), nameof(BreadcrumbArg))]
     public partial OrderDetailsDto? Order { get; private set; }
 
     public bool HasOrder => Order is not null;
+
+    public bool HasPayments => Order is { Payments.Count: > 0 };
 
     public string BreadcrumbKey => "OrderDetails.Title";
 

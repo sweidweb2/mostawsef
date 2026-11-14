@@ -24,54 +24,88 @@
                                Description="{l:TrKey {Binding LoadErrorDescriptionKey}}"
                                RetryCommand="{Binding RefreshCommand}" />
 
-                <StackPanel Spacing="{StaticResource GapGrid}" IsVisible="{Binding HasOrder}">
-                    <ui:ResponsiveGrid MinColumnWidth="180" MaxColumns="3"
-                                       ColumnSpacing="{StaticResource GapGrid}" RowSpacing="{StaticResource GapGrid}">
+                <Grid ColumnDefinitions="320,*" ColumnSpacing="{StaticResource GapGrid}" IsVisible="{Binding HasOrder}">
+                    <!-- Sidebar: the order's main info and amounts. -->
+                    <StackPanel Name="OrderSidebar" Spacing="{StaticResource GapGrid}">
                         <ui:StatCard Name="TotalCard" Title="{l:Tr Orders.Col.Total}" Value="{l:Money {Binding Order.Total}}" />
                         <ui:StatCard Name="PaidCard" Kind="Success" Title="{l:Tr Orders.Col.Paid}" Value="{l:Money {Binding Order.Paid}}" />
                         <ui:StatCard Name="BalanceCard" Kind="Warning" Title="{l:Tr OrderDetails.Balance}" Value="{l:Money {Binding Order.Balance}}" />
-                    </ui:ResponsiveGrid>
 
-                    <ui:Card Title="{l:Tr OrderDetails.Info}">
-                        <ui:DetailsView>
-                            <ui:DetailsItem Label="{l:Tr Orders.Col.Number}" Value="{Binding Order.Number, FallbackValue=''}" />
-                            <ui:DetailsItem Label="{l:Tr Orders.Col.Date}"
-                                            Value="{Binding Order.CreatedAt, Converter={x:Static conv:ValueConverters.LocalDateTime}, FallbackValue=''}" />
-                            <ui:DetailsItem Label="{l:Tr Orders.Col.Patient}" Value="{Binding Order.PatientName, FallbackValue=''}" />
-                            <ui:DetailsItem Label="{l:Tr Orders.Col.Phone}" Value="{Binding Order.PatientPhone, FallbackValue=''}" />
-                            <ui:DetailsItem Label="{l:Tr Orders.Col.Status}" Value="{l:TrKey {Binding Order.Status}, Prefix=OrderStatus.}" />
-                            <ui:DetailsItem Label="{l:Tr OrderDetails.CreatedBy}" Value="{Binding Order.CreatedBy, FallbackValue=''}" />
-                        </ui:DetailsView>
-                    </ui:Card>
-
-                    <ui:Card Title="{l:Tr OrderDetails.Tests, Arg={Binding Order.Items.Count}}">
-                        <StackPanel Spacing="{StaticResource GapControls}">
-                            <ItemsControl Name="TestsList"
-                                          Classes="virtualizing"
-                                          MaxHeight="480"
-                                          ItemsSource="{Binding Order.Items}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="orders:OrderItemDto">
-                                        <Grid Margin="0,0,0,8" ColumnDefinitions="120,*,Auto" ColumnSpacing="{StaticResource GapControls}">
-                                            <TextBlock Classes="muted" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Text="{Binding Code}" />
-                                            <TextBlock Grid.Column="1" VerticalAlignment="Center" FontWeight="Medium"
-                                                       TextWrapping="Wrap" Text="{Binding Name}" />
-                                            <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="{l:Money {Binding Price}}" />
-                                        </Grid>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <StackPanel Name="AddonRow" Spacing="{StaticResource GapControls}" IsVisible="{Binding HasAddon}">
-                                <ui:Divider />
-                                <Grid ColumnDefinitions="120,*,Auto" ColumnSpacing="{StaticResource GapControls}">
-                                    <TextBlock Classes="muted" VerticalAlignment="Center" Text="{l:Tr NewOrder.Addon}" />
-                                    <TextBlock Name="AddonText" Grid.Column="2" VerticalAlignment="Center" FontWeight="Medium"
-                                               Text="{l:Money {Binding Order.Addon}}" />
-                                </Grid>
+                        <ui:Card Title="{l:Tr OrderDetails.Info}">
+                            <StackPanel Spacing="{StaticResource GapControls}">
+                                <ui:DetailsView>
+                                    <ui:DetailsItem Label="{l:Tr Orders.Col.Number}" Value="{Binding Order.Number, FallbackValue=''}" />
+                                    <ui:DetailsItem Label="{l:Tr Orders.Col.Date}"
+                                                    Value="{Binding Order.CreatedAt, Converter={x:Static conv:ValueConverters.LocalDateTime}, FallbackValue=''}" />
+                                    <ui:DetailsItem Label="{l:Tr Orders.Col.Patient}" Value="{Binding Order.PatientName, FallbackValue=''}" />
+                                    <ui:DetailsItem Label="{l:Tr Orders.Col.Phone}" Value="{Binding Order.PatientPhone, FallbackValue=''}" />
+                                    <ui:DetailsItem Label="{l:Tr Orders.Col.Status}" Value="{l:TrKey {Binding Order.Status}, Prefix=OrderStatus.}" />
+                                    <ui:DetailsItem Label="{l:Tr OrderDetails.CreatedBy}" Value="{Binding Order.CreatedBy, FallbackValue=''}" />
+                                </ui:DetailsView>
+                                <StackPanel Name="AddonRow" Spacing="{StaticResource GapControls}" IsVisible="{Binding HasAddon}">
+                                    <ui:Divider />
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource GapControls}">
+                                        <TextBlock Classes="muted" VerticalAlignment="Center" Text="{l:Tr NewOrder.Addon}" />
+                                        <TextBlock Name="AddonText" Grid.Column="1" VerticalAlignment="Center" FontWeight="Medium"
+                                                   Text="{l:Money {Binding Order.Addon}}" />
+                                    </Grid>
+                                </StackPanel>
                             </StackPanel>
-                        </StackPanel>
-                    </ui:Card>
-                </StackPanel>
+                        </ui:Card>
+                    </StackPanel>
+
+                    <!-- Body: payments first, then the tests. -->
+                    <StackPanel Grid.Column="1" Spacing="{StaticResource GapGrid}">
+                        <ui:Card Name="PaymentsCard" Classes="outlined" Padding="0"
+                                 Title="{l:Tr OrderDetails.Payments, Arg={Binding Order.Payments.Count}}">
+                            <Panel>
+                                <DataGrid Name="PaymentsGrid" ItemsSource="{Binding Order.Payments}" IsReadOnly="True"
+                                          CanUserSortColumns="False" IsVisible="{Binding HasPayments}">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn x:DataType="orders:OrderPaymentDto" Header="{l:Tr OrderDetails.Col.PaidAt}" Width="170"
+                                                            Binding="{Binding PaidAt, Converter={x:Static conv:ValueConverters.LocalDateTime}}" />
+                                        <DataGridTemplateColumn Header="{l:Tr OrderDetails.Col.Type}" Width="120">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate x:DataType="orders:OrderPaymentDto">
+                                                    <TextBlock Margin="12,0" VerticalAlignment="Center"
+                                                               Text="{l:TrKey {Binding Type}, Prefix=PaymentType.}" />
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTemplateColumn Header="{l:Tr NewOrder.PaymentMethod}" Width="140">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate x:DataType="orders:OrderPaymentDto">
+                                                    <TextBlock Margin="12,0" VerticalAlignment="Center"
+                                                               Text="{l:TrKey {Binding Method}, Prefix=PaymentMethod.}" />
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTextColumn x:DataType="orders:OrderPaymentDto" Header="{l:Tr NewOrder.PaymentAmount}" Width="140"
+                                                            Binding="{Binding Amount, Converter={x:Static conv:ValueConverters.Money}}" />
+                                        <DataGridTextColumn x:DataType="orders:OrderPaymentDto" Header="{l:Tr NewOrder.PaymentNotes}" Width="*"
+                                                            Binding="{Binding Notes}" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                                <TextBlock Name="PaymentsEmpty" Classes="muted" Margin="20,16" IsVisible="{Binding !HasPayments}"
+                                           Text="{l:Tr OrderDetails.NoPayments}" />
+                            </Panel>
+                        </ui:Card>
+
+                        <ui:Card Name="TestsCard" Classes="outlined" Padding="0"
+                                 Title="{l:Tr OrderDetails.Tests, Arg={Binding Order.Items.Count}}">
+                            <DataGrid Name="TestsGrid" ItemsSource="{Binding Order.Items}" IsReadOnly="True" CanUserSortColumns="False">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn x:DataType="orders:OrderItemDto" Header="{l:Tr LabTests.Col.Code}" Width="140"
+                                                        Binding="{Binding Code}" />
+                                    <DataGridTextColumn x:DataType="orders:OrderItemDto" Header="{l:Tr LabTests.Col.Name}" Width="*"
+                                                        Binding="{Binding Name}" />
+                                    <DataGridTextColumn x:DataType="orders:OrderItemDto" Header="{l:Tr LabTests.Col.Price}" Width="140"
+                                                        Binding="{Binding Price, Converter={x:Static conv:ValueConverters.Money}}" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </ui:Card>
+                    </StackPanel>
+                </Grid>
 
                 <ui:LoadingOverlay IsLoading="{Binding IsLoading}" />
             </Panel>

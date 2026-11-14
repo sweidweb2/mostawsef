@@ -17,6 +17,10 @@ public class OrdersController(IOrderService orders) : ControllerBase
     public Task<PagedResult<OrderListItemDto>> List([FromQuery] PageQuery query, CancellationToken cancellationToken) =>
         orders.GetPageAsync(query, cancellationToken);
 
+    /// <summary>Order counts by payment state, for the dashboard.</summary>
+    [HttpGet("stats")]
+    public Task<OrderStatsDto> Stats(CancellationToken cancellationToken) => orders.GetStatsAsync(cancellationToken);
+
     [HttpGet("{id:guid}")]
     [ProducesResponseType<OrderDetailsDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

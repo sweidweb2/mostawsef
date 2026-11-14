@@ -8,7 +8,61 @@
     <ScrollViewer>
         <StackPanel Classes="page">
             <ui:PageHeader Title="{l:Tr Nav.Dashboard}" Subtitle="{l:Tr Dashboard.Welcome, Arg={Binding UserName}}" />
-            <ui:Card>
+
+            <!-- Admin: orders by payment state. -->
+            <StackPanel Name="OrderStats" Spacing="{StaticResource GapGrid}" IsVisible="{Binding ShowOrderStats}">
+                <ui:ResponsiveGrid MinColumnWidth="180" MaxColumns="4"
+                                   ColumnSpacing="{StaticResource GapGrid}" RowSpacing="{StaticResource GapGrid}">
+                    <ui:StatCard Name="TotalOrdersCard" Title="{l:Tr Dashboard.Orders.Total}" Value="{Binding TotalOrders}" />
+                    <ui:StatCard Name="PaidOrdersCard" Kind="Success" Title="{l:Tr Dashboard.Orders.Paid}" Value="{Binding PaidOrders}" />
+                    <ui:StatCard Name="PartiallyPaidOrdersCard" Kind="Info" Title="{l:Tr Dashboard.Orders.PartiallyPaid}" Value="{Binding PartiallyPaidOrders}" />
+                    <ui:StatCard Name="UnpaidOrdersCard" Kind="Warning" Title="{l:Tr Dashboard.Orders.Unpaid}" Value="{Binding UnpaidOrders}" />
+                </ui:ResponsiveGrid>
+
+                <ui:Card Name="OrdersChart" Title="{l:Tr Dashboard.Orders.Chart}">
+                    <Panel MinHeight="140">
+                        <StackPanel Spacing="{StaticResource GapGrid}" IsVisible="{Binding HasOrders}">
+                            <Grid ColumnDefinitions="180,*,110" ColumnSpacing="{StaticResource GapGrid}">
+                                <TextBlock VerticalAlignment="Center" Text="{l:Tr Dashboard.Orders.Paid}" />
+                                <ProgressBar Name="PaidBar" Grid.Column="1" Height="14" Minimum="0"
+                                             Maximum="{Binding ChartMaximum}" Value="{Binding PaidOrders}"
+                                             Foreground="{DynamicResource BrushSuccess}" />
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <TextBlock Classes="strong" Text="{Binding PaidOrders}" />
+                                    <TextBlock Classes="muted" Text="{Binding PaidPercent}" />
+                                </StackPanel>
+                            </Grid>
+                            <Grid ColumnDefinitions="180,*,110" ColumnSpacing="{StaticResource GapGrid}">
+                                <TextBlock VerticalAlignment="Center" Text="{l:Tr Dashboard.Orders.PartiallyPaid}" />
+                                <ProgressBar Name="PartiallyPaidBar" Grid.Column="1" Height="14" Minimum="0"
+                                             Maximum="{Binding ChartMaximum}" Value="{Binding PartiallyPaidOrders}"
+                                             Foreground="{DynamicResource BrushInfo}" />
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <TextBlock Classes="strong" Text="{Binding PartiallyPaidOrders}" />
+                                    <TextBlock Classes="muted" Text="{Binding PartiallyPaidPercent}" />
+                                </StackPanel>
+                            </Grid>
+                            <Grid ColumnDefinitions="180,*,110" ColumnSpacing="{StaticResource GapGrid}">
+                                <TextBlock VerticalAlignment="Center" Text="{l:Tr Dashboard.Orders.Unpaid}" />
+                                <ProgressBar Name="UnpaidBar" Grid.Column="1" Height="14" Minimum="0"
+                                             Maximum="{Binding ChartMaximum}" Value="{Binding UnpaidOrders}"
+                                             Foreground="{DynamicResource BrushWarning}" />
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <TextBlock Classes="strong" Text="{Binding UnpaidOrders}" />
+                                    <TextBlock Classes="muted" Text="{Binding UnpaidPercent}" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                        <ui:EmptyState Name="OrdersChartEmpty" Margin="0,16"
+                                       IsVisible="{Binding !HasOrders}"
+                                       Icon="{StaticResource IconDashboard}"
+                                       Title="{l:Tr Dashboard.Orders.Empty}" />
+                        <ui:LoadingOverlay IsLoading="{Binding IsLoading}" />
+                    </Panel>
+                </ui:Card>
+            </StackPanel>
+
+            <ui:Card IsVisible="{Binding !ShowOrderStats}">
                 <ui:EmptyState Margin="0,32"
                                Icon="{StaticResource IconDashboard}"
                                Title="{l:Tr Dashboard.Empty.Title}"

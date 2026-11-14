@@ -62,7 +62,7 @@
                     </Grid>
                 </ui:DataTable.Toolbar>
 
-                <DataGrid ItemsSource="{Binding Items}" IsReadOnly="True" CanUserSortColumns="False">
+                <DataGrid ItemsSource="{Binding Items}" IsReadOnly="True" CanUserSortColumns="False" LoadingRow="OnLoadingRow">
                     <DataGrid.Columns>
                         <DataGridTemplateColumn Header="{l:Tr Common.RowNumber}" Width="56">
                             <DataGridTemplateColumn.CellTemplate>

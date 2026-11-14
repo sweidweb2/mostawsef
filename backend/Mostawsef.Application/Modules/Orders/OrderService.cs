@@ -17,6 +17,8 @@ public interface IOrderService
 
     Task<OrderDetailsDto> GetAsync(Guid id, CancellationToken cancellationToken);
 
+    Task<OrderStatsDto> GetStatsAsync(CancellationToken cancellationToken);
+
     /// <summary>Creates the patient (if new), the order, its items and the first payment in one transaction.</summary>
     Task<OrderDetailsDto> CreateAsync(CreateOrderRequest request, CancellationToken cancellationToken);
 }
@@ -43,6 +45,15 @@ public class OrderService(
             query.SafePage,
             query.SafePageSize,
             total);
+    }
+
+    public async Task<OrderStatsDto> GetStatsAsync(CancellationToken cancellationToken)
+    {
+        var counts = await orders.GetStatusCountsAsync(cancellationToken);
+        return new OrderStatsDto(
+            counts.GetValueOrDefault(OrderStatus.Paid),
+            counts.GetValueOrDefault(OrderStatus.PartiallyPaid),
+            counts.GetValueOrDefault(OrderStatus.Pending));
     }
 
     public async Task<OrderDetailsDto> GetAsync(Guid id, CancellationToken cancellationToken)
@@ -219,10 +230,12 @@ public class OrderService(
     private static OrderDetailsDto ToDetails(OrderDetailsRow o) => new(
         o.Id, o.Number, o.CreatedAt, o.CreatedBy, o.PatientId, o.PatientName, o.PatientPhone, o.Status.ToString(), o.Currency,
         o.Total, o.Paid, o.Balance, o.Addon,
-        o.Items.Select(i => new OrderItemDto(i.LabTestId, i.Code, i.Name, i.Price)).ToList());
+        o.Items.Select(i => new OrderItemDto(i.LabTestId, i.Code, i.Name, i.Price)).ToList(),
+        o.Payments.Select(p => new OrderPaymentDto(p.PaidAt, p.Type.ToString(), p.Method.ToString(), p.Amount, p.Notes)).ToList());
 
     private static OrderDetailsDto ToDetails(Order o) => new(
         o.Id, o.Number, o.CreatedAt, o.CreatedBy, o.PatientId, o.PatientName, o.PatientPhone, o.Status.ToString(), o.Currency,
         o.Total, o.Paid, o.Balance, o.Addon,
-        o.Items.Select(i => new OrderItemDto(i.LabTestId, i.LabTest?.Code ?? string.Empty, i.LabTest?.Name ?? string.Empty, i.Price)).ToList());
+        o.Items.Select(i => new OrderItemDto(i.LabTestId, i.LabTest?.Code ?? string.Empty, i.LabTest?.Name ?? string.Empty, i.Price)).ToList(),
+        o.Payments.OrderBy(p => p.PaidAt).Select(p => new OrderPaymentDto(p.PaidAt, p.Type.ToString(), p.Method.ToString(), p.Amount, p.Notes)).ToList());
 }

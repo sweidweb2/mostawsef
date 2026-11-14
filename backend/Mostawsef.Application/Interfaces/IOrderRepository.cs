@@ -16,7 +16,7 @@ public record OrderListRow(
     long Paid,
     OrderStatus Status);
 
-/// <summary>Order details without loading payment entities; Paid and TestsCount are stored on the order.</summary>
+/// <summary>Order details projection; Paid and TestsCount are stored on the order.</summary>
 public record OrderDetailsRow(
     Guid Id,
     string Number,
@@ -31,17 +31,23 @@ public record OrderDetailsRow(
     long Paid,
     long Balance,
     long Addon,
-    IReadOnlyList<OrderItemRow> Items);
+    IReadOnlyList<OrderItemRow> Items,
+    IReadOnlyList<OrderPaymentRow> Payments);
 
 public record OrderItemRow(Guid LabTestId, string Code, string Name, long Price);
 
+public record OrderPaymentRow(DateTime PaidAt, PaymentType Type, PaymentMethod Method, long Amount, string? Notes);
+
 public interface IOrderRepository
 {
-    /// <summary>Details projection: items + lab-test labels; payments are not materialised.</summary>
+    /// <summary>Details projection: items + lab-test labels and the payments, oldest first.</summary>
     Task<OrderDetailsRow?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>Newest first. Search is LIKE on SearchText (trigram; name, phone, number).</summary>
     Task<(IReadOnlyList<OrderListRow> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken);
+
+    /// <summary>Order counts per status (statuses without orders are absent).</summary>
+    Task<IReadOnlyDictionary<OrderStatus, int>> GetStatusCountsAsync(CancellationToken cancellationToken);
 
     void Add(Order order);
 

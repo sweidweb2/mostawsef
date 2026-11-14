@@ -54,7 +54,25 @@ public record OrderListItemDto(
     long Paid,
     string Status);
 
+/// <summary>How many orders are in each payment state (cancelled and refunded orders are not counted).</summary>
+/// <param name="Unpaid">Nothing paid yet (status Pending).</param>
+public record OrderStatsDto(int Paid, int PartiallyPaid, int Unpaid)
+{
+    public int Total => Paid + PartiallyPaid + Unpaid;
+}
+
 public record OrderItemDto(Guid LabTestId, string Code, string Name, long Price);
+
+/// <summary>Payment types. The desktop shows "PaymentType.&lt;value&gt;".</summary>
+public static class PaymentTypes
+{
+    public const string Payment = "Payment";
+    public const string Refund = "Refund";
+}
+
+/// <param name="Type">One of <see cref="PaymentTypes"/>.</param>
+/// <param name="Method">One of <see cref="PaymentMethods"/>.</param>
+public record OrderPaymentDto(DateTime PaidAt, string Type, string Method, long Amount, string? Notes);
 
 /// <param name="Addon">Amount added on top of the tests' catalog prices when the order was created; 0 if none.</param>
 public record OrderDetailsDto(
@@ -71,7 +89,8 @@ public record OrderDetailsDto(
     long Paid,
     long Balance,
     long Addon,
-    IReadOnlyList<OrderItemDto> Items);
+    IReadOnlyList<OrderItemDto> Items,
+    IReadOnlyList<OrderPaymentDto> Payments);
 
 /// <summary>
 /// A new order. Exactly one of <see cref="PatientId"/> (an existing patient) and <see cref="NewPatient"/> (created with the order).

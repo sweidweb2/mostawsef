@@ -49,7 +49,7 @@ public class OrdersTests(ApiFactory factory)
         Assert.Equal(
             [new OrderItemDto(cbc.Id, cbc.Code, cbc.Name, 15000), new OrderItemDto(sugar.Id, sugar.Code, sugar.Name, 5000)],
             order.Items);
-        Assert.Equal(order, await admin.GetJsonAsync<OrderDetailsDto>($"{Url}/{order.Id}") with { CreatedAt = order.CreatedAt, Items = order.Items });
+        Assert.Equal(order, await admin.GetJsonAsync<OrderDetailsDto>($"{Url}/{order.Id}") with { CreatedAt = order.CreatedAt, Items = order.Items, Payments = order.Payments });
 
         await using var scope = factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -82,6 +82,10 @@ public class OrdersTests(ApiFactory factory)
         var reloaded = await admin.GetJsonAsync<OrderDetailsDto>($"{Url}/{order.Id}");
         Assert.Equal((status, amount, balance, 0L, 1), (reloaded.Status, reloaded.Paid, reloaded.Balance, reloaded.Addon, reloaded.Items.Count));
         Assert.Equal(test.Code, reloaded.Items[0].Code);
+        Assert.Equal(
+            [(PaymentTypes.Payment, PaymentMethods.Card, amount, "Visa")],
+            reloaded.Payments.Select(p => (p.Type, p.Method, p.Amount, p.Notes)).ToList());
+        Assert.Equal(order.Payments.Select(p => p.Amount), reloaded.Payments.Select(p => p.Amount));
     }
 
     /// <summary>The list row keeps copies (patient, counts, totals) so the list needs no joins: they must agree with the details.</summary>

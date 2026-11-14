@@ -109,7 +109,7 @@ public class OrdersPageTests : UiTestBase
         Assert.Contains("سكر صائم", texts);
         Assert.Contains("admin@test.local", texts);
         Assert.Contains("Partially paid", window.GetVisualDescendants().OfType<Badge>().Where(b => b.IsEffectivelyVisible).Select(b => b.Text));
-        Assert.Equal(["200.00", "50.00", "150.00"], window.GetVisualDescendants().OfType<StatCard>().Select(c => c.Value));
+        Assert.Equal(["200.00", "50.00", "150.00"], Named<StackPanel>(window, "OrderSidebar").GetVisualDescendants().OfType<StatCard>().Select(c => c.Value));
         Assert.False(details.HasAddon);
         Assert.False(Named<StackPanel>(window, "AddonRow").IsVisible);
 
@@ -138,7 +138,7 @@ public class OrdersPageTests : UiTestBase
         Assert.True(Named<StackPanel>(window, "AddonRow").IsVisible);
         Assert.Equal("30.00", Named<TextBlock>(window, "AddonText").Text);
         Assert.Contains("Our price", Texts(window));
-        Assert.Equal(["230.00", "50.00", "180.00"], window.GetVisualDescendants().OfType<StatCard>().Select(c => c.Value));
+        Assert.Equal(["230.00", "50.00", "180.00"], Named<StackPanel>(window, "OrderSidebar").GetVisualDescendants().OfType<StatCard>().Select(c => c.Value));
     }
 
     [AvaloniaFact]

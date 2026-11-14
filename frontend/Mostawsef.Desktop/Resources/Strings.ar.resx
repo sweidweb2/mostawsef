@@ -95,6 +95,12 @@
 
   <data name="Nav.Dashboard" xml:space="preserve"><value>لوحة التحكم</value></data>
   <data name="Dashboard.Welcome" xml:space="preserve"><value>مرحباً، {0}</value></data>
+  <data name="Dashboard.Orders.Total" xml:space="preserve"><value>الطلبات</value></data>
+  <data name="Dashboard.Orders.Paid" xml:space="preserve"><value>مدفوعة بالكامل</value></data>
+  <data name="Dashboard.Orders.PartiallyPaid" xml:space="preserve"><value>مدفوعة جزئياً</value></data>
+  <data name="Dashboard.Orders.Unpaid" xml:space="preserve"><value>غير مدفوعة</value></data>
+  <data name="Dashboard.Orders.Chart" xml:space="preserve"><value>الطلبات حسب حالة الدفع</value></data>
+  <data name="Dashboard.Orders.Empty" xml:space="preserve"><value>لا توجد طلبات بعد</value></data>
   <data name="Dashboard.Empty.Title" xml:space="preserve"><value>لوحة التحكم فارغة</value></data>
   <data name="Dashboard.Empty.Description" xml:space="preserve"><value>ستظهر هنا المؤشرات والتقارير.</value></data>
 
@@ -378,6 +384,12 @@
   <data name="OrderDetails.Balance" xml:space="preserve"><value>المتبقي</value></data>
   <data name="OrderDetails.Info" xml:space="preserve"><value>الطلب</value></data>
   <data name="OrderDetails.CreatedBy" xml:space="preserve"><value>أنشأه</value></data>
+  <data name="OrderDetails.Payments" xml:space="preserve"><value>المدفوعات ({0})</value></data>
+  <data name="OrderDetails.NoPayments" xml:space="preserve"><value>لا توجد مدفوعات مسجلة لهذا الطلب.</value></data>
+  <data name="OrderDetails.Col.PaidAt" xml:space="preserve"><value>التاريخ</value></data>
+  <data name="OrderDetails.Col.Type" xml:space="preserve"><value>النوع</value></data>
+  <data name="PaymentType.Payment" xml:space="preserve"><value>دفعة</value></data>
+  <data name="PaymentType.Refund" xml:space="preserve"><value>استرداد</value></data>
   <data name="OrderDetails.Tests" xml:space="preserve"><value>التحاليل ({0})</value></data>
   <data name="OrderDetails.NotFound" xml:space="preserve"><value>هذا الطلب لم يعد موجوداً.</value></data>
   <data name="Action.orders.created" xml:space="preserve"><value>إنشاء طلب</value></data>

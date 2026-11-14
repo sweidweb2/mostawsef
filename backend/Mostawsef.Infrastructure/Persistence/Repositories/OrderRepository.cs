@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Domain.Entities;
+using Mostawsef.Domain.Enums;
 using Mostawsef.Infrastructure.Persistence.Context;
 
 namespace Mostawsef.Infrastructure.Persistence.Repositories;
@@ -29,7 +30,13 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
                     i.LabTestId,
                     i.LabTestCode,
                     i.LabTestName,
-                    i.Price)).ToList()))
+                    i.Price)).ToList(),
+                o.Payments.OrderBy(p => p.PaidAt).ThenBy(p => p.Id).Select(p => new OrderPaymentRow(
+                    p.PaidAt,
+                    p.Type,
+                    p.Method,
+                    p.Amount,
+                    p.Notes)).ToList()))
             .FirstOrDefaultAsync(cancellationToken);
 
     public async Task<(IReadOnlyList<OrderListRow> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken)
@@ -57,6 +64,13 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
 
         return await rows.ToPageAsync(orders, query, cancellationToken);
     }
+
+    public async Task<IReadOnlyDictionary<OrderStatus, int>> GetStatusCountsAsync(CancellationToken cancellationToken) =>
+        (await db.Orders.AsNoTracking()
+            .GroupBy(o => o.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken))
+        .ToDictionary(g => g.Status, g => g.Count);
 
     public void Add(Order order) => db.Orders.Add(order);
 

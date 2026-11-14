@@ -16,6 +16,9 @@ public class OrdersApi(ApiClient api)
             (string.IsNullOrWhiteSpace(search) ? string.Empty : $"&search={Uri.EscapeDataString(search.Trim())}"),
             cancellationToken);
 
+    public Task<ApiResult<OrderStatsDto>> GetStatsAsync(CancellationToken cancellationToken = default) =>
+        api.GetAsync<OrderStatsDto>("api/orders/stats", cancellationToken);
+
     public Task<ApiResult<OrderDetailsDto>> GetOrderAsync(Guid id, CancellationToken cancellationToken = default) =>
         api.GetAsync<OrderDetailsDto>($"api/orders/{id}", cancellationToken);
 

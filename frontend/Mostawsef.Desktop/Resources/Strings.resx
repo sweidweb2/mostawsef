@@ -95,6 +95,12 @@
 
   <data name="Nav.Dashboard" xml:space="preserve"><value>Dashboard</value></data>
   <data name="Dashboard.Welcome" xml:space="preserve"><value>Welcome, {0}</value></data>
+  <data name="Dashboard.Orders.Total" xml:space="preserve"><value>Orders</value></data>
+  <data name="Dashboard.Orders.Paid" xml:space="preserve"><value>Fully paid</value></data>
+  <data name="Dashboard.Orders.PartiallyPaid" xml:space="preserve"><value>Partially paid</value></data>
+  <data name="Dashboard.Orders.Unpaid" xml:space="preserve"><value>Nothing paid</value></data>
+  <data name="Dashboard.Orders.Chart" xml:space="preserve"><value>Orders by payment status</value></data>
+  <data name="Dashboard.Orders.Empty" xml:space="preserve"><value>No orders yet</value></data>
   <data name="Dashboard.Empty.Title" xml:space="preserve"><value>Your dashboard is empty</value></data>
   <data name="Dashboard.Empty.Description" xml:space="preserve"><value>Widgets and reports will appear here.</value></data>
 
@@ -379,6 +385,12 @@
   <data name="OrderDetails.Balance" xml:space="preserve"><value>Balance</value></data>
   <data name="OrderDetails.Info" xml:space="preserve"><value>Order</value></data>
   <data name="OrderDetails.CreatedBy" xml:space="preserve"><value>Created by</value></data>
+  <data name="OrderDetails.Payments" xml:space="preserve"><value>Payments ({0})</value></data>
+  <data name="OrderDetails.NoPayments" xml:space="preserve"><value>No payments have been recorded for this order.</value></data>
+  <data name="OrderDetails.Col.PaidAt" xml:space="preserve"><value>Date</value></data>
+  <data name="OrderDetails.Col.Type" xml:space="preserve"><value>Type</value></data>
+  <data name="PaymentType.Payment" xml:space="preserve"><value>Payment</value></data>
+  <data name="PaymentType.Refund" xml:space="preserve"><value>Refund</value></data>
   <data name="OrderDetails.Tests" xml:space="preserve"><value>Tests ({0})</value></data>
   <data name="OrderDetails.NotFound" xml:space="preserve"><value>This order no longer exists.</value></data>
   <data name="Action.orders.created" xml:space="preserve"><value>Order created</value></data>

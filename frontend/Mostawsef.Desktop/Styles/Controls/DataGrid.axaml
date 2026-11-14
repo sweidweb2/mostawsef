@@ -48,6 +48,10 @@
             </Transitions>
         </Setter>
     </Style>
+    <!-- Orders that are not fully paid yet (see OrdersView.OnLoadingRow). -->
+    <Style Selector="DataGridRow.unpaid /template/ Rectangle#BackgroundRectangle">
+        <Setter Property="Fill" Value="{DynamicResource BrushWarningSubtle}" />
+    </Style>
     <Style Selector="DataGridRow:pointerover">
         <Setter Property="BorderBrush" Value="{DynamicResource BrushPrimary}" />
     </Style>

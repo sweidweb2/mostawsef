@@ -176,9 +176,11 @@
                         BorderThickness="{StaticResource BorderWidth}"
                         CornerRadius="{StaticResource RadiusLg}"
                         BoxShadow="{DynamicResource ShadowSm}">
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{StaticResource Space4}">
+                    <Grid ColumnDefinitions="Auto,*">
                         <Border Name="PART_IconTile"
                                 Width="44"
+                                Margin="0,0,16,0"
+                                IsVisible="{TemplateBinding Icon, Converter={x:Static ObjectConverters.IsNotNull}}"
                                 Height="44"
                                 CornerRadius="{StaticResource RadiusMd}"
                                 Background="{DynamicResource BrushPrimarySubtle}"
