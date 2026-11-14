@@ -14,8 +14,9 @@ namespace Mostawsef.Api.Controllers;
 public class OrdersController(IOrderService orders) : ControllerBase
 {
     [HttpGet]
-    public Task<PagedResult<OrderListItemDto>> List([FromQuery] PageQuery query, CancellationToken cancellationToken) =>
-        orders.GetPageAsync(query, cancellationToken);
+    public Task<PagedResult<OrderListItemDto>> List(
+        [FromQuery] PageQuery query, [FromQuery] OrderListFilterRequest filter, CancellationToken cancellationToken) =>
+        orders.GetPageAsync(query, filter, cancellationToken);
 
     /// <summary>Order counts by payment state, for the dashboard.</summary>
     [HttpGet("stats")]

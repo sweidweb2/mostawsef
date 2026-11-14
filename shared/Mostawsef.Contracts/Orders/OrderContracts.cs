@@ -150,3 +150,12 @@ public record CreateFirstPaymentRequest
     [MaxLength(OrderRules.PaymentNotesMaxLength, ErrorMessage = ErrorCodes.MaxLength)]
     public string? Notes { get; init; }
 }
+
+/// <summary>Optional narrowing of the orders list (query string): one payment status and/or one patient's orders.</summary>
+public record OrderListFilterRequest
+{
+    /// <summary>One of <see cref="OrderStatuses"/>; empty keeps every status.</summary>
+    public string? Status { get; init; }
+
+    public Guid? PatientId { get; init; }
+}

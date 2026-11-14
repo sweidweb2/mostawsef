@@ -97,7 +97,7 @@ public class PatientService(IPatientRepository patients, IActivityLogger activit
 
     private static PatientDto ToListDto(PatientListRow p) => new(
         p.Id, p.FullName, p.Phone, p.GuardianPhone, Notes: null, p.IsInsured, p.Gender.ToString(), p.DateOfBirth,
-        p.CreatedAt, p.UpdatedAt, p.UpdatedBy, p.Version);
+        p.CreatedAt, p.UpdatedAt, p.UpdatedBy, p.Version, p.HasUnpaidOrders);
 
     private static PatientDto ToExportDto(PatientExportRow p) => new(
         p.Id, p.FullName, p.Phone, p.GuardianPhone, Notes: null, p.IsInsured, p.Gender.ToString(), p.DateOfBirth,

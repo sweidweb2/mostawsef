@@ -1,5 +1,6 @@
 <Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="using:Mostawsef.Desktop.Components">
 
     <Style Selector="DataGrid">
         <Setter Property="Background" Value="{DynamicResource BrushSurface}" />
@@ -55,6 +56,10 @@
     <!-- Orders paid beyond their total: a refund is due (see OrdersView.OnLoadingRow). -->
     <Style Selector="DataGridRow.refund /template/ Rectangle#BackgroundRectangle">
         <Setter Property="Fill" Value="{DynamicResource BrushInfoSubtle}" />
+    </Style>
+    <!-- A patient card with an order not paid in full (see PatientsView). -->
+    <Style Selector="ui|Card.unpaid">
+        <Setter Property="Background" Value="{DynamicResource BrushWarningSubtle}" />
     </Style>
     <Style Selector="DataGrid.clickable-rows DataGridRow">
         <Setter Property="Cursor" Value="Hand" />

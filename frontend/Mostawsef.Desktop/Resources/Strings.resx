@@ -307,6 +307,12 @@
   <data name="Patients.Records" xml:space="preserve"><value>{0} patients</value></data>
   <data name="Patients.SearchPlaceholder" xml:space="preserve"><value>Search by name or phone...</value></data>
   <data name="Patients.ExportHint" xml:space="preserve"><value>Export all patients as a PDF</value></data>
+  <data name="Breadcrumb.Name" xml:space="preserve"><value>{0}</value></data>
+  <data name="PatientDetails.Subtitle" xml:space="preserve"><value>The patient's details and orders.</value></data>
+  <data name="PatientDetails.Info" xml:space="preserve"><value>Patient</value></data>
+  <data name="PatientDetails.Orders" xml:space="preserve"><value>Orders ({0})</value></data>
+  <data name="PatientDetails.Truncated" xml:space="preserve"><value>Showing the latest 100 orders.</value></data>
+  <data name="PatientDetails.NoOrders" xml:space="preserve"><value>This patient has no orders yet.</value></data>
   <data name="Patients.Col.FullName" xml:space="preserve"><value>Full name</value></data>
   <data name="Patients.Col.Phone" xml:space="preserve"><value>Phone</value></data>
   <data name="Patients.Col.GuardianPhone" xml:space="preserve"><value>Guardian phone</value></data>
@@ -329,6 +335,7 @@
 
   <data name="Nav.Orders" xml:space="preserve"><value>Orders</value></data>
   <data name="Orders.Subtitle" xml:space="preserve"><value>Lab test orders, newest first, with what was paid.</value></data>
+  <data name="Orders.Filter.AllStatuses" xml:space="preserve"><value>All statuses</value></data>
   <data name="Orders.New" xml:space="preserve"><value>New order</value></data>
   <data name="Orders.Records" xml:space="preserve"><value>{0} orders</value></data>
   <data name="Orders.SearchPlaceholder" xml:space="preserve"><value>Search by patient name, phone or order number...</value></data>

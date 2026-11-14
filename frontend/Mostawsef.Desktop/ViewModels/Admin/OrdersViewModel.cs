@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -34,7 +36,7 @@ public partial class OrdersViewModel(
 
     protected override Task<ApiResult<PagedResult<OrderListItemDto>>> FetchPageAsync(
         int page, int pageSize, string? search, bool includeTotal, CancellationToken cancellationToken) =>
-        orders.GetOrdersAsync(page, pageSize, search, includeTotal, cancellationToken);
+        orders.GetOrdersAsync(page, pageSize, search, includeTotal, SelectedStatus?.Value, patientId: null, cancellationToken);
 
     /// <summary>True while the New order button is waiting for the create page to open.</summary>
     [ObservableProperty]
@@ -52,23 +54,43 @@ public partial class OrdersViewModel(
             // Let the button spinner paint before the (first) view build runs on the UI thread.
             await Task.Yield();
 
-            _newOrder ??= navigation.CreatePage(typeof(NewOrderViewModel)) as NewOrderViewModel;
-            _orderDetails ??= navigation.CreatePage(typeof(OrderDetailsViewModel)) as OrderDetailsViewModel;
-            if (_newOrder is null)
+            var details = navigation.Reuse(ref _orderDetails);
+            if (navigation.Reuse(ref _newOrder) is not { } newOrder)
             {
                 return;
             }
 
-            await navigation.OpenAsync(_newOrder, page =>
+            await navigation.OpenAsync(newOrder, page =>
             {
                 page.OnOrderCreated = InsertCreated;
-                page.OrderDetailsPage = _orderDetails;
+                page.OrderDetailsPage = details;
                 page.BeginReuse();
             });
         }
         finally
         {
             IsOpeningNewOrder = false;
+        }
+    }
+
+    /// <summary>The payment-status filter choices: everything first, then each status.</summary>
+    public static IReadOnlyList<OrderStatusOption> StatusOptions { get; } =
+    [
+        new(null, "Orders.Filter.AllStatuses"),
+        .. OrderStatuses.All.Select(status => new OrderStatusOption(status, "OrderStatus." + status)),
+    ];
+
+    /// <summary>The chosen status; changing it shows page 1 of the matching orders.</summary>
+    [ObservableProperty]
+    public partial OrderStatusOption? SelectedStatus { get; set; } = StatusOptions[0];
+
+    protected override bool HasActiveFilter => base.HasActiveFilter || SelectedStatus?.Value is not null;
+
+    partial void OnSelectedStatusChanged(OrderStatusOption? oldValue, OrderStatusOption? newValue)
+    {
+        if (oldValue is not null && newValue != oldValue)
+        {
+            _ = ApplyFilterAsync();
         }
     }
 
@@ -127,14 +149,13 @@ public partial class OrdersViewModel(
             return Task.CompletedTask;
         }
 
-        _orderDetails ??= navigation.CreatePage(typeof(OrderDetailsViewModel)) as OrderDetailsViewModel;
-        return _orderDetails is null
-            ? Task.CompletedTask
-            : navigation.OpenAsync(_orderDetails, page =>
+        return navigation.Reuse(ref _orderDetails) is { } details
+            ? navigation.OpenAsync(details, page =>
             {
                 page.BeginReuse();
                 page.OrderId = item.Id;
-            });
+            })
+            : Task.CompletedTask;
     }
 
     /// <summary>Adds the new order on page 1 without wiping the table; falls back to a full reload when needed.</summary>

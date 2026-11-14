@@ -78,19 +78,9 @@ public abstract partial class ListPageViewModelBase<TItem> : ViewModelBase, ILoa
 
     public bool HasLoadError => LoadError is not null;
 
-    public string? LoadErrorTitleKey => LoadError switch
-    {
-        null => null,
-        ApiError.Unreachable => "Error.UnreachableTitle",
-        _ => "Error.Title",
-    };
+    public string? LoadErrorTitleKey => ApiErrorKeys.Title(LoadError);
 
-    public string? LoadErrorDescriptionKey => LoadError switch
-    {
-        null => null,
-        ApiError.Unreachable => "Error.UnreachableDescription",
-        _ => "Error.Description",
-    };
+    public string? LoadErrorDescriptionKey => ApiErrorKeys.Description(LoadError);
 
     public bool IsEmpty => !IsLoading && !HasLoadError && Items.Count == 0;
 

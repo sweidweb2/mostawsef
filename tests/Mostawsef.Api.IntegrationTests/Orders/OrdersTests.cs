@@ -438,6 +438,73 @@ public class OrdersTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task The_list_can_be_filtered_by_status_and_rejects_an_unknown_one()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var token = $"Statusfilter{Guid.NewGuid():N}";
+        var patient = await CreatePatientAsync(admin, fullName: token);
+        var test = await CreateTestAsync(admin, price: 10000);
+        var unpaid = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id));
+        var partly = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id) with { FirstPayment = new() { Amount = 100, Method = PaymentMethods.Cash } });
+        var paid = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id) with { FirstPayment = new() { Amount = 10000, Method = PaymentMethods.Cash } });
+
+        async Task<List<string>> NumbersAsync(string status) =>
+            (await admin.GetJsonAsync<PagedResult<OrderListItemDto>>($"{Url}?search={token}&status={status}"))
+            .Items.Select(o => o.Number).Order().ToList();
+
+        Assert.Equal([unpaid.Number], await NumbersAsync(OrderStatuses.Pending));
+        Assert.Equal([partly.Number], await NumbersAsync(OrderStatuses.PartiallyPaid));
+        Assert.Equal([paid.Number], await NumbersAsync(OrderStatuses.Paid));
+        Assert.Empty(await NumbersAsync(OrderStatuses.Cancelled));
+        Assert.Equal(3, (await admin.GetJsonAsync<PagedResult<OrderListItemDto>>($"{Url}?search={token}")).Items.Count);
+
+        var problem = await ProblemResponse.ReadAsync(await admin.GetAsync($"{Url}?status=Gold", Ct));
+        Assert.Equal(HttpStatusCode.BadRequest, problem.Status);
+        Assert.Equal([ErrorCodes.Invalid], problem.Errors["status"]);
+    }
+
+    [Fact]
+    public async Task The_patients_list_flags_patients_with_an_order_not_paid_in_full()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var token = $"Unpaidflag{Guid.NewGuid():N}";
+        var none = await CreatePatientAsync(admin, fullName: token + " none");
+        var settled = await CreatePatientAsync(admin, fullName: token + " settled");
+        var owing = await CreatePatientAsync(admin, fullName: token + " owing");
+        var test = await CreateTestAsync(admin, price: 10000);
+        await CreateOrderAsync(admin, ForPatient(settled.Id, test.Id) with { FirstPayment = new() { Amount = 10000, Method = PaymentMethods.Cash } });
+        var open = await CreateOrderAsync(admin, ForPatient(owing.Id, test.Id) with { FirstPayment = new() { Amount = 100, Method = PaymentMethods.Cash } });
+
+        async Task<Dictionary<Guid, bool>> FlagsAsync() =>
+            (await admin.GetJsonAsync<PagedResult<PatientDto>>($"api/patients?search={token}")).Items.ToDictionary(p => p.Id, p => p.IsUnpaid);
+
+        var flags = await FlagsAsync();
+        Assert.Equal((false, false, true), (flags[none.Id], flags[settled.Id], flags[owing.Id]));
+
+        await PayAsync(admin, open.Id, new() { Amount = 9900, Method = PaymentMethods.Cash });
+        Assert.False((await FlagsAsync())[owing.Id]);
+    }
+
+    [Fact]
+    public async Task The_list_can_be_limited_to_one_patients_orders()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var first = await CreatePatientAsync(admin);
+        var second = await CreatePatientAsync(admin);
+        var test = await CreateTestAsync(admin, price: 10000);
+        var a1 = await CreateOrderAsync(admin, ForPatient(first.Id, test.Id));
+        var a2 = await CreateOrderAsync(admin, ForPatient(first.Id, test.Id));
+        var b1 = await CreateOrderAsync(admin, ForPatient(second.Id, test.Id));
+
+        var firstOrders = await admin.GetJsonAsync<PagedResult<OrderListItemDto>>($"{Url}?patientId={first.Id}");
+        var secondOrders = await admin.GetJsonAsync<PagedResult<OrderListItemDto>>($"{Url}?patientId={second.Id}");
+
+        Assert.Equal([a2.Number, a1.Number], firstOrders.Items.Select(o => o.Number));
+        Assert.Equal([b1.Number], secondOrders.Items.Select(o => o.Number));
+        Assert.Empty((await admin.GetJsonAsync<PagedResult<OrderListItemDto>>($"{Url}?patientId={Guid.NewGuid()}")).Items);
+    }
+
+    [Fact]
     public async Task An_added_payment_updates_the_paid_amount_status_and_payments()
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);

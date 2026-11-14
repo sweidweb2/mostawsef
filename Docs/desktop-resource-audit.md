@@ -2,24 +2,24 @@
 
 Source-inspection audit of `frontend/Mostawsef.Desktop` (Avalonia, .NET 10, CommunityToolkit.Mvvm, QuestPDF). Windows-first.
 
-> **Limit:** nothing here was measured. RAM, CPU, startup time and disk I/O need runtime profiling. Every "benefit" below is an expectation, not a result.
+> **Limit:** apart from the export timing in Block 6, nothing here was measured. RAM, CPU, startup time and disk I/O need runtime profiling. Every "benefit" below is an expectation, not a result.
 
-Work the blocks in order. Tick the box when a block is done and verified.
+Work the blocks in order. ✅ = done. ⏳ = waiting for a real-machine run. Open checkboxes inside a block are real-machine checks.
 
 ## Status
 
 | Block | Finding | Severity | Type | Status |
 |---|---|---|---|---|
-| 0 | Measure a baseline | - | Profiling | [ ] Targets set, needs a real run |
-| 1 | Local logs never pruned | Medium | Confirmed | [x] Done |
-| 2 | Printed PDFs (patient data) left in Temp | Medium | Confirmed | [x] Done |
-| 3 | API base URL defaults to plain HTTP | Medium | Confirmed (deployment-dependent) | [x] Warning added; HTTPS setup is a deployment step |
-| 4 | Page view cache lives for the whole session | Medium | One leak path fixed; heap check still needed | [x] Code fixed |
-| 5 | Warm-up and prebuild cost on slow machines | Medium | Off-switch added; default unchanged | [x] Switch added |
-| 6 | Export holds rows plus PDF in memory | Low-Medium | Measured: no change needed | [x] Done, no code change |
-| 7 | Lab test catalog fully cached | Low | No action | [ ] |
-| 8 | Connection monitor polls every 60 s | Low | No action | [ ] |
-| 9 | Performance monitor in Release | Low | No action | [ ] |
+| 0 | Measure a baseline | - | Profiling | ⏳ Targets set, needs a real run |
+| 1 | Local logs never pruned | Medium | Confirmed | ✅ Done |
+| 2 | Printed PDFs (patient data) left in Temp | Medium | Confirmed | ✅ Done |
+| 3 | API base URL defaults to plain HTTP | Medium | Confirmed (deployment-dependent) | ✅ Warning added; HTTPS setup is a deployment step |
+| 4 | Page view cache lives for the whole session | Medium | One leak path fixed; heap check still needed | ✅ Code fixed |
+| 5 | Warm-up and prebuild cost on slow machines | Medium | Off-switch added; default unchanged | ✅ Switch added |
+| 6 | Export holds rows plus PDF in memory | Low-Medium | Measured: no change needed | ✅ Done, no code change |
+| 7 | Lab test catalog fully cached | Low | No action | ✅ No action needed |
+| 8 | Connection monitor polls every 60 s | Low | No action | ✅ No action needed |
+| 9 | Performance monitor in Release | Low | No action | ✅ No action needed |
 
 ---
 
@@ -55,7 +55,7 @@ Several blocks (4, 5, 6) depend on numbers. Do this before changing anything.
 
 ---
 
-## Block 1 - Local logs are never pruned
+## Block 1 - Local logs are never pruned ✅
 
 - **Category:** Disk and storage
 - **Severity:** Medium
@@ -81,7 +81,7 @@ Several blocks (4, 5, 6) depend on numbers. Do this before changing anything.
 
 ---
 
-## Block 2 - Printed PDFs with patient data stay in Temp
+## Block 2 - Printed PDFs with patient data stay in Temp ✅
 
 - **Category:** Security and local data, disk
 - **Severity:** Medium
@@ -105,7 +105,7 @@ Several blocks (4, 5, 6) depend on numbers. Do this before changing anything.
 
 ---
 
-## Block 3 - API base URL defaults to plain HTTP
+## Block 3 - API base URL defaults to plain HTTP ✅
 
 - **Category:** Security
 - **Severity:** Medium if the API runs on another PC; none if it is on the same machine
@@ -130,7 +130,7 @@ Several blocks (4, 5, 6) depend on numbers. Do this before changing anything.
 
 ---
 
-## Block 4 - Page view cache lives for the whole session
+## Block 4 - Page view cache lives for the whole session ✅
 
 - **Category:** RAM
 - **Severity:** Medium (potential)
@@ -159,7 +159,7 @@ Several blocks (4, 5, 6) depend on numbers. Do this before changing anything.
 
 ---
 
-## Block 5 - Warm-up and prebuild cost on slow machines
+## Block 5 - Warm-up and prebuild cost on slow machines ✅
 
 - **Category:** Startup, low-spec PCs
 - **Severity:** Medium (potential)
@@ -187,7 +187,7 @@ Several blocks (4, 5, 6) depend on numbers. Do this before changing anything.
 
 ---
 
-## Block 6 - Export holds rows and PDF in memory
+## Block 6 - Export holds rows and PDF in memory ✅
 
 - **Category:** RAM, UI responsiveness
 - **Severity:** Low to Medium
@@ -224,7 +224,7 @@ The cost grows in a straight line with the row count. The extra memory at the ca
 
 ---
 
-## Block 7 - Lab test catalog fully cached (no action)
+## Block 7 - Lab test catalog fully cached (no action) ✅
 
 - **Severity:** Low
 - **Files:**
@@ -233,29 +233,29 @@ The cost grows in a straight line with the row count. The extra memory at the ca
 
 The active catalog is fetched in pages of 100 and kept until the catalog version changes or the user signs out. This avoids a request per keystroke in New Order. A few hundred tests is a small download. Keep it. Revisit only if the catalog passes about 1,000 tests. Log the count and heap size at the largest clinic to confirm.
 
-- [ ] Reviewed
+- [x] Reviewed
 
 ---
 
-## Block 8 - Connection monitor polls every 60 s (no action)
+## Block 8 - Connection monitor polls every 60 s (no action) ✅
 
 - **Severity:** Low
 - **Files:** `frontend/Mostawsef.Desktop/Services/Api/ConnectionMonitor.cs` (lines 60-80, 160-170)
 
 One `DispatcherTimer` makes one small `GET /api/health` per minute while signed in. It does not pause when minimized. The cost is negligible, it cancels cleanly on sign-out, and pausing would delay the offline banner. Leave it. Confirm idle CPU is close to 0% in Block 0.
 
-- [ ] Reviewed
+- [x] Reviewed
 
 ---
 
-## Block 9 - Performance monitor in Release (no action)
+## Block 9 - Performance monitor in Release (no action) ✅
 
 - **Severity:** Low
 - **Files:** `frontend/Mostawsef.Desktop/Services/Diagnostics/PerformanceMonitor.cs` (lines 36-45, 130-140, 320-335)
 
 On in Debug; in Release only when `MOSTAWSEF_PERF=1`. When on, it holds `Process.GetCurrentProcess()` and appends a line per event, calling `Directory.CreateDirectory` before each append. In normal Release use it is a no-op. It is the tool for Block 0. Just make sure the variable is not set on production PCs, otherwise Block 1 grows faster.
 
-- [ ] Reviewed
+- [x] Reviewed
 
 ---
 

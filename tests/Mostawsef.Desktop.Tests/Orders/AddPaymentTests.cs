@@ -165,4 +165,29 @@ public class AddPaymentTests : UiTestBase
         var details = Assert.IsType<OrderDetailsViewModel>(shell.CurrentPage);
         await WaitUntil(() => details.Order?.Id == PartlyPaid.Id);
     }
+
+    [AvaloniaFact]
+    public async Task Choosing_a_status_filters_the_orders_from_page_one_and_all_statuses_clears_it()
+    {
+        using var app = Admin();
+        var (_, orders, window) = await ShowOrdersPageAsync(app);
+        Dispatcher.UIThread.RunJobs();
+        var filter = Named<ComboBox>(window, "StatusFilter");
+        Assert.Equal(6, filter.ItemCount);
+        Assert.Equal("All statuses", Texts(window).First(t => t == "All statuses"));
+
+        orders.SelectedStatus = OrdersViewModel_Status(orders, OrderStatuses.PartiallyPaid);
+        await WaitUntil(() => !orders.IsLoading);
+
+        var last = app.Api.RequestsTo(HttpMethod.Get, OrdersPath).Last().RequestUri!.Query;
+        Assert.Contains("status=PartiallyPaid", last);
+        Assert.Contains("page=1", last);
+
+        orders.SelectedStatus = OrdersViewModel_Status(orders, null);
+        await WaitUntil(() => !orders.IsLoading);
+        Assert.DoesNotContain("status=", app.Api.RequestsTo(HttpMethod.Get, OrdersPath).Last().RequestUri!.Query);
+    }
+
+    private static Desktop.ViewModels.Admin.OrderStatusOption OrdersViewModel_Status(OrdersViewModel _, string? value) =>
+        OrdersViewModel.StatusOptions.Single(o => o.Value == value);
 }

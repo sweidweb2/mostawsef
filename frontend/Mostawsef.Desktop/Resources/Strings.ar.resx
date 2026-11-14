@@ -306,6 +306,12 @@
   <data name="Patients.Records" xml:space="preserve"><value>{0} مريض</value></data>
   <data name="Patients.SearchPlaceholder" xml:space="preserve"><value>ابحث بالاسم أو رقم الهاتف...</value></data>
   <data name="Patients.ExportHint" xml:space="preserve"><value>تصدير كل المرضى كملف PDF</value></data>
+  <data name="Breadcrumb.Name" xml:space="preserve"><value>{0}</value></data>
+  <data name="PatientDetails.Subtitle" xml:space="preserve"><value>بيانات المريض وطلباته.</value></data>
+  <data name="PatientDetails.Info" xml:space="preserve"><value>المريض</value></data>
+  <data name="PatientDetails.Orders" xml:space="preserve"><value>الطلبات ({0})</value></data>
+  <data name="PatientDetails.Truncated" xml:space="preserve"><value>تظهر أحدث 100 طلب.</value></data>
+  <data name="PatientDetails.NoOrders" xml:space="preserve"><value>لا توجد طلبات لهذا المريض بعد.</value></data>
   <data name="Patients.Col.FullName" xml:space="preserve"><value>الاسم الكامل</value></data>
   <data name="Patients.Col.Phone" xml:space="preserve"><value>الهاتف</value></data>
   <data name="Patients.Col.GuardianPhone" xml:space="preserve"><value>هاتف ولي الأمر</value></data>
@@ -328,6 +334,7 @@
 
   <data name="Nav.Orders" xml:space="preserve"><value>الطلبات</value></data>
   <data name="Orders.Subtitle" xml:space="preserve"><value>طلبات التحاليل، الأحدث أولاً، مع ما تم دفعه.</value></data>
+  <data name="Orders.Filter.AllStatuses" xml:space="preserve"><value>كل الحالات</value></data>
   <data name="Orders.New" xml:space="preserve"><value>طلب جديد</value></data>
   <data name="Orders.Records" xml:space="preserve"><value>{0} طلب</value></data>
   <data name="Orders.SearchPlaceholder" xml:space="preserve"><value>ابحث باسم المريض أو الهاتف أو رقم الطلب...</value></data>

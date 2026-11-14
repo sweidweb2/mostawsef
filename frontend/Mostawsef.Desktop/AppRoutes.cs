@@ -36,6 +36,7 @@ public static class AppRoutes
         .Portal(Roles.Admin, "Portal.Admin", portal => portal
             .Page<DashboardViewModel, DashboardView>("IconDashboard", "Nav.Dashboard")
             .Page<PatientsViewModel, PatientsView>("IconUser", "Nav.Patients")
+            .SubPage<PatientDetailsViewModel, PatientDetailsView>()
             .Page<OrdersViewModel, OrdersView>("IconDocument", "Nav.Orders")
             .SubPage<NewOrderViewModel, NewOrderView>()
             .SubPage<OrderDetailsViewModel, OrderDetailsView>()

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Domain.Entities;
+using Mostawsef.Domain.Enums;
 using Mostawsef.Infrastructure.Persistence.Context;
 
 namespace Mostawsef.Infrastructure.Persistence.Repositories;
@@ -39,7 +40,9 @@ public class PatientRepository(AppDbContext db) : IPatientRepository
             .ThenBy(p => p.Id)
             .Select(p => new PatientListRow(
                 p.Id, p.FullName, p.Phone, p.GuardianPhone, p.IsInsured, p.Gender, p.DateOfBirth,
-                p.CreatedAt, p.UpdatedAt, p.UpdatedBy, p.Version));
+                p.CreatedAt, p.UpdatedAt, p.UpdatedBy, p.Version,
+                db.Orders.Any(o => o.PatientId == p.Id
+                    && (o.Status == OrderStatus.Pending || o.Status == OrderStatus.PartiallyPaid))));
 
         return await rows.ToPageAsync(patients, query, cancellationToken);
     }

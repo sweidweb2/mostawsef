@@ -39,9 +39,20 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
                     p.Notes)).ToList()))
             .FirstOrDefaultAsync(cancellationToken);
 
-    public async Task<(IReadOnlyList<OrderListRow> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<OrderListRow> Items, int Total)> GetPageAsync(
+        PageQuery query, OrderListFilter filter, CancellationToken cancellationToken)
     {
         var orders = db.Orders.AsNoTracking();
+
+        if (filter.PatientId is { } patient)
+        {
+            orders = orders.Where(o => o.PatientId == patient);
+        }
+
+        if (filter.Status is { } wanted)
+        {
+            orders = orders.Where(o => o.Status == wanted);
+        }
 
         if (TrigramSearch.ContainsPattern(query.SafeSearch) is { } pattern)
         {

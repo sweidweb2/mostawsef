@@ -48,6 +48,17 @@
                 <ui:DataTable.Toolbar>
                     <!-- Equal side columns keep the search box centered in the row. -->
                     <Grid ColumnDefinitions="*,2*,*" ColumnSpacing="{StaticResource GapControls}">
+                        <ComboBox Name="StatusFilter"
+                                  HorizontalAlignment="Left"
+                                  MinWidth="180"
+                                  ItemsSource="{x:Static vm:OrdersViewModel.StatusOptions}"
+                                  SelectedItem="{Binding SelectedStatus}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:OrderStatusOption">
+                                    <TextBlock Text="{l:TrKey {Binding LabelKey}}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
                         <ui:SearchBox Name="SearchBox"
                                       Grid.Column="1"
                                       Text="{Binding Search}"

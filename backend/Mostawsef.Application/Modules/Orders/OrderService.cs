@@ -13,7 +13,8 @@ namespace Mostawsef.Application.Modules.Orders;
 /// <summary>Lab test orders (Admin portal). Failures throw <see cref="AppException"/>.</summary>
 public interface IOrderService
 {
-    Task<PagedResult<OrderListItemDto>> GetPageAsync(PageQuery query, CancellationToken cancellationToken);
+    /// <summary>Newest first; <paramref name="filter"/> keeps only one status (one of <see cref="OrderStatuses"/>) and/or one patient's orders.</summary>
+    Task<PagedResult<OrderListItemDto>> GetPageAsync(PageQuery query, OrderListFilterRequest filter, CancellationToken cancellationToken);
 
     Task<OrderDetailsDto> GetAsync(Guid id, CancellationToken cancellationToken);
 
@@ -38,10 +39,18 @@ public class OrderService(
     public const string NumberSequence = "orders";
     public const string NumberPrefix = "ORD";
 
-    public async Task<PagedResult<OrderListItemDto>> GetPageAsync(PageQuery query, CancellationToken cancellationToken)
+    public async Task<PagedResult<OrderListItemDto>> GetPageAsync(PageQuery query, OrderListFilterRequest filter, CancellationToken cancellationToken)
     {
         query.EnsureSearchable();
-        var (items, total) = await orders.GetPageAsync(query, cancellationToken);
+        OrderStatus? wanted = null;
+        if (!string.IsNullOrEmpty(filter.Status))
+        {
+            wanted = Enum.TryParse<OrderStatus>(filter.Status, out var parsed) && Enum.IsDefined(parsed)
+                ? parsed
+                : throw AppException.Validation("status", ErrorCodes.Invalid);
+        }
+
+        var (items, total) = await orders.GetPageAsync(query, new OrderListFilter(wanted, filter.PatientId), cancellationToken);
         return new PagedResult<OrderListItemDto>(
             items.Select(o => new OrderListItemDto(
                 o.Id, o.Number, o.CreatedAt, o.PatientName, o.PatientPhone, o.TestsCount, o.Total, o.Paid, o.Status.ToString())).ToList(),

@@ -38,13 +38,17 @@ public record OrderItemRow(Guid LabTestId, string Code, string Name, long Price)
 
 public record OrderPaymentRow(DateTime PaidAt, PaymentType Type, PaymentMethod Method, long Amount, string? Notes);
 
+/// <summary>Optional narrowing of the orders list: one status and/or one patient's orders.</summary>
+public record OrderListFilter(OrderStatus? Status, Guid? PatientId);
+
 public interface IOrderRepository
 {
     /// <summary>Details projection: items + lab-test labels and the payments, oldest first.</summary>
     Task<OrderDetailsRow?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
-    /// <summary>Newest first. Search is LIKE on SearchText (trigram; name, phone, number).</summary>
-    Task<(IReadOnlyList<OrderListRow> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken);
+    /// <summary>Newest first. Search is LIKE on SearchText (trigram; name, phone, number); <paramref name="filter"/> narrows by status and patient.</summary>
+    Task<(IReadOnlyList<OrderListRow> Items, int Total)> GetPageAsync(
+        PageQuery query, OrderListFilter filter, CancellationToken cancellationToken);
 
     /// <summary>Order counts per status (statuses without orders are absent).</summary>
     Task<IReadOnlyDictionary<OrderStatus, int>> GetStatusCountsAsync(CancellationToken cancellationToken);

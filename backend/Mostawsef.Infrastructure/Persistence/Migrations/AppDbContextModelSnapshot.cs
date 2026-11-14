@@ -302,8 +302,6 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                     b.HasIndex("Number")
                         .IsUnique();
 
-                    b.HasIndex("PatientId");
-
                     b.HasIndex("PatientSearchName");
 
                     b.HasIndex("SearchText");
@@ -312,6 +310,8 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                     NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("SearchText"), new[] { "gin_trgm_ops" });
 
                     b.HasIndex("CreatedAt", "Id");
+
+                    b.HasIndex("PatientId", "Status");
 
                     b.HasIndex("Status", "CreatedAt");
 

@@ -110,6 +110,13 @@ public partial class NavigationService : ObservableObject
 
     public bool CanAccess(Type viewModelType) => _routes.IsAllowed(viewModelType, _session.IsInRole);
 
+    /// <summary>
+    /// The one reusable instance of a sub-page for its opener: created on first use into <paramref name="cache"/>
+    /// (null if the current user may not open it), so PageHost can keep reusing its view.
+    /// </summary>
+    public TViewModel? Reuse<TViewModel>(ref TViewModel? cache) where TViewModel : ViewModelBase =>
+        cache ??= CreatePage(typeof(TViewModel)) as TViewModel;
+
     /// <summary>Creates the page if the current user may open it, otherwise returns null.</summary>
     public ViewModelBase? CreatePage(Type viewModelType) =>
         CanAccess(viewModelType) ? (ViewModelBase)_services.GetRequiredService(viewModelType) : null;

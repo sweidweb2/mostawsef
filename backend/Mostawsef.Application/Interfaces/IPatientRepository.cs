@@ -4,7 +4,7 @@ using Mostawsef.Domain.Enums;
 
 namespace Mostawsef.Application.Interfaces;
 
-/// <summary>One row of the patients list: Notes are omitted (medical data, loaded on GetById).</summary>
+/// <summary>One row of the patients list: Notes are omitted (medical data, loaded on GetById). HasUnpaidOrders: some order is pending or partly paid.</summary>
 public record PatientListRow(
     Guid Id,
     string FullName,
@@ -16,7 +16,8 @@ public record PatientListRow(
     DateTime CreatedAt,
     DateTime? UpdatedAt,
     string? UpdatedBy,
-    int Version);
+    int Version,
+    bool HasUnpaidOrders);
 
 /// <summary>Columns the patient PDF needs (no notes, no audit/version).</summary>
 public record PatientExportRow(

@@ -34,7 +34,7 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Navigation(o => o.Payments).HasField("_payments");
 
         builder.HasIndex(o => o.Number).IsUnique();
-        builder.HasIndex(o => o.PatientId);
+        builder.HasIndex(o => new { o.PatientId, o.Status });
         builder.HasIndex(o => new { o.Status, o.CreatedAt });
         builder.HasIndex(o => o.PatientSearchName);
         builder.HasIndex(o => new { o.CreatedAt, o.Id });

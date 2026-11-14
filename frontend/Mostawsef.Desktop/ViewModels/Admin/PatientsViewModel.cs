@@ -8,6 +8,7 @@ using Mostawsef.Contracts.Patients;
 using Mostawsef.Desktop.Services.Api;
 using Mostawsef.Desktop.Services.Diagnostics;
 using Mostawsef.Desktop.Services.Local;
+using Mostawsef.Desktop.Services.Navigation;
 using Mostawsef.Desktop.Services.Printing;
 using Mostawsef.Desktop.Services.Ui;
 using Mostawsef.Desktop.ViewModels.Shell;
@@ -26,6 +27,10 @@ public partial class PatientsViewModel : NumberedListViewModel<PatientDto>
     private readonly IDialogService _dialogs;
     private readonly PrintService _print;
     private readonly ErrorReporter _errors;
+    private readonly NavigationService _navigation;
+
+    /// <summary>One Patient details page for this portal visit; pointed at a patient on each open so PageHost can reuse its view.</summary>
+    private PatientDetailsViewModel? _details;
 
     public PatientsViewModel(
         PatientsApi patients,
@@ -33,9 +38,11 @@ public partial class PatientsViewModel : NumberedListViewModel<PatientDto>
         IToastService toasts,
         LocalizationService localization,
         PrintService print,
+        NavigationService navigation,
         ErrorReporter errors)
         : base(toasts, localization, errors)
     {
+        _navigation = navigation;
         _patients = patients;
         _dialogs = dialogs;
         _print = print;
@@ -49,6 +56,33 @@ public partial class PatientsViewModel : NumberedListViewModel<PatientDto>
     protected override Task<ApiResult<PagedResult<PatientDto>>> FetchPageAsync(
         int page, int pageSize, string? search, bool includeTotal, CancellationToken cancellationToken) =>
         _patients.GetPatientsAsync(page, pageSize, search, includeTotal, cancellationToken);
+
+    /// <summary>Opens the patient's details page (their info and orders).</summary>
+    [RelayCommand]
+    private Task OpenAsync(PatientDto? patient)
+    {
+        if (patient is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        return _navigation.Reuse(ref _details) is { } details
+            ? _navigation.OpenAsync(details, page => page.Show(patient, SetUnpaid))
+            : Task.CompletedTask;
+    }
+
+    /// <summary>The details page found out whether the patient has an unpaid order: update the shown row's tint.</summary>
+    private void SetUnpaid(Guid patientId, bool unpaid)
+    {
+        for (var i = 0; i < Items.Count; i++)
+        {
+            if (Items[i].Id == patientId && Items[i].IsUnpaid != unpaid)
+            {
+                Items[i] = Items[i] with { HasUnpaidOrders = unpaid };
+                return;
+            }
+        }
+    }
 
     [RelayCommand]
     private void ShowGrid() => IsGridView = true;

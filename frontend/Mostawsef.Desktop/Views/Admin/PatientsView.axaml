@@ -76,7 +76,8 @@
                 </ui:DataTable.Toolbar>
 
                 <Panel>
-                    <DataGrid ItemsSource="{Binding Items}" IsReadOnly="True" CanUserSortColumns="False" IsVisible="{Binding !IsGridView}">
+                    <DataGrid Name="PatientsGrid" Classes="clickable-rows" ItemsSource="{Binding Items}" IsReadOnly="True" CanUserSortColumns="False"
+                              IsVisible="{Binding !IsGridView}" Tapped="OnRecordTapped" LoadingRow="OnLoadingRow">
                         <DataGrid.Columns>
                             <DataGridTemplateColumn Header="{l:Tr Common.RowNumber}" Width="56">
                                 <DataGridTemplateColumn.CellTemplate>
@@ -163,7 +164,8 @@
                     <ItemsControl Name="CardsGrid"
                                   Margin="{StaticResource PaddingCardCompact}"
                                   IsVisible="{Binding IsGridView}"
-                                  ItemsSource="{Binding Items}">
+                                  ItemsSource="{Binding Items}"
+                                  Tapped="OnRecordTapped">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <WrapPanel />
@@ -172,6 +174,8 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="patients:PatientDto">
                                 <ui:Card Classes="outlined"
+                                         Classes.unpaid="{Binding IsUnpaid}"
+                                         Cursor="Hand"
                                          Width="220"
                                          Height="220"
                                          Margin="0,0,12,12"

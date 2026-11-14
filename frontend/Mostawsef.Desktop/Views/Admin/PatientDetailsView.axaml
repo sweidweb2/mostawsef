@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Mostawsef.Desktop.Components"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:conv="using:Mostawsef.Desktop.Converters"
+             xmlns:orders="using:Mostawsef.Contracts.Orders"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Admin"
+             x:Class="Mostawsef.Desktop.Views.Admin.PatientDetailsView"
+             x:DataType="vm:PatientDetailsViewModel">
+    <ScrollViewer>
+        <StackPanel Classes="page">
+            <ui:PageHeader Title="{Binding Patient.FullName, FallbackValue=''}" Subtitle="{l:Tr PatientDetails.Subtitle}" />
+
+            <Grid ColumnDefinitions="320,*" ColumnSpacing="{StaticResource GapGrid}" IsVisible="{Binding HasPatient}">
+                <!-- Sidebar: who the patient is. -->
+                <ui:Card Name="PatientInfo" Title="{l:Tr PatientDetails.Info}" VerticalAlignment="Top">
+                    <ui:DetailsView>
+                        <ui:DetailsItem Label="{l:Tr Patients.Col.FullName}" Value="{Binding Patient.FullName, FallbackValue=''}" />
+                        <ui:DetailsItem Label="{l:Tr Patients.Col.Phone}" Value="{Binding Patient.Phone, FallbackValue=''}" />
+                        <ui:DetailsItem Label="{l:Tr Patients.Col.GuardianPhone}" Value="{Binding Patient.GuardianPhone, FallbackValue=''}" />
+                        <ui:DetailsItem Label="{l:Tr Patients.Col.Gender}" Value="{l:TrKey {Binding Patient.Gender}, Prefix=Gender.}" />
+                        <ui:DetailsItem Label="{l:Tr Patients.Col.DateOfBirth}"
+                                        Value="{Binding Patient.DateOfBirth, Converter={x:Static conv:ValueConverters.ShortDate}, FallbackValue=''}" />
+                        <ui:DetailsItem Label="{l:Tr Patients.Col.Notes}" Value="{Binding Patient.Notes, FallbackValue=''}" />
+                    </ui:DetailsView>
+                </ui:Card>
+
+                <!-- Body: the patient's orders as cards; a card opens the order. -->
+                <ui:Card Name="OrdersCard" Grid.Column="1" Classes="outlined"
+                         Title="{l:Tr PatientDetails.Orders, Arg={Binding Orders.Count}}">
+                    <StackPanel Spacing="{StaticResource GapControls}">
+                    <TextBlock Name="OrdersTruncated" Classes="caption muted" IsVisible="{Binding IsTruncated}"
+                               Text="{l:Tr PatientDetails.Truncated}" />
+                    <Panel MinHeight="180">
+                        <ItemsControl Name="OrderCards" ItemsSource="{Binding Orders}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="orders:OrderListItemDto">
+                                    <ui:Card Classes="outlined"
+                                             Width="200"
+                                             Height="200"
+                                             Margin="0,0,12,12"
+                                             Cursor="Hand"
+                                             Title="{Binding Number}"
+                                             Subtitle="{Binding CreatedAt, Converter={x:Static conv:ValueConverters.LocalDateTime}}">
+                                        <DockPanel>
+                                            <ui:Badge DockPanel.Dock="Bottom" HorizontalAlignment="Left"
+                                                      Kind="{Binding Status, Converter={x:Static conv:ValueConverters.OrderStatusToBadgeKind}}"
+                                                      Text="{l:TrKey {Binding Status}, Prefix=OrderStatus.}" />
+                                            <StackPanel VerticalAlignment="Center" Spacing="{StaticResource Space1}">
+                                                <TextBlock Classes="h3" Text="{l:Money {Binding Total}}" TextWrapping="Wrap" />
+                                                <TextBlock Classes="caption muted">
+                                                    <Run Text="{l:Tr Orders.Col.Paid}" /><Run Text=": " /><Run Text="{l:Money {Binding Paid}}" />
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </ui:Card>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <ui:EmptyState Name="OrdersEmpty" Margin="0,24" IsVisible="{Binding IsEmpty}"
+                                       Icon="{StaticResource IconInbox}"
+                                       Title="{l:Tr PatientDetails.NoOrders}" />
+                        <ui:ErrorState IsVisible="{Binding HasLoadError}"
+                                       Title="{l:TrKey {Binding LoadErrorTitleKey}}"
+                                       Description="{l:TrKey {Binding LoadErrorDescriptionKey}}"
+                                       RetryCommand="{Binding RefreshCommand}" />
+                        <ui:LoadingOverlay IsLoading="{Binding IsLoading}" />
+                    </Panel>
+                    </StackPanel>
+                </ui:Card>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

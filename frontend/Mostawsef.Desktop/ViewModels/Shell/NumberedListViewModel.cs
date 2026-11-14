@@ -33,7 +33,7 @@ public abstract partial class NumberedListViewModel<TItem> : ListPageViewModelBa
     /// </summary>
     protected void PrependNewest(TItem item)
     {
-        if (!IsLoaded || CurrentPage != 1 || !string.IsNullOrWhiteSpace(Search))
+        if (!IsLoaded || CurrentPage != 1 || HasActiveFilter)
         {
             MarkStale();
             return;
@@ -52,7 +52,7 @@ public abstract partial class NumberedListViewModel<TItem> : ListPageViewModelBa
     /// </summary>
     protected void InsertSorted(TItem item, Comparison<TItem> compare)
     {
-        if (!IsLoaded || CurrentPage != 1 || !string.IsNullOrWhiteSpace(Search))
+        if (!IsLoaded || CurrentPage != 1 || HasActiveFilter)
         {
             MarkStale();
             return;
@@ -75,6 +75,12 @@ public abstract partial class NumberedListViewModel<TItem> : ListPageViewModelBa
         TrimToPageSize();
         BumpTotalAfterInsert();
     }
+
+    /// <summary>True while a search (or a subclass's own filter) may hide a new row; override to add filters.</summary>
+    protected virtual bool HasActiveFilter => !string.IsNullOrWhiteSpace(Search);
+
+    /// <summary>A subclass's own filter changed: show page 1 of the matching rows and count them again.</summary>
+    protected Task ApplyFilterAsync() => LoadAsync(page: 1, includeTotal: true);
 
     private void TrimToPageSize()
     {

@@ -38,7 +38,13 @@ public record PatientDto(
     DateTime CreatedAt,
     DateTime? UpdatedAt,
     string? UpdatedBy,
-    int Version);
+    int Version,
+    bool? HasUnpaidOrders = null)
+{
+    /// <summary>True for a list row of a patient with an unpaid order (HasUnpaidOrders is null where it is not computed).</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsUnpaid => HasUnpaidOrders == true;
+}
 
 public record CreatePatientRequest
 {
