@@ -55,11 +55,12 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\Desktop\{#MyAppExeName}"; W
 
 [Run]
 ; After files are in place: Postgres (if needed), DB, connection string, Windows service.
+; Visible window + log file so a failure is not a silent "success".
 Filename: "powershell.exe"; \
   Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\scripts\install-clinic.ps1"" -InstallRoot ""{app}"" -ConfigBackup ""{tmp}\mostawsef-config"""; \
   StatusMsg: "Configuring PostgreSQL and the Mostawsef API service..."; \
-  Flags: runhidden waituntilterminated
-; Unchecked: do not auto-launch (avoids .NET/error dialogs + browser spam if something still fails).
+  Flags: waituntilterminated
+; Unchecked: do not auto-launch after Setup.
 Filename: "{app}\Desktop\{#MyAppExeName}"; Description: "Launch Mostawsef"; Flags: nowait postinstall skipifsilent unchecked
 
 [UninstallRun]
@@ -72,14 +73,54 @@ Filename: "powershell.exe"; \
 var
   PgPage: TInputQueryWizardPage;
 
+function PostgresServiceExists: Boolean;
+var
+  ResultCode: Integer;
+begin
+  { sc query returns 0 when the service exists (any state). }
+  Result := Exec('sc.exe', 'query postgresql-x64-17', '', SW_HIDE, ewWaitUntilTerminated, ResultCode)
+    and (ResultCode = 0);
+end;
+
+function ConnectionStringAlreadyConfigured: Boolean;
+var
+  AppJson, Content: string;
+begin
+  Result := False;
+  AppJson := ExpandConstant('{app}\Api\appsettings.json');
+  if not FileExists(AppJson) then
+    Exit;
+  if not LoadStringFromFile(AppJson, Content) then
+    Exit;
+  Result := (Pos('ConnectionStrings', Content) > 0) and (Pos('Default', Content) > 0)
+    and (Pos('Host=', Content) > 0);
+end;
+
 procedure InitializeWizard;
 begin
   PgPage := CreateInputQueryPage(wpSelectTasks,
     'PostgreSQL', 'Database setup',
-    'If PostgreSQL 17 is already installed on this PC, enter the postgres superuser password.' #13#10 +
-    'Leave blank on a new PC: Setup installs PostgreSQL from the bundled offline installer.' #13#10 +
+    'If PostgreSQL 17 is already installed, enter the postgres superuser password (required).' #13#10 +
+    'Leave blank only on a new PC with no PostgreSQL yet (Setup installs it from the bundled offline installer).' #13#10 +
     'On upgrades that already have a connection string, you can leave this blank.');
   PgPage.Add('postgres password:', True);
+end;
+
+function NextButtonClick(CurPageID: Integer): Boolean;
+begin
+  Result := True;
+  if CurPageID = PgPage.ID then
+  begin
+    if (Trim(PgPage.Values[0]) = '') and PostgresServiceExists and (not ConnectionStringAlreadyConfigured) then
+    begin
+      MsgBox(
+        'PostgreSQL is already installed on this PC, but Mostawsef has no database connection yet.' #13#10 #13#10 +
+        'Enter the postgres superuser password to create the Mostawsef database and Windows service.' #13#10 +
+        'Leaving it blank will leave the Desktop unable to reach the server.',
+        mbError, MB_OK);
+      Result := False;
+    end;
+  end;
 end;
 
 procedure BackupClinicConfig;
@@ -98,14 +139,31 @@ end;
 
 procedure SavePostgresPasswordIfAny;
 var
-  SuperPass: string;
+  SuperPass, TmpFile, AppFile: string;
 begin
   SuperPass := Trim(PgPage.Values[0]);
+  ForceDirectories(ExpandConstant('{tmp}\mostawsef-config'));
+  ForceDirectories(ExpandConstant('{app}\scripts'));
+  TmpFile := ExpandConstant('{tmp}\mostawsef-config\postgres-super.password');
+  AppFile := ExpandConstant('{app}\scripts\postgres-super.password');
+  { Always write both paths so install-clinic can find the password even if {tmp} differs. }
   if SuperPass <> '' then
   begin
-    ForceDirectories(ExpandConstant('{tmp}\mostawsef-config'));
-    SaveStringToFile(ExpandConstant('{tmp}\mostawsef-config\postgres-super.password'), SuperPass, False);
+    SaveStringToFile(TmpFile, SuperPass, False);
+    SaveStringToFile(AppFile, SuperPass, False);
+  end
+  else
+  begin
+    if FileExists(TmpFile) then
+      DeleteFile(TmpFile);
+    if FileExists(AppFile) then
+      DeleteFile(AppFile);
   end;
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+begin
+  Result := '';
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
@@ -113,7 +171,7 @@ begin
   { Before file extraction: keep JWT + connection string across upgrades. }
   if CurStep = ssInstall then
     BackupClinicConfig;
-  { Before [Run] install-clinic.ps1 }
+  { Before [Run] install-clinic.ps1 — password must already be on disk. }
   if CurStep = ssPostInstall then
     SavePostgresPasswordIfAny;
 end;

@@ -31,6 +31,20 @@ $apiExe = Join-Path $apiDir 'Mostawsef.Api.exe'
 $appsettingsPath = Join-Path $apiDir 'appsettings.json'
 $clinicPath = Join-Path $apiDir 'appsettings.Clinic.json'
 $serviceScript = Join-Path $InstallRoot 'scripts\install-api-service.ps1'
+$logPath = Join-Path $InstallRoot 'install-clinic.log'
+
+function Write-InstallLog([string] $message) {
+    $line = '{0:u}  {1}' -f (Get-Date).ToUniversalTime(), $message
+    Add-Content -LiteralPath $logPath -Value $line -Encoding UTF8
+    Write-Host $message
+}
+
+try {
+    New-Item -ItemType Directory -Force -Path $InstallRoot | Out-Null
+    Set-Content -LiteralPath $logPath -Value ("{0:u}  install-clinic starting (InstallRoot={1})" -f (Get-Date).ToUniversalTime(), $InstallRoot) -Encoding UTF8
+} catch {
+    # Logging must not block install; continue without a log file if the disk refuses it.
+}
 
 function Assert-Admin {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -203,24 +217,58 @@ function Ensure-Database {
 
     $safeAppPass = Escape-SqlLiteral $AppPassword
     $env:PGPASSWORD = $SuperPassword
-    $roleExists = (& $psql -h 127.0.0.1 -p $Port -U postgres -d postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname = 'mostawsef'").Trim()
+
+    function Invoke-Psql([string[]] $SqlArgs, [string] $failMessage) {
+        $output = & $psql @SqlArgs 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            throw "$failMessage (psql exit $LASTEXITCODE): $output"
+        }
+        return (($output | Out-String).Trim())
+    }
+
+    $roleExists = Invoke-Psql @(
+        '-h', '127.0.0.1', '-p', "$Port", '-U', 'postgres', '-d', 'postgres', '-tAc',
+        "SELECT 1 FROM pg_roles WHERE rolname = 'mostawsef'"
+    ) 'Could not connect as postgres (check the password you entered in Setup)'
+
     if ($roleExists -ne '1') {
-        & $psql -h 127.0.0.1 -p $Port -U postgres -d postgres -v ON_ERROR_STOP=1 -c "CREATE ROLE mostawsef LOGIN PASSWORD '$safeAppPass';"
+        Invoke-Psql @(
+            '-h', '127.0.0.1', '-p', "$Port", '-U', 'postgres', '-d', 'postgres', '-v', 'ON_ERROR_STOP=1', '-c',
+            "CREATE ROLE mostawsef LOGIN PASSWORD '$safeAppPass'"
+        ) 'Failed to create role mostawsef' | Out-Null
     } else {
-        & $psql -h 127.0.0.1 -p $Port -U postgres -d postgres -v ON_ERROR_STOP=1 -c "ALTER ROLE mostawsef WITH LOGIN PASSWORD '$safeAppPass';"
+        Invoke-Psql @(
+            '-h', '127.0.0.1', '-p', "$Port", '-U', 'postgres', '-d', 'postgres', '-v', 'ON_ERROR_STOP=1', '-c',
+            "ALTER ROLE mostawsef WITH LOGIN PASSWORD '$safeAppPass'"
+        ) 'Failed to update role mostawsef' | Out-Null
     }
 
-    $dbExists = (& $psql -h 127.0.0.1 -p $Port -U postgres -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = 'mostawsef'").Trim()
+    $dbExists = Invoke-Psql @(
+        '-h', '127.0.0.1', '-p', "$Port", '-U', 'postgres', '-d', 'postgres', '-tAc',
+        "SELECT 1 FROM pg_database WHERE datname = 'mostawsef'"
+    ) 'Failed to check database mostawsef'
+
     if ($dbExists -ne '1') {
-        & $psql -h 127.0.0.1 -p $Port -U postgres -d postgres -v ON_ERROR_STOP=1 -c 'CREATE DATABASE mostawsef OWNER mostawsef;'
+        Invoke-Psql @(
+            '-h', '127.0.0.1', '-p', "$Port", '-U', 'postgres', '-d', 'postgres', '-v', 'ON_ERROR_STOP=1', '-c',
+            'CREATE DATABASE mostawsef OWNER mostawsef;'
+        ) 'Failed to create database mostawsef' | Out-Null
     } else {
-        & $psql -h 127.0.0.1 -p $Port -U postgres -d postgres -c 'ALTER DATABASE mostawsef OWNER TO mostawsef;' | Out-Null
+        Invoke-Psql @(
+            '-h', '127.0.0.1', '-p', "$Port", '-U', 'postgres', '-d', 'postgres', '-c',
+            'ALTER DATABASE mostawsef OWNER TO mostawsef;'
+        ) 'Failed to set database owner' | Out-Null
     }
 
-    & $psql -h 127.0.0.1 -p $Port -U postgres -d mostawsef -v ON_ERROR_STOP=1 -c 'GRANT ALL ON SCHEMA public TO mostawsef; ALTER SCHEMA public OWNER TO mostawsef;'
+    Invoke-Psql @(
+        '-h', '127.0.0.1', '-p', "$Port", '-U', 'postgres', '-d', 'mostawsef', '-v', 'ON_ERROR_STOP=1', '-c',
+        'GRANT ALL ON SCHEMA public TO mostawsef; ALTER SCHEMA public OWNER TO mostawsef;'
+    ) 'Failed to grant schema rights' | Out-Null
 
     $env:PGPASSWORD = $AppPassword
-    & $psql -h 127.0.0.1 -p $Port -U mostawsef -d mostawsef -c '\conninfo' | Out-Host
+    Invoke-Psql @(
+        '-h', '127.0.0.1', '-p', "$Port", '-U', 'mostawsef', '-d', 'mostawsef', '-c', '\conninfo'
+    ) 'mostawsef user could not connect after create' | Out-Host
     Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue
 }
 
@@ -233,7 +281,36 @@ function Parse-ConnectionString([string] $cs) {
     return $map
 }
 
+function Read-PostgresSuperPasswordFile {
+    $candidates = @(
+        (Join-Path $InstallRoot 'scripts\postgres-super.password')
+    )
+    if (-not [string]::IsNullOrWhiteSpace($ConfigBackup)) {
+        $candidates += (Join-Path $ConfigBackup 'postgres-super.password')
+    }
+
+    foreach ($passFile in $candidates) {
+        if (Test-Path -LiteralPath $passFile) {
+            $value = (Get-Content -LiteralPath $passFile -Raw -ErrorAction SilentlyContinue)
+            if (-not [string]::IsNullOrWhiteSpace($value)) {
+                Write-InstallLog "Read postgres superuser password from $passFile"
+                return $value.Trim()
+            }
+            Write-InstallLog "Password file exists but is empty: $passFile"
+        }
+    }
+
+    Write-InstallLog 'No postgres superuser password file found under scripts\ or ConfigBackup.'
+    return ''
+}
+
 # --- main ---
+if ([string]::IsNullOrWhiteSpace($PostgresSuperPassword)) {
+    $PostgresSuperPassword = Read-PostgresSuperPasswordFile
+}
+
+try {
+Write-InstallLog 'Asserting admin + layout...'
 Assert-Admin
 
 if (-not (Test-Path -LiteralPath $apiExe)) {
@@ -248,14 +325,9 @@ if (-not (Test-Path -LiteralPath $serviceScript)) {
 
 Restore-PreservedConfig
 
-# Optional password file written by Setup.exe when PostgreSQL already exists.
-$passFile = Join-Path $ConfigBackup 'postgres-super.password'
-if ([string]::IsNullOrWhiteSpace($PostgresSuperPassword) -and $ConfigBackup -and (Test-Path -LiteralPath $passFile)) {
-    $PostgresSuperPassword = (Get-Content -LiteralPath $passFile -Raw).Trim()
-}
-
 Ensure-Postgres
 $port = Get-PostgresPort
+Write-InstallLog "PostgreSQL port=$port"
 
 $existingCs = Get-AppsettingsConnectionString
 if ([string]::IsNullOrWhiteSpace($existingCs)) {
@@ -266,18 +338,19 @@ if ([string]::IsNullOrWhiteSpace($existingCs)) {
     if ([string]::IsNullOrWhiteSpace($superPass)) {
         throw @"
 No ConnectionStrings:Default in Api\appsettings.json and PostgreSQL was already installed.
-Pass -PostgresSuperPassword for the postgres user (Setup prompts for this), or set the connection string manually
-(see Docs/3-Follow-ups/clinic-install-playbook.md).
+Setup must save the postgres password (wizard page), or pass -PostgresSuperPassword.
+See $logPath and Docs/3-Follow-ups/clinic-install-playbook.md.
 "@
     }
 
     $appPass = -join ((48..57 + 65..90 + 97..122) | Get-Random -Count 20 | ForEach-Object { [char]$_ })
+    Write-InstallLog 'Creating/updating mostawsef role and database...'
     Ensure-Database -Port $port -AppPassword $appPass -SuperPassword $superPass
     $cs = "Host=127.0.0.1;Port=$port;Database=mostawsef;Username=mostawsef;Password=$appPass"
     Set-AppsettingsConnectionString $cs
-    Write-Host "Wrote ConnectionStrings:Default (port $port)."
+    Write-InstallLog "Wrote ConnectionStrings:Default (port $port)."
 } else {
-    Write-Host 'ConnectionStrings:Default already present; leaving it unchanged.'
+    Write-InstallLog 'ConnectionStrings:Default already present; leaving it unchanged.'
     # Still verify the app user can connect when we know the password from the string.
     $map = Parse-ConnectionString $existingCs
     if ($map['Password'] -and $map['Username'] -and $map['Database']) {
@@ -288,14 +361,14 @@ Pass -PostgresSuperPassword for the postgres user (Setup prompts for this), or s
             $h = if ($map['Host']) { $map['Host'] } else { '127.0.0.1' }
             & $psql -h $h -p $p -U $map['Username'] -d $map['Database'] -c 'SELECT 1;' | Out-Null
             if ($LASTEXITCODE -ne 0) {
-                Write-Host 'Warning: could not verify DB login with the saved connection string.' -ForegroundColor Yellow
+                Write-InstallLog 'Warning: could not verify DB login with the saved connection string.'
             }
             Remove-Item Env:PGPASSWORD -ErrorAction SilentlyContinue
         }
     }
 }
 
-Write-Host 'Installing / updating MostawsefApi Windows service...'
+Write-InstallLog 'Installing / updating MostawsefApi Windows service...'
 & $serviceScript -ApiPath $apiDir -PostgresService $PostgresService
 if ($LASTEXITCODE -ne 0) { throw "install-api-service.ps1 failed ($LASTEXITCODE)" }
 
@@ -304,15 +377,36 @@ for ($i = 0; $i -lt 45; $i++) {
     Start-Sleep -Seconds 1
     try {
         $h = Invoke-RestMethod -Uri 'http://localhost:5270/api/health' -TimeoutSec 2
-        Write-Host "Health: $($h | ConvertTo-Json -Compress)"
+        Write-InstallLog "Health: $($h | ConvertTo-Json -Compress)"
         $ok = $true
         break
     } catch {
-        if ($i % 10 -eq 0) { Write-Host "Waiting for API... ($i)" }
+        if ($i % 10 -eq 0) { Write-InstallLog "Waiting for API... ($i)" }
     }
 }
 if (-not $ok) {
-    throw 'API service did not become healthy at http://localhost:5270/api/health'
+    throw "API service did not become healthy at http://localhost:5270/api/health (see $logPath and Event Viewer)."
 }
 
+# Do not leave the superuser password on disk after a successful configure.
+$localPassFile = Join-Path $InstallRoot 'scripts\postgres-super.password'
+if (Test-Path -LiteralPath $localPassFile) {
+    Remove-Item -LiteralPath $localPassFile -Force -ErrorAction SilentlyContinue
+}
+
+Write-InstallLog 'Clinic install steps finished.'
 Write-Host 'Clinic install steps finished.' -ForegroundColor Green
+}
+catch {
+    Write-InstallLog ("FAILED: " + $_.Exception.Message)
+    Write-Host ("install-clinic FAILED: " + $_.Exception.Message) -ForegroundColor Red
+    Write-Host "Log: $logPath" -ForegroundColor Yellow
+    throw
+}
+finally {
+    # Best-effort: never leave the wizard password file behind after the run.
+    $localPassFile = Join-Path $InstallRoot 'scripts\postgres-super.password'
+    if (Test-Path -LiteralPath $localPassFile) {
+        Remove-Item -LiteralPath $localPassFile -Force -ErrorAction SilentlyContinue
+    }
+}
