@@ -15,8 +15,6 @@ public interface IAuthService
     /// </summary>
     Task<LoginResponse?> LoginAsync(LoginRequest request, CancellationToken cancellationToken);
 
-    Task<UserDto?> GetUserAsync(Guid userId, CancellationToken cancellationToken);
-
     /// <summary>Records the sign-out of the current user (tokens are stateless, the client discards it).</summary>
     Task SignOutAsync(CancellationToken cancellationToken);
 
@@ -136,14 +134,6 @@ public class AuthService(
                 Details = new { Role = user.Role.ToString() },
             },
             cancellationToken);
-    }
-
-    public async Task<UserDto?> GetUserAsync(Guid userId, CancellationToken cancellationToken)
-    {
-        var user = await users.GetDetailsAsync(userId, cancellationToken);
-        return user is { IsActive: true }
-            ? new UserDto(user.Id, user.Username, user.Role.ToString(), string.IsNullOrEmpty(user.FullName) ? null : user.FullName)
-            : null;
     }
 
     public Task SignOutAsync(CancellationToken cancellationToken) =>

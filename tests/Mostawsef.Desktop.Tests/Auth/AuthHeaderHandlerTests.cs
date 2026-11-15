@@ -16,7 +16,7 @@ public class AuthHeaderHandlerTests : UiTestBase
         using var app = new TestServices();
         app.SignInAs(Roles.Admin);
 
-        await app.Get<AuthApi>().MeAsync(TestContext.Current.CancellationToken);
+        await app.Get<ClinicSettingsApi>().GetAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal("test-token", Assert.Single(app.Api.Requests).Headers.Authorization?.Parameter);
         Assert.Null(app.Get<HttpClient>().DefaultRequestHeaders.Authorization);
@@ -29,7 +29,7 @@ public class AuthHeaderHandlerTests : UiTestBase
         app.SignInAs(Roles.Admin);
         app.Session.SignOut();
 
-        await app.Get<AuthApi>().MeAsync(TestContext.Current.CancellationToken);
+        await app.Get<ClinicSettingsApi>().GetAsync(TestContext.Current.CancellationToken);
 
         Assert.Null(Assert.Single(app.Api.Requests).Headers.Authorization);
     }
@@ -47,7 +47,7 @@ public class AuthHeaderHandlerTests : UiTestBase
             return new HttpResponseMessage(HttpStatusCode.Unauthorized);
         };
 
-        await app.Get<AuthApi>().MeAsync(TestContext.Current.CancellationToken);
+        await app.Get<ClinicSettingsApi>().GetAsync(TestContext.Current.CancellationToken);
 
         Assert.True(app.Session.IsInRole(Roles.Super));
         Assert.Equal("new-token", app.Session.AccessToken);

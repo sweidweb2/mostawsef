@@ -55,7 +55,6 @@ Login protection (configuration keys under `RateLimit:`; the API answers like a 
 - Behind a reverse proxy set `ForwardedHeaders:Enabled` to `true` so the limits use the client address from `X-Forwarded-For`
   (only loopback proxies are trusted unless `KnownProxies` is configured).
 - `POST /api/system-errors/report` is anonymous: body capped at 128 KB, stored fields truncated.
-| `GET /api/auth/me` | Bearer token | `200 { id, username, role, fullName }`, `401` |
 | `POST /api/auth/change-password` `{ currentPassword, newPassword }` | Bearer token | `200 { accessToken, expiresAt, user }` (old JWT invalidated), `400` (`wrong_password` on `CurrentPassword`, `min_length\|8`...) |
 | `GET /api/users?page=&pageSize=&search=` | Super | Paged list sorted by name; search matches the username or the normalized full name |
 | `GET /api/users/{id}` | Super | `200` details with audit fields and `version`, `404` |
@@ -122,7 +121,7 @@ Seeded once on first Production start from `appsettings.json`. Change these pass
 | Piece | Responsibility |
 | --- | --- |
 | `Services/Api/ApiClient` | HTTP calls, maps errors (`Unreachable`, `Unauthorized`, `TooManyRequests`, ...). Knows nothing about tokens. API address: `ApiBaseUrl` in `%AppData%\Mostawsef\settings.json` (default `http://localhost:5270`). **Install decision (deploy-install Block 4):** one-PC clinics use plain `http` on localhost — traffic stays on the machine. Multi-PC / remote API is not the current product; if that changes, put the API behind HTTPS (certificate every desktop trusts) and set `ApiBaseUrl` to `https://…`. The login screen already warns when `ApiBaseUrl` is plain http to another machine (`Services/Local/ApiAddress`). Timeouts (`ServiceRegistration`): 3 s to connect, so a switched-off API PC shows `Unreachable` quickly, and 15 s for a whole request (applied by `ApiClient`, not `HttpClient.Timeout`). Whole-table work (backup export, delete a whole log, data reset) passes `ApiClient.LongRequestTimeout` (10 min) |
-| `Services/Api/AuthApi` | `LoginAsync`, `MeAsync` |
+| `Services/Api/AuthApi` | `LoginAsync`, `ChangePasswordAsync`, `LogoutAsync` (the signed-in user comes from the login response) |
 | `Services/Auth/AuthHeaderHandler` | `HttpClient` pipeline step: adds the session's bearer token to each request; a `401` for that token expires the session (a late `401` for an earlier session is ignored) |
 | `Services/Auth/SessionService` | Current user + token in memory; expiry uses `LoginResponse.ExpiresInSeconds` counted from receipt (so a wrong PC clock does not expire the session at once), and also when `AuthHeaderHandler` reports a rejected token |
 | `AppRoutes` (`Services/Navigation/RouteTable`) | Every screen in one table: its view, who may open it, and each role's portal (title + menu). DI, navigation, the shell and `ViewLocator` all read it |

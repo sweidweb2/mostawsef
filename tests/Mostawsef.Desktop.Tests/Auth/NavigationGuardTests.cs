@@ -105,7 +105,7 @@ public class NavigationGuardTests : UiTestBase
         app.Navigation.NavigateToHome();
         app.Api.RespondWithStatus(HttpStatusCode.Unauthorized);
 
-        await app.Get<AuthApi>().MeAsync(TestContext.Current.CancellationToken);
+        await app.Get<ClinicSettingsApi>().GetAsync(TestContext.Current.CancellationToken);
 
         Assert.False(app.Session.IsAuthenticated);
         Assert.Equal(SignOutReason.Expired, app.Session.LastSignOutReason);

@@ -32,11 +32,11 @@ public class ChangePasswordTests(ApiFactory factory)
 
         Assert.Equal(
             HttpStatusCode.Unauthorized,
-            (await factory.CreateClient().WithBearer(oldSession.AccessToken).GetAsync("api/auth/me", Ct)).StatusCode);
+            (await factory.CreateClient().WithBearer(oldSession.AccessToken).GetAsync("api/clinic-settings", Ct)).StatusCode);
 
         var withNew = factory.CreateClient();
         withNew.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", renewed.AccessToken);
-        Assert.Equal(HttpStatusCode.OK, (await withNew.GetAsync("api/auth/me", Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await withNew.GetAsync("api/clinic-settings", Ct)).StatusCode);
 
         Assert.Equal(HttpStatusCode.Unauthorized, (await factory.CreateClient().LoginAsync(login.Username, login.Password)).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await factory.CreateClient().LoginAsync(login.Username, "Changed#Pass7")).StatusCode);

@@ -256,7 +256,7 @@ public class UsersTests(ApiFactory factory)
 
         await super.PutAsJsonAsync($"api/users/{user.Id}", new UpdateUserRequest { FullName = user.FullName, IsActive = false, Version = user.Version }, Ct);
 
-        Assert.Equal(HttpStatusCode.Unauthorized, (await userClient.GetAsync("api/auth/me", Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await userClient.GetAsync("api/clinic-settings", Ct)).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await factory.CreateClient().LoginAsync(login.Username, login.Password)).StatusCode);
     }
 
@@ -312,7 +312,7 @@ public class UsersTests(ApiFactory factory)
             $"api/users/{user.Id}/reset-password", new ResetPasswordRequest { NewPassword = "Fresh#Pass99" }, Ct);
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await oldToken.GetAsync("api/auth/me", Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await oldToken.GetAsync("api/clinic-settings", Ct)).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await factory.CreateClient().LoginAsync(login.Username, login.Password)).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await factory.CreateClient().LoginAsync(login.Username, "Fresh#Pass99")).StatusCode);
     }

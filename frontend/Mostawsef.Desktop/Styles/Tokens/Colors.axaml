@@ -49,10 +49,6 @@
     <Color x:Key="Neutral900">#132434</Color>
     <Color x:Key="Neutral950">#0C1722</Color>
 
-    <!-- Printed paper stays white in both themes -->
-    <SolidColorBrush x:Key="BrushPaper" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="BrushPaperText" Color="#111111" />
-
     <!-- ===================== Semantic tokens ===================== -->
     <ResourceDictionary.ThemeDictionaries>
 

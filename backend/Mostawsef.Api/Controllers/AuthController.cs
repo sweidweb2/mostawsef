@@ -36,21 +36,6 @@ public class AuthController(IAuthService auth) : ControllerBase
         return NoContent();
     }
 
-    [HttpGet("me")]
-    [Authorize]
-    [ProducesResponseType<UserDto>(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> Me(CancellationToken cancellationToken)
-    {
-        if (CurrentUserId() is not { } userId)
-        {
-            return Unauthorized();
-        }
-
-        var user = await auth.GetUserAsync(userId, cancellationToken);
-        return user is null ? Unauthorized() : Ok(user);
-    }
-
     [HttpPost("change-password")]
     [Authorize]
     [ProducesResponseType<LoginResponse>(StatusCodes.Status200OK)]

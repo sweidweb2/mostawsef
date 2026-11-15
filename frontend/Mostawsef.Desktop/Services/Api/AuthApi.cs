@@ -9,9 +9,6 @@ public class AuthApi(ApiClient api)
     public Task<ApiResult<LoginResponse>> LoginAsync(string username, string password, CancellationToken cancellationToken = default) =>
         api.PostAsync<LoginRequest, LoginResponse>("api/auth/login", new LoginRequest(username, password), cancellationToken);
 
-    public Task<ApiResult<UserDto>> MeAsync(CancellationToken cancellationToken = default) =>
-        api.GetAsync<UserDto>("api/auth/me", cancellationToken);
-
     public Task<ApiResult<LoginResponse>> ChangePasswordAsync(ChangePasswordRequest request, CancellationToken cancellationToken = default) =>
         api.PostAsync<ChangePasswordRequest, LoginResponse>("api/auth/change-password", request, cancellationToken);
 

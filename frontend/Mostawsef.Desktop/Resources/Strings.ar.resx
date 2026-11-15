@@ -9,30 +9,21 @@
   <data name="Language.Switch" xml:space="preserve"><value>English</value></data>
   <data name="Theme.Toggle" xml:space="preserve"><value>تبديل الوضع الفاتح / الداكن</value></data>
 
-  <data name="Common.Ok" xml:space="preserve"><value>حسناً</value></data>
   <data name="Common.Cancel" xml:space="preserve"><value>إلغاء</value></data>
   <data name="Common.Confirm" xml:space="preserve"><value>تأكيد</value></data>
   <data name="Common.Close" xml:space="preserve"><value>إغلاق</value></data>
   <data name="Common.Save" xml:space="preserve"><value>حفظ</value></data>
   <data name="Common.Delete" xml:space="preserve"><value>حذف</value></data>
   <data name="Common.Edit" xml:space="preserve"><value>تعديل</value></data>
-  <data name="Common.Add" xml:space="preserve"><value>إضافة</value></data>
   <data name="Common.Search" xml:space="preserve"><value>بحث...</value></data>
-  <data name="Common.Clear" xml:space="preserve"><value>مسح</value></data>
   <data name="Common.Retry" xml:space="preserve"><value>إعادة المحاولة</value></data>
-  <data name="Common.Back" xml:space="preserve"><value>السابق</value></data>
-  <data name="Common.Loading" xml:space="preserve"><value>جارٍ التحميل...</value></data>
   <data name="Common.Actions" xml:space="preserve"><value>إجراءات</value></data>
   <data name="Common.View" xml:space="preserve"><value>عرض</value></data>
-  <data name="Common.Filter" xml:space="preserve"><value>تصفية</value></data>
   <data name="Common.Export" xml:space="preserve"><value>تصدير</value></data>
-  <data name="Common.More" xml:space="preserve"><value>المزيد</value></data>
 
   <data name="Pagination.Summary" xml:space="preserve"><value>صفحة {0} من {1}</value></data>
-  <data name="Pagination.First" xml:space="preserve"><value>الصفحة الأولى</value></data>
   <data name="Pagination.Previous" xml:space="preserve"><value>الصفحة السابقة</value></data>
   <data name="Pagination.Next" xml:space="preserve"><value>الصفحة التالية</value></data>
-  <data name="Pagination.Last" xml:space="preserve"><value>الصفحة الأخيرة</value></data>
 
   <data name="Empty.Title" xml:space="preserve"><value>لا توجد بيانات بعد</value></data>
   <data name="Empty.Description" xml:space="preserve"><value>ستظهر العناصر التي تضيفها هنا.</value></data>
@@ -43,23 +34,9 @@
 
   <data name="Confirm.Title" xml:space="preserve"><value>هل أنت متأكد؟</value></data>
 
-  <data name="Patient.FileNo" xml:space="preserve"><value>رقم الملف</value></data>
-  <data name="Patient.Age" xml:space="preserve"><value>العمر</value></data>
   <data name="Patient.Gender" xml:space="preserve"><value>النوع</value></data>
   <data name="Patient.Phone" xml:space="preserve"><value>الهاتف</value></data>
-  <data name="Patient.Allergies" xml:space="preserve"><value>الحساسية</value></data>
-  <data name="Appointment.Doctor" xml:space="preserve"><value>الطبيب</value></data>
-  <data name="Prescription.Dose" xml:space="preserve"><value>الجرعة</value></data>
-  <data name="Prescription.Frequency" xml:space="preserve"><value>التكرار</value></data>
-  <data name="Prescription.Duration" xml:space="preserve"><value>المدة</value></data>
   <data name="Invoice.SaveTitle" xml:space="preserve"><value>حفظ الفاتورة</value></data>
-  <data name="Invoice.Subtotal" xml:space="preserve"><value>المجموع الفرعي</value></data>
-  <data name="Invoice.Discount" xml:space="preserve"><value>الخصم</value></data>
-  <data name="Invoice.Tax" xml:space="preserve"><value>الضريبة</value></data>
-  <data name="Invoice.Total" xml:space="preserve"><value>الإجمالي</value></data>
-  <data name="Invoice.Paid" xml:space="preserve"><value>المدفوع</value></data>
-  <data name="Invoice.Due" xml:space="preserve"><value>المبلغ المتبقي</value></data>
-  <data name="Vitals.Title" xml:space="preserve"><value>العلامات الحيوية</value></data>
 
 
   <data name="Login.Subtitle" xml:space="preserve"><value>سجّل الدخول للمتابعة</value></data>
@@ -175,7 +152,6 @@
   <data name="Logs.Field.StackTrace" xml:space="preserve"><value>تتبع المكدس</value></data>
   <data name="Logs.ActivityDetails" xml:space="preserve"><value>تفاصيل النشاط</value></data>
   <data name="Logs.ErrorDetails" xml:space="preserve"><value>تفاصيل الخطأ</value></data>
-  <data name="Logs.DeleteActivityConfirm" xml:space="preserve"><value>حذف سجل النشاط هذا؟ لا يمكن التراجع عن ذلك.</value></data>
   <data name="Logs.DeleteErrorConfirm" xml:space="preserve"><value>حذف سجل الخطأ هذا؟ لا يمكن التراجع عن ذلك.</value></data>
   <data name="Logs.Deleted" xml:space="preserve"><value>تم حذف السجل.</value></data>
 
@@ -389,7 +365,6 @@
   <data name="PaymentMethod.Transfer" xml:space="preserve"><value>تحويل</value></data>
   <data name="PaymentMethod.Insurance" xml:space="preserve"><value>تأمين</value></data>
   <data name="NewOrder.Title" xml:space="preserve"><value>طلب جديد</value></data>
-  <data name="NewOrder.Subtitle" xml:space="preserve"><value>المريض، ثم التحاليل، ثم المراجعة والإنشاء.</value></data>
   <data name="NewOrder.Patient" xml:space="preserve"><value>المريض</value></data>
   <data name="NewOrder.StepPatient" xml:space="preserve"><value>المريض</value></data>
   <data name="NewOrder.StepTests" xml:space="preserve"><value>التحاليل</value></data>
@@ -421,7 +396,6 @@
   <data name="NewOrder.CatalogEmpty" xml:space="preserve"><value>لا يوجد تحليل فعّال مطابق.</value></data>
   <data name="OrderDetails.Title" xml:space="preserve"><value>الطلب {0}</value></data>
   <data name="OrderDetails.Subtitle" xml:space="preserve"><value>مريض الطلب ومبالغه وتحاليله.</value></data>
-  <data name="OrderDetails.BackToOrders" xml:space="preserve"><value>العودة إلى الطلبات</value></data>
   <data name="OrderDetails.Balance" xml:space="preserve"><value>المتبقي</value></data>
   <data name="OrderDetails.Info" xml:space="preserve"><value>الطلب</value></data>
   <data name="OrderDetails.CreatedBy" xml:space="preserve"><value>أنشأه</value></data>
@@ -436,7 +410,6 @@
   <data name="OrderDetails.AddPayment" xml:space="preserve"><value>إضافة دفعة</value></data>
   <data name="OrderDetails.AddPaymentTitle" xml:space="preserve"><value>إضافة دفعة</value></data>
   <data name="OrderDetails.PaymentAdded" xml:space="preserve"><value>تمت إضافة الدفعة.</value></data>
-  <data name="OrderDetails.Due" xml:space="preserve"><value>المتبقي: {0}</value></data>
   <data name="OrderDetails.RefundNeeded" xml:space="preserve"><value>يحتاج إلى استرداد {0}</value></data>
   <data name="OrderDetails.PrintInvoice" xml:space="preserve"><value>طباعة الفاتورة</value></data>
   <data name="OrderDetails.ExportInvoice" xml:space="preserve"><value>تصدير الفاتورة</value></data>

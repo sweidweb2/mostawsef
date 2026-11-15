@@ -24,7 +24,7 @@ public class ConnectTimeoutTests
 
         var stopwatch = Stopwatch.StartNew();
         var result = await new ApiClient(new Lazy<HttpClient>(() => http), new PerformanceMonitor { IsEnabled = false, WriteToFile = false })
-            .GetAsync<UserDto>("api/auth/me", TestContext.Current.CancellationToken);
+            .GetAsync<UserDto>("api/clinic-settings", TestContext.Current.CancellationToken);
         stopwatch.Stop();
 
         Assert.Equal(ApiError.Unreachable, result.Error);

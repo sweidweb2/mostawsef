@@ -20,7 +20,7 @@ public class HostingTests(ApiFactory factory)
                 config.AddInMemoryCollection(new Dictionary<string, string?> { ["HTTPS_PORT"] = "7027" })));
         var client = httpsFactory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
 
-        var response = await client.WithBearer(token).GetAsync("api/auth/me", TestContext.Current.CancellationToken);
+        var response = await client.WithBearer(token).GetAsync("api/clinic-settings", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -41,7 +41,7 @@ public class HostingTests(ApiFactory factory)
         var client = factory.CreateClient();
         var token = (await client.LoginAsAsync(TestUsers.Admin)).AccessToken;
 
-        var me = await client.WithBearer(token).GetAsync("api/auth/me", TestContext.Current.CancellationToken);
+        var me = await client.WithBearer(token).GetAsync("api/clinic-settings", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, me.StatusCode);
         Assert.True(me.Headers.TryGetValues("Server-Timing", out var timing));
         Assert.Contains(timing, v => v.Contains("app;dur=", StringComparison.Ordinal));

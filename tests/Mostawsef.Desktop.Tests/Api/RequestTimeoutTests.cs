@@ -30,7 +30,7 @@ public class RequestTimeoutTests
     [Fact]
     public async Task A_normal_call_stops_at_the_request_limit()
     {
-        var result = await SlowServer(HttpStatusCode.OK, "{}").GetAsync<UserDto>("api/auth/me", Ct);
+        var result = await SlowServer(HttpStatusCode.OK, "{}").GetAsync<UserDto>("api/clinic-settings", Ct);
 
         Assert.Equal(ApiError.Unreachable, result.Error);
     }
