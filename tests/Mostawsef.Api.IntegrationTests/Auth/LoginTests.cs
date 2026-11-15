@@ -22,6 +22,7 @@ public class LoginTests(ApiFactory factory)
 
         Assert.False(string.IsNullOrWhiteSpace(login.AccessToken));
         Assert.True(login.ExpiresAt > DateTime.UtcNow);
+        Assert.True(login.ExpiresInSeconds > 0);
         Assert.Equal(user.Username, login.User.Username);
         Assert.Equal(role, login.User.Role);
     }

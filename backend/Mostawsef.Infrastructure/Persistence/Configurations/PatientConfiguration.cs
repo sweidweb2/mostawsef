@@ -23,6 +23,8 @@ public class PatientConfiguration : IEntityTypeConfiguration<Patient>
         // Matches the list order (SearchName, then Id), so a page is read straight from the index without a sort.
         builder.HasIndex(p => new { p.SearchName, p.Id });
         builder.HasIndex(p => p.Phone);
+        // Super dashboard "new patients per day" filters on CreatedAt; without this it scans the whole table.
+        builder.HasIndex(p => p.CreatedAt);
         // Index-only PostgreSQL exception (SQLite ignores it): substring search stays plain Contains/LIKE.
         builder.HasIndex(p => p.SearchText).HasMethod("gin").HasOperators("gin_trgm_ops");
     }

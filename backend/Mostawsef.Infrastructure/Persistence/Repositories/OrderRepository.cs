@@ -76,25 +76,31 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
         return await rows.ToPageAsync(orders, query, cancellationToken);
     }
 
-    public async Task<IReadOnlyDictionary<OrderStatus, int>> GetStatusCountsAsync(CancellationToken cancellationToken) =>
+    public async Task<IReadOnlyDictionary<OrderStatus, int>> GetStatusCountsAsync(
+        DateTime sinceUtc, DateTime untilUtc, CancellationToken cancellationToken) =>
         (await db.Orders.AsNoTracking()
+            .Where(o => o.CreatedAt >= sinceUtc && o.CreatedAt < untilUtc)
             .GroupBy(o => o.Status)
             .Select(g => new { Status = g.Key, Count = g.Count() })
             .ToListAsync(cancellationToken))
         .ToDictionary(g => g.Status, g => g.Count);
 
-    public async Task<IReadOnlyList<DateTime>> GetCreatedSinceAsync(DateTime sinceUtc, CancellationToken cancellationToken) =>
-        await db.Orders.AsNoTracking()
-            .Where(o => o.CreatedAt >= sinceUtc)
-            .OrderBy(o => o.CreatedAt)
+    public Task<IReadOnlyList<HourlyValue>> GetCreatedPerHourAsync(DateTime sinceUtc, DateTime untilUtc, CancellationToken cancellationToken) =>
+        db.Orders.AsNoTracking()
+            .Where(o => o.CreatedAt >= sinceUtc && o.CreatedAt < untilUtc)
             .Select(o => o.CreatedAt)
-            .ToListAsync(cancellationToken);
+            .CountPerHourAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<TopTestRow>> GetTopTestsAsync(int take, CancellationToken cancellationToken)
+    public Task<DateTime?> GetFirstCreatedAtAsync(CancellationToken cancellationToken) =>
+        db.Orders.AsNoTracking().MinAsync(o => (DateTime?)o.CreatedAt, cancellationToken);
+
+    public async Task<IReadOnlyList<TopTestRow>> GetTopTestsAsync(
+        int take, DateTime sinceUtc, DateTime untilUtc, CancellationToken cancellationToken)
     {
         var counted = from item in db.OrderItems.AsNoTracking()
                       join order in db.Orders.AsNoTracking() on item.OrderId equals order.Id
-                      where order.Status != OrderStatus.Cancelled && order.Status != OrderStatus.Refunded
+                      where order.CreatedAt >= sinceUtc && order.CreatedAt < untilUtc
+                            && order.Status != OrderStatus.Cancelled && order.Status != OrderStatus.Refunded
                       group item by item.LabTestId into g
                       select new { Id = g.Key, Code = g.Max(i => i.LabTestCode), Name = g.Max(i => i.LabTestName), Count = g.Count() };
 

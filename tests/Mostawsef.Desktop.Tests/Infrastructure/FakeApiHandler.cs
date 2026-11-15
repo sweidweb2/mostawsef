@@ -44,7 +44,7 @@ public class FakeApiHandler : HttpMessageHandler
         Requests.Where(r => r.Method == method && r.RequestUri!.AbsolutePath.StartsWith(pathPrefix, StringComparison.Ordinal));
 
     public static LoginResponse LoginResponseFor(string role, string username = "user@test.local") =>
-        new("test-token", DateTime.UtcNow.AddHours(8), new UserDto(Guid.NewGuid(), username, role));
+        new("test-token", DateTime.UtcNow.AddHours(8), new UserDto(Guid.NewGuid(), username, role), ExpiresInSeconds: 8 * 3600);
 
     public static HttpResponseMessage Json<T>(T body) => new(HttpStatusCode.OK) { Content = JsonContent.Create(body) };
 

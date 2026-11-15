@@ -17,8 +17,12 @@ public sealed class LabTestCatalog
 {
     private readonly LabTestsApi _api;
     private readonly LabTestCatalogVersion _version;
+    private readonly object _gate = new();
     private IReadOnlyList<LabTestDto>? _tests;
     private int _loadedVersion;
+
+    /// <summary>Bumped on sign-out so a download that finishes afterwards is not kept for the next session.</summary>
+    private int _epoch;
 
     public LabTestCatalog(LabTestsApi api, LabTestCatalogVersion version, SessionService session)
     {
@@ -28,7 +32,11 @@ public sealed class LabTestCatalog
         {
             if (!session.IsAuthenticated)
             {
-                _tests = null;
+                lock (_gate)
+                {
+                    _epoch++;
+                    _tests = null;
+                }
             }
         };
     }
@@ -37,20 +45,33 @@ public sealed class LabTestCatalog
     public async Task<ApiResult<IReadOnlyList<LabTestDto>>> GetAsync(CancellationToken cancellationToken)
     {
         // Read the version before the download: a change made while it runs makes the result stale at once.
-        var version = _version.Current;
-        if (_tests is { } cached && _loadedVersion == version)
+        int version;
+        int epoch;
+        lock (_gate)
         {
-            return ApiResult<IReadOnlyList<LabTestDto>>.Ok(cached);
+            version = _version.Current;
+            epoch = _epoch;
+            if (_tests is { } cached && _loadedVersion == version)
+            {
+                return ApiResult<IReadOnlyList<LabTestDto>>.Ok(cached);
+            }
         }
 
-        var result = await _api.GetCatalogAsync(search: null, cancellationToken);
+        var result = await _api.GetActiveCatalogAsync(cancellationToken);
         if (!result.IsSuccess)
         {
-            return ApiResult<IReadOnlyList<LabTestDto>>.Fail(result.Error, result.StatusCode, result.Problem);
+            return result;
         }
 
-        _tests = result.Value!.Items;
-        _loadedVersion = version;
-        return ApiResult<IReadOnlyList<LabTestDto>>.Ok(_tests);
+        lock (_gate)
+        {
+            if (epoch == _epoch)
+            {
+                _tests = result.Value;
+                _loadedVersion = version;
+            }
+        }
+
+        return result;
     }
 }

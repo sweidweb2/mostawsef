@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Mostawsef.Contracts.Common;
+using Mostawsef.Contracts.Dashboards;
 
 namespace Mostawsef.Contracts.Maintenance;
 
@@ -23,23 +24,29 @@ public record ResetDataResultDto(int Patients, int Orders, int Payments, int Lab
 /// <summary>Orders in one status (every status is listed, zero included).</summary>
 public record StatusCountDto(string Status, int Count);
 
-/// <summary>One calendar day (server local time) of the Super dashboard. Revenue is in minor units: payments minus refunds.</summary>
-public record DashboardDayDto(DateOnly Date, int Orders, int Patients, long Revenue, int Activity, int Errors);
+/// <summary>
+/// One graph point of the Super dashboard: the start of its hour, day or month (server local time) and what happened
+/// in it. Revenue is in minor units: payments minus refunds.
+/// </summary>
+public record DashboardPointDto(DateTime Start, int Orders, int Patients, long Revenue, int Activity, int Errors);
 
 /// <summary>
-/// Whole-system figures for the Super dashboard. Money values are minor units of <see cref="Currency"/>:
-/// Revenue = all payments minus refunds, Outstanding = what pending and partly paid orders still owe.
+/// The Super dashboard for one period (GET api/system/dashboard). Money values are minor units of <see cref="Currency"/>.
+/// For the period: Orders and OrderStatuses count orders created in it, Patients the new patients, Revenue the payments
+/// minus refunds made in it, Outstanding what its pending and partly paid orders still owe, Activity and Errors the
+/// log entries. Users, ActiveUsers and LabTests are current totals. Points list every bucket, zero included.
 /// </summary>
 public record SuperDashboardDto(
     string Currency,
+    DashboardRangeDto Range,
     int Users,
     int ActiveUsers,
-    int Patients,
     int LabTests,
     int Orders,
+    int Patients,
     long Revenue,
     long Outstanding,
-    int ActivityToday,
-    int ErrorsToday,
+    int Activity,
+    int Errors,
     IReadOnlyList<StatusCountDto> OrderStatuses,
-    IReadOnlyList<DashboardDayDto> Days);
+    IReadOnlyList<DashboardPointDto> Points);

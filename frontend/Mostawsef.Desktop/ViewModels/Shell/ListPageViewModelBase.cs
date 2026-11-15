@@ -93,7 +93,7 @@ public abstract partial class ListPageViewModelBase<TItem> : ViewModelBase, ILoa
         return _loaded ? Task.CompletedTask : LoadOnActivateAsync();
     }
 
-    public void Deactivate()
+    public virtual void Deactivate()
     {
         if (_loadCancellation is not null)
         {

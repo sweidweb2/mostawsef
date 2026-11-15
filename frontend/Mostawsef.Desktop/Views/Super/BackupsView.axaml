@@ -140,6 +140,9 @@
                     <ui:Pagination CurrentPage="{Binding CurrentPage}" PageCount="{Binding PageCount}" IsEnabled="{Binding !IsLoading}" />
                 </ui:DataTable.Footer>
             </ui:DataTable>
+
+            <!-- Automatic pg_dump history (hosted child VM; ViewLocator resolves ScheduledDumpsView). -->
+            <ContentControl Content="{Binding Dumps}" Margin="0,24,0,0" />
         </StackPanel>
     </ScrollViewer>
 </UserControl>

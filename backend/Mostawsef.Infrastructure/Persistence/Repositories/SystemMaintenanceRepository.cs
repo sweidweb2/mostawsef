@@ -12,57 +12,61 @@ public class SystemMaintenanceRepository(AppDbContext db) : ISystemMaintenanceRe
     {
         var users = await db.Users.CountAsync(cancellationToken);
         var activeUsers = await db.Users.CountAsync(u => u.IsActive, cancellationToken);
-        var patients = await db.Patients.CountAsync(cancellationToken);
         var labTests = await db.LabTests.CountAsync(cancellationToken);
-        var orders = await db.Orders.CountAsync(cancellationToken);
-        var revenue = await db.Set<Payment>().AsNoTracking()
-            .SumAsync(p => p.Type == PaymentType.Refund ? -p.Amount : p.Amount, cancellationToken);
-        var outstanding = await db.Orders.AsNoTracking()
-            .Where(o => o.Status == OrderStatus.Pending || o.Status == OrderStatus.PartiallyPaid)
-            .SumAsync(o => o.Total - o.Paid, cancellationToken);
-
-        return new DashboardTotals(users, activeUsers, patients, labTests, orders, revenue, outstanding);
+        return new DashboardTotals(users, activeUsers, labTests);
     }
 
-    /// <summary>
-    /// Each series is grouped by the UTC year/month/day/hour in the database (a few hundred rows at most), so the
-    /// service can place every hour on its local calendar day without loading the individual rows.
-    /// </summary>
-    public async Task<DashboardHourlySeries> GetHourlySeriesAsync(DateTime sinceUtc, CancellationToken cancellationToken)
+    public Task<long> GetOutstandingAsync(DateTime sinceUtc, DateTime untilUtc, CancellationToken cancellationToken) =>
+        db.Orders.AsNoTracking()
+            .Where(o => o.CreatedAt >= sinceUtc && o.CreatedAt < untilUtc
+                && (o.Status == OrderStatus.Pending || o.Status == OrderStatus.PartiallyPaid))
+            .SumAsync(o => o.Total - o.Paid, cancellationToken);
+
+    public async Task<DashboardHourlySeries> GetHourlySeriesAsync(DateTime sinceUtc, DateTime untilUtc, CancellationToken cancellationToken)
     {
         var orders = await db.Orders.AsNoTracking()
-            .Where(o => o.CreatedAt >= sinceUtc)
-            .GroupBy(o => new { o.CreatedAt.Year, o.CreatedAt.Month, o.CreatedAt.Day, o.CreatedAt.Hour })
-            .Select(g => new HourRow(g.Key.Year, g.Key.Month, g.Key.Day, g.Key.Hour, g.Count()))
-            .ToListAsync(cancellationToken);
+            .Where(o => o.CreatedAt >= sinceUtc && o.CreatedAt < untilUtc)
+            .Select(o => o.CreatedAt)
+            .CountPerHourAsync(cancellationToken);
 
         var patients = await db.Patients.AsNoTracking()
-            .Where(p => p.CreatedAt >= sinceUtc)
-            .GroupBy(p => new { p.CreatedAt.Year, p.CreatedAt.Month, p.CreatedAt.Day, p.CreatedAt.Hour })
-            .Select(g => new HourRow(g.Key.Year, g.Key.Month, g.Key.Day, g.Key.Hour, g.Count()))
-            .ToListAsync(cancellationToken);
+            .Where(p => p.CreatedAt >= sinceUtc && p.CreatedAt < untilUtc)
+            .Select(p => p.CreatedAt)
+            .CountPerHourAsync(cancellationToken);
 
-        var revenue = await db.Set<Payment>().AsNoTracking()
-            .Where(p => p.PaidAt >= sinceUtc)
+        var revenue = HourlySeries.ToHours(await db.Set<Payment>().AsNoTracking()
+            .Where(p => p.PaidAt >= sinceUtc && p.PaidAt < untilUtc)
             .GroupBy(p => new { p.PaidAt.Year, p.PaidAt.Month, p.PaidAt.Day, p.PaidAt.Hour })
-            .Select(g => new HourRow(
+            .Select(g => new HourlySeries.HourRow(
                 g.Key.Year, g.Key.Month, g.Key.Day, g.Key.Hour,
                 g.Sum(p => p.Type == PaymentType.Refund ? -p.Amount : p.Amount)))
-            .ToListAsync(cancellationToken);
+            .ToListAsync(cancellationToken));
 
         var activity = await db.ActivityLogs.AsNoTracking()
-            .Where(l => l.OccurredAt >= sinceUtc)
-            .GroupBy(l => new { l.OccurredAt.Year, l.OccurredAt.Month, l.OccurredAt.Day, l.OccurredAt.Hour })
-            .Select(g => new HourRow(g.Key.Year, g.Key.Month, g.Key.Day, g.Key.Hour, g.Count()))
-            .ToListAsync(cancellationToken);
+            .Where(l => l.OccurredAt >= sinceUtc && l.OccurredAt < untilUtc)
+            .Select(l => l.OccurredAt)
+            .CountPerHourAsync(cancellationToken);
 
         var errors = await db.SystemErrors.AsNoTracking()
-            .Where(e => e.OccurredAt >= sinceUtc)
-            .GroupBy(e => new { e.OccurredAt.Year, e.OccurredAt.Month, e.OccurredAt.Day, e.OccurredAt.Hour })
-            .Select(g => new HourRow(g.Key.Year, g.Key.Month, g.Key.Day, g.Key.Hour, g.Count()))
-            .ToListAsync(cancellationToken);
+            .Where(e => e.OccurredAt >= sinceUtc && e.OccurredAt < untilUtc)
+            .Select(e => e.OccurredAt)
+            .CountPerHourAsync(cancellationToken);
 
-        return new DashboardHourlySeries(Hours(orders), Hours(patients), Hours(revenue), Hours(activity), Hours(errors));
+        return new DashboardHourlySeries(orders, patients, revenue, activity, errors);
+    }
+
+    /// <summary>Five MIN lookups, each answered from an index on the time column.</summary>
+    public async Task<DateTime?> GetFirstRecordAtAsync(CancellationToken cancellationToken)
+    {
+        DateTime?[] firsts =
+        [
+            await db.Orders.AsNoTracking().MinAsync(o => (DateTime?)o.CreatedAt, cancellationToken),
+            await db.Patients.AsNoTracking().MinAsync(p => (DateTime?)p.CreatedAt, cancellationToken),
+            await db.Set<Payment>().AsNoTracking().MinAsync(p => (DateTime?)p.PaidAt, cancellationToken),
+            await db.ActivityLogs.AsNoTracking().MinAsync(l => (DateTime?)l.OccurredAt, cancellationToken),
+            await db.SystemErrors.AsNoTracking().MinAsync(e => (DateTime?)e.OccurredAt, cancellationToken),
+        ];
+        return firsts.Min();
     }
 
     public async Task<DataResetCounts> ResetDataAsync(CancellationToken cancellationToken)
@@ -88,9 +92,4 @@ public class SystemMaintenanceRepository(AppDbContext db) : ISystemMaintenanceRe
             return new DataResetCounts(patients, orders, payments, labTests, activityLogs, systemErrors);
         });
     }
-
-    private static List<HourlyValue> Hours(IEnumerable<HourRow> rows) =>
-        rows.Select(r => new HourlyValue(new DateTime(r.Year, r.Month, r.Day, r.Hour, 0, 0, DateTimeKind.Utc), r.Value)).ToList();
-
-    private sealed record HourRow(int Year, int Month, int Day, int Hour, long Value);
 }

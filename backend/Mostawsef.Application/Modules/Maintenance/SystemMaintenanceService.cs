@@ -1,6 +1,7 @@
 using Mostawsef.Application.Common;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Contracts.Common;
+using Mostawsef.Contracts.Dashboards;
 using Mostawsef.Contracts.Maintenance;
 using Mostawsef.Contracts.Orders;
 using Mostawsef.Domain.Enums;
@@ -9,8 +10,11 @@ namespace Mostawsef.Application.Modules.Maintenance;
 
 public interface ISystemMaintenanceService
 {
-    /// <summary>Totals, orders per status and the last <paramref name="days"/> days (7 to <see cref="SystemMaintenanceService.MaxDays"/>), today last.</summary>
-    Task<SuperDashboardDto> GetDashboardAsync(int days, CancellationToken cancellationToken);
+    /// <summary>
+    /// The Super dashboard for a period (see <see cref="DashboardRangeQuery"/>), kept between the first recorded day
+    /// and today: period totals, orders per status and per-bucket series, plus current user and lab test totals.
+    /// </summary>
+    Task<SuperDashboardDto> GetDashboardAsync(DashboardRangeQuery query, CancellationToken cancellationToken);
 
     /// <summary>Empties every business and log table once the confirmation word matches; accounts and settings stay. Logged as an activity.</summary>
     Task<ResetDataResultDto> ResetDataAsync(ResetDataRequest request, CancellationToken cancellationToken);
@@ -23,40 +27,41 @@ public class SystemMaintenanceService(
     IActivityLogger activity,
     TimeProvider time) : ISystemMaintenanceService
 {
-    public const int MinDays = 7;
-    public const int MaxDays = 90;
-
-    public async Task<SuperDashboardDto> GetDashboardAsync(int days, CancellationToken cancellationToken)
+    public async Task<SuperDashboardDto> GetDashboardAsync(DashboardRangeQuery query, CancellationToken cancellationToken)
     {
-        days = Math.Clamp(days, MinDays, MaxDays);
-        var zone = time.LocalTimeZone;
-        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(time.GetUtcNow(), zone).DateTime);
-        var first = today.AddDays(1 - days);
-        var sinceUtc = TimeZoneInfo.ConvertTimeToUtc(
-            DateTime.SpecifyKind(first.ToDateTime(TimeOnly.MinValue), DateTimeKind.Unspecified), zone);
-
-        // One DbContext per request: the queries run one after another.
+        // One DbContext per request: the queries run one after another (each is a single indexed statement).
+        var range = DashboardRange.Resolve(query, await repository.GetFirstRecordAtAsync(cancellationToken), time);
         var currency = await clinic.GetCurrencyCodeAsync(cancellationToken);
         var totals = await repository.GetTotalsAsync(cancellationToken);
-        var statusCounts = await orders.GetStatusCountsAsync(cancellationToken);
-        var series = await repository.GetHourlySeriesAsync(sinceUtc, cancellationToken);
+        var outstanding = await repository.GetOutstandingAsync(range.SinceUtc, range.UntilUtc, cancellationToken);
+        var statusCounts = await orders.GetStatusCountsAsync(range.SinceUtc, range.UntilUtc, cancellationToken);
+        var series = await repository.GetHourlySeriesAsync(range.SinceUtc, range.UntilUtc, cancellationToken);
 
-        var orderDays = PerDay(series.Orders, zone);
-        var patientDays = PerDay(series.Patients, zone);
-        var revenueDays = PerDay(series.Revenue, zone);
-        var activityDays = PerDay(series.Activity, zone);
-        var errorDays = PerDay(series.Errors, zone);
+        var orderBuckets = range.Sum(series.Orders);
+        var patientBuckets = range.Sum(series.Patients);
+        var revenueBuckets = range.Sum(series.Revenue);
+        var activityBuckets = range.Sum(series.Activity);
+        var errorBuckets = range.Sum(series.Errors);
 
-        var dayList = Enumerable.Range(0, days)
-            .Select(offset => first.AddDays(offset))
-            .Select(date => new DashboardDayDto(
-                date,
-                (int)orderDays.GetValueOrDefault(date),
-                (int)patientDays.GetValueOrDefault(date),
-                revenueDays.GetValueOrDefault(date),
-                (int)activityDays.GetValueOrDefault(date),
-                (int)errorDays.GetValueOrDefault(date)))
-            .ToList();
+        var points = new List<DashboardPointDto>();
+        int orderTotal = 0, patientTotal = 0, activityTotal = 0, errorTotal = 0;
+        long revenueTotal = 0;
+        foreach (var start in range.BucketStarts())
+        {
+            var point = new DashboardPointDto(
+                start,
+                (int)orderBuckets.GetValueOrDefault(start),
+                (int)patientBuckets.GetValueOrDefault(start),
+                revenueBuckets.GetValueOrDefault(start),
+                (int)activityBuckets.GetValueOrDefault(start),
+                (int)errorBuckets.GetValueOrDefault(start));
+            points.Add(point);
+            orderTotal += point.Orders;
+            patientTotal += point.Patients;
+            revenueTotal += point.Revenue;
+            activityTotal += point.Activity;
+            errorTotal += point.Errors;
+        }
 
         var statuses = OrderStatuses.All
             .Select(s => new StatusCountDto(s, statusCounts.GetValueOrDefault(Enum.Parse<OrderStatus>(s))))
@@ -64,17 +69,18 @@ public class SystemMaintenanceService(
 
         return new SuperDashboardDto(
             currency,
+            range.ToDto(),
             totals.Users,
             totals.ActiveUsers,
-            totals.Patients,
             totals.LabTests,
-            totals.Orders,
-            totals.Revenue,
-            totals.Outstanding,
-            dayList[^1].Activity,
-            dayList[^1].Errors,
+            orderTotal,
+            patientTotal,
+            revenueTotal,
+            outstanding,
+            activityTotal,
+            errorTotal,
             statuses,
-            dayList);
+            points);
     }
 
     public async Task<ResetDataResultDto> ResetDataAsync(ResetDataRequest request, CancellationToken cancellationToken)
@@ -98,9 +104,4 @@ public class SystemMaintenanceService(
         return new ResetDataResultDto(
             counts.Patients, counts.Orders, counts.Payments, counts.LabTests, counts.ActivityLogs, counts.SystemErrors);
     }
-
-    private static Dictionary<DateOnly, long> PerDay(IReadOnlyList<HourlyValue> hours, TimeZoneInfo zone) =>
-        hours
-            .GroupBy(h => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(h.HourUtc, DateTimeKind.Utc), zone)))
-            .ToDictionary(g => g.Key, g => g.Sum(h => h.Value));
 }

@@ -19,14 +19,9 @@ public class OrdersApi(ApiClient api)
             (patientId is { } patient ? $"&patientId={patient}" : string.Empty),
             cancellationToken);
 
-    public Task<ApiResult<IReadOnlyList<OrderDailyCountDto>>> GetDailyCountsAsync(int days, CancellationToken cancellationToken = default) =>
-        api.GetAsync<IReadOnlyList<OrderDailyCountDto>>($"api/orders/daily?days={days}", cancellationToken);
-
-    public Task<ApiResult<IReadOnlyList<TopTestDto>>> GetTopTestsAsync(int take, CancellationToken cancellationToken = default) =>
-        api.GetAsync<IReadOnlyList<TopTestDto>>($"api/orders/top-tests?take={take}", cancellationToken);
-
-    public Task<ApiResult<OrderStatsDto>> GetStatsAsync(CancellationToken cancellationToken = default) =>
-        api.GetAsync<OrderStatsDto>("api/orders/stats", cancellationToken);
+    /// <summary>The Admin dashboard for the days <paramref name="from"/> to <paramref name="to"/> (both included).</summary>
+    public Task<ApiResult<OrderDashboardDto>> GetDashboardAsync(DateOnly from, DateOnly to, CancellationToken cancellationToken = default) =>
+        api.GetAsync<OrderDashboardDto>($"api/orders/dashboard?{DashboardQuery.Of(from, to)}", cancellationToken);
 
     public Task<ApiResult<OrderDetailsDto>> GetOrderAsync(Guid id, CancellationToken cancellationToken = default) =>
         api.GetAsync<OrderDetailsDto>($"api/orders/{id}", cancellationToken);

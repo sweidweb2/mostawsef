@@ -3,6 +3,9 @@ using System.Globalization;
 using Microsoft.Extensions.Options;
 using Mostawsef.Application.Common;
 using Mostawsef.Application.Interfaces;
+using Mostawsef.Contracts.Backups;
+using Mostawsef.Contracts.Common;
+using Mostawsef.Domain.Entities;
 
 namespace Mostawsef.Application.Modules.Backups;
 
@@ -24,26 +27,36 @@ public class ScheduledBackupOptions
 }
 
 /// <summary>Outcome of one scheduled-dump attempt. Null when skipped (no backup folder set).</summary>
-public record ScheduledBackupResult(string FilePath, int DeletedOldFiles);
+public record ScheduledBackupResult(string FilePath, int DeletedOldFiles, Guid HistoryId);
 
 public interface IScheduledBackupService
 {
     /// <summary>
     /// Writes a dump into <c>SystemSettings.BackupPath</c> when that folder is set, creates the folder if needed,
-    /// then deletes older dumps past the keep count. No-op when the path is unset.
+    /// then deletes older dumps past the keep count and stores a history row. No-op when the path is unset.
     /// </summary>
     Task<ScheduledBackupResult?> RunAsync(CancellationToken cancellationToken);
+
+    /// <summary>History of successful scheduled dumps, newest first (Super list page).</summary>
+    Task<PagedResult<ScheduledDumpDto>> GetHistoryAsync(PageQuery query, CancellationToken cancellationToken);
 }
 
 public class ScheduledBackupService(
     ISystemSettingsCache settings,
     IDatabaseDumpRunner dump,
+    IScheduledDumpRepository history,
     IActivityLogger activity,
     IOptions<ScheduledBackupOptions> options,
     TimeProvider time) : IScheduledBackupService
 {
     public const string FilePrefix = "mostawsef-";
     public const string FileExtension = ".dump";
+
+    public async Task<PagedResult<ScheduledDumpDto>> GetHistoryAsync(PageQuery query, CancellationToken cancellationToken)
+    {
+        var (items, total) = await history.GetPageAsync(query, cancellationToken);
+        return new PagedResult<ScheduledDumpDto>(items, query.SafePage, query.SafePageSize, total);
+    }
 
     public async Task<ScheduledBackupResult?> RunAsync(CancellationToken cancellationToken)
     {
@@ -59,17 +72,27 @@ public class ScheduledBackupService(
         var filePath = Path.Combine(folder, FilePrefix + stamp + FileExtension);
         await dump.RunAsync(filePath, cancellationToken);
 
-        var deleted = PurgeOldDumps(folder, options.Value.KeepCount);
+        var keepCount = options.Value.KeepCount;
+        var intervalDays = options.Value.IntervalDays;
+        var deleted = PurgeOldDumps(folder, keepCount);
+        var size = new FileInfo(filePath).Length;
+
+        var record = new ScheduledDump(folder, filePath, size, keepCount, intervalDays, deleted);
+        history.Add(record);
+        await history.SaveChangesAsync(cancellationToken);
+        await history.TrimToAsync(keepCount, cancellationToken);
 
         await activity.LogAsync(
             new ActivityEntry(ActivityActions.BackupScheduled, ActivityModules.Backups, "Wrote a scheduled database dump")
             {
-                Details = new { FilePath = filePath, DeletedOldFiles = deleted, options.Value.KeepCount },
+                EntityType = nameof(ScheduledDump),
+                EntityId = record.Id.ToString(),
+                Details = new { FilePath = filePath, DeletedOldFiles = deleted, KeepCount = keepCount, IntervalDays = intervalDays },
             },
             cancellationToken);
         await activity.FlushAsync(cancellationToken);
 
-        return new ScheduledBackupResult(filePath, deleted);
+        return new ScheduledBackupResult(filePath, deleted, record.Id);
     }
 
     /// <summary>Keeps the newest <paramref name="keepCount"/> dump files; deletes the rest. Returns how many were deleted.</summary>

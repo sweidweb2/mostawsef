@@ -120,13 +120,11 @@ Several blocks (4, 5, 6) depend on numbers. Do this before changing anything.
 
 **Verify.** Check how each clinic sets `ApiBaseUrl`.
 
-**Implemented.** The default stays `http://localhost:5270`, which is safe on one PC. When `ApiBaseUrl` is plain http to another machine, the login screen shows a warning banner (English and Arabic). The check is `Services/Local/ApiAddress.IsInsecureRemote`, tested in `tests/Mostawsef.Desktop.Tests/Local/ApiAddressTests.cs`. `Docs/auth.md` now says when to use https.
-
-**Not done (needs you):** the app does not refuse http, and it does not set up certificates. For a clinic with the API on a second PC, put the API behind HTTPS (a certificate the desktop PCs trust, for example via a reverse proxy) and set `ApiBaseUrl` to the `https://` address in `%AppData%\Mostawsef\settings.json`.
+**Implemented.** The default stays `http://localhost:5270`, which is safe on one PC. When `ApiBaseUrl` is plain http to another machine, the login screen shows a warning banner (English and Arabic). The check is `Services/Local/ApiAddress.IsInsecureRemote`, tested in `tests/Mostawsef.Desktop.Tests/Local/ApiAddressTests.cs`. `Docs/auth.md` and deploy-install Block 4 record the install decision: **Option A — one-PC localhost HTTP only**; HTTPS (Option B) is deferred until a multi-PC install is planned.
 
 - [x] Warning implemented and tested
 - [x] HTTPS guidance documented
-- [ ] Each clinic checked (which ones run the API on another PC?)
+- [x] Install decision recorded (one PC / Option A)
 
 ---
 

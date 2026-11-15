@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Mostawsef.Api.Extensions;
 using Mostawsef.Application.Modules.Maintenance;
+using Mostawsef.Contracts.Dashboards;
 using Mostawsef.Contracts.Maintenance;
 
 namespace Mostawsef.Api.Controllers;
@@ -12,10 +13,12 @@ namespace Mostawsef.Api.Controllers;
 [Authorize(Policy = AuthPolicies.SuperOnly)]
 public class SystemController(ISystemMaintenanceService maintenance) : ControllerBase
 {
-    /// <summary>Totals, orders per status and per-day series (default the last 30 days) for the Super dashboard.</summary>
+    /// <summary>The Super dashboard for a period (days in the server's time zone, kept between the first record and today).</summary>
     [HttpGet("dashboard")]
-    public Task<SuperDashboardDto> Dashboard([FromQuery] int days = 30, CancellationToken cancellationToken = default) =>
-        maintenance.GetDashboardAsync(days, cancellationToken);
+    [ProducesResponseType<SuperDashboardDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public Task<SuperDashboardDto> Dashboard([FromQuery] DashboardRangeQuery query, CancellationToken cancellationToken) =>
+        maintenance.GetDashboardAsync(query, cancellationToken);
 
     /// <summary>
     /// Deletes every patient, order, payment, lab test, activity log and system error. User accounts, the clinic and

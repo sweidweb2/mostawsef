@@ -24,6 +24,7 @@ public class SystemError : IChronological
     }
 
     public SystemError(
+        DateTime occurredAt,
         ErrorLevel level,
         string source,
         string message,
@@ -38,6 +39,7 @@ public class SystemError : IChronological
         string? ipAddress,
         string? details)
     {
+        OccurredAt = occurredAt;
         Level = level;
         Source = Text.TruncateRequired(source, SourceMaxLength);
         Message = Text.TruncateRequired(message, MessageMaxLength);
@@ -55,7 +57,7 @@ public class SystemError : IChronological
 
     public Guid Id { get; private set; } = Guid.NewGuid();
 
-    public DateTime OccurredAt { get; private set; } = DateTime.UtcNow;
+    public DateTime OccurredAt { get; private set; }
 
     public ErrorLevel Level { get; private set; }
 

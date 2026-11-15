@@ -54,17 +54,25 @@ public class LoginThrottleTests
     }
 
     [Fact]
-    public void Tracking_is_bounded()
+    public void Tracking_is_bounded_and_a_flood_of_names_does_not_lift_existing_locks()
     {
-        var throttle = Create(new ManualTime(DateTimeOffset.UtcNow), limit: 1);
+        var time = new ManualTime(DateTimeOffset.UtcNow);
+        var throttle = Create(time, limit: 1);
+        throttle.RecordFailure("target");
 
         for (var i = 0; i < LoginThrottle.MaxTrackedUsernames + 5; i++)
         {
             throttle.RecordFailure("user" + i);
         }
 
-        // The newest name is tracked; the table was dropped rather than grown past its cap.
-        Assert.True(throttle.IsBlocked("user" + (LoginThrottle.MaxTrackedUsernames + 4)));
+        // The table is full of live windows: the locked account stays locked and names past the cap are not tracked.
+        Assert.True(throttle.IsBlocked("target"));
+        Assert.False(throttle.IsBlocked("user" + (LoginThrottle.MaxTrackedUsernames + 4)));
+
+        // Once the windows end, new names are tracked again.
+        time.Advance(TimeSpan.FromMinutes(5));
+        throttle.RecordFailure("late");
+        Assert.True(throttle.IsBlocked("late"));
     }
 }
 

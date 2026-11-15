@@ -77,6 +77,7 @@ public static class ServiceRegistration
         services.AddSingleton<SystemSettingsApi>();
         services.AddSingleton<SystemApi>();
         services.AddSingleton<BackupsApi>();
+        services.AddSingleton<ScheduledDumpsApi>();
         services.AddSingleton<LabTestsApi>();
         services.AddSingleton<PatientsApi>();
         services.AddSingleton<OrdersApi>();

@@ -98,7 +98,14 @@ public abstract partial class NumberedListViewModel<TItem> : ListPageViewModelBa
     }
 
     [RelayCommand]
-    private Task RefreshAsync() => LoadAsync(CurrentPage, includeTotal: true);
+    private async Task RefreshAsync()
+    {
+        await LoadAsync(CurrentPage, includeTotal: true);
+        await OnAfterRefreshAsync();
+    }
+
+    /// <summary>Hook for a page that hosts another list (e.g. Backups also refreshes dump history).</summary>
+    protected virtual Task OnAfterRefreshAsync() => Task.CompletedTask;
 
     /// <summary>
     /// A new filter. A term the API would reject as too short is not sent; the list stays as it is and a warning explains why.

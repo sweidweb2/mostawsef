@@ -52,14 +52,20 @@ public interface IOrderRepository
     Task<(IReadOnlyList<OrderListRow> Items, int Total)> GetPageAsync(
         PageQuery query, OrderListFilter filter, CancellationToken cancellationToken);
 
-    /// <summary>Order counts per status (statuses without orders are absent).</summary>
-    Task<IReadOnlyDictionary<OrderStatus, int>> GetStatusCountsAsync(CancellationToken cancellationToken);
+    /// <summary>Counts per status of the orders created in [<paramref name="sinceUtc"/>, <paramref name="untilUtc"/>) (statuses without orders are absent).</summary>
+    Task<IReadOnlyDictionary<OrderStatus, int>> GetStatusCountsAsync(DateTime sinceUtc, DateTime untilUtc, CancellationToken cancellationToken);
 
-    /// <summary>When each order created at or after <paramref name="sinceUtc"/> was created (UTC), oldest first.</summary>
-    Task<IReadOnlyList<DateTime>> GetCreatedSinceAsync(DateTime sinceUtc, CancellationToken cancellationToken);
+    /// <summary>Orders created per UTC hour in [<paramref name="sinceUtc"/>, <paramref name="untilUtc"/>); hours without orders are absent.</summary>
+    Task<IReadOnlyList<HourlyValue>> GetCreatedPerHourAsync(DateTime sinceUtc, DateTime untilUtc, CancellationToken cancellationToken);
 
-    /// <summary>The most ordered tests, most first (ties by name): order lines of cancelled and refunded orders are not counted.</summary>
-    Task<IReadOnlyList<TopTestRow>> GetTopTestsAsync(int take, CancellationToken cancellationToken);
+    /// <summary>
+    /// The most ordered tests on orders created in [<paramref name="sinceUtc"/>, <paramref name="untilUtc"/>), most first
+    /// (ties by name): order lines of cancelled and refunded orders are not counted.
+    /// </summary>
+    Task<IReadOnlyList<TopTestRow>> GetTopTestsAsync(int take, DateTime sinceUtc, DateTime untilUtc, CancellationToken cancellationToken);
+
+    /// <summary>When the oldest order was created (UTC); null when there is none.</summary>
+    Task<DateTime?> GetFirstCreatedAtAsync(CancellationToken cancellationToken);
 
     /// <summary>The tracked order with its items and payments, to add a payment and answer with the updated order; null when it does not exist.</summary>
     Task<Order?> GetForPaymentAsync(Guid id, CancellationToken cancellationToken);

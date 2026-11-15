@@ -437,6 +437,19 @@
   <data name="ErrorCode.duplicate" xml:space="preserve"><value>هذا التحليل موجود بالفعل في الطلب.</value></data>
   <data name="ErrorCode.exceeds_total" xml:space="preserve"><value>لا يمكن أن تزيد الدفعة عن إجمالي الطلب.</value></data>
   <data name="Nav.Backups" xml:space="preserve"><value>النسخ الاحتياطي</value></data>
+  <data name="Nav.ScheduledDumps" xml:space="preserve"><value>النسخ التلقائي</value></data>
+  <data name="ScheduledDumps.Subtitle" xml:space="preserve"><value>نسخ قاعدة البيانات التلقائية: وقت التشغيل، مكان الملف، والإعدادات المستخدمة.</value></data>
+  <data name="ScheduledDumps.History" xml:space="preserve"><value>سجل النسخ</value></data>
+  <data name="ScheduledDumps.Records" xml:space="preserve"><value>{0} نسخة</value></data>
+  <data name="ScheduledDumps.EmptyTitle" xml:space="preserve"><value>لا توجد نسخ تلقائية بعد</value></data>
+  <data name="ScheduledDumps.EmptyDescription" xml:space="preserve"><value>عند تشغيل الـ API وتعيين مجلد النسخ في الإعدادات، تظهر النسخ الناجحة في هذه الصفحة.</value></data>
+  <data name="ScheduledDumps.Col.When" xml:space="preserve"><value>الوقت</value></data>
+  <data name="ScheduledDumps.Col.Folder" xml:space="preserve"><value>المجلد</value></data>
+  <data name="ScheduledDumps.Col.File" xml:space="preserve"><value>الملف</value></data>
+  <data name="ScheduledDumps.Col.Size" xml:space="preserve"><value>الحجم</value></data>
+  <data name="ScheduledDumps.Col.Keep" xml:space="preserve"><value>الاحتفاظ</value></data>
+  <data name="ScheduledDumps.Col.Interval" xml:space="preserve"><value>كل (أيام)</value></data>
+  <data name="ScheduledDumps.Col.Deleted" xml:space="preserve"><value>محذوف</value></data>
   <data name="Backups.Subtitle" xml:space="preserve"><value>صدّر قاعدة البيانات إلى ملف تحتفظ به. تُحفظ إعدادات التصدير فقط، ولا تُحفظ البيانات.</value></data>
   <data name="Backups.NewTitle" xml:space="preserve"><value>نسخة احتياطية جديدة</value></data>
   <data name="Backups.NewSubtitle" xml:space="preserve"><value>اختر ما تريد تصديره وصيغة الملف، ثم حدّد مكان الحفظ.</value></data>

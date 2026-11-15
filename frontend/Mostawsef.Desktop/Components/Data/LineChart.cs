@@ -10,18 +10,28 @@ using Avalonia.Media;
 
 namespace Mostawsef.Desktop.Components;
 
-/// <summary>
-/// One value of a <see cref="LineChart"/>: a count with either a day (<see cref="Day"/>, written in the app's language
-/// when drawn) or a plain text label such as a test name.
-/// </summary>
-public sealed record ChartPoint(string Label, int Value, DateOnly? Date = null)
+/// <summary>What one time point of a <see cref="LineChart"/> stands for: its hour, day or month.</summary>
+public enum ChartUnit
 {
-    public static ChartPoint Day(DateOnly date, int value) => new(string.Empty, value, date);
+    Day,
+    Hour,
+    Month,
+}
+
+/// <summary>
+/// One value of a <see cref="LineChart"/>: a count with either a moment (<see cref="Time"/>: the start of its hour, day
+/// or month, written in the app's language when drawn) or a plain text label such as a test name.
+/// </summary>
+public sealed record ChartPoint(string Label, int Value, DateTime? Time = null, ChartUnit Unit = ChartUnit.Day)
+{
+    public static ChartPoint Day(DateOnly date, int value) => new(string.Empty, value, date.ToDateTime(TimeOnly.MinValue));
+
+    public static ChartPoint At(DateTime start, ChartUnit unit, int value) => new(string.Empty, value, start, unit);
 }
 
 /// <summary>
 /// A line graph of counts: whole-number gridlines on the left, labels along the bottom, the line, its dots and a soft
-/// fill. Day points are spread with about eight dates; named points (e.g. tests) all get a label, slanted so long names
+/// fill. Time points (hours, days or months) are spread with about eight labels; named points (e.g. tests) all get a label, slanted so long names
 /// fit, and cut with "…" when very long (the tooltip has the full name). Hovering a dot shows its label and count.
 /// Colors come from the theme, so it follows light/dark. Text is drawn left-to-right in both languages.
 /// </summary>
@@ -107,15 +117,27 @@ public class LineChart : Control
     private IBrush Themed(string key, IBrush fallback) =>
         this.TryFindResource(key, ActualThemeVariant, out var value) && value is IBrush brush ? brush : fallback;
 
-    private static bool IsNamed(IReadOnlyList<ChartPoint> points) => points.Any(p => p.Date is null);
+    private static bool IsNamed(IReadOnlyList<ChartPoint> points) => points.Any(p => p.Time is null);
 
-    private static string AxisLabel(ChartPoint point) =>
-        point.Date is { } date ? date.ToString("MMM d", Culture) : Shorten(point.Label);
+    private static string AxisLabel(ChartPoint point) => point.Time switch
+    {
+        null => Shorten(point.Label),
+        { } time when point.Unit == ChartUnit.Hour => time.ToString("HH:mm", CultureInfo.InvariantCulture),
+        { } time when point.Unit == ChartUnit.Month => time.ToString("MMM yyyy", Culture),
+        { } time => time.ToString("MMM d", Culture),
+    };
 
     private static string Shorten(string label) =>
         label.Length <= MaxLabelLength ? label : label[..(MaxLabelLength - 1)].TrimEnd() + "…";
 
-    private static string FullLabel(ChartPoint point) => point.Date is { } date ? date.ToString("D", Culture) : point.Label;
+    private static string FullLabel(ChartPoint point) => point.Time switch
+    {
+        null => point.Label,
+        { } time when point.Unit == ChartUnit.Hour =>
+            time.ToString("D", Culture) + " " + time.ToString("HH:mm", CultureInfo.InvariantCulture),
+        { } time when point.Unit == ChartUnit.Month => time.ToString("MMMM yyyy", Culture),
+        { } time => time.ToString("D", Culture),
+    };
 
     private FormattedText Text(string text, IBrush brush) =>
         new(text, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
@@ -221,7 +243,7 @@ public class LineChart : Control
             return;
         }
 
-        // Days: about eight dates, always including the first and the last.
+        // Time points: about eight labels, always including the first and the last.
         var step = Math.Max(1, (int)Math.Ceiling(points.Count / 8.0));
         for (var i = 0; i < points.Count; i += step)
         {

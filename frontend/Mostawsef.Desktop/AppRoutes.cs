@@ -45,5 +45,6 @@ public static class AppRoutes
             .Page<ActivityLogsViewModel, ActivityLogsView>("IconClock", "Nav.ActivityLogs")
             .Page<SystemErrorsViewModel, SystemErrorsView>("IconWarning", "Nav.SystemErrors")
             .Page<BackupsViewModel, BackupsView>("IconDownload", "Nav.Backups")
+            .SubPage<ScheduledDumpsViewModel, ScheduledDumpsView>()
             .Page<SystemSettingsViewModel, SystemSettingsView>("IconSettings", "Nav.SystemSettings"));
 }

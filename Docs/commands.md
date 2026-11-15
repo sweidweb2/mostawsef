@@ -156,9 +156,10 @@ The API logs every request in Development and only slow ones (1 s or more) in pr
 Super → Settings → **Backup folder** (Browse). Default on first run: a `Backups` folder next to the API install
 (`AppContext.BaseDirectory\Backups`). While the API Windows service is running and that folder is set, the API
 writes `mostawsef-yyyyMMdd-HHmmss.dump` there (custom `pg_dump` format), keeps the newest `ScheduledBackup:KeepCount`
-files (default 7), and logs `backups.scheduled`. Clear the folder in Settings to skip scheduled dumps. Needs `pg_dump`
-on the API PC (`ScheduledBackup:PgDumpPath` if it is not on PATH). If the API lives under Program Files and writes
-fail, pick a writable folder (another drive / USB) instead.
+files **and** history rows in `scheduled_dumps` (default 7; Super → **Backups** → Auto backups), and logs `backups.scheduled`.
+Clear the folder in Settings to skip scheduled dumps. Needs `pg_dump` on the API PC (`ScheduledBackup:PgDumpPath` if
+it is not on PATH). If the API lives under Program Files and writes fail, pick a writable folder (another drive / USB)
+instead.
 
 Restore on a spare machine or disposable database (stop the API first):
 
@@ -167,8 +168,12 @@ Restore on a spare machine or disposable database (stop the API first):
 pg_restore --clean --if-exists --no-owner --dbname=mostawsef "D:\Mostawsef\Backups\mostawsef-20260101-120000.dump"
 ```
 
-Use the clinic connection settings (host, user, `PGPASSWORD`). Confirm the app starts and a known patient/order is
-visible before trusting the restore on a real clinic PC.
+Use the clinic connection settings (host, user, `PGPASSWORD`). Start the API only after the restore finishes: it keeps
+the settings rows and users' sign-in status in memory, so an API left running would serve the pre-restore values (and
+a restored user's old access) until it restarts. Confirm the app starts and a known patient/order is visible before
+trusting the restore on a real clinic PC.
+
+The same applies to any change made to the database outside the API (a manual SQL fix): restart the API afterwards.
 
 ## Database migrations
 

@@ -20,7 +20,8 @@ namespace Mostawsef.Desktop.ViewModels.Super;
 public sealed record BackupFormatOption(string Format);
 
 /// <summary>
-/// Super portal: export the database (every table or one) as CSV, JSON, SQL or PostgreSQL, and the history of past exports.
+/// Super portal: export the database (every table or one) as CSV, JSON, SQL or PostgreSQL, the history of past exports,
+/// and the automatic <c>pg_dump</c> history (<see cref="Dumps"/>).
 /// Each export saves only its settings; exporting a history row again uses them on the current data.
 /// Asking where to save always comes first, so cancelling the dialog stores nothing.
 /// </summary>
@@ -34,6 +35,7 @@ public partial class BackupsViewModel : NumberedListViewModel<BackupRecordDto>
 
     public BackupsViewModel(
         BackupsApi backups,
+        ScheduledDumpsViewModel dumps,
         SavePathPicker pickSavePath,
         IToastService toasts,
         LocalizationService localization,
@@ -41,9 +43,13 @@ public partial class BackupsViewModel : NumberedListViewModel<BackupRecordDto>
         : base(toasts, localization, errors)
     {
         _backups = backups;
+        Dumps = dumps;
         _pickSavePath = pickSavePath;
         SelectedFormat = FormatOptions[0];
     }
+
+    /// <summary>Automatic dump history (same page; not a separate menu entry).</summary>
+    public ScheduledDumpsViewModel Dumps { get; }
 
     /// <summary>The tables the form offers; filled when the page opens.</summary>
     public ObservableCollection<string> Tables { get; } = [];
@@ -78,7 +84,21 @@ public partial class BackupsViewModel : NumberedListViewModel<BackupRecordDto>
 
     protected override async Task LoadOnActivateAsync()
     {
-        await Task.WhenAll(ReloadAsync(), LoadTablesAsync());
+        await Task.WhenAll(ReloadAsync(), LoadTablesAsync(), Dumps.ActivateAsync());
+    }
+
+    public override void Deactivate()
+    {
+        base.Deactivate();
+        Dumps.Deactivate();
+    }
+
+    protected override async Task OnAfterRefreshAsync()
+    {
+        if (Dumps.RefreshCommand.CanExecute(null))
+        {
+            await Dumps.RefreshCommand.ExecuteAsync(null);
+        }
     }
 
     protected override Task<ApiResult<PagedResult<BackupRecordDto>>> FetchPageAsync(

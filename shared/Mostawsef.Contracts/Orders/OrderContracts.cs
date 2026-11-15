@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Mostawsef.Contracts.Common;
+using Mostawsef.Contracts.Dashboards;
 using Mostawsef.Contracts.LabTests;
 using Mostawsef.Contracts.Patients;
 
@@ -61,11 +62,24 @@ public record OrderStatsDto(int Paid, int PartiallyPaid, int Unpaid)
     public int Total => Paid + PartiallyPaid + Unpaid;
 }
 
-/// <summary>How many orders were created on one calendar day (in the server's local time).</summary>
-public record OrderDailyCountDto(DateOnly Date, int Count);
-
 /// <summary>How many times a lab test was ordered (on orders that are not cancelled or refunded).</summary>
 public record TopTestDto(Guid LabTestId, string Code, string Name, int Count);
+
+/// <summary>
+/// The Admin dashboard for one period (GET api/orders/dashboard): orders created in it by payment state, orders per
+/// hour/day/month (every bucket listed, zero included) and the <see cref="OrderDashboardRules.TopTests"/> most ordered tests.
+/// </summary>
+public record OrderDashboardDto(
+    DashboardRangeDto Range,
+    OrderStatsDto Stats,
+    IReadOnlyList<DashboardCountDto> Orders,
+    IReadOnlyList<TopTestDto> TopTests);
+
+public static class OrderDashboardRules
+{
+    /// <summary>How many of the most ordered tests the dashboard lists.</summary>
+    public const int TopTests = 20;
+}
 
 public record OrderItemDto(Guid LabTestId, string Code, string Name, long Price);
 

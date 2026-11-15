@@ -19,6 +19,9 @@ public static class ValueConverters
     /// <summary>UTC timestamp -> local date and time in the current language's format.</summary>
     public static readonly IValueConverter LocalDateTime = new FuncValueConverter<DateTime, string>(FormatLocal);
 
+    /// <summary>Byte count -> short size label (B / KB / MB) for dump history.</summary>
+    public static readonly IValueConverter ByteSize = new FuncValueConverter<long, string>(FormatByteSize);
+
     /// <summary>
     /// Minor units -> money text for DataGrid text columns (one binding, no MultiBinding per cell).
     /// Forms and details keep {l:Money ...} so they still refresh on language/currency changes.
@@ -58,6 +61,19 @@ public static class ValueConverters
         DateTime.SpecifyKind(value, value.Kind == DateTimeKind.Unspecified ? DateTimeKind.Utc : value.Kind)
             .ToLocalTime()
             .ToString("g", App.Services is null ? System.Globalization.CultureInfo.CurrentCulture : App.Localization.Culture);
+
+    public static string FormatByteSize(long bytes)
+    {
+        var culture = App.Services is null
+            ? System.Globalization.CultureInfo.InvariantCulture
+            : App.Localization.Culture;
+        return bytes switch
+        {
+            < 1024 => string.Create(culture, $"{bytes} B"),
+            < 1024 * 1024 => string.Create(culture, $"{bytes / 1024.0:0.#} KB"),
+            _ => string.Create(culture, $"{bytes / (1024.0 * 1024.0):0.#} MB"),
+        };
+    }
 
     public static string FormatMoney(long minorUnits)
     {

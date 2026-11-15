@@ -145,6 +145,25 @@ public class SystemSettingsPageTests : UiTestBase
     }
 
     [AvaloniaFact]
+    public async Task Cancelling_the_folder_dialog_leaves_the_backup_path_unchanged()
+    {
+        using var app = SuperWithSettings(Current);
+        app.PickedFolderPath = null;
+        var (page, window) = await ShowPage(app);
+
+        _ = page.EditCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+        var form = (SystemSettingsFormViewModel)window.GetVisualDescendants().OfType<Modal>().Single().Content!;
+        var before = form.BackupPath;
+        await form.BrowseBackupFolderCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(before, form.BackupPath);
+        Assert.Equal(@"D:\Backups", form.BackupPath);
+        Assert.Contains("Choose backup folder", app.FolderPickerTitles);
+    }
+
+    [AvaloniaFact]
     public async Task A_conflicting_edit_shows_the_conflict_message()
     {
         using var app = SuperWithSettings(Current);

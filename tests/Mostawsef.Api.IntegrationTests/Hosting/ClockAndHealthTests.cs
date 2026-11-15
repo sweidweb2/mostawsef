@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Mostawsef.Api.IntegrationTests.Infrastructure;
 using Mostawsef.Contracts.Common;
+using Mostawsef.Contracts.Logs;
 using Mostawsef.Contracts.Users;
 
 namespace Mostawsef.Api.IntegrationTests.Hosting;
@@ -45,6 +46,33 @@ public class ClockAndHealthTests(ApiFactory factory)
         var created = await response.Content.ReadFromJsonAsync<UserDetailsDto>(Ct);
 
         Assert.Equal(fixedNow.UtcDateTime, created!.CreatedAt);
+    }
+
+    [Fact]
+    public async Task Activity_log_and_system_error_times_come_from_the_injected_clock()
+    {
+        var realNow = DateTimeOffset.UtcNow;
+        var fixedNow = new DateTimeOffset(realNow.Year, realNow.Month, realNow.Day, realNow.Hour, realNow.Minute, realNow.Second, TimeSpan.Zero)
+            .AddHours(-5);
+        using var frozen = Frozen(fixedNow);
+        var client = frozen.CreateClient();
+        var login = await factory.CreateClient().LoginAsAsync(TestUsers.Super);
+        client.WithBearer(login.AccessToken);
+
+        var attempted = $"{HttpClientExtensions.Unique("lc")[..20]}@t.local";
+        await client.LoginAsync(attempted, "wrong");
+
+        var errTag = HttpClientExtensions.Unique("cerr");
+        var throwResponse = await client.GetAsync($"{ApiFactory.ThrowPath}?message={errTag}", Ct);
+        Assert.Equal(System.Net.HttpStatusCode.InternalServerError, throwResponse.StatusCode);
+
+        var activities = await client.GetJsonAsync<CursorPage<ActivityLogListItemDto>>(
+            $"api/activity-logs?search={Uri.EscapeDataString(attempted)}");
+        Assert.Contains(activities.Items, i => i.Action == "auth.sign_in_failed" && i.OccurredAt == fixedNow.UtcDateTime);
+
+        var errors = await client.GetJsonAsync<CursorPage<SystemErrorListItemDto>>(
+            $"api/system-errors?search={Uri.EscapeDataString(errTag)}");
+        Assert.Contains(errors.Items, e => e.OccurredAt == fixedNow.UtcDateTime);
     }
 
     [Theory]

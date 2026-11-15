@@ -1,0 +1,84 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:Mostawsef.Desktop.Components"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:conv="using:Mostawsef.Desktop.Converters"
+             xmlns:backups="using:Mostawsef.Contracts.Backups"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Super"
+             x:Class="Mostawsef.Desktop.Views.Super.ScheduledDumpsView"
+             x:DataType="vm:ScheduledDumpsViewModel">
+    <!-- Embedded on the Backups page (no page chrome / header). -->
+    <ui:DataTable Height="460"
+                  IsLoading="{Binding IsLoading}"
+                  IsEmpty="{Binding IsEmpty}"
+                  HasError="{Binding HasLoadError}"
+                  ErrorTitle="{l:TrKey {Binding LoadErrorTitleKey}}"
+                  ErrorDescription="{l:TrKey {Binding LoadErrorDescriptionKey}}"
+                  RetryCommand="{Binding RefreshCommand}"
+                  FirstRowNumber="{Binding FirstRowNumber}"
+                  EmptyTitle="{l:Tr ScheduledDumps.EmptyTitle}"
+                  EmptyDescription="{l:Tr ScheduledDumps.EmptyDescription}">
+        <ui:DataTable.Toolbar>
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Spacing="2" VerticalAlignment="Center">
+                    <TextBlock Classes="h4" Text="{l:Tr Nav.ScheduledDumps}" />
+                    <TextBlock Classes="caption muted" Text="{l:Tr ScheduledDumps.Subtitle}" TextWrapping="Wrap" />
+                </StackPanel>
+                <TextBlock Grid.Column="1" Classes="caption muted"
+                           Text="{l:Tr ScheduledDumps.Records, Arg={Binding DisplayTotal}}"
+                           VerticalAlignment="Center" />
+            </Grid>
+        </ui:DataTable.Toolbar>
+
+        <DataGrid ItemsSource="{Binding Items}" IsReadOnly="True" CanUserSortColumns="False">
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Header="{l:Tr Common.RowNumber}" Width="56">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <ui:RowNumber Margin="12,0" VerticalAlignment="Center" Classes="muted" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn x:DataType="backups:ScheduledDumpDto"
+                                    Header="{l:Tr ScheduledDumps.Col.When}"
+                                    Width="170"
+                                    Binding="{Binding CreatedAt, Converter={x:Static conv:ValueConverters.LocalDateTime}}"
+                                    IsReadOnly="True" />
+                <DataGridTextColumn x:DataType="backups:ScheduledDumpDto"
+                                    Header="{l:Tr ScheduledDumps.Col.Folder}"
+                                    Width="*"
+                                    Binding="{Binding FolderPath}"
+                                    IsReadOnly="True" />
+                <DataGridTextColumn x:DataType="backups:ScheduledDumpDto"
+                                    Header="{l:Tr ScheduledDumps.Col.File}"
+                                    Width="220"
+                                    Binding="{Binding FileName}"
+                                    IsReadOnly="True" />
+                <DataGridTextColumn x:DataType="backups:ScheduledDumpDto"
+                                    Header="{l:Tr ScheduledDumps.Col.Size}"
+                                    Width="100"
+                                    Binding="{Binding FileSizeBytes, Converter={x:Static conv:ValueConverters.ByteSize}}"
+                                    IsReadOnly="True" />
+                <DataGridTextColumn x:DataType="backups:ScheduledDumpDto"
+                                    Header="{l:Tr ScheduledDumps.Col.Keep}"
+                                    Width="80"
+                                    Binding="{Binding KeepCount}"
+                                    IsReadOnly="True" />
+                <DataGridTextColumn x:DataType="backups:ScheduledDumpDto"
+                                    Header="{l:Tr ScheduledDumps.Col.Interval}"
+                                    Width="90"
+                                    Binding="{Binding IntervalDays}"
+                                    IsReadOnly="True" />
+                <DataGridTextColumn x:DataType="backups:ScheduledDumpDto"
+                                    Header="{l:Tr ScheduledDumps.Col.Deleted}"
+                                    Width="90"
+                                    Binding="{Binding DeletedOldFiles}"
+                                    IsReadOnly="True" />
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <ui:DataTable.Footer>
+            <ui:Pagination CurrentPage="{Binding CurrentPage}" PageCount="{Binding PageCount}" IsEnabled="{Binding !IsLoading}" />
+        </ui:DataTable.Footer>
+    </ui:DataTable>
+</UserControl>

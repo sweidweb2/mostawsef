@@ -1,6 +1,7 @@
 # Activity Logs and System Errors
 
 Two app-wide engines. Both write to their own table, never throw, and never block the action being logged.
+`OccurredAt` comes from `TimeProvider` (same clock as “today” stats and the rest of the API), not `DateTime.UtcNow`.
 
 ## Tables
 

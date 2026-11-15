@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Mostawsef.Contracts.Auth;
 using Mostawsef.Contracts.Backups;
+using Mostawsef.Contracts.Dashboards;
 using Mostawsef.Contracts.LabTests;
 using Mostawsef.Contracts.Logs;
 using Mostawsef.Contracts.Maintenance;
@@ -45,9 +46,7 @@ namespace Mostawsef.Contracts.Common;
 [JsonSerializable(typeof(PagedResult<PatientDto>))]
 [JsonSerializable(typeof(IReadOnlyList<PatientDto>))]
 [JsonSerializable(typeof(OrderDetailsDto))]
-[JsonSerializable(typeof(OrderStatsDto))]
-[JsonSerializable(typeof(IReadOnlyList<OrderDailyCountDto>))]
-[JsonSerializable(typeof(IReadOnlyList<TopTestDto>))]
+[JsonSerializable(typeof(OrderDashboardDto))]
 [JsonSerializable(typeof(CreateOrderRequest))]
 [JsonSerializable(typeof(AddPaymentRequest))]
 [JsonSerializable(typeof(OrderListFilterRequest))]
@@ -67,5 +66,7 @@ namespace Mostawsef.Contracts.Common;
 [JsonSerializable(typeof(BackupRecordDto))]
 [JsonSerializable(typeof(CreateBackupRequest))]
 [JsonSerializable(typeof(PagedResult<BackupRecordDto>))]
+[JsonSerializable(typeof(ScheduledDumpDto))]
+[JsonSerializable(typeof(PagedResult<ScheduledDumpDto>))]
 [JsonSerializable(typeof(IReadOnlyList<string>))]
 public sealed partial class ContractsJsonContext : JsonSerializerContext;

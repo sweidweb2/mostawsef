@@ -50,6 +50,7 @@ public static class DependencyInjection
         services.AddScoped<IPatientRepository, PatientRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();
         services.AddScoped<IBackupRepository, BackupRepository>();
+        services.AddScoped<IScheduledDumpRepository, ScheduledDumpRepository>();
         services.AddScoped<ISystemMaintenanceRepository, SystemMaintenanceRepository>();
         services.AddSingleton<IBackupExporter, DatabaseBackupExporter>();
         services.AddSingleton<IDatabaseDumpRunner>(sp =>

@@ -81,16 +81,19 @@ public static class DatabaseInitializer
         }
 
         var systemSettings = await db.Set<SystemSettings>().SingleOrDefaultAsync(cancellationToken);
+        var systemSettingsChanged = false;
         if (systemSettings is null)
         {
             systemSettings = new SystemSettings();
             systemSettings.Update(ScheduledBackupPaths.DefaultFolder, maintenanceMode: false);
             db.Add(systemSettings);
+            systemSettingsChanged = true;
             logger.LogInformation("Created system settings with default backup folder {BackupPath}", systemSettings.BackupPath);
         }
         else if (string.IsNullOrWhiteSpace(systemSettings.BackupPath))
         {
             systemSettings.Update(ScheduledBackupPaths.DefaultFolder, systemSettings.MaintenanceMode);
+            systemSettingsChanged = true;
             logger.LogInformation("Filled empty backup folder with default {BackupPath}", systemSettings.BackupPath);
         }
 
@@ -113,5 +116,11 @@ public static class DatabaseInitializer
         }
 
         await db.SaveChangesAsync(cancellationToken);
+
+        // Direct DbContext writes skip SystemSettingsService, so drop any cached row this host holds.
+        if (systemSettingsChanged)
+        {
+            scope.ServiceProvider.GetService<ISystemSettingsCache>()?.Invalidate();
+        }
     }
 }

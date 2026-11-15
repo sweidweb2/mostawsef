@@ -26,6 +26,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     public DbSet<BackupRecord> BackupRecords => Set<BackupRecord>();
 
+    public DbSet<ScheduledDump> ScheduledDumps => Set<ScheduledDump>();
+
     /// <summary>
     /// Stale Version → 409 concurrency_conflict. Unique/FK races (check-then-act under concurrent requests) → 409
     /// instead of a generic 500. Feature services may remap <see cref="ErrorCodes.Taken"/> to a field-specific code

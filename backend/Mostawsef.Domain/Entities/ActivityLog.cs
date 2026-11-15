@@ -20,6 +20,7 @@ public class ActivityLog : IChronological
     }
 
     public ActivityLog(
+        DateTime occurredAt,
         string action,
         string module,
         string description,
@@ -31,6 +32,7 @@ public class ActivityLog : IChronological
         string? userAgent,
         string? details)
     {
+        OccurredAt = occurredAt;
         Action = Text.TruncateRequired(action, ActionMaxLength);
         Module = Text.TruncateRequired(module, ModuleMaxLength);
         Description = Text.TruncateRequired(description, DescriptionMaxLength);
@@ -45,7 +47,7 @@ public class ActivityLog : IChronological
 
     public Guid Id { get; private set; } = Guid.NewGuid();
 
-    public DateTime OccurredAt { get; private set; } = DateTime.UtcNow;
+    public DateTime OccurredAt { get; private set; }
 
     /// <summary>Stable code, e.g. "auth.login". See ActivityActions.</summary>
     public string Action { get; private set; } = string.Empty;

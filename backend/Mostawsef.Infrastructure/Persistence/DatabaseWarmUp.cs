@@ -53,6 +53,19 @@ public static class DatabaseWarmUp
             await orders.GetByIdAsync(Guid.Empty, cancellationToken);
             await patients.GetOrderPatientAsync(Guid.Empty, cancellationToken);
 
+            // The dashboards: the first page Admin and Super see after signing in.
+            var maintenance = provider.GetRequiredService<ISystemMaintenanceRepository>();
+            var untilUtc = provider.GetRequiredService<TimeProvider>().GetUtcNow().UtcDateTime;
+            var sinceUtc = untilUtc.AddDays(-1);
+            await orders.GetFirstCreatedAtAsync(cancellationToken);
+            await orders.GetStatusCountsAsync(sinceUtc, untilUtc, cancellationToken);
+            await orders.GetCreatedPerHourAsync(sinceUtc, untilUtc, cancellationToken);
+            await orders.GetTopTestsAsync(1, sinceUtc, untilUtc, cancellationToken);
+            await maintenance.GetFirstRecordAtAsync(cancellationToken);
+            await maintenance.GetTotalsAsync(cancellationToken);
+            await maintenance.GetOutstandingAsync(sinceUtc, untilUtc, cancellationToken);
+            await maintenance.GetHourlySeriesAsync(sinceUtc, untilUtc, cancellationToken);
+
             logger.LogInformation("Warmed up the database queries in {ElapsedMs}ms", watch.ElapsedMilliseconds);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

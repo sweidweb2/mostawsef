@@ -75,9 +75,15 @@ internal static class OrderPages
         return FakeApiHandler.Json(new PagedResult<PatientDto>(items, 1, PageQuery.DefaultPageSize, items.Count));
     }
 
-    /// <summary>Mirrors the API: optional active filter and SearchText-style name/code search.</summary>
+    /// <summary>Mirrors the API: <c>/all</c> lists every test (New Order keeps the active ones); the list takes an
+    /// optional active filter and SearchText-style name/code search.</summary>
     public static HttpResponseMessage CatalogResponse(HttpRequestMessage request)
     {
+        if (request.RequestUri!.AbsolutePath.EndsWith("/all", StringComparison.Ordinal))
+        {
+            return FakeApiHandler.Json<IReadOnlyList<LabTestDto>>([Cbc, Sugar, Retired]);
+        }
+
         var query = System.Web.HttpUtility.ParseQueryString(request.RequestUri!.Query);
         IEnumerable<LabTestDto> tests = [Cbc, Sugar, Retired];
         if (bool.TryParse(query["active"], out var active))

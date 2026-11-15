@@ -38,10 +38,9 @@ public class NewOrderPageTests : UiTestBase
         page.NextStepCommand.Execute(null);
         await WaitUntil(() => page.SelectedStep == NewOrderViewModel.TestsStep && !page.IsCatalogLoading);
 
+        // One request for a consistent snapshot (no page walk); the inactive test is left out on the desktop.
         var catalog = Assert.Single(app.Api.RequestsTo(HttpMethod.Get, TestsPath));
-        Assert.Contains("active=true", catalog.RequestUri!.Query, StringComparison.Ordinal);
-        Assert.Contains("includeTotal=false", catalog.RequestUri.Query, StringComparison.Ordinal);
-        Assert.Contains($"pageSize={PageQuery.MaxPageSize}", catalog.RequestUri.Query, StringComparison.Ordinal);
+        Assert.Equal($"{TestsPath}/all", catalog.RequestUri!.AbsolutePath);
         Assert.Equal([Cbc.Id, Sugar.Id], page.Catalog.Select(t => t.Test.Id));
     }
 

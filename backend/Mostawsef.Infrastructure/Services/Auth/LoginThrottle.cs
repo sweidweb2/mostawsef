@@ -9,7 +9,7 @@ namespace Mostawsef.Infrastructure.Services.Auth;
 /// </summary>
 public sealed class LoginThrottle(TimeProvider time, IConfiguration configuration) : ILoginThrottle
 {
-    /// <summary>Bound on tracked usernames; a flood of distinct names drops the tracking instead of growing without limit.</summary>
+    /// <summary>Bound on tracked usernames; when full, new names are not tracked (existing locks stay) instead of growing without limit.</summary>
     public const int MaxTrackedUsernames = 10_000;
 
     private readonly Lock _gate = new();
@@ -52,7 +52,9 @@ public sealed class LoginThrottle(TimeProvider time, IConfiguration configuratio
                 RemoveExpired(now);
                 if (_entries.Count >= MaxTrackedUsernames)
                 {
-                    _entries.Clear();
+                    // Full of live windows (a flood of distinct names). Keep them: wiping would lift the lock on an
+                    // account under attack. New names go untracked until windows expire; the per-IP limiter still applies.
+                    return;
                 }
             }
 

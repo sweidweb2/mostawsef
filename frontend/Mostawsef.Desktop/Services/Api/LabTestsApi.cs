@@ -24,32 +24,27 @@ public class LabTestsApi(ApiClient api)
             cancellationToken);
 
     /// <summary>
-    /// Active tests for the new-order catalog, optionally filtered by search.
-    /// Walks every page (MaxPageSize each) so a clinic catalog larger than one page is not truncated.
+    /// Active tests for the new-order catalog, sorted by name. One request (the same list as print/export, filtered
+    /// here) so the catalog is a consistent snapshot: walking pages could skip or repeat a test edited in between.
     /// </summary>
-    public async Task<ApiResult<PagedResult<LabTestDto>>> GetCatalogAsync(string? search, CancellationToken cancellationToken = default)
+    public async Task<ApiResult<IReadOnlyList<LabTestDto>>> GetActiveCatalogAsync(CancellationToken cancellationToken = default)
     {
-        var all = new List<LabTestDto>();
-        var page = 1;
-        while (true)
+        var result = await GetAllTestsAsync(cancellationToken);
+        if (!result.IsSuccess)
         {
-            var result = await GetTestsAsync(
-                page, PageQuery.MaxPageSize, search, active: true, includeTotal: false, cancellationToken);
-            if (!result.IsSuccess)
-            {
-                return result;
-            }
-
-            var batch = result.Value!.Items;
-            all.AddRange(batch);
-            if (batch.Count < PageQuery.MaxPageSize)
-            {
-                return ApiResult<PagedResult<LabTestDto>>.Ok(
-                    new PagedResult<LabTestDto>(all, 1, all.Count == 0 ? PageQuery.MaxPageSize : all.Count, all.Count));
-            }
-
-            page++;
+            return result;
         }
+
+        var active = new List<LabTestDto>(result.Value!.Count);
+        foreach (var test in result.Value)
+        {
+            if (test.IsActive)
+            {
+                active.Add(test);
+            }
+        }
+
+        return ApiResult<IReadOnlyList<LabTestDto>>.Ok(active);
     }
 
     /// <summary>Every test, sorted by name.</summary>

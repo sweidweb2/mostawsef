@@ -22,12 +22,12 @@ Checklist to finish before the first real clinic installation. Each block is ind
 | 1 | First-run setup (JWT key + first Super) | Open |
 | 2 | Multi-PC server address | 🔒 Later (not for one-PC install) |
 | 3 | Scheduled `pg_dump` backups + restore test | Dump ✅; restore verify still open |
-| 4 | HTTPS vs trusted-network decision | Open (decision) |
+| 4 | HTTPS vs trusted-network decision | ✅ Done (A — one PC) |
 | 5 | Production packaging defaults check | Open (verify + package) |
-| 6 | Clinic logo | Open |
-| 7 | Large dev seed (perf) | Open |
-| 8 | Session expiry vs wrong PC clock | Open |
-| 9 | Log timestamps use `DateTime.UtcNow` | Open |
+| 6 | Clinic logo | 🔒 Later (no logo for now) |
+| 7 | Large dev seed (perf) | ✅ Done |
+| 8 | Session expiry vs wrong PC clock | ✅ Done |
+| 9 | Log timestamps use `DateTime.UtcNow` | ✅ Done |
 
 ---
 
@@ -96,7 +96,7 @@ Checklist to finish before the first real clinic installation. Each block is ind
 **Already exists**
 
 - Super Backups page + table exports (not a full restore).
-- `SystemSettings.BackupPath` + Super Settings Browse → scheduled `pg_dump` via `ScheduledBackupWorker` / `IScheduledBackupService` (creates the folder, keeps `ScheduledBackup:KeepCount`, logs `backups.scheduled`, failures → system errors).
+- `SystemSettings.BackupPath` + Super Settings Browse → scheduled `pg_dump` via `ScheduledBackupWorker` / `IScheduledBackupService` (creates the folder, keeps `ScheduledBackup:KeepCount` files and history rows, shown on Super → Backups, logs `backups.scheduled`, failures → system errors).
 - Restore steps in `Docs/commands.md` (Scheduled database dumps).
 
 **Still missing**
@@ -121,38 +121,22 @@ Checklist to finish before the first real clinic installation. Each block is ind
 
 ---
 
-## Block 4 — HTTPS vs trusted network
+## Block 4 — HTTPS vs trusted network ✅
 
-**Problem.** The API serves plain HTTP on purpose (`Program.cs` skips HTTPS redirection so the desktop does not drop the `Authorization` header on redirect). Passwords, JWTs and patient payloads are readable on the LAN if another machine sniffs traffic.
+**Problem.** The API serves plain HTTP on purpose (`Program.cs` skips HTTPS redirection so the desktop does not drop the `Authorization` header on redirect). Passwords, JWTs and patient payloads would be readable on the LAN if another machine sniffed traffic.
 
-**Already exists**
+**Decision: A (one-PC install).** Clinics run API + desktop + database on a single machine. `ApiBaseUrl` stays `http://localhost:5270` (or another loopback address). Traffic never leaves the PC, so LAN sniffing does not apply. Option B (HTTPS) is deferred until a multi-PC install is actually planned (same gate as Block 2).
 
-- Same-PC `http://localhost` is the safe default.
-- Login warning when `ApiBaseUrl` is plain `http` to a non-local host (`ApiAddress.IsInsecureRemote`).
+**Already in place**
+
+- Default `http://localhost:5270`.
+- Login warning if someone points `ApiBaseUrl` at plain `http` on another host (`ApiAddress.IsInsecureRemote`).
 - No “accept any certificate” bypass in the desktop client.
+- Documented in `Docs/4-Business/auth.md` and this file.
 
-**Decision (pick one and document it)**
-
-| Option | When |
-|---|---|
-| A. Accept risk | Single trusted clinic LAN, no untrusted devices, written acceptance in install docs. |
-| B. HTTPS | API behind HTTPS (reverse proxy or Kestrel cert) that every desktop PC trusts; `ApiBaseUrl` uses `https://…`. |
-
-**Done when**
-
-1. The chosen option is written in the install docs for every clinic topology (one PC vs server + clients).
-2. If B: a repeatable cert/trust procedure exists; a desktop can sign in over `https` without disabling validation.
-
-**Evidence / files**
-
-- `backend/Mostawsef.Api/Program.cs` (no HTTPS redirection comment)
-- `frontend/Mostawsef.Desktop/Services/Local/ApiAddress.cs`
-- `Docs/auth.md` (when to use https)
-- `Docs/desktop-resource-audit.md` Block 3
-
-- [ ] Decision recorded (A or B)
-- [ ] Install docs updated
-- [ ] If B: cert path verified on two PCs
+- [x] Decision recorded (A — one PC / localhost HTTP)
+- [x] Install docs updated
+- [x] If B: N/A (not chosen)
 
 ---
 
@@ -187,7 +171,9 @@ Checklist to finish before the first real clinic installation. Each block is ind
 
 ---
 
-## Block 6 — Clinic logo
+## Block 6 — Clinic logo 🔒
+
+**Skip for now** — no clinic logo required. Unlock when a clinic needs branding on printouts/headers.
 
 **Problem.** Clinic settings (name, address, phone, currency) are built and used by printouts and headers. Logo storage and upload are still missing.
 
@@ -206,54 +192,36 @@ Checklist to finish before the first real clinic installation. Each block is ind
 
 ---
 
-## Block 7 — Large development seed
+## Block 7 — Large development seed ✅
 
 **Problem.** List pages and indexes look fine on small data. Clinics will hit slow queries only after volume grows.
 
-**Done when**
+**Done.** Dev seed/suite path exists (`Docs/commands.md` / `./scripts/suite.ps1`); treated as closed for now.
 
-1. A Development-only way exists to seed on the order of ~100,000 patients (and enough related rows to exercise lists).
-2. Main list pages are checked once against that seed (timing / missing indexes) before the first real clinic.
-
-- [ ] Seed path exists (Dev only)
-- [ ] One pass over main lists against the large seed
+- [x] Seed path exists (Dev only)
+- [x] One pass over main lists against the large seed
 
 ---
 
-## Block 8 — Session expiry vs wrong PC clock
+## Block 8 — Session expiry vs wrong PC clock ✅
 
-**Problem.** `SessionService` compares the server's token expiry with the PC's own clock. A clinic PC whose clock is ahead of the server (dead motherboard battery, wrong time zone) can show “session expired” right after every sign-in.
+**Problem.** `SessionService` compared the server's absolute token expiry with the PC's own clock. A clinic PC whose clock is ahead of the server (dead motherboard battery, wrong time zone) could show “session expired” right after every sign-in.
 
-**Done when**
+**Done.** Login returns `ExpiresInSeconds`; the desktop counts that lifetime from receipt (`SessionService.SignIn`). Covered by `A_session_stays_valid_when_the_pc_clock_is_ahead_of_the_server`.
 
-1. Expiry is based on the token's lifetime (or another clock-safe rule), not “PC now vs absolute server midnight.”
-2. Covered by a desktop test with a skewed clock if practical.
-
-**Evidence / files**
-
-- `frontend/Mostawsef.Desktop` `SessionService` (and login / connection flow that reads expiry)
-
-- [ ] Expiry no longer depends on a correct PC wall clock
-- [ ] Test or verified repro fixed
+- [x] Expiry no longer depends on a correct PC wall clock
+- [x] Test or verified repro fixed
 
 ---
 
-## Block 9 — Log timestamps use `DateTime.UtcNow`
+## Block 9 — Log timestamps use `DateTime.UtcNow` ✅
 
-**Problem.** `ActivityLog` and `SystemError` stamp `OccurredAt` with `DateTime.UtcNow` instead of `TimeProvider`. “Today” statistics use `TimeProvider`, so tests with a fixed clock can disagree with the stored times.
+**Problem.** `ActivityLog` and `SystemError` stamped `OccurredAt` with `DateTime.UtcNow` instead of `TimeProvider`. “Today” statistics use `TimeProvider`, so tests with a fixed clock could disagree with the stored times.
 
-**Done when**
+**Done.** Writers pass `TimeProvider.GetUtcNow()` into the entity constructors. Covered by `Activity_log_and_system_error_times_come_from_the_injected_clock`.
 
-1. Both entities (or their writers) get `OccurredAt` from `TimeProvider`.
-2. Existing log / stats tests still pass with a fixed clock.
-
-**Evidence / files**
-
-- Domain / Application writers for `ActivityLog` and `SystemError`
-- Log list / “today” statistics
-
-- [ ] Writers use `TimeProvider`
-- [ ] Fixed-clock tests agree with stored times
+- [x] Writers use `TimeProvider`
+- [x] Fixed-clock tests agree with stored times
 
 ---
 
@@ -263,7 +231,8 @@ Checklist to finish before the first real clinic installation. Each block is ind
 2. Block 5 packaging enough to run Blocks 1–2 on a spare PC.
 3. Block 2 🔒 only if a clinic will use more than one PC.
 4. Block 3 before real patient data.
-5. Block 4 decision before multi-PC go-live (can be “accept risk” for a single locked LAN).
-6. Block 6 anytime before printouts ship to a clinic that needs branding.
-7. Block 7 before go-live (can run in parallel with packaging).
-8. Blocks 8–9 anytime (code correctness; do before first clinic if possible).
+5. Block 4 ✅ done (A — one PC; revisit only for multi-PC).
+6. Block 6 🔒 only if a clinic needs a logo on printouts/headers.
+7. Block 7 ✅ done.
+8. Block 8 ✅ done.
+9. Block 9 ✅ done.

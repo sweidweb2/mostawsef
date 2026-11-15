@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Mostawsef.Api.Extensions;
 using Mostawsef.Application.Modules.Orders;
 using Mostawsef.Contracts.Common;
+using Mostawsef.Contracts.Dashboards;
 using Mostawsef.Contracts.Orders;
 
 namespace Mostawsef.Api.Controllers;
@@ -18,19 +19,12 @@ public class OrdersController(IOrderService orders) : ControllerBase
         [FromQuery] PageQuery query, [FromQuery] OrderListFilterRequest filter, CancellationToken cancellationToken) =>
         orders.GetPageAsync(query, filter, cancellationToken);
 
-    /// <summary>Order counts by payment state, for the dashboard.</summary>
-    [HttpGet("stats")]
-    public Task<OrderStatsDto> Stats(CancellationToken cancellationToken) => orders.GetStatsAsync(cancellationToken);
-
-    /// <summary>Orders created per day (default the last 30 days), for the dashboard line graph.</summary>
-    [HttpGet("daily")]
-    public Task<IReadOnlyList<OrderDailyCountDto>> Daily([FromQuery] int days = 30, CancellationToken cancellationToken = default) =>
-        orders.GetDailyCountsAsync(days, cancellationToken);
-
-    /// <summary>The most ordered tests (default 20), for the dashboard line graph.</summary>
-    [HttpGet("top-tests")]
-    public Task<IReadOnlyList<TopTestDto>> TopTests([FromQuery] int take = 20, CancellationToken cancellationToken = default) =>
-        orders.GetTopTestsAsync(take, cancellationToken);
+    /// <summary>The Admin dashboard for a period (days in the server's time zone, kept between the first order and today).</summary>
+    [HttpGet("dashboard")]
+    [ProducesResponseType<OrderDashboardDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public Task<OrderDashboardDto> Dashboard([FromQuery] DashboardRangeQuery query, CancellationToken cancellationToken) =>
+        orders.GetDashboardAsync(query, cancellationToken);
 
     [HttpGet("{id:guid}")]
     [ProducesResponseType<OrderDetailsDto>(StatusCodes.Status200OK)]

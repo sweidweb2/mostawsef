@@ -3,6 +3,7 @@ using Mostawsef.Application.Common;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Application.Modules.Patients;
 using Mostawsef.Contracts.Common;
+using Mostawsef.Contracts.Dashboards;
 using Mostawsef.Contracts.Orders;
 using Mostawsef.Domain.Common;
 using Mostawsef.Domain.Entities;
@@ -18,13 +19,11 @@ public interface IOrderService
 
     Task<OrderDetailsDto> GetAsync(Guid id, CancellationToken cancellationToken);
 
-    Task<OrderStatsDto> GetStatsAsync(CancellationToken cancellationToken);
-
-    /// <summary>Orders created per day for the last <paramref name="days"/> days (1 to <see cref="OrderService.MaxDailyDays"/>), today last; days without orders count 0.</summary>
-    Task<IReadOnlyList<OrderDailyCountDto>> GetDailyCountsAsync(int days, CancellationToken cancellationToken);
-
-    /// <summary>The <paramref name="take"/> (1 to <see cref="OrderService.MaxTopTests"/>) most ordered tests, most first.</summary>
-    Task<IReadOnlyList<TopTestDto>> GetTopTestsAsync(int take, CancellationToken cancellationToken);
+    /// <summary>
+    /// The Admin dashboard for a period (see <see cref="DashboardRangeQuery"/>): orders created in it by payment state,
+    /// orders per hour/day/month and the most ordered tests. The period is kept between the first order's day and today.
+    /// </summary>
+    Task<OrderDashboardDto> GetDashboardAsync(DashboardRangeQuery query, CancellationToken cancellationToken);
 
     /// <summary>Adds a payment of at most what the order still owes; returns the updated order.</summary>
     Task<OrderDetailsDto> AddPaymentAsync(Guid id, AddPaymentRequest request, CancellationToken cancellationToken);
@@ -65,34 +64,27 @@ public class OrderService(
             total);
     }
 
-    public const int MaxDailyDays = 90;
-
-    public const int MaxTopTests = 50;
-
-    public async Task<IReadOnlyList<TopTestDto>> GetTopTestsAsync(int take, CancellationToken cancellationToken) =>
-        (await orders.GetTopTestsAsync(Math.Clamp(take, 1, MaxTopTests), cancellationToken))
-        .Select(t => new TopTestDto(t.LabTestId, t.Code, t.Name, t.Count))
-        .ToList();
-
-    public async Task<IReadOnlyList<OrderDailyCountDto>> GetDailyCountsAsync(int days, CancellationToken cancellationToken)
+    public async Task<OrderDashboardDto> GetDashboardAsync(DashboardRangeQuery query, CancellationToken cancellationToken)
     {
-        days = Math.Clamp(days, 1, MaxDailyDays);
-        var zone = time.LocalTimeZone;
-        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(time.GetUtcNow(), zone).DateTime);
-        var first = today.AddDays(1 - days);
+        // One DbContext per request: the queries run one after another (each is a single indexed statement).
+        var range = DashboardRange.Resolve(query, await orders.GetFirstCreatedAtAsync(cancellationToken), time);
+        var counts = await orders.GetStatusCountsAsync(range.SinceUtc, range.UntilUtc, cancellationToken);
+        var perHour = await orders.GetCreatedPerHourAsync(range.SinceUtc, range.UntilUtc, cancellationToken);
+        var top = await orders.GetTopTestsAsync(OrderDashboardRules.TopTests, range.SinceUtc, range.UntilUtc, cancellationToken);
 
-        // Midnight of the first day in the server's time zone, as UTC.
-        var sinceUtc = TimeZoneInfo.ConvertTimeToUtc(DateTime.SpecifyKind(first.ToDateTime(TimeOnly.MinValue), DateTimeKind.Unspecified), zone);
-        var created = await orders.GetCreatedSinceAsync(sinceUtc, cancellationToken);
-
-        var perDay = created
-            .GroupBy(utc => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), zone)))
-            .ToDictionary(g => g.Key, g => g.Count());
-
-        return Enumerable.Range(0, days)
-            .Select(offset => first.AddDays(offset))
-            .Select(date => new OrderDailyCountDto(date, perDay.GetValueOrDefault(date)))
+        var perBucket = range.Sum(perHour);
+        var points = range.BucketStarts()
+            .Select(start => new DashboardCountDto(start, (int)perBucket.GetValueOrDefault(start)))
             .ToList();
+
+        return new OrderDashboardDto(
+            range.ToDto(),
+            new OrderStatsDto(
+                counts.GetValueOrDefault(OrderStatus.Paid),
+                counts.GetValueOrDefault(OrderStatus.PartiallyPaid),
+                counts.GetValueOrDefault(OrderStatus.Pending)),
+            points,
+            top.Select(t => new TopTestDto(t.LabTestId, t.Code, t.Name, t.Count)).ToList());
     }
 
     public async Task<OrderDetailsDto> AddPaymentAsync(Guid id, AddPaymentRequest request, CancellationToken cancellationToken)
@@ -119,15 +111,6 @@ public class OrderService(
             cancellationToken);
 
         return ToDetails(order); // the order is already loaded with its items and payments: no second read
-    }
-
-    public async Task<OrderStatsDto> GetStatsAsync(CancellationToken cancellationToken)
-    {
-        var counts = await orders.GetStatusCountsAsync(cancellationToken);
-        return new OrderStatsDto(
-            counts.GetValueOrDefault(OrderStatus.Paid),
-            counts.GetValueOrDefault(OrderStatus.PartiallyPaid),
-            counts.GetValueOrDefault(OrderStatus.Pending));
     }
 
     public async Task<OrderDetailsDto> GetAsync(Guid id, CancellationToken cancellationToken)

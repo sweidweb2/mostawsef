@@ -438,6 +438,19 @@
   <data name="ErrorCode.duplicate" xml:space="preserve"><value>This test is already in the order.</value></data>
   <data name="ErrorCode.exceeds_total" xml:space="preserve"><value>The payment can't be more than the order total.</value></data>
   <data name="Nav.Backups" xml:space="preserve"><value>Backups</value></data>
+  <data name="Nav.ScheduledDumps" xml:space="preserve"><value>Auto backups</value></data>
+  <data name="ScheduledDumps.Subtitle" xml:space="preserve"><value>Automatic database dumps: when they ran, where the file is, and the settings used.</value></data>
+  <data name="ScheduledDumps.History" xml:space="preserve"><value>Dump history</value></data>
+  <data name="ScheduledDumps.Records" xml:space="preserve"><value>{0} dumps</value></data>
+  <data name="ScheduledDumps.EmptyTitle" xml:space="preserve"><value>No automatic dumps yet</value></data>
+  <data name="ScheduledDumps.EmptyDescription" xml:space="preserve"><value>When the API is running and a backup folder is set in Settings, successful dumps appear on this page.</value></data>
+  <data name="ScheduledDumps.Col.When" xml:space="preserve"><value>When</value></data>
+  <data name="ScheduledDumps.Col.Folder" xml:space="preserve"><value>Folder</value></data>
+  <data name="ScheduledDumps.Col.File" xml:space="preserve"><value>File</value></data>
+  <data name="ScheduledDumps.Col.Size" xml:space="preserve"><value>Size</value></data>
+  <data name="ScheduledDumps.Col.Keep" xml:space="preserve"><value>Keep</value></data>
+  <data name="ScheduledDumps.Col.Interval" xml:space="preserve"><value>Every (days)</value></data>
+  <data name="ScheduledDumps.Col.Deleted" xml:space="preserve"><value>Purged</value></data>
   <data name="Backups.Subtitle" xml:space="preserve"><value>Export the database to a file you keep. Only the export settings are stored, never the data.</value></data>
   <data name="Backups.NewTitle" xml:space="preserve"><value>New backup</value></data>
   <data name="Backups.NewSubtitle" xml:space="preserve"><value>Choose what to export and in which format, then pick where to save the file.</value></data>

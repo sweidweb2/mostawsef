@@ -13,6 +13,7 @@ namespace Mostawsef.Infrastructure.Services.Logging;
 public class SystemErrorLogger(
     IDbContextFactory<AppDbContext> dbFactory,
     ICurrentUser currentUser,
+    TimeProvider time,
     ILogger<SystemErrorLogger> logger) : ISystemErrorLogger
 {
     public const string ApiSource = "Api";
@@ -39,6 +40,7 @@ public class SystemErrorLogger(
         {
             await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
             var error = new SystemError(
+                time.GetUtcNow().UtcDateTime,
                 entry.Level,
                 entry.Source,
                 entry.Message,

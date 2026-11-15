@@ -16,6 +16,7 @@ namespace Mostawsef.Infrastructure.Services.Logging;
 public sealed class ActivityLogger(
     IDbContextFactory<AppDbContext> dbFactory,
     ICurrentUser currentUser,
+    TimeProvider time,
     ILogger<ActivityLogger> logger) : IActivityLogger
 {
     private List<ActivityLog> _pending = [];
@@ -23,6 +24,7 @@ public sealed class ActivityLogger(
     public Task LogAsync(ActivityEntry entry, CancellationToken cancellationToken = default)
     {
         var log = new ActivityLog(
+            time.GetUtcNow().UtcDateTime,
             entry.Action,
             entry.Module,
             entry.Description,

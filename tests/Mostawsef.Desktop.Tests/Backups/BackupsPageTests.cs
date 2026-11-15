@@ -20,6 +20,7 @@ namespace Mostawsef.Desktop.Tests.Backups;
 public class BackupsPageTests : UiTestBase
 {
     private const string BackupsPath = "/api/backups";
+    private const string DumpsPath = "/api/scheduled-dumps";
 
     private static readonly string[] AllTables = ["backup_records", "patients", "users"];
 
@@ -291,6 +292,7 @@ public class BackupsPageTests : UiTestBase
         app.SignInAs(Roles.Super);
         app.Api.OnGet($"{BackupsPath}/tables", AllTables);
         app.Api.OnGet(BackupsPath, new PagedResult<BackupRecordDto>([Patients], 1, 20, 1));
+        app.Api.OnGet(DumpsPath, new PagedResult<ScheduledDumpDto>([], 1, 20, 0));
 
         var (_, window) = await ShowPage(app);
 
@@ -298,6 +300,7 @@ public class BackupsPageTests : UiTestBase
         Assert.Contains("النسخ الاحتياطي", texts);
         Assert.Contains("كل الجداول", texts);
         Assert.Contains("1 نسخة", texts.Select(t => t.Replace("١", "1")));
+        Assert.Contains("النسخ التلقائي", texts);
     }
 
     private static HttpResponseMessage File(string content) =>
@@ -309,6 +312,7 @@ public class BackupsPageTests : UiTestBase
         app.SignInAs(Roles.Super);
         app.Api.OnGet($"{BackupsPath}/tables", AllTables);
         app.Api.OnGet(BackupsPath, new PagedResult<BackupRecordDto>(records, 1, 20, records.Length));
+        app.Api.OnGet(DumpsPath, new PagedResult<ScheduledDumpDto>([], 1, 20, 0));
         return app;
     }
 
