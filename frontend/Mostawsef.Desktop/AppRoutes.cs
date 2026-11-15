@@ -2,12 +2,10 @@ using Mostawsef.Contracts.Auth;
 using Mostawsef.Desktop.Services.Navigation;
 using Mostawsef.Desktop.ViewModels.Admin;
 using Mostawsef.Desktop.ViewModels.Auth;
-using Mostawsef.Desktop.ViewModels.Dev;
 using Mostawsef.Desktop.ViewModels.Shell;
 using Mostawsef.Desktop.ViewModels.Super;
 using Mostawsef.Desktop.Views.Admin;
 using Mostawsef.Desktop.Views.Auth;
-using Mostawsef.Desktop.Views.Dev;
 using Mostawsef.Desktop.Views.Shell;
 using Mostawsef.Desktop.Views.Super;
 
@@ -21,7 +19,6 @@ public static class AppRoutes
 {
     public static RouteTable Table { get; } = new RouteTable()
         .Public<LoginViewModel, LoginView>()
-        .Public<GalleryViewModel, GalleryView>()
         .View<PortalShellViewModel, PortalShellView>()
         .View<ActivityLogDetailsViewModel, ActivityLogDetailsView>()
         .View<SystemErrorDetailsViewModel, SystemErrorDetailsView>()

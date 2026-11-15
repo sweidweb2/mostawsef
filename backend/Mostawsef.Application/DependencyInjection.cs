@@ -26,6 +26,7 @@ public static class DependencyInjection
         services.AddScoped<IPatientService, PatientService>();
         services.AddScoped<IOrderService, OrderService>();
         services.AddScoped<IBackupService, BackupService>();
+        services.AddScoped<IScheduledBackupService, ScheduledBackupService>();
         services.AddScoped<ISystemMaintenanceService, SystemMaintenanceService>();
 
         return services;

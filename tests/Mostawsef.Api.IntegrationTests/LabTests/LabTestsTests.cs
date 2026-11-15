@@ -103,6 +103,32 @@ public class LabTestsTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task Concurrent_creates_of_the_same_code_return_201_and_409_not_500()
+    {
+        var a = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var b = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var code = UniqueCode();
+        var request = new CreateLabTestRequest
+        {
+            Code = code,
+            Name = $"Race {Guid.NewGuid():N}",
+            Price = 10,
+            LabCost = 1,
+        };
+
+        var responses = await Task.WhenAll(
+            a.PostAsJsonAsync(Url, request, Ct),
+            b.PostAsJsonAsync(Url, request, Ct));
+
+        Assert.Contains(responses, r => r.StatusCode == HttpStatusCode.Created);
+        var loser = Assert.Single(responses, r => r.StatusCode != HttpStatusCode.Created);
+        Assert.Equal(HttpStatusCode.Conflict, loser.StatusCode);
+        var problem = await ProblemResponse.ReadAsync(loser);
+        Assert.Equal(ErrorCodes.Taken, problem.Code);
+        Assert.Equal([ErrorCodes.Taken], problem.Errors["Code"]);
+    }
+
+    [Fact]
     public async Task Without_a_token_returns_401()
     {
         var response = await factory.CreateClient().GetAsync(Url, Ct);

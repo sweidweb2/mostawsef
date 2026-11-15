@@ -5,77 +5,137 @@
              xmlns:vm="using:Mostawsef.Desktop.ViewModels.Auth"
              x:Class="Mostawsef.Desktop.Views.Auth.LoginView"
              x:DataType="vm:LoginViewModel"
-             Background="{DynamicResource BrushBackground}">
+             Background="{DynamicResource BrushSurface}">
 
-    <Grid RowDefinitions="Auto,*">
-        <ui:PreferencesBar HorizontalAlignment="Right" Margin="{StaticResource PaddingPage}" />
+    <!-- Wide: brand panel (start) + sign-in form (end). Narrow (code-behind, below the Medium breakpoint): form only. -->
+    <Grid Name="Root" ColumnDefinitions="5*,6*">
 
-        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
-            <ui:Card Width="420"
-                     MaxWidth="420"
-                     Margin="{StaticResource PaddingPageCompact}"
-                     Padding="32"
-                     HorizontalAlignment="Center"
-                     VerticalAlignment="Center">
-                <StackPanel Spacing="{StaticResource Space6}">
-                    <!-- Brand -->
-                    <StackPanel Spacing="{StaticResource Space3}" HorizontalAlignment="Center">
+        <!-- Brand panel: static content, a gradient and two flat circles (no blur, no animation) -->
+        <Border Name="BrandPanel" Background="{DynamicResource BrushBrandPanel}" ClipToBounds="True">
+            <Panel>
+                <Ellipse Width="{StaticResource BrandPanelDecorSizeLg}"
+                         Height="{StaticResource BrandPanelDecorSizeLg}"
+                         Margin="{StaticResource BrandPanelDecorOffsetLg}"
+                         HorizontalAlignment="Right"
+                         VerticalAlignment="Top"
+                         Fill="{DynamicResource BrushBrandPanelDecor}" />
+                <Ellipse Width="{StaticResource BrandPanelDecorSizeSm}"
+                         Height="{StaticResource BrandPanelDecorSizeSm}"
+                         Margin="{StaticResource BrandPanelDecorOffsetSm}"
+                         HorizontalAlignment="Left"
+                         VerticalAlignment="Bottom"
+                         Fill="{DynamicResource BrushBrandPanelDecor}" />
+
+                <StackPanel MaxWidth="{StaticResource BrandPanelContentMaxWidth}"
+                            Margin="{StaticResource PaddingHero}"
+                            VerticalAlignment="Center"
+                            Spacing="{StaticResource Space6}">
+                    <Border Background="{DynamicResource BrushBrandPanelTile}"
+                            BorderBrush="{DynamicResource BrushBrandPanelTileBorder}"
+                            BorderThickness="{StaticResource BorderWidth}"
+                            CornerRadius="{StaticResource RadiusFull}"
+                            Padding="{StaticResource PaddingControl}"
+                            HorizontalAlignment="Left">
+                        <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
+                            <PathIcon Data="{StaticResource IconHeart}"
+                                      Width="{StaticResource IconSizeSm}"
+                                      Height="{StaticResource IconSizeSm}"
+                                      Foreground="{DynamicResource BrushOnBrandPanel}" />
+                            <TextBlock Classes="caption strong"
+                                       Text="{l:Tr Login.HeroTag}"
+                                       Foreground="{DynamicResource BrushOnBrandPanel}" />
+                        </StackPanel>
+                    </Border>
+
+                    <StackPanel Spacing="{StaticResource GapStack}">
+                        <TextBlock Classes="h1"
+                                   Text="{l:Tr Login.HeroTitle}"
+                                   Foreground="{DynamicResource BrushOnBrandPanel}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Classes="body-lg"
+                                   Text="{l:Tr Login.HeroSubtitle}"
+                                   Foreground="{DynamicResource BrushOnBrandPanelMuted}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <StackPanel Spacing="{StaticResource GapGrid}">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{StaticResource GapStack}">
+                            <Border Classes="brand-feature">
+                                <PathIcon Data="{StaticResource IconUsers}" />
+                            </Border>
+                            <TextBlock Grid.Column="1" Classes="brand-feature" Text="{l:Tr Login.FeaturePatients}" />
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{StaticResource GapStack}">
+                            <Border Classes="brand-feature">
+                                <PathIcon Data="{StaticResource IconPrinter}" />
+                            </Border>
+                            <TextBlock Grid.Column="1" Classes="brand-feature" Text="{l:Tr Login.FeatureReports}" />
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{StaticResource GapStack}">
+                            <Border Classes="brand-feature">
+                                <PathIcon Data="{StaticResource IconKey}" />
+                            </Border>
+                            <TextBlock Grid.Column="1" Classes="brand-feature" Text="{l:Tr Login.FeatureSecure}" />
+                        </Grid>
+                    </StackPanel>
+                </StackPanel>
+            </Panel>
+        </Border>
+
+        <!-- Sign-in form -->
+        <Grid Name="FormSide" Grid.Column="1" RowDefinitions="Auto,*">
+            <ui:PreferencesBar HorizontalAlignment="Right" Margin="{StaticResource PaddingPage}" />
+
+            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Name="FormPanel"
+                            MaxWidth="{StaticResource LoginFormMaxWidth}"
+                            Margin="{StaticResource PaddingPage}"
+                            VerticalAlignment="Center"
+                            Spacing="{StaticResource Space8}">
+                    <!-- Brand + welcome -->
+                    <StackPanel Spacing="{StaticResource Space4}" HorizontalAlignment="Center">
                         <ui:BrandMark Classes="lg" HorizontalAlignment="Center" />
-                        <TextBlock Classes="muted" Text="{l:Tr Login.Subtitle}" HorizontalAlignment="Center" />
+                        <StackPanel Spacing="{StaticResource Space1}">
+                            <TextBlock Classes="h3"
+                                       Text="{l:Tr Login.Welcome}"
+                                       HorizontalAlignment="Center"
+                                       TextAlignment="Center"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Classes="muted"
+                                       Text="{l:Tr Login.Subtitle}"
+                                       HorizontalAlignment="Center"
+                                       TextAlignment="Center"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
                     </StackPanel>
 
                     <!-- Form -->
                     <StackPanel Spacing="{StaticResource GapGrid}">
+                        <Panel IsVisible="{Binding ShowInsecureConnectionWarning}">
+                            <ui:Alert Kind="Warning" Text="{l:Tr Login.InsecureConnection}" />
+                        </Panel>
+                        <ui:Alert Kind="Danger" Text="{l:TrKey {Binding ErrorKey}}" />
+
                         <ui:FormField Label="{l:Tr Login.Username}" IsRequired="True">
                             <TextBox Name="UsernameBox"
+                                     Classes="login"
                                      Text="{Binding Username}"
-                                     PlaceholderText="{l:Tr Login.UsernamePlaceholder}" />
+                                     PlaceholderText="{l:Tr Login.UsernamePlaceholder}">
+                                <TextBox.InnerLeftContent>
+                                    <PathIcon Classes="input-icon" Data="{StaticResource IconUser}" />
+                                </TextBox.InnerLeftContent>
+                            </TextBox>
                         </ui:FormField>
                         <ui:FormField Label="{l:Tr Login.Password}" IsRequired="True">
                             <ui:PasswordField Name="PasswordBox"
+                                              Classes="login"
                                               Text="{Binding Password}"
-                                              PlaceholderText="{l:Tr Login.PasswordPlaceholder}" />
+                                              PlaceholderText="{l:Tr Login.PasswordPlaceholder}">
+                                <ui:PasswordField.InnerLeftContent>
+                                    <PathIcon Classes="input-icon" Data="{StaticResource IconKey}" />
+                                </ui:PasswordField.InnerLeftContent>
+                            </ui:PasswordField>
                         </ui:FormField>
-
-                        <Border Background="{DynamicResource BrushWarningSubtle}"
-                                BorderBrush="{DynamicResource BrushWarningBorder}"
-                                BorderThickness="{StaticResource BorderWidth}"
-                                CornerRadius="{StaticResource RadiusMd}"
-                                Padding="{StaticResource PaddingControl}"
-                                IsVisible="{Binding ShowInsecureConnectionWarning}">
-                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{StaticResource GapControls}">
-                                <PathIcon Data="{StaticResource IconWarning}"
-                                          Width="{StaticResource IconSizeSm}"
-                                          Height="{StaticResource IconSizeSm}"
-                                          Margin="0,3,0,0"
-                                          VerticalAlignment="Top"
-                                          Foreground="{DynamicResource BrushWarning}" />
-                                <TextBlock Grid.Column="1"
-                                           Text="{l:Tr Login.InsecureConnection}"
-                                           Foreground="{DynamicResource BrushWarningText}"
-                                           TextWrapping="Wrap" />
-                            </Grid>
-                        </Border>
-
-                        <Border Background="{DynamicResource BrushDangerSubtle}"
-                                BorderBrush="{DynamicResource BrushDangerBorder}"
-                                BorderThickness="{StaticResource BorderWidth}"
-                                CornerRadius="{StaticResource RadiusMd}"
-                                Padding="{StaticResource PaddingControl}"
-                                IsVisible="{Binding HasError}">
-                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{StaticResource GapControls}">
-                                <PathIcon Data="{StaticResource IconError}"
-                                          Width="{StaticResource IconSizeSm}"
-                                          Height="{StaticResource IconSizeSm}"
-                                          Margin="0,3,0,0"
-                                          VerticalAlignment="Top"
-                                          Foreground="{DynamicResource BrushDanger}" />
-                                <TextBlock Grid.Column="1"
-                                           Text="{l:TrKey {Binding ErrorKey}}"
-                                           Foreground="{DynamicResource BrushDangerText}"
-                                           TextWrapping="Wrap" />
-                            </Grid>
-                        </Border>
 
                         <Button Classes="primary lg"
                                 HorizontalAlignment="Stretch"
@@ -84,21 +144,53 @@
                                 Command="{Binding LoginCommand}">
                             <Panel>
                                 <TextBlock Text="{l:Tr Login.Submit}" IsVisible="{Binding !IsBusy}" />
-                                <ui:Spinner Width="20"
-                                            Height="20"
+                                <ui:Spinner Width="{StaticResource IconSize}"
+                                            Height="{StaticResource IconSize}"
                                             Foreground="{DynamicResource BrushOnPrimary}"
                                             IsVisible="{Binding IsBusy}" />
                             </Panel>
                         </Button>
                     </StackPanel>
 
-                    <Button Classes="link"
-                            HorizontalAlignment="Center"
-                            Content="{l:Tr Login.OpenGallery}"
-                            Command="{Binding OpenGalleryCommand}"
-                            IsVisible="{Binding IsDevBuild}" />
+                    <TextBlock Classes="caption muted"
+                               Text="{l:Tr Login.ForgotPassword}"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"
+                               TextWrapping="Wrap" />
                 </StackPanel>
-            </ui:Card>
-        </ScrollViewer>
+            </ScrollViewer>
+        </Grid>
     </Grid>
+
+    <UserControl.Styles>
+        <Style Selector="Border.brand-feature">
+            <Setter Property="Width" Value="{StaticResource ControlHeight}" />
+            <Setter Property="Height" Value="{StaticResource ControlHeight}" />
+            <Setter Property="VerticalAlignment" Value="Top" />
+            <Setter Property="CornerRadius" Value="{StaticResource RadiusMd}" />
+            <Setter Property="Background" Value="{DynamicResource BrushBrandPanelTile}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushBrandPanelTileBorder}" />
+            <Setter Property="BorderThickness" Value="{StaticResource BorderWidth}" />
+        </Style>
+        <Style Selector="Border.brand-feature > PathIcon">
+            <Setter Property="Width" Value="{StaticResource IconSize}" />
+            <Setter Property="Height" Value="{StaticResource IconSize}" />
+            <Setter Property="Foreground" Value="{DynamicResource BrushOnBrandPanel}" />
+        </Style>
+        <Style Selector="TextBlock.brand-feature">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Foreground" Value="{DynamicResource BrushOnBrandPanel}" />
+        </Style>
+        <Style Selector="TextBox.login">
+            <Setter Property="MinHeight" Value="{StaticResource ControlHeightLg}" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="PathIcon.input-icon">
+            <Setter Property="Width" Value="{StaticResource IconSizeSm}" />
+            <Setter Property="Height" Value="{StaticResource IconSizeSm}" />
+            <Setter Property="Margin" Value="{StaticResource PaddingInputIcon}" />
+            <Setter Property="Foreground" Value="{DynamicResource BrushTextMuted}" />
+        </Style>
+    </UserControl.Styles>
 </UserControl>

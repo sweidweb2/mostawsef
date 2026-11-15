@@ -57,7 +57,7 @@ await activity.LogAsync(
 Recorded today: `auth.signed_in`, `auth.sign_in_failed`, `auth.signed_out`, `auth.password_changed`, `users.created`,
 `users.updated`, `users.deleted`, `users.password_reset`, `settings.clinic_updated`, `logs.activity_deleted`,
 `logs.error_deleted`, `logs.errors_deleted`, `logs.activity_cleared`, `logs.errors_cleared`, `logs.purged`,
-`backups.created`, `backups.exported`, `system.data_reset`.
+`backups.created`, `backups.exported`, `backups.scheduled`, `system.data_reset`.
 
 ## System error engine
 

@@ -1,6 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Mostawsef.Contracts.Settings;
 using Mostawsef.Desktop.Services.Api;
 using Mostawsef.Desktop.Services.Local;
@@ -13,13 +14,19 @@ namespace Mostawsef.Desktop.ViewModels.Super;
 public partial class SystemSettingsFormViewModel : FormViewModel
 {
     private readonly SystemSettingsApi _api;
+    private readonly FolderPathPicker _pickFolder;
     private readonly int _version;
 
     public SystemSettingsFormViewModel(
-        SystemSettingsApi api, SystemSettingsDto current, IDialogService dialogs, LocalizationService localization)
+        SystemSettingsApi api,
+        SystemSettingsDto current,
+        IDialogService dialogs,
+        LocalizationService localization,
+        FolderPathPicker pickFolder)
         : base(dialogs, localization)
     {
         _api = api;
+        _pickFolder = pickFolder;
         _version = current.Version;
 
         BackupPath = current.BackupPath ?? string.Empty;
@@ -34,6 +41,16 @@ public partial class SystemSettingsFormViewModel : FormViewModel
 
     [ObservableProperty]
     public partial bool MaintenanceMode { get; set; }
+
+    [RelayCommand]
+    private async Task BrowseBackupFolderAsync()
+    {
+        var path = await _pickFolder(Localization.Get("SystemSettings.BrowseTitle"));
+        if (path is not null)
+        {
+            BackupPath = path;
+        }
+    }
 
     protected override object BuildRequest() => new UpdateSystemSettingsRequest
     {

@@ -342,33 +342,6 @@
         </Style>
     </ControlTheme>
 
-    <!-- Section -->
-    <ControlTheme x:Key="{x:Type ui:Section}" TargetType="ui:Section">
-        <Setter Property="Margin" Value="0,0,0,32" />
-        <Setter Property="Template">
-            <ControlTemplate>
-                <DockPanel>
-                    <Grid DockPanel.Dock="Top"
-                          ColumnDefinitions="*,Auto"
-                          Margin="0,0,0,12"
-                          IsVisible="{TemplateBinding Title, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
-                        <StackPanel Spacing="2">
-                            <TextBlock Classes="h3" Text="{TemplateBinding Title}" />
-                            <TextBlock Classes="muted"
-                                       Text="{TemplateBinding Description}"
-                                       TextWrapping="Wrap"
-                                       IsVisible="{TemplateBinding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                        </StackPanel>
-                        <ContentPresenter Grid.Column="1" Content="{TemplateBinding Actions}" VerticalAlignment="Center" />
-                    </Grid>
-                    <ContentPresenter Content="{TemplateBinding Content}"
-                                      ContentTemplate="{TemplateBinding ContentTemplate}"
-                                      Padding="{TemplateBinding Padding}" />
-                </DockPanel>
-            </ControlTemplate>
-        </Setter>
-    </ControlTheme>
-
     <!-- Divider -->
     <ControlTheme x:Key="{x:Type ui:Divider}" TargetType="ui:Divider">
         <Setter Property="Margin" Value="0,12" />

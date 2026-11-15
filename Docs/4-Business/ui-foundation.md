@@ -170,7 +170,6 @@ Layouts react to the **width of the AppShell content area**, not the window or d
 
 Money: `Text="{l:Money {Binding Total}}"` (minor units -> "1,250.50 EGP" / "1,250.50 ج.م"). Calendar dates: `ValueConverters.DateOnly` on `CalendarDatePicker`.
 
-## 13. Gallery and tools
+## 13. Tools
 
-- `Views/Dev/GalleryView.axaml`: every built component with theme and language toggles (`dotnet run --project frontend/Mostawsef.Desktop`).
 - `scripts/capture-window.ps1`: saves a PNG of the running app window.

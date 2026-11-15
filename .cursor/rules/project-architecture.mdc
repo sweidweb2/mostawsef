@@ -6,7 +6,7 @@ alwaysApply: true
 # Mostawsef - Project Architecture
 
 Locally installed **Clinic Management System**: desktop app + local REST backend + local database.
-Full decisions: `Docs/foundation.md`. UI system: `Docs/ui-foundation.md`. Components: `Docs/shared-components.md`.
+Full decisions: `Docs/1-About App/foundation.md`. UI system: `Docs/4-Business/ui-foundation.md`. Components: `Docs/4-Business/shared-components.md`.
 
 ## Tech stack (locked)
 - .NET 10 (C#), solution `Mostawsef.slnx` at the repo root
@@ -35,8 +35,8 @@ tests/Mostawsef.Desktop.Tests          view models, navigation, headless views
 - Modular monolith: organize by feature modules (`Application/Modules/<Feature>`), no microservices.
 - Keep SQLite as a possible fallback: no `jsonb`, arrays, `citext`, `EF.Functions.ILike` or raw SQL (also not in migrations); store money as integers (smallest unit).
   Index-only PostgreSQL features (e.g. `pg_trgm` GIN indexes on log/order `SearchText`) are allowed when the queries stay plain LINQ.
-- Auth: username/password users with roles `Admin` and `Super` (JWT); each role has its own desktop portal. Details: `Docs/auth.md`.
-- App-wide engines: activity logs (`IActivityLogger`) and system errors (`ISystemErrorLogger` / desktop `ErrorReporter`). Details: `Docs/logging.md`.
+- Auth: username/password users with roles `Admin` and `Super` (JWT); each role has its own desktop portal. Details: `Docs/4-Business/auth.md`.
+- App-wide engines: activity logs (`IActivityLogger`) and system errors (`ISystemErrorLogger` / desktop `ErrorReporter`). Details: `Docs/4-Business/logging.md`.
 - Do not add business logic or business modules unless the user asks for them.
 - Working principles (simplicity, reuse, dependencies, never bypass layers, when to ask): `working-principles.mdc`.
 

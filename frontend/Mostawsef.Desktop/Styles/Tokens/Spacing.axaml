@@ -36,10 +36,12 @@
     <Thickness x:Key="PaddingControl">12,6</Thickness>
     <Thickness x:Key="PaddingControlLg">16,10</Thickness>
     <Thickness x:Key="PaddingInput">10,6</Thickness>
+    <Thickness x:Key="PaddingInputIcon">10,0,0,0</Thickness>
     <Thickness x:Key="PaddingChip">10,2</Thickness>
     <Thickness x:Key="PaddingCard">20</Thickness>
     <Thickness x:Key="PaddingCardCompact">12</Thickness>
     <Thickness x:Key="PaddingDialog">24</Thickness>
     <Thickness x:Key="PaddingPage">24</Thickness>
     <Thickness x:Key="PaddingPageCompact">16</Thickness>
+    <Thickness x:Key="PaddingHero">48</Thickness>
 </ResourceDictionary>

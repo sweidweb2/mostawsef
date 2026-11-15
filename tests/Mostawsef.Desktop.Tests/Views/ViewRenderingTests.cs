@@ -3,6 +3,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Mostawsef.Contracts.Auth;
 using Mostawsef.Desktop.Components;
@@ -32,7 +33,7 @@ public class ViewRenderingTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task Long_login_error_wraps_inside_the_card()
+    public async Task Long_login_error_wraps_inside_the_form()
     {
         using var app = new TestServices();
         app.Api.FailWithNetworkError();
@@ -44,12 +45,62 @@ public class ViewRenderingTests : UiTestBase
         await vm.LoginCommand.ExecuteAsync(null);
         window.UpdateLayout();
 
-        var card = window.FindDescendantOfType<Card>()!;
+        var form = window.GetVisualDescendants().OfType<StackPanel>().Single(p => p.Name == "FormPanel");
         var message = app.Localization.Get(vm.ErrorKey!);
         var error = window.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == message);
-        var errorRight = error.TranslatePoint(new Point(error.Bounds.Width, 0), card)!.Value.X;
+        var errorRight = error.TranslatePoint(new Point(error.Bounds.Width, 0), form)!.Value.X;
 
-        Assert.True(errorRight <= card.Bounds.Width, $"Error text ends at {errorRight}, card is {card.Bounds.Width} wide");
+        Assert.True(errorRight <= form.Bounds.Width, $"Error text ends at {errorRight}, form is {form.Bounds.Width} wide");
+    }
+
+    [AvaloniaFact]
+    public void Wide_login_shows_the_brand_panel_beside_the_form()
+    {
+        using var app = new TestServices();
+        var window = app.Show(app.Get<LoginViewModel>());
+        window.UpdateLayout();
+
+        var panel = Named<Border>(window, "BrandPanel");
+        var form = Named<Grid>(window, "FormSide");
+
+        Assert.True(panel.IsVisible);
+        Assert.Contains("Your clinic, organized in one place", Texts(window));
+        Assert.True(form.Bounds.Width < window.Bounds.Width, "The form should share the width with the brand panel");
+    }
+
+    [AvaloniaFact]
+    public void Narrow_login_hides_the_brand_panel_and_gives_the_form_the_full_width_in_both_languages()
+    {
+        using var app = new TestServices();
+        var window = app.Show(app.Get<LoginViewModel>());
+        window.Width = 720;
+        window.Height = 520;
+        Relayout(window);
+
+        var panel = Named<Border>(window, "BrandPanel");
+        var form = Named<Grid>(window, "FormSide");
+        Assert.False(panel.IsVisible);
+        Assert.Equal(window.Bounds.Width, form.Bounds.Width);
+
+        app.Localization.SetLanguage(AppLanguage.Arabic);
+        Relayout(window);
+        Assert.False(panel.IsVisible);
+        Assert.Contains("مرحبًا بعودتك", Texts(window));
+
+        window.Width = 1280;
+        Relayout(window);
+        Assert.True(panel.IsVisible);
+    }
+
+    private static T Named<T>(Window window, string name) where T : Control =>
+        window.GetVisualDescendants().OfType<T>().Single(c => c.Name == name);
+
+    // SizeChanged is raised after the layout pass; the view's breakpoint switch then needs one more pass.
+    private static void Relayout(Window window)
+    {
+        window.UpdateLayout();
+        Dispatcher.UIThread.RunJobs();
+        window.UpdateLayout();
     }
 
     [AvaloniaFact]

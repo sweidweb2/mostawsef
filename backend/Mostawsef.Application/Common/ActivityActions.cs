@@ -55,6 +55,7 @@ public static class ActivityActions
 
     public const string BackupCreated = "backups.created";
     public const string BackupExported = "backups.exported";
+    public const string BackupScheduled = "backups.scheduled";
 
     public const string DataReset = "system.data_reset";
 }

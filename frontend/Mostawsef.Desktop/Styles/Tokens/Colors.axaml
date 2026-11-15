@@ -147,6 +147,17 @@
             <!-- Misc -->
             <SolidColorBrush x:Key="BrushSkeleton" Color="#DDE4EB" />
             <SolidColorBrush x:Key="BrushGhostHover" Color="#141F5A8A" />
+
+            <!-- Brand panel (login screen): deep brand gradient with light text (#FFFFFF on #1F5A8A ~ 7.2:1) -->
+            <LinearGradientBrush x:Key="BrushBrandPanel" StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Offset="0" Color="#1F5A8A" />
+                <GradientStop Offset="1" Color="#0C2840" />
+            </LinearGradientBrush>
+            <SolidColorBrush x:Key="BrushOnBrandPanel" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="BrushOnBrandPanelMuted" Color="#D5E6F5" />
+            <SolidColorBrush x:Key="BrushBrandPanelTile" Color="#1FFFFFFF" />
+            <SolidColorBrush x:Key="BrushBrandPanelTileBorder" Color="#33FFFFFF" />
+            <SolidColorBrush x:Key="BrushBrandPanelDecor" Color="#0FFFFFFF" />
         </ResourceDictionary>
 
         <!-- ============ DARK (derived from the same palette) ============ -->
@@ -227,6 +238,16 @@
 
             <SolidColorBrush x:Key="BrushSkeleton" Color="#1B2D3E" />
             <SolidColorBrush x:Key="BrushGhostHover" Color="#1FFFFFFF" />
+
+            <LinearGradientBrush x:Key="BrushBrandPanel" StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Offset="0" Color="#15324D" />
+                <GradientStop Offset="1" Color="#0A1118" />
+            </LinearGradientBrush>
+            <SolidColorBrush x:Key="BrushOnBrandPanel" Color="#EAF3FB" />
+            <SolidColorBrush x:Key="BrushOnBrandPanelMuted" Color="#B7D6F0" />
+            <SolidColorBrush x:Key="BrushBrandPanelTile" Color="#1A8BBBE3" />
+            <SolidColorBrush x:Key="BrushBrandPanelTileBorder" Color="#338BBBE3" />
+            <SolidColorBrush x:Key="BrushBrandPanelDecor" Color="#0D8BBBE3" />
         </ResourceDictionary>
 
     </ResourceDictionary.ThemeDictionaries>

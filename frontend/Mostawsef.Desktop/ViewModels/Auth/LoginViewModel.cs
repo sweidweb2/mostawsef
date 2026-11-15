@@ -7,7 +7,6 @@ using Mostawsef.Desktop.Services.Api;
 using Mostawsef.Desktop.Services.Auth;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Navigation;
-using Mostawsef.Desktop.ViewModels.Dev;
 
 namespace Mostawsef.Desktop.ViewModels.Auth;
 
@@ -58,12 +57,6 @@ public partial class LoginViewModel : ViewModelBase
     /// <summary>The API address is plain http to another machine, so the password would cross the network unencrypted.</summary>
     public bool ShowInsecureConnectionWarning { get; }
 
-#if DEBUG
-    public bool IsDevBuild => true;
-#else
-    public bool IsDevBuild => false;
-#endif
-
     private bool CanLogin() => !IsBusy && !string.IsNullOrWhiteSpace(Username) && !string.IsNullOrEmpty(Password);
 
     [RelayCommand(CanExecute = nameof(CanLogin))]
@@ -98,7 +91,4 @@ public partial class LoginViewModel : ViewModelBase
             IsBusy = false;
         }
     }
-
-    [RelayCommand]
-    private void OpenGallery() => _navigation.NavigateTo<GalleryViewModel>();
 }

@@ -61,15 +61,6 @@
   <data name="Invoice.Due" xml:space="preserve"><value>Amount due</value></data>
   <data name="Vitals.Title" xml:space="preserve"><value>Vital signs</value></data>
 
-  <data name="Gallery.Title" xml:space="preserve"><value>Component gallery</value></data>
-  <data name="Gallery.Subtitle" xml:space="preserve"><value>Every shared component, in every state.</value></data>
-  <data name="Gallery.Layout" xml:space="preserve"><value>Layout</value></data>
-  <data name="Gallery.Forms" xml:space="preserve"><value>Forms</value></data>
-  <data name="Gallery.Buttons" xml:space="preserve"><value>Buttons</value></data>
-  <data name="Gallery.Data" xml:space="preserve"><value>Data display</value></data>
-  <data name="Gallery.Feedback" xml:space="preserve"><value>Feedback</value></data>
-  <data name="Gallery.Overlays" xml:space="preserve"><value>Overlays</value></data>
-  <data name="Gallery.Navigation" xml:space="preserve"><value>Navigation</value></data>
 
   <data name="Login.Subtitle" xml:space="preserve"><value>Sign in to continue</value></data>
   <data name="Login.Username" xml:space="preserve"><value>Username</value></data>
@@ -84,7 +75,14 @@
   <data name="Login.InsecureConnection" xml:space="preserve"><value>This connection to the server is not encrypted. Ask your administrator to set up HTTPS before signing in over the network.</value></data>
   <data name="Login.Maintenance" xml:space="preserve"><value>The system is under maintenance. Please try again later.</value></data>
   <data name="Login.SessionExpired" xml:space="preserve"><value>Your session has expired. Please sign in again.</value></data>
-  <data name="Login.OpenGallery" xml:space="preserve"><value>Component gallery (development)</value></data>
+  <data name="Login.Welcome" xml:space="preserve"><value>Welcome back</value></data>
+  <data name="Login.ForgotPassword" xml:space="preserve"><value>Forgot your password? Ask your system administrator to reset it.</value></data>
+  <data name="Login.HeroTag" xml:space="preserve"><value>Clinic management system</value></data>
+  <data name="Login.HeroTitle" xml:space="preserve"><value>Your clinic, organized in one place</value></data>
+  <data name="Login.HeroSubtitle" xml:space="preserve"><value>Patients, lab orders, payments and reports, in Arabic and English, on your clinic network.</value></data>
+  <data name="Login.FeaturePatients" xml:space="preserve"><value>Patient records and lab orders, always at hand</value></data>
+  <data name="Login.FeatureReports" xml:space="preserve"><value>Payment tracking and ready-to-print results</value></data>
+  <data name="Login.FeatureSecure" xml:space="preserve"><value>Role-based access with a full activity log</value></data>
 
   <data name="Auth.Logout" xml:space="preserve"><value>Sign out</value></data>
   <data name="Auth.LogoutConfirm" xml:space="preserve"><value>Do you want to sign out?</value></data>
@@ -199,12 +197,15 @@
   <data name="Settings.AddressPlaceholder" xml:space="preserve"><value>Enter the clinic address</value></data>
   <data name="Settings.PhonePlaceholder" xml:space="preserve"><value>Enter the clinic phone number</value></data>
   <data name="Nav.SystemSettings" xml:space="preserve"><value>Settings</value></data>
-  <data name="SystemSettings.Subtitle" xml:space="preserve"><value>Where backups are saved, and maintenance mode.</value></data>
+  <data name="SystemSettings.Subtitle" xml:space="preserve"><value>Scheduled database dumps, and maintenance mode.</value></data>
   <data name="SystemSettings.EditTitle" xml:space="preserve"><value>Edit settings</value></data>
   <data name="SystemSettings.Saved" xml:space="preserve"><value>Settings saved.</value></data>
   <data name="SystemSettings.Field.BackupPath" xml:space="preserve"><value>Backup folder</value></data>
   <data name="SystemSettings.Field.MaintenanceMode" xml:space="preserve"><value>Maintenance mode</value></data>
   <data name="SystemSettings.BackupPathPlaceholder" xml:space="preserve"><value>e.g. D:\Mostawsef\Backups</value></data>
+  <data name="SystemSettings.BackupPathHint" xml:space="preserve"><value>Full database dumps (pg_dump) are written here automatically while the API is running. Default is a Backups folder next to the API install. Clear the field to skip scheduled dumps. Prefer another drive or USB when you can (Program Files may block writes).</value></data>
+  <data name="SystemSettings.Browse" xml:space="preserve"><value>Browse</value></data>
+  <data name="SystemSettings.BrowseTitle" xml:space="preserve"><value>Choose backup folder</value></data>
   <data name="SystemSettings.MaintenanceHint" xml:space="preserve"><value>While on, only Super users can sign in. Users already signed in are not affected.</value></data>
   <data name="SystemSettings.MaintenanceActive" xml:space="preserve"><value>Maintenance mode is on: only Super users can sign in.</value></data>
   <data name="SystemSettings.On" xml:space="preserve"><value>On</value></data>
@@ -465,6 +466,7 @@
   <data name="BackupFormat.PostgreSql.Hint" xml:space="preserve"><value>A script for PostgreSQL: creates the tables and loads the rows. Restore it with psql.</value></data>
   <data name="Action.backups.created" xml:space="preserve"><value>Saved a backup setting</value></data>
   <data name="Action.backups.exported" xml:space="preserve"><value>Exported a backup</value></data>
+  <data name="Action.backups.scheduled" xml:space="preserve"><value>Scheduled database dump</value></data>
   <!-- Super: dashboard, bulk log delete, data reset -->
   <data name="Confirm.TypeWord" xml:space="preserve"><value>To confirm, type {0} below.</value></data>
   <data name="Logs.Select" xml:space="preserve"><value>Select</value></data>

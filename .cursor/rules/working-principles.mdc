@@ -20,7 +20,7 @@ alwaysApply: true
     Step by step: the `new-feature` skill (`.cursor/skills/new-feature/SKILL.md`)
   - log-style endpoint: `ActivityLogsController` + `ActivityLogService` + repository + Contracts DTOs + integration tests
   - list page: `NumberedListViewModel` (or `PagedListViewModel` for logs) subclass + `DataTable` view + `AppRoutes` entry + desktop tests
-  - UI: components from `Docs/shared-components.md` before writing new XAML
+  - UI: components from `Docs/4-Business/shared-components.md` before writing new XAML
 - One way per concern: `ApiClient` for HTTP, `IActivityLogger` for activity, `ISystemErrorLogger`/`ErrorReporter` for errors,
   `PerformanceMonitor` for speed debugging (overlay + perf log; do not sprinkle stopwatches in view models),
   `DialogService`/`ToastService` for feedback, `FormViewModel` + `ShowFormAsync` for forms, DataAnnotations with `ErrorCodes`

@@ -10,7 +10,7 @@ alwaysApply: false
 - Never hard-code colors, font sizes, spacing, radii, sizes, opacity or durations. Use tokens from `Styles/Tokens/`.
   Theme-bound keys (`Brush*`, `ShadowXs`–`ShadowXl`) use `{DynamicResource ...}`; fixed tokens (`Space4`,
   `RadiusLg`, `FontSizeH3`, `ControlHeight`, `OpacityDisabled`, icons, …) use `{StaticResource ...}`.
-  Full reference: `Docs/ui-foundation.md`.
+  Full reference: `Docs/4-Business/ui-foundation.md`.
 - Brand 60-30-10: 60% `#FFFFFF`/`#EAF3FB` surfaces and background, 30% `#B7D6F0`/`#4A90C8` secondary,
   10% `#1F5A8A` primary accent. Never put normal-size text on `#4A90C8` (contrast too low).
 - New colors go into `Styles/Tokens/Colors.axaml` in **both** the `Light` and `Dark` dictionaries; use semantic keys, not palette primitives.
@@ -88,7 +88,7 @@ alwaysApply: false
   Order details: `OrdersViewModel` holds one instance of each for the portal visit; each open calls `BeginReuse()` (or `Seed` after create)
   and `PageHost` reuses the view. No static mutable state.
 
-## Auth + navigation (see `Docs/auth.md`)
+## Auth + navigation (see `Docs/4-Business/auth.md`)
 - Every screen is listed in `AppRoutes` (view, access, portal menus); open pages only via `NavigationService` or the shell menu.
 - New portal pages: view model + view under `ViewModels|Views/<Role>/`, then one `.Page<Vm, View>(icon, titleKey)` line in the role's portal in `AppRoutes`.
 - Pages opened from another page (new/details pages, not in the menu): `.SubPage<Vm, View>()` in the portal, opened with

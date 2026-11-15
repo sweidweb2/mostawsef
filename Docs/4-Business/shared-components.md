@@ -6,7 +6,7 @@ The full list of shared components for the Mostawsef desktop app (Avalonia).
 - **Built:** a custom component exists in `frontend/Mostawsef.Desktop/Components/`.
 - **Built-in:** an Avalonia control, styled by the theme. Use it directly, no wrapper needed.
 - **Deferred:** not built yet. Build it when a screen first needs it (see the rules in `.cursor/rules/`).
-  Rows marked *Removed while unused* were built early for the gallery and deleted; restore them from git history (commit `983d1b9`) when a screen needs one.
+  Rows marked *Removed while unused* were built early and deleted while no screen used them; restore them from git history (commit `983d1b9`) when a screen needs one.
 
 All components use the design tokens in `Styles/Tokens/` (no hard-coded colors), support Light/Dark, and mirror correctly in Arabic (RTL).
 Styling, localization and responsiveness are explained in [ui-foundation.md](ui-foundation.md).
@@ -23,10 +23,10 @@ Usage namespace: `xmlns:ui="using:Mostawsef.Desktop.Components"`.
 | Sidebar / NavMenu | Built | `ui:NavMenu` + `ui:NavMenuItem` inside `AppShell.Sidebar`; a standalone `NavMenuItem` runs its `Command` (e.g. sign out) |
 | TopBar | Built | `ui:TopBar` |
 | BrandMark (logo tile + app title) | Built | `ui:BrandMark` (sidebar headers), `Classes="lg"` stacked and large (login) |
-| PreferencesBar (theme + language switches) | Built | `ui:PreferencesBar` (login screen, portal and gallery top bars) |
+| PreferencesBar (theme + language switches) | Built | `ui:PreferencesBar` (login screen and portal top bar) |
 | PageHeader (title, breadcrumb, actions) | Built | `ui:PageHeader` |
 | Card | Built | `ui:Card` (classes: `outlined`, `flat`, `interactive`) |
-| Section / Panel | Built | `ui:Section` |
+| Section / Panel | Deferred | *Removed while unused* (removed with the component gallery); restore `ui:Section` from commit `1d31123` |
 | SplitView (list + details) | Deferred | Removed while unused (`ListDetailsView`) |
 | TabView | Built-in | `TabControl` / `TabItem` |
 | Divider | Built | `ui:Divider` (optional `Text`, `Orientation`) |
@@ -53,7 +53,7 @@ Usage namespace: `xmlns:ui="using:Mostawsef.Desktop.Components"`.
 | ToggleSwitch | Built-in | `ToggleSwitch` |
 | FileUpload / ImagePicker | Deferred | Removed while unused |
 | FormField (label + input + validation message) | Built | `ui:FormField` (`Label`, `Hint`, `Error`, `IsRequired`); in a `FormViewModel` form: `Error="{l:FieldError {Binding Errors[FullName]}}"` |
-| FormSection | Deferred | Use `ui:ResponsiveGrid MaxColumns="2"` of `ui:FormField`s inside a `ui:Section` |
+| FormSection | Deferred | Use `ui:ResponsiveGrid MaxColumns="2"` of `ui:FormField`s inside a `ui:Card` |
 | ValidationSummary | Deferred | Removed while unused; per-field errors via `ui:FormField Error` |
 
 ## Buttons
@@ -139,4 +139,4 @@ Display-only. They take plain values (text, status) and contain no business logi
    `{DynamicResource}` for `Brush*` / theme shadows, `{StaticResource}` for fixed tokens.
 4. Make sure the category's themes file is included in `Styles/Theme.axaml`.
 5. Use `{l:Tr Key}` for any built-in text and add the key to both `Resources/Strings.resx` and `Strings.ar.resx`.
-6. Add it to the component gallery and update its row in this file.
+6. Add a headless test of its behavior and update its row in this file.

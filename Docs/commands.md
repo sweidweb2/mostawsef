@@ -151,6 +151,23 @@ $env:MOSTAWSEF_PERF = "1"; dotnet run --project frontend/Mostawsef.Desktop --con
 `MOSTAWSEF_PERF=1` turns on the performance overlay and log (API calls show their server time from `Server-Timing`).
 The API logs every request in Development and only slow ones (1 s or more) in production.
 
+## Scheduled database dumps (clinic)
+
+Super → Settings → **Backup folder** (Browse). While the API Windows service is running and that folder is set, the API
+writes `mostawsef-yyyyMMdd-HHmmss.dump` there (custom `pg_dump` format), keeps the newest `ScheduledBackup:KeepCount`
+files (default 7), and logs `backups.scheduled`. Empty folder = no scheduled dumps. Needs `pg_dump` on the API PC
+(`ScheduledBackup:PgDumpPath` if it is not on PATH).
+
+Restore on a spare machine or disposable database (stop the API first):
+
+```powershell
+# Drop and recreate the public schema, then:
+pg_restore --clean --if-exists --no-owner --dbname=mostawsef "D:\Mostawsef\Backups\mostawsef-20260101-120000.dump"
+```
+
+Use the clinic connection settings (host, user, `PGPASSWORD`). Confirm the app starts and a known patient/order is
+visible before trusting the restore on a real clinic PC.
+
 ## Database migrations
 
 ```powershell

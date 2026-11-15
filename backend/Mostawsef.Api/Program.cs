@@ -5,6 +5,7 @@ using Mostawsef.Api.Middleware;
 using Mostawsef.Api.Services;
 using Mostawsef.Application;
 using Mostawsef.Application.Interfaces;
+using Mostawsef.Application.Modules.Backups;
 using Mostawsef.Application.Modules.Logs;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Infrastructure;
@@ -43,7 +44,12 @@ builder.Services.AddOptions<LogRetentionOptions>()
     .BindConfiguration(LogRetentionOptions.SectionName)
     .ValidateDataAnnotations()
     .ValidateOnStart();
+builder.Services.AddOptions<ScheduledBackupOptions>()
+    .BindConfiguration(ScheduledBackupOptions.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 builder.Services.AddHostedService<LogRetentionWorker>();
+builder.Services.AddHostedService<ScheduledBackupWorker>();
 
 // Behind a reverse proxy the client address is in X-Forwarded-For; without this every client shares one rate-limit bucket.
 // Only loopback proxies are trusted unless ForwardedHeaders:KnownProxies is configured (the defaults of ForwardedHeadersOptions).

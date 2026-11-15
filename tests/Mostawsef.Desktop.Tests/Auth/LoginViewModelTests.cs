@@ -35,8 +35,13 @@ public class LoginViewModelTests : UiTestBase
         using var app = new TestServices();
         var vm = app.Get<LoginViewModel>();
 
-        Assert.Equal(vm.IsDevBuild ? "admin@example.com" : string.Empty, vm.Username);
-        Assert.Equal(vm.IsDevBuild ? "password" : string.Empty, vm.Password);
+#if DEBUG
+        Assert.Equal("admin@example.com", vm.Username);
+        Assert.Equal("password", vm.Password);
+#else
+        Assert.Empty(vm.Username);
+        Assert.Empty(vm.Password);
+#endif
     }
 
     [AvaloniaFact]
@@ -79,6 +84,7 @@ public class LoginViewModelTests : UiTestBase
 
         Assert.True(vm.HasError);
         Assert.Equal("Login.Invalid", vm.ErrorKey);
+        window.UpdateLayout();
         Assert.Contains("Invalid username or password.", TestServices.Texts(window));
         Assert.Empty(vm.Password);
         Assert.False(app.Session.IsAuthenticated);
@@ -134,6 +140,7 @@ public class LoginViewModelTests : UiTestBase
         await vm.LoginCommand.ExecuteAsync(null);
 
         app.Localization.SetLanguage(AppLanguage.Arabic);
+        window.UpdateLayout();
 
         Assert.Contains("اسم المستخدم أو كلمة المرور غير صحيحة.", TestServices.Texts(window));
     }

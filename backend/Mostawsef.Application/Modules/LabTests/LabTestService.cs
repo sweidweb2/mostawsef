@@ -43,7 +43,7 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
 
         var test = new LabTest(request.Code, request.Name, SearchText.Normalize(request.Name), request.Price!.Value, request.LabCost!.Value);
         tests.Add(test);
-        await tests.SaveChangesAsync(cancellationToken);
+        await SaveUniqueAsync(request.Code, request.Name, null, cancellationToken);
 
         await LogAsync(ActivityActions.LabTestCreated, "Created a lab test", test, cancellationToken);
         return ToDto(test);
@@ -61,7 +61,7 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
 
         test.Update(
             request.Code, request.Name, SearchText.Normalize(request.Name), request.Price!.Value, request.LabCost!.Value, request.IsActive);
-        await tests.SaveChangesAsync(cancellationToken);
+        await SaveUniqueAsync(request.Code, request.Name, test.Id, cancellationToken);
 
         await LogAsync(ActivityActions.LabTestUpdated, "Updated a lab test", test, cancellationToken);
         return ToDto(test);
@@ -88,6 +88,23 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
 
     private async Task<LabTest> FindAsync(Guid id, CancellationToken cancellationToken) =>
         await tests.GetByIdAsync(id, cancellationToken) ?? throw AppException.NotFound();
+
+    /// <summary>
+    /// Saves, and if another request won the unique-index race after <see cref="EnsureUniqueAsync"/>, remaps the
+    /// generic <see cref="ErrorCodes.Taken"/> from SaveChanges onto Code or Name.
+    /// </summary>
+    private async Task SaveUniqueAsync(string code, string name, Guid? exceptId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await tests.SaveChangesAsync(cancellationToken);
+        }
+        catch (AppException ex) when (ex.Kind == AppErrorKind.Conflict && ex.Code == ErrorCodes.Taken)
+        {
+            await EnsureUniqueAsync(code, name, exceptId, cancellationToken);
+            throw;
+        }
+    }
 
     private async Task EnsureUniqueAsync(string code, string name, Guid? exceptId, CancellationToken cancellationToken)
     {

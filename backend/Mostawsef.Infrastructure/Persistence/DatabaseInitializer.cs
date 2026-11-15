@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Mostawsef.Application.Interfaces;
+using Mostawsef.Application.Modules.Backups;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Domain.Entities;
 using Mostawsef.Domain.Enums;
@@ -79,9 +80,18 @@ public static class DatabaseInitializer
             db.Add(new ClinicSettings("Mostawsef", Currencies.Egp));
         }
 
-        if (!await db.Set<SystemSettings>().AnyAsync(cancellationToken))
+        var systemSettings = await db.Set<SystemSettings>().SingleOrDefaultAsync(cancellationToken);
+        if (systemSettings is null)
         {
-            db.Add(new SystemSettings());
+            systemSettings = new SystemSettings();
+            systemSettings.Update(ScheduledBackupPaths.DefaultFolder, maintenanceMode: false);
+            db.Add(systemSettings);
+            logger.LogInformation("Created system settings with default backup folder {BackupPath}", systemSettings.BackupPath);
+        }
+        else if (string.IsNullOrWhiteSpace(systemSettings.BackupPath))
+        {
+            systemSettings.Update(ScheduledBackupPaths.DefaultFolder, systemSettings.MaintenanceMode);
+            logger.LogInformation("Filled empty backup folder with default {BackupPath}", systemSettings.BackupPath);
         }
 
         foreach (var seed in seedUsers)

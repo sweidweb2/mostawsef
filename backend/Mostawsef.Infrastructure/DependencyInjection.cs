@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Mostawsef.Application.Interfaces;
+using Mostawsef.Application.Modules.Backups;
 using Mostawsef.Infrastructure.Persistence;
 using Mostawsef.Infrastructure.Persistence.Context;
 using Mostawsef.Infrastructure.Persistence.Repositories;
@@ -50,6 +52,8 @@ public static class DependencyInjection
         services.AddScoped<IBackupRepository, BackupRepository>();
         services.AddScoped<ISystemMaintenanceRepository, SystemMaintenanceRepository>();
         services.AddSingleton<IBackupExporter, DatabaseBackupExporter>();
+        services.AddSingleton<IDatabaseDumpRunner>(sp =>
+            new PgDumpRunner(connectionString, sp.GetRequiredService<IOptions<ScheduledBackupOptions>>()));
 
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<ITokenService, JwtTokenService>();

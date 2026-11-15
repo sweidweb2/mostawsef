@@ -8,8 +8,19 @@
     <StackPanel Spacing="{StaticResource GapGrid}">
         <ui:Alert Kind="Danger" Text="{l:TrKey {Binding FormErrorKey}}" />
 
-        <ui:FormField Label="{l:Tr SystemSettings.Field.BackupPath}" Error="{l:FieldError {Binding Errors[BackupPath]}}">
-            <TextBox Name="BackupPathBox" Text="{Binding BackupPath}" PlaceholderText="{l:Tr SystemSettings.BackupPathPlaceholder}" />
+        <ui:FormField Label="{l:Tr SystemSettings.Field.BackupPath}"
+                      Hint="{l:Tr SystemSettings.BackupPathHint}"
+                      Error="{l:FieldError {Binding Errors[BackupPath]}}">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource GapControls}">
+                <TextBox Name="BackupPathBox"
+                         Text="{Binding BackupPath}"
+                         PlaceholderText="{l:Tr SystemSettings.BackupPathPlaceholder}" />
+                <Button Name="BrowseBackupFolderButton"
+                        Grid.Column="1"
+                        Classes="secondary"
+                        Command="{Binding BrowseBackupFolderCommand}"
+                        Content="{l:Tr SystemSettings.Browse}" />
+            </Grid>
         </ui:FormField>
 
         <ui:FormField Label="{l:Tr SystemSettings.Field.MaintenanceMode}" Hint="{l:Tr SystemSettings.MaintenanceHint}">

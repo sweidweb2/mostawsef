@@ -61,15 +61,6 @@
   <data name="Invoice.Due" xml:space="preserve"><value>المبلغ المتبقي</value></data>
   <data name="Vitals.Title" xml:space="preserve"><value>العلامات الحيوية</value></data>
 
-  <data name="Gallery.Title" xml:space="preserve"><value>معرض المكونات</value></data>
-  <data name="Gallery.Subtitle" xml:space="preserve"><value>جميع المكونات المشتركة بكل حالاتها.</value></data>
-  <data name="Gallery.Layout" xml:space="preserve"><value>التخطيط</value></data>
-  <data name="Gallery.Forms" xml:space="preserve"><value>النماذج</value></data>
-  <data name="Gallery.Buttons" xml:space="preserve"><value>الأزرار</value></data>
-  <data name="Gallery.Data" xml:space="preserve"><value>عرض البيانات</value></data>
-  <data name="Gallery.Feedback" xml:space="preserve"><value>التنبيهات</value></data>
-  <data name="Gallery.Overlays" xml:space="preserve"><value>النوافذ المنبثقة</value></data>
-  <data name="Gallery.Navigation" xml:space="preserve"><value>التنقل</value></data>
 
   <data name="Login.Subtitle" xml:space="preserve"><value>سجّل الدخول للمتابعة</value></data>
   <data name="Login.Username" xml:space="preserve"><value>اسم المستخدم</value></data>
@@ -84,7 +75,14 @@
   <data name="Login.InsecureConnection" xml:space="preserve"><value>الاتصال بالخادم غير مشفّر. اطلب من المسؤول تفعيل HTTPS قبل تسجيل الدخول عبر الشبكة.</value></data>
   <data name="Login.Maintenance" xml:space="preserve"><value>النظام تحت الصيانة. يرجى المحاولة لاحقًا.</value></data>
   <data name="Login.SessionExpired" xml:space="preserve"><value>انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.</value></data>
-  <data name="Login.OpenGallery" xml:space="preserve"><value>معرض المكونات (للتطوير)</value></data>
+  <data name="Login.Welcome" xml:space="preserve"><value>مرحبًا بعودتك</value></data>
+  <data name="Login.ForgotPassword" xml:space="preserve"><value>نسيت كلمة المرور؟ اطلب من مسؤول النظام إعادة تعيينها.</value></data>
+  <data name="Login.HeroTag" xml:space="preserve"><value>نظام إدارة العيادات</value></data>
+  <data name="Login.HeroTitle" xml:space="preserve"><value>عيادتك منظّمة في مكان واحد</value></data>
+  <data name="Login.HeroSubtitle" xml:space="preserve"><value>المرضى وطلبات التحاليل والمدفوعات والتقارير، بالعربية والإنجليزية، على شبكة عيادتك.</value></data>
+  <data name="Login.FeaturePatients" xml:space="preserve"><value>سجلات المرضى وطلبات التحاليل دائمًا في متناولك</value></data>
+  <data name="Login.FeatureReports" xml:space="preserve"><value>متابعة المدفوعات ونتائج جاهزة للطباعة</value></data>
+  <data name="Login.FeatureSecure" xml:space="preserve"><value>صلاحيات حسب الدور مع سجل كامل للنشاطات</value></data>
 
   <data name="Auth.Logout" xml:space="preserve"><value>تسجيل الخروج</value></data>
   <data name="Auth.LogoutConfirm" xml:space="preserve"><value>هل تريد تسجيل الخروج؟</value></data>
@@ -198,12 +196,15 @@
   <data name="Settings.AddressPlaceholder" xml:space="preserve"><value>أدخل عنوان العيادة</value></data>
   <data name="Settings.PhonePlaceholder" xml:space="preserve"><value>أدخل رقم هاتف العيادة</value></data>
   <data name="Nav.SystemSettings" xml:space="preserve"><value>الإعدادات</value></data>
-  <data name="SystemSettings.Subtitle" xml:space="preserve"><value>مكان حفظ النسخ الاحتياطية، ووضع الصيانة.</value></data>
+  <data name="SystemSettings.Subtitle" xml:space="preserve"><value>النسخ الاحتياطي التلقائي لقاعدة البيانات، ووضع الصيانة.</value></data>
   <data name="SystemSettings.EditTitle" xml:space="preserve"><value>تعديل الإعدادات</value></data>
   <data name="SystemSettings.Saved" xml:space="preserve"><value>تم حفظ الإعدادات.</value></data>
   <data name="SystemSettings.Field.BackupPath" xml:space="preserve"><value>مجلد النسخ الاحتياطي</value></data>
   <data name="SystemSettings.Field.MaintenanceMode" xml:space="preserve"><value>وضع الصيانة</value></data>
   <data name="SystemSettings.BackupPathPlaceholder" xml:space="preserve"><value>مثال: D:\Mostawsef\Backups</value></data>
+  <data name="SystemSettings.BackupPathHint" xml:space="preserve"><value>تُكتب هنا نسخ كاملة لقاعدة البيانات (pg_dump) تلقائيًا أثناء تشغيل الـ API. الافتراضي مجلد Backups بجانب تثبيت الـ API. امسح الحقل لإيقاف النسخ المجدول. يُفضَّل قرص أو USB آخر إن أمكن (Program Files قد يمنع الكتابة).</value></data>
+  <data name="SystemSettings.Browse" xml:space="preserve"><value>استعراض</value></data>
+  <data name="SystemSettings.BrowseTitle" xml:space="preserve"><value>اختر مجلد النسخ الاحتياطي</value></data>
   <data name="SystemSettings.MaintenanceHint" xml:space="preserve"><value>عند تشغيله، لا يستطيع تسجيل الدخول إلا مستخدمو Super. المستخدمون المسجّلون حاليًا لا يتأثرون.</value></data>
   <data name="SystemSettings.MaintenanceActive" xml:space="preserve"><value>وضع الصيانة مُفعّل: لا يستطيع تسجيل الدخول إلا مستخدمو Super.</value></data>
   <data name="SystemSettings.On" xml:space="preserve"><value>مُفعّل</value></data>
@@ -464,6 +465,7 @@
   <data name="BackupFormat.PostgreSql.Hint" xml:space="preserve"><value>سكربت لـ PostgreSQL: ينشئ الجداول ويحمّل الصفوف. استعده بواسطة psql.</value></data>
   <data name="Action.backups.created" xml:space="preserve"><value>حفظ إعداد نسخة احتياطية</value></data>
   <data name="Action.backups.exported" xml:space="preserve"><value>تصدير نسخة احتياطية</value></data>
+  <data name="Action.backups.scheduled" xml:space="preserve"><value>نسخة احتياطية مجدولة لقاعدة البيانات</value></data>
   <!-- Super: dashboard, bulk log delete, data reset -->
   <data name="Confirm.TypeWord" xml:space="preserve"><value>للتأكيد، اكتب {0} أدناه.</value></data>
   <data name="Logs.Select" xml:space="preserve"><value>تحديد</value></data>

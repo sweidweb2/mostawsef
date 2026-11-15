@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Mostawsef.Application.Interfaces;
 using Mostawsef.Infrastructure.Persistence.Context;
 using Testcontainers.PostgreSql;
 
@@ -99,7 +101,20 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         {
             services.AddSingleton<IStartupFilter, ThrowingEndpointFilter>();
             services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(Sql));
+            // Default backup folder is next to the API; avoid real pg_dump during every suite start.
+            services.RemoveAll<IDatabaseDumpRunner>();
+            services.AddSingleton<IDatabaseDumpRunner, SilentDumpRunner>();
         });
+    }
+
+    /// <summary>Writes an empty dump file so scheduled-backup startup does not need PostgreSQL client tools.</summary>
+    private sealed class SilentDumpRunner : IDatabaseDumpRunner
+    {
+        public Task RunAsync(string outputFilePath, CancellationToken cancellationToken)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(outputFilePath)!);
+            return File.WriteAllBytesAsync(outputFilePath, [0x50, 0x47, 0x44, 0x4D], cancellationToken);
+        }
     }
 
     public override async ValueTask DisposeAsync()

@@ -3,10 +3,13 @@ using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Mostawsef.Api.IntegrationTests.Infrastructure;
+using Mostawsef.Application.Common;
 using Mostawsef.Contracts.Auth;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.Logs;
 using Mostawsef.Contracts.Users;
+using Mostawsef.Domain.Entities;
+using Mostawsef.Domain.Enums;
 using Mostawsef.Infrastructure.Persistence.Context;
 
 namespace Mostawsef.Api.IntegrationTests.Users;
@@ -90,6 +93,52 @@ public class UsersTests(ApiFactory factory)
         var problem = await ProblemResponse.ReadAsync(response);
 
         Assert.Equal(HttpStatusCode.Conflict, problem.Status);
+        Assert.Equal(ErrorCodes.UsernameTaken, problem.Code);
+        Assert.Equal([ErrorCodes.UsernameTaken], problem.Errors["Username"]);
+    }
+
+    /// <summary>
+    /// Forces the unique-index path (no Exists check): SaveChanges must map PostgreSQL 23505 to 409 taken,
+    /// not a 500. UserService remaps that to username_taken on the HTTP create race below.
+    /// </summary>
+    [Fact]
+    public async Task A_duplicate_username_unique_index_maps_to_409_taken()
+    {
+        var super = await factory.CreateClientAsAsync(TestUsers.Super);
+        var (existing, _) = await super.CreateUserAsync();
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Users.Add(new User(existing.Username, "Race Other", "race other", "not-a-real-hash", UserRole.Admin));
+
+        var conflict = await Assert.ThrowsAsync<AppException>(() => db.SaveChangesAsync(Ct));
+
+        Assert.Equal(AppErrorKind.Conflict, conflict.Kind);
+        Assert.Equal(ErrorCodes.Taken, conflict.Code);
+    }
+
+    [Fact]
+    public async Task Concurrent_creates_of_the_same_username_return_201_and_409_not_500()
+    {
+        var a = await factory.CreateClientAsAsync(TestUsers.Super);
+        var b = await factory.CreateClientAsAsync(TestUsers.Super);
+        var username = $"{HttpClientExtensions.Unique("race")}@test.local";
+        var request = new CreateUserRequest
+        {
+            FullName = "Race User",
+            Username = username,
+            Password = "Welcome#123",
+            Role = Roles.Admin,
+        };
+
+        var responses = await Task.WhenAll(
+            a.PostAsJsonAsync("api/users", request, Ct),
+            b.PostAsJsonAsync("api/users", request, Ct));
+
+        Assert.Contains(responses, r => r.StatusCode == HttpStatusCode.Created);
+        var loser = Assert.Single(responses, r => r.StatusCode != HttpStatusCode.Created);
+        Assert.Equal(HttpStatusCode.Conflict, loser.StatusCode);
+        var problem = await ProblemResponse.ReadAsync(loser);
         Assert.Equal(ErrorCodes.UsernameTaken, problem.Code);
         Assert.Equal([ErrorCodes.UsernameTaken], problem.Errors["Username"]);
     }

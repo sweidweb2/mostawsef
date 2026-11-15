@@ -27,7 +27,14 @@ public sealed class TestServices : IDisposable
         File.WriteAllText(SettingsFile, $$"""{ "Theme": "Light", "Language": "{{language}}" }""");
 
         Provider = new ServiceCollection()
-            .AddMostawsefDesktop(new DesktopServiceOptions { HttpHandler = Api, SettingsFilePath = SettingsFile, OpenFile = OpenedFiles.Add, PickSavePath = PickSavePath })
+            .AddMostawsefDesktop(new DesktopServiceOptions
+            {
+                HttpHandler = Api,
+                SettingsFilePath = SettingsFile,
+                OpenFile = OpenedFiles.Add,
+                PickSavePath = PickSavePath,
+                PickFolderPath = PickFolderPath,
+            })
             .BuildServiceProvider();
         App.Services = Provider;
         PageHost.Perf = Provider.GetRequiredService<PerformanceMonitor>();
@@ -50,10 +57,22 @@ public sealed class TestServices : IDisposable
     /// <summary>The file names the app suggested in the "Save as" dialog.</summary>
     public List<string> SaveSuggestions { get; } = [];
 
+    /// <summary>What the folder dialog answers: a full path, or null for Cancel (the default).</summary>
+    public string? PickedFolderPath { get; set; }
+
+    /// <summary>Titles shown in the folder dialog.</summary>
+    public List<string> FolderPickerTitles { get; } = [];
+
     private Task<string?> PickSavePath(string suggestedFileName, string title)
     {
         SaveSuggestions.Add(suggestedFileName);
         return Task.FromResult(PickedSavePath);
+    }
+
+    private Task<string?> PickFolderPath(string title)
+    {
+        FolderPickerTitles.Add(title);
+        return Task.FromResult(PickedFolderPath);
     }
 
     /// <summary>This test's own settings.json (a temp file).</summary>

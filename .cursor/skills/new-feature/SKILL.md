@@ -24,7 +24,7 @@ Ask (AskQuestion) only what the request leaves open:
 - **Actions** besides add, edit and delete (e.g. deactivate, print). Delete is soft by default (medical data);
   hard delete only if the user says so.
 - **Readable number** (e.g. `P-000123`) needed?
-- **Choice lists**: a fixed code enum or an editable table? No project decision yet (roadmap item 9): ask.
+- **Choice lists**: a fixed code enum or an editable table? Ask if the feature needs a new list and no existing pattern fits.
 
 Do not add fields, rules or actions the user did not ask for.
 
@@ -161,8 +161,7 @@ user-specific.
 
 ## Step 5: Docs and verification
 
-1. Add a row for the feature to the table in `Docs/foundation.md` section 10 (Current bedrock), and tick it in
-   `Docs/roadmap.md` if it is listed there.
+1. Add a row for the feature to the table in `Docs/1-About App/foundation.md` section 10 (Current bedrock).
 2. `dotnet build Mostawsef.slnx`: warnings are errors; fix the cause instead of switching rules off.
 3. `./scripts/test.ps1 api <Feature>` and `./scripts/test.ps1 desktop <Feature>`, then `./scripts/test.ps1` (API tests
    need Docker). Do not finish with failing tests.

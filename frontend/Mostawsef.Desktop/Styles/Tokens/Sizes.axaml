@@ -36,6 +36,14 @@
     <x:Double x:Key="BrandMarkSize">32</x:Double>
     <x:Double x:Key="BrandMarkSizeLg">56</x:Double>
 
+    <!-- Login screen: form column width, brand panel text width and its two decorative circles -->
+    <x:Double x:Key="LoginFormMaxWidth">400</x:Double>
+    <x:Double x:Key="BrandPanelContentMaxWidth">460</x:Double>
+    <x:Double x:Key="BrandPanelDecorSizeLg">420</x:Double>
+    <x:Double x:Key="BrandPanelDecorSizeSm">260</x:Double>
+    <Thickness x:Key="BrandPanelDecorOffsetLg">0,-160,-160,0</Thickness>
+    <Thickness x:Key="BrandPanelDecorOffsetSm">-100,0,0,-100</Thickness>
+
     <!-- Borders and focus -->
     <Thickness x:Key="BorderWidth">1</Thickness>
     <Thickness x:Key="BorderWidthThick">2</Thickness>

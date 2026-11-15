@@ -18,7 +18,8 @@ public partial class SystemSettingsViewModel(
     SystemApi system,
     IDialogService dialogs,
     IToastService toasts,
-    LocalizationService localization) : ViewModelBase, ILoadablePage
+    LocalizationService localization,
+    FolderPathPicker pickFolder) : ViewModelBase, ILoadablePage
 {
     private bool _loaded;
     private CancellationTokenSource? _loadCancellation;
@@ -69,7 +70,7 @@ public partial class SystemSettingsViewModel(
             return;
         }
 
-        var form = new SystemSettingsFormViewModel(api, settings, dialogs, localization);
+        var form = new SystemSettingsFormViewModel(api, settings, dialogs, localization, pickFolder);
         if (await dialogs.ShowFormAsync(form, localization.Get("SystemSettings.EditTitle")))
         {
             Settings = form.Saved;

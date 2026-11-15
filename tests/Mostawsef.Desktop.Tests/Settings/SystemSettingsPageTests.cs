@@ -125,6 +125,26 @@ public class SystemSettingsPageTests : UiTestBase
     }
 
     [AvaloniaFact]
+    public async Task Browse_sets_the_backup_folder_from_the_folder_dialog()
+    {
+        using var app = SuperWithSettings(Current);
+        app.PickedFolderPath = @"E:\Clinic\AutoBackups";
+        var (page, window) = await ShowPage(app);
+
+        _ = page.EditCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+        var form = (SystemSettingsFormViewModel)window.GetVisualDescendants().OfType<Modal>().Single().Content!;
+        await form.BrowseBackupFolderCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(@"E:\Clinic\AutoBackups", form.BackupPath);
+        Assert.Contains("Choose backup folder", app.FolderPickerTitles);
+        Assert.Contains(
+            window.GetVisualDescendants().OfType<Button>(),
+            b => b.Name == "BrowseBackupFolderButton" && b.IsEffectivelyVisible);
+    }
+
+    [AvaloniaFact]
     public async Task A_conflicting_edit_shows_the_conflict_message()
     {
         using var app = SuperWithSettings(Current);

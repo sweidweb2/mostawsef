@@ -4,6 +4,7 @@ using Mostawsef.Application.Common;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Domain.Common;
 using Mostawsef.Domain.Entities;
+using Npgsql;
 
 namespace Mostawsef.Infrastructure.Persistence.Context;
 
@@ -27,7 +28,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     /// <summary>
     /// Stale Version → 409 concurrency_conflict. Unique/FK races (check-then-act under concurrent requests) → 409
-    /// instead of a generic 500.
+    /// instead of a generic 500. Feature services may remap <see cref="ErrorCodes.Taken"/> to a field-specific code
+    /// (e.g. username_taken).
     /// </summary>
     public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
@@ -50,28 +52,26 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     }
 
     private static bool IsUniqueViolation(DbUpdateException ex) =>
-        HasSqlState(ex, "23505")
+        FindPostgres(ex)?.SqlState == PostgresErrorCodes.UniqueViolation
         || ContainsMessage(ex, "UNIQUE constraint failed")
         || ContainsMessage(ex, "unique constraint");
 
     private static bool IsForeignKeyViolation(DbUpdateException ex) =>
-        HasSqlState(ex, "23503")
+        FindPostgres(ex)?.SqlState == PostgresErrorCodes.ForeignKeyViolation
         || ContainsMessage(ex, "FOREIGN KEY constraint failed")
         || ContainsMessage(ex, "foreign key constraint");
 
-    private static bool HasSqlState(Exception ex, string sqlState)
+    private static PostgresException? FindPostgres(Exception ex)
     {
         for (var e = ex; e is not null; e = e.InnerException!)
         {
-            var property = e.GetType().GetProperty("SqlState");
-            if (property?.GetValue(e) is string state
-                && string.Equals(state, sqlState, StringComparison.Ordinal))
+            if (e is PostgresException postgres)
             {
-                return true;
+                return postgres;
             }
         }
 
-        return false;
+        return null;
     }
 
     private static bool ContainsMessage(Exception ex, string fragment)
