@@ -80,9 +80,9 @@ public class SystemSettingsTests(ApiFactory factory)
     {
         var super = await factory.CreateClientAsAsync(TestUsers.Super);
         var current = await super.GetJsonAsync<SystemSettingsDto>(Url);
-        await (await super.PutAsJsonAsync(
-                Url, new UpdateSystemSettingsRequest { BackupPath = " ", Version = current.Version }, Ct))
-            .EnsureSuccessStatusCode();
+        var cleared = await super.PutAsJsonAsync(
+            Url, new UpdateSystemSettingsRequest { BackupPath = " ", Version = current.Version }, Ct);
+        cleared.EnsureSuccessStatusCode();
 
         await factory.Services.InitializeDatabaseAsync([], Ct);
         factory.Services.GetRequiredService<ISystemSettingsCache>().Invalidate();
