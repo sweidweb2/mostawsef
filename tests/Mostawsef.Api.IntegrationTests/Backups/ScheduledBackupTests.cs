@@ -185,7 +185,7 @@ public class ScheduledBackupTests(ApiFactory factory)
     {
         var client = host.CreateClient();
         // Startup may fill an empty backup path in the shared DB; drop the parent factory's cached Version.
-        InvalidateSharedSettingsCache();
+        factory.Services.RefreshSystemSettingsCache();
         client.WithBearer(await factory.GetAccessTokenAsync(TestUsers.Super));
         return client;
     }
@@ -193,6 +193,8 @@ public class ScheduledBackupTests(ApiFactory factory)
     private async Task SetBackupPathAsync(WebApplicationFactory<Program> host, string folder)
     {
         var super = await SuperClientAsync(host);
+        host.Services.RefreshSystemSettingsCache();
+        factory.Services.RefreshSystemSettingsCache();
         var current = await super.GetJsonAsync<SystemSettingsDto>("api/system-settings");
         var response = await super.PutAsJsonAsync(
             "api/system-settings",
@@ -200,23 +202,22 @@ public class ScheduledBackupTests(ApiFactory factory)
             Ct);
         response.EnsureSuccessStatusCode();
         // Derived hosts have their own cache; the shared ApiFactory cache would keep a stale Version.
-        InvalidateSharedSettingsCache();
+        factory.Services.RefreshSystemSettingsCache();
     }
 
     private async Task ClearBackupPathAsync(WebApplicationFactory<Program> host)
     {
         var super = await SuperClientAsync(host);
+        host.Services.RefreshSystemSettingsCache();
+        factory.Services.RefreshSystemSettingsCache();
         var current = await super.GetJsonAsync<SystemSettingsDto>("api/system-settings");
         var response = await super.PutAsJsonAsync(
             "api/system-settings",
             new UpdateSystemSettingsRequest { BackupPath = " ", Version = current.Version },
             Ct);
         response.EnsureSuccessStatusCode();
-        InvalidateSharedSettingsCache();
+        factory.Services.RefreshSystemSettingsCache();
     }
-
-    private void InvalidateSharedSettingsCache() =>
-        factory.Services.GetRequiredService<ISystemSettingsCache>().Invalidate();
 
     private static string NewTempFolder()
     {

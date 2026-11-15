@@ -32,8 +32,8 @@ public class ClinicLocalConfigTests
 
             Assert.True(ClinicLocalConfig.HasUsableJwtKey(key));
             Assert.True(File.Exists(path));
-            using var doc = System.Text.Json.JsonDocument.Parse(File.ReadAllText(path));
-            Assert.Equal(key, doc.RootElement.GetProperty("Jwt").GetProperty("Key").GetString());
+            var doc = System.Text.Json.JsonElement.Parse(File.ReadAllText(path));
+            Assert.Equal(key, doc.GetProperty("Jwt").GetProperty("Key").GetString());
         }
         finally
         {

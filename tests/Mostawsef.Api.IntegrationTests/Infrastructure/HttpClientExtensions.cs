@@ -1,6 +1,9 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using Microsoft.Extensions.DependencyInjection;
+using Mostawsef.Application.Interfaces;
 using Mostawsef.Contracts.Auth;
+using Mostawsef.Contracts.Settings;
 using Mostawsef.Contracts.Users;
 
 namespace Mostawsef.Api.IntegrationTests.Infrastructure;
@@ -32,6 +35,27 @@ public static class HttpClientExtensions
         var response = await client.GetAsync(url, TestContext.Current.CancellationToken);
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<T>(TestContext.Current.CancellationToken))!;
+    }
+
+    /// <summary>
+    /// Drops the cached system-settings row so the next GET returns the DB <c>Version</c>.
+    /// Needed when another host (or initializer) updated the shared test database.
+    /// </summary>
+    public static void RefreshSystemSettingsCache(this IServiceProvider services) =>
+        services.GetRequiredService<ISystemSettingsCache>().Invalidate();
+
+    /// <summary>Reads a fresh Version, applies <paramref name="request"/>, and returns the saved row.</summary>
+    public static async Task<SystemSettingsDto> UpdateSystemSettingsAsync(
+        this ApiFactory factory,
+        Func<SystemSettingsDto, UpdateSystemSettingsRequest> request,
+        CancellationToken cancellationToken = default)
+    {
+        factory.Services.RefreshSystemSettingsCache();
+        var super = await factory.CreateClientAsAsync(TestUsers.Super);
+        var current = await super.GetJsonAsync<SystemSettingsDto>("api/system-settings");
+        var response = await super.PutAsJsonAsync("api/system-settings", request(current), cancellationToken);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<SystemSettingsDto>(cancellationToken))!;
     }
 
     public static string Unique(string prefix) => $"{prefix}-{Guid.NewGuid():N}";

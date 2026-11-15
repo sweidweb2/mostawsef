@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Json;
 using Mostawsef.Api.IntegrationTests.Infrastructure;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Application.Modules.Backups;
@@ -20,7 +19,9 @@ public class ScheduledDumpsTests(ApiFactory factory)
     {
         var folder = Path.Combine(Path.GetTempPath(), "mostawsef-dump-history", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(folder);
-        await SetBackupPathAsync(folder);
+        await factory.UpdateSystemSettingsAsync(
+            current => new UpdateSystemSettingsRequest { BackupPath = folder, Version = current.Version },
+            Ct);
 
         await using (var scope = factory.Services.CreateAsyncScope())
         {
@@ -51,17 +52,5 @@ public class ScheduledDumpsTests(ApiFactory factory)
     public async Task Signed_out_users_get_401()
     {
         Assert.Equal(HttpStatusCode.Unauthorized, (await factory.CreateClient().GetAsync("api/scheduled-dumps", Ct)).StatusCode);
-    }
-
-    private async Task SetBackupPathAsync(string folder)
-    {
-        var super = await factory.CreateClientAsAsync(TestUsers.Super);
-        var current = await super.GetJsonAsync<SystemSettingsDto>("api/system-settings");
-        var response = await super.PutAsJsonAsync(
-            "api/system-settings",
-            new UpdateSystemSettingsRequest { BackupPath = folder, Version = current.Version },
-            Ct);
-        response.EnsureSuccessStatusCode();
-        factory.Services.GetRequiredService<ISystemSettingsCache>().Invalidate();
     }
 }

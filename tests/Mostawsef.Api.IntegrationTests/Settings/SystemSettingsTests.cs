@@ -1,8 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.Extensions.DependencyInjection;
 using Mostawsef.Api.IntegrationTests.Infrastructure;
-using Mostawsef.Application.Interfaces;
 using Mostawsef.Application.Modules.Backups;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.Logs;
@@ -39,9 +37,10 @@ public class SystemSettingsTests(ApiFactory factory)
     [Fact]
     public async Task Super_updates_the_settings_and_the_change_is_audited()
     {
+        var path = $@"D:\Backups\{Guid.NewGuid():N}";
+        factory.Services.RefreshSystemSettingsCache();
         var super = await factory.CreateClientAsAsync(TestUsers.Super);
         var current = await super.GetJsonAsync<SystemSettingsDto>(Url);
-        var path = $@"D:\Backups\{Guid.NewGuid():N}";
 
         var response = await super.PutAsJsonAsync(Url, new UpdateSystemSettingsRequest
         {
@@ -65,28 +64,24 @@ public class SystemSettingsTests(ApiFactory factory)
     [Fact]
     public async Task A_blank_backup_path_is_stored_as_empty()
     {
-        var super = await factory.CreateClientAsAsync(TestUsers.Super);
-        var current = await super.GetJsonAsync<SystemSettingsDto>(Url);
+        var updated = await factory.UpdateSystemSettingsAsync(
+            current => new UpdateSystemSettingsRequest { BackupPath = "   ", Version = current.Version },
+            Ct);
 
-        var updated = await (await super.PutAsJsonAsync(
-                Url, new UpdateSystemSettingsRequest { BackupPath = "   ", Version = current.Version }, Ct))
-            .Content.ReadFromJsonAsync<SystemSettingsDto>(Ct);
-
-        Assert.Null(updated!.BackupPath);
+        Assert.Null(updated.BackupPath);
     }
 
     [Fact]
     public async Task An_empty_backup_path_is_filled_with_the_api_Backups_folder_on_initialize()
     {
-        var super = await factory.CreateClientAsAsync(TestUsers.Super);
-        var current = await super.GetJsonAsync<SystemSettingsDto>(Url);
-        var cleared = await super.PutAsJsonAsync(
-            Url, new UpdateSystemSettingsRequest { BackupPath = " ", Version = current.Version }, Ct);
-        cleared.EnsureSuccessStatusCode();
+        await factory.UpdateSystemSettingsAsync(
+            current => new UpdateSystemSettingsRequest { BackupPath = " ", Version = current.Version },
+            Ct);
 
         await factory.Services.InitializeDatabaseAsync([], Ct);
-        factory.Services.GetRequiredService<ISystemSettingsCache>().Invalidate();
+        factory.Services.RefreshSystemSettingsCache();
 
+        var super = await factory.CreateClientAsAsync(TestUsers.Super);
         var restored = await super.GetJsonAsync<SystemSettingsDto>(Url);
         Assert.Equal(ScheduledBackupPaths.DefaultFolder, restored.BackupPath);
     }
@@ -126,6 +121,7 @@ public class SystemSettingsTests(ApiFactory factory)
     [Fact]
     public async Task A_stale_version_returns_409()
     {
+        factory.Services.RefreshSystemSettingsCache();
         var super = await factory.CreateClientAsAsync(TestUsers.Super);
         var current = await super.GetJsonAsync<SystemSettingsDto>(Url);
         var request = new UpdateSystemSettingsRequest { BackupPath = current.BackupPath, Version = current.Version };
@@ -170,8 +166,9 @@ public class SystemSettingsTests(ApiFactory factory)
         Assert.Equal(HttpStatusCode.OK, afterwards.StatusCode);
     }
 
-    private static async Task SetMaintenanceModeAsync(HttpClient super, bool on)
+    private async Task SetMaintenanceModeAsync(HttpClient super, bool on)
     {
+        factory.Services.RefreshSystemSettingsCache();
         var current = await super.GetJsonAsync<SystemSettingsDto>(Url);
         var response = await super.PutAsJsonAsync(
             Url, new UpdateSystemSettingsRequest { BackupPath = current.BackupPath, MaintenanceMode = on, Version = current.Version }, Ct);

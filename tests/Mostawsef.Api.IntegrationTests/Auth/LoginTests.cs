@@ -67,10 +67,10 @@ public class LoginTests(ApiFactory factory)
     public async Task Missing_password_returns_a_validation_problem_naming_the_field()
     {
         var response = await _client.LoginAsync(TestUsers.Admin.Username, "");
-        var body = System.Text.Json.JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        var body = System.Text.Json.JsonElement.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        var fields = body.RootElement.GetProperty("errors").EnumerateObject().Select(e => e.Name);
+        var fields = body.GetProperty("errors").EnumerateObject().Select(e => e.Name);
         Assert.Contains(fields, f => f.Equals("Password", StringComparison.OrdinalIgnoreCase));
         Assert.DoesNotContain(fields, f => f.Equals("Username", StringComparison.OrdinalIgnoreCase));
     }
@@ -99,5 +99,5 @@ public class LoginTests(ApiFactory factory)
     }
 
     private static string? Title(string problemJson) =>
-        System.Text.Json.JsonDocument.Parse(problemJson).RootElement.GetProperty("title").GetString();
+        System.Text.Json.JsonElement.Parse(problemJson).GetProperty("title").GetString();
 }
