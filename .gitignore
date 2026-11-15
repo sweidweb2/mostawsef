@@ -6,6 +6,9 @@
 # dotenv files
 .env
 
+# Per-clinic JWT signing key (created on first Production start; never commit)
+**/appsettings.Clinic.json
+
 # User-specific files
 *.rsuser
 *.suo

@@ -95,9 +95,9 @@ Login protection (configuration keys under `RateLimit:`; the API answers like a 
 
 | Key | Where | Notes |
 | --- | --- | --- |
-| `Jwt:Key` | `appsettings.json` (empty) / `appsettings.Development.json` (dev key) | **Required, at least 32 characters, unique per installation.** The API refuses to start without it. |
+| `Jwt:Key` | `appsettings.Development.json` (dev) / `appsettings.Clinic.json` (Production first-run) | **Required, at least 32 characters, unique per installation.** Development sets a fixed key. Production with an empty key creates `appsettings.Clinic.json` next to the API on first start (gitignored). Testing must set a key explicitly. |
 | `Jwt:Issuer`, `Jwt:Audience` | `appsettings.json` | |
-| `Seed:Users` | `appsettings.Development.json` | Users created at startup if missing (passwords hashed) |
+| `Seed:Users` | `appsettings.json` (install) / `appsettings.Development.json` (dev override) | Users created at startup only if that username was never used (passwords hashed) |
 
 ### Development accounts
 
@@ -106,7 +106,16 @@ Login protection (configuration keys under `RateLimit:`; the API answers like a 
 | `super@example.com` | `password` | Super |
 | `admin@example.com` | `password` | Admin |
 
-These exist only through the Development seed. Production installs must set their own `Jwt:Key` and first user (installer step, deferred).
+These come only from `appsettings.Development.json` and do not replace install seeds in a Production run.
+
+### Install accounts (Production / published API)
+
+| Username | Password | Role |
+| --- | --- | --- |
+| `ali@etkan` | `ali@1234` | Super |
+| `ana_mostawsef` | `123456789` | Admin |
+
+Seeded once on first Production start from `appsettings.json`. Change these passwords after install. Development keeps using the accounts above and does not create these unless you run the API as Production against that database.
 
 ## Desktop
 

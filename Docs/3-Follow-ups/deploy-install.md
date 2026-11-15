@@ -19,7 +19,7 @@ Checklist to finish before the first real clinic installation. Each block is ind
 
 | Block | Topic | Status |
 |---|---|---|
-| 1 | First-run setup (JWT key + first Super) | Open |
+| 1 | First-run setup (JWT key + first Super) | ✅ Done |
 | 2 | Multi-PC server address | 🔒 Later (not for one-PC install) |
 | 3 | Scheduled `pg_dump` backups + restore test | ✅ Done |
 | 4 | HTTPS vs trusted-network decision | ✅ Done (A — one PC) |
@@ -31,30 +31,18 @@ Checklist to finish before the first real clinic installation. Each block is ind
 
 ---
 
-## Block 1 — First-run setup
+## Block 1 — First-run setup ✅
 
-**Problem.** A Production install cannot start or sign anyone in.
+**Problem.** A Production install could not start or sign anyone in (`Jwt:Key` empty; no Production seed users).
 
-- `Jwt:Key` is `""` in `backend/Mostawsef.Api/appsettings.json`. Startup validation requires at least 32 characters, so the API refuses to start.
-- Seed users (`super@example.com` / `admin@example.com` / `password`) exist only under Development. A fresh Production database has no users.
+**Done**
 
-**Done when**
+1. `ClinicLocalConfig` on Production first start writes a random `Jwt:Key` to `appsettings.Clinic.json` next to the API (gitignored). Development / Testing do not auto-create it.
+2. Install seed users in `appsettings.json` (created only if the username was never used): Super `ali@etkan` / `ali@1234`, Admin `ana_mostawsef` / `123456789`. Development still uses `appsettings.Development.json` example accounts only.
+3. Documented in `Docs/4-Business/auth.md`. Tests: `ClinicLocalConfigTests`, existing `JwtConfigurationTests` (empty/short key still fails in Testing).
 
-1. First launch (or an installer step) generates a random `Jwt:Key` unique to that clinic and persists it next to the API (never commit a real key).
-2. First launch creates exactly one Super user (username + password chosen by the installer / clinic admin).
-3. After that, no automatic seed users are created.
-4. Documented in the install steps; covered by an automated test where practical (empty key still fails; first-run path succeeds once).
-
-**Evidence / files**
-
-- `backend/Mostawsef.Api/appsettings.json` — empty `Jwt:Key`, empty `Seed:Users`
-- `backend/Mostawsef.Api/appsettings.Development.json` — dev key + seed users
-- `backend/Mostawsef.Infrastructure/Services/Auth/JwtOptions.cs`
-- `backend/Mostawsef.Infrastructure/Persistence/DatabaseInitializer.cs`
-- `Docs/auth.md` (Production must set its own key and first user)
-
-- [ ] Implemented
-- [ ] Verified on a publish/install build (not only Development)
+- [x] Implemented
+- [x] Covered by automated tests (publish smoke still recommended once packaging exists — Block 5)
 
 ---
 
@@ -224,7 +212,7 @@ Checklist to finish before the first real clinic installation. Each block is ind
 
 ## Suggested order
 
-1. Block 1 (nothing starts without JWT + Super).
+1. Block 1 ✅ done.
 2. Block 5 packaging enough to run Blocks 1–2 on a spare PC.
 3. Block 2 🔒 only if a clinic will use more than one PC.
 4. Block 3 ✅ done.

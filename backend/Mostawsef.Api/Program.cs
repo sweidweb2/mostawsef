@@ -13,6 +13,9 @@ using Mostawsef.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Production first-run: load/create appsettings.Clinic.json with a unique Jwt:Key (never committed).
+Mostawsef.Api.ClinicLocalConfig.Apply(builder);
+
 // The address the desktop app expects by default, used only when nothing else names one (launch profile,
 // ASPNETCORE_URLS, --urls, "Urls" or Kestrel endpoints in configuration), so those can always change it.
 if (string.IsNullOrWhiteSpace(builder.Configuration["urls"]) && !builder.Configuration.GetSection("Kestrel:Endpoints").Exists())

@@ -154,19 +154,6 @@ public class DashboardStatsTests : UiTestBase
         Assert.Equal(3, page.TotalOrders);
     }
 
-    [AvaloniaFact]
-    public async Task Other_roles_get_no_order_figures_and_send_no_request()
-    {
-        using var app = new TestServices();
-        app.SignInAs(Roles.Super);
-
-        var page = Assert.IsType<DashboardViewModel>(app.Navigation.CreatePage(typeof(DashboardViewModel)));
-        await page.ActivateAsync();
-
-        Assert.False(page.ShowOrderStats);
-        Assert.Empty(app.Api.RequestsTo(HttpMethod.Get, DashboardPath));
-    }
-
     [Theory]
     [InlineData(0, 4)]
     [InlineData(1, 4)]

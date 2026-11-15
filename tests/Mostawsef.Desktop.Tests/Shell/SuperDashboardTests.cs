@@ -3,10 +3,12 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Mostawsef.Contracts.Auth;
+using Mostawsef.Contracts.Dashboards;
 using Mostawsef.Contracts.Maintenance;
 using Mostawsef.Contracts.Orders;
 using Mostawsef.Desktop.Components;
 using Mostawsef.Desktop.Tests.Infrastructure;
+using Mostawsef.Desktop.ViewModels.Shell;
 using Mostawsef.Desktop.ViewModels.Super;
 using static Mostawsef.Desktop.Tests.Orders.OrderPages;
 
@@ -16,6 +18,10 @@ namespace Mostawsef.Desktop.Tests.Shell;
 public class SuperDashboardTests : UiTestBase
 {
     private const string DashboardPath = "/api/system/dashboard";
+
+    private static DateOnly Today => DateOnly.FromDateTime(DateTime.Now);
+
+    private static DateOnly FirstOfMonth => new(Today.Year, Today.Month, 1);
 
     [AvaloniaFact]
     public void Only_super_users_get_the_system_dashboard()
@@ -29,7 +35,7 @@ public class SuperDashboardTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task Shows_stat_cards_status_bars_and_five_daily_graphs_without_calling_admin_endpoints()
+    public async Task Shows_this_months_stat_cards_status_bars_and_five_graphs_without_calling_admin_endpoints()
     {
         using var app = new TestServices();
         app.SignInAs(Roles.Super);
@@ -42,7 +48,9 @@ public class SuperDashboardTests : UiTestBase
         Dispatcher.UIThread.RunJobs();
         window.UpdateLayout();
 
-        Assert.Equal("?days=30", Assert.Single(app.Api.RequestsTo(HttpMethod.Get, DashboardPath)).RequestUri!.Query);
+        Assert.Equal(
+            $"?from={FirstOfMonth:yyyy-MM-dd}&to={Today:yyyy-MM-dd}",
+            Assert.Single(app.Api.RequestsTo(HttpMethod.Get, DashboardPath)).RequestUri!.Query);
         Assert.DoesNotContain(app.Api.Requests, r => r.RequestUri!.AbsolutePath.StartsWith("/api/orders", StringComparison.Ordinal));
 
         Assert.Equal("1,234.50", Named<StatCard>(window, "RevenueCard").Value);
@@ -50,7 +58,8 @@ public class SuperDashboardTests : UiTestBase
         Assert.Equal("300.00", Named<StatCard>(window, "OutstandingCard").Value);
         Assert.Equal("10", Named<StatCard>(window, "OrdersCard").Value);
         Assert.Equal("3 active", Named<StatCard>(window, "UsersCard").Caption);
-        Assert.Equal("4", Named<StatCard>(window, "ErrorsTodayCard").Value);
+        Assert.Equal("Current total", Named<StatCard>(window, "LabTestsCard").Caption);
+        Assert.Equal("4", Named<StatCard>(window, "ErrorsCard").Value);
 
         Assert.Equal((5.0, 5.0), (Named<ProgressBar>(window, "PaidBar").Maximum, Named<ProgressBar>(window, "PaidBar").Value));
         Assert.Equal("50%", page.PaidPercent);
@@ -60,12 +69,30 @@ public class SuperDashboardTests : UiTestBase
         {
             var chart = Named<LineChart>(window, name);
             Assert.True(chart.IsEffectivelyVisible, name);
-            Assert.Equal(30, chart.Points!.Count);
+            Assert.Equal(dashboard.Points.Count, chart.Points!.Count);
         }
 
         // Revenue is drawn in whole currency units: 250.75 rounds to 251.
-        Assert.Equal(251, page.RevenuePerDay![^1].Value);
-        Assert.Equal(dashboard.Days.Sum(d => d.Activity), page.PeriodActivity);
+        Assert.Equal(251, page.RevenueOverTime![^1].Value);
+        Assert.True(Named<CalendarDatePicker>(window, "DayPicker") is { IsEffectivelyVisible: false });
+    }
+
+    [AvaloniaFact]
+    public async Task A_year_is_drawn_per_month_after_choosing_it()
+    {
+        using var app = new TestServices();
+        app.SignInAs(Roles.Super);
+        app.Api.On(HttpMethod.Get, DashboardPath, request => FakeApiHandler.Json(
+            request.RequestUri!.Query.StartsWith($"?from={Today.Year}-01-01", StringComparison.Ordinal) ? Sample(DashboardBuckets.Month) : Sample()));
+        var page = app.Get<SuperDashboardViewModel>();
+        await page.ActivateAsync();
+
+        page.Filter.SelectedPeriod = DashboardPeriodFilter.PeriodOptions.Single(o => o.Period == DashboardPeriod.Year);
+        await WaitUntil(() => page.Unit == ChartUnit.Month && !page.IsLoading);
+
+        Assert.Equal($"?from={Today.Year}-01-01&to={Today:yyyy-MM-dd}", app.Api.Requests[^1].RequestUri!.Query);
+        Assert.All(page.OrdersOverTime!, p => Assert.Equal(ChartUnit.Month, p.Unit));
+        Assert.Equal("Dashboard.Bucket.Month", page.BucketKey);
     }
 
     [AvaloniaFact]
@@ -116,19 +143,25 @@ public class SuperDashboardTests : UiTestBase
         Assert.True(window.GetVisualDescendants().OfType<ErrorState>().Single().IsEffectivelyVisible);
     }
 
-    private static SuperDashboardDto Sample()
+    /// <summary>This month per day, or this year per month.</summary>
+    private static SuperDashboardDto Sample(string bucket = DashboardBuckets.Day)
     {
-        var today = DateOnly.FromDateTime(DateTime.Now);
-        var days = Enumerable.Range(0, 30)
-            .Select(i => new DashboardDayDto(today.AddDays(i - 29), i % 3, i % 2, i == 29 ? 25_075 : 1000 * i, i * 4, i % 4))
+        var starts = bucket == DashboardBuckets.Month
+            ? Enumerable.Range(0, Today.Month).Select(m => new DateTime(Today.Year, m + 1, 1)).ToList()
+            : Enumerable.Range(0, Today.Day).Select(d => FirstOfMonth.AddDays(d).ToDateTime(TimeOnly.MinValue)).ToList();
+        var points = starts
+            .Select((start, i) => new DashboardPointDto(start, i % 3, i % 2, i == starts.Count - 1 ? 25_075 : 1000 * i, i * 4, i % 4))
             .ToList();
+        var from = bucket == DashboardBuckets.Month ? new DateOnly(Today.Year, 1, 1) : FirstOfMonth;
         return new SuperDashboardDto(
-            "EGP", Users: 4, ActiveUsers: 3, Patients: 25, LabTests: 40, Orders: 10,
-            Revenue: 123_450, Outstanding: 30_000, ActivityToday: 116, ErrorsToday: 4,
+            "EGP",
+            new DashboardRangeDto(from, Today, Today.AddYears(-2), Today, bucket),
+            Users: 4, ActiveUsers: 3, LabTests: 40,
+            Orders: 10, Patients: 25, Revenue: 123_450, Outstanding: 30_000, Activity: 116, Errors: 4,
             [
                 new(OrderStatuses.Pending, 1), new(OrderStatuses.PartiallyPaid, 2), new(OrderStatuses.Paid, 5),
                 new(OrderStatuses.Cancelled, 1), new(OrderStatuses.Refunded, 1),
             ],
-            days);
+            points);
     }
 }
