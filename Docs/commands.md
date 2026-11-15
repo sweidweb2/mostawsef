@@ -187,17 +187,18 @@ committing: it must contain only your change, and no raw SQL (SQLite fallback).
 ## Publish the desktop app
 
 ```powershell
-dotnet publish frontend/Mostawsef.Desktop
+dotnet publish frontend/Mostawsef.Desktop -c Release -o "C:\Users\User\Desktop\mostawsef-3ammo\[2] Builds\Desktop"
 ```
 
-Output: `frontend/Mostawsef.Desktop/bin/Release/net10.0/win-x64/publish/`. A publish targets the clinic PCs (`win-x64`)
+Default without `-o`: `frontend/Mostawsef.Desktop/bin/Release/net10.0/win-x64/publish/`. A publish targets the clinic PCs (`win-x64`)
 unless `-r` says otherwise, and turns on ReadyToRun (precompiled code), so the app starts faster on older clinic PCs.
 
 ## Publish the API
 
 ```powershell
-dotnet publish backend/Mostawsef.Api
+dotnet publish backend/Mostawsef.Api -c Release -o "C:\Users\User\Desktop\mostawsef-3ammo\[2] Builds\Api"
 ```
 
 Same rules as the desktop: `win-x64` unless `-r` says otherwise, with ReadyToRun so the first requests after a start
 are not slowed down by JIT compilation. At start the API also runs the everyday queries once (`DatabaseWarmUp`).
+`appsettings.Development.json` is not included in the publish output (clinic builds must not ship Docker / dev seed users).

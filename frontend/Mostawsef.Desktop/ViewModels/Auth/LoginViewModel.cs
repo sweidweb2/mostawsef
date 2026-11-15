@@ -27,12 +27,6 @@ public partial class LoginViewModel : ViewModelBase
         {
             ErrorKey = "Login.SessionExpired";
         }
-
-#if DEBUG
-        // Development seed account (appsettings.Development.json); never compiled into Release builds.
-        Username = "admin@example.com";
-        Password = "password";
-#endif
     }
 
     [ObservableProperty]

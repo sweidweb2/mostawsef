@@ -2,6 +2,8 @@
 
 Checklist to finish before the first real clinic installation. Each block is independent: pick one, finish it, tick it, move on.
 
+**Step-by-step path to a client install (phases 0→6):** [`deploy-plan.md`](deploy-plan.md).
+
 **Skipped (already resolved in code):**
 
 | Was | Why skip |
@@ -135,7 +137,7 @@ Checklist to finish before the first real clinic installation. Each block is ind
 2. `Jwt:Key` is not the Development key; it comes from first-run (Block 1) or a secure clinic-specific config, never from the repo.
 3. Connection string points at the clinic’s native PostgreSQL (not Docker `mostawsef_dev`).
 4. API runs as a Windows service (or equivalent always-on host), starts after PostgreSQL, and survives reboot.
-5. Desktop ships as a Release publish; Debug-only login autofill (`#if DEBUG` in `LoginViewModel`) is absent.
+5. Desktop ships as a Release publish.
 6. `MOSTAWSEF_PERF` is not set on clinic PCs.
 7. Installer / update story chosen (e.g. Velopack).
 
@@ -147,10 +149,9 @@ Checklist to finish before the first real clinic installation. Each block is ind
 **Evidence / files**
 
 - `backend/Mostawsef.Api/appsettings.json` vs `appsettings.Development.json`
-- `frontend/Mostawsef.Desktop/ViewModels/Auth/LoginViewModel.cs` (`#if DEBUG`)
 - `Docs/foundation.md` (native PostgreSQL on clinic PCs)
 
-- [ ] Publish layout reviewed once
+- [x] Publish layout reviewed once (Phase 1: `mostawsef-3ammo\[2] Builds`; Dev config excluded from API publish)
 - [ ] Clean-machine install smoke test passed
 - [ ] Installer / update method chosen
 
@@ -212,12 +213,12 @@ Checklist to finish before the first real clinic installation. Each block is ind
 
 ## Suggested order
 
-1. Block 1 ✅ done.
-2. Block 5 packaging enough to run Blocks 1–2 on a spare PC.
-3. Block 2 🔒 only if a clinic will use more than one PC.
-4. Block 3 ✅ done.
-5. Block 4 ✅ done (A — one PC; revisit only for multi-PC).
-6. Block 6 🔒 only if a clinic needs a logo on printouts/headers.
-7. Block 7 ✅ done.
-8. Block 8 ✅ done.
-9. Block 9 ✅ done.
+Follow [`deploy-plan.md`](deploy-plan.md) for packaging → clean PC → service → playbook → one Setup.exe.
+
+Remaining / deferred blocks here:
+
+1. Block 5 packaging (open) — aligns with deploy-plan Phases 1–6.
+2. Block 2 🔒 only if a clinic will use more than one PC.
+3. Block 6 🔒 only if a clinic needs a logo on printouts/headers.
+
+Done blocks: 1, 3, 4, 7, 8, 9.

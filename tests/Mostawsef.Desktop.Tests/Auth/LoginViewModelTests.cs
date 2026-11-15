@@ -17,8 +17,6 @@ public class LoginViewModelTests : UiTestBase
     {
         using var app = new TestServices();
         var vm = app.Get<LoginViewModel>();
-        vm.Username = string.Empty;
-        vm.Password = string.Empty;
 
         Assert.False(vm.LoginCommand.CanExecute(null));
 
@@ -30,18 +28,13 @@ public class LoginViewModelTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public void Only_debug_builds_prefill_the_development_admin_login()
+    public void Login_starts_with_empty_username_and_password()
     {
         using var app = new TestServices();
         var vm = app.Get<LoginViewModel>();
 
-#if DEBUG
-        Assert.Equal("admin@example.com", vm.Username);
-        Assert.Equal("password", vm.Password);
-#else
         Assert.Empty(vm.Username);
         Assert.Empty(vm.Password);
-#endif
     }
 
     [AvaloniaFact]
