@@ -2,7 +2,12 @@
 ; Requires Administrator. Does not wipe the PostgreSQL data directory.
 
 #define MyAppName "Mostawsef"
-#define MyAppVersion "1.0.0"
+#ifndef MyAppVersion
+  #define MyAppVersion "1.0.0"
+#endif
+#ifndef MyOutputBaseFilename
+  #define MyOutputBaseFilename "Mostawsef-Setup"
+#endif
 #define MyAppPublisher "Mostawsef"
 #define MyAppExeName "Mostawsef.Desktop.exe"
 ; Staging folder is filled by build-setup.ps1 (Api, Desktop, scripts).
@@ -25,7 +30,7 @@ PrivilegesRequired=admin
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir={#MyOutputDir}
-OutputBaseFilename=Mostawsef-Setup
+OutputBaseFilename={#MyOutputBaseFilename}
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
@@ -84,7 +89,8 @@ end;
 
 function ConnectionStringAlreadyConfigured: Boolean;
 var
-  AppJson, Content: string;
+  AppJson: string;
+  Content: AnsiString; { LoadStringFromFile requires AnsiString (Inno 6.7+). }
 begin
   Result := False;
   AppJson := ExpandConstant('{app}\Api\appsettings.json');
@@ -132,9 +138,9 @@ begin
   AppJson := ExpandConstant('{app}\Api\appsettings.json');
   ClinicJson := ExpandConstant('{app}\Api\appsettings.Clinic.json');
   if FileExists(AppJson) then
-    FileCopy(AppJson, BackupDir + '\appsettings.json', False);
+    CopyFile(AppJson, BackupDir + '\appsettings.json', False);
   if FileExists(ClinicJson) then
-    FileCopy(ClinicJson, BackupDir + '\appsettings.Clinic.json', False);
+    CopyFile(ClinicJson, BackupDir + '\appsettings.Clinic.json', False);
 end;
 
 procedure SavePostgresPasswordIfAny;
@@ -146,7 +152,7 @@ begin
   ForceDirectories(ExpandConstant('{app}\scripts'));
   TmpFile := ExpandConstant('{tmp}\mostawsef-config\postgres-super.password');
   AppFile := ExpandConstant('{app}\scripts\postgres-super.password');
-  { Always write both paths so install-clinic can find the password even if {tmp} differs. }
+  { Always write both paths so install-clinic can find the password even if the temp folder differs. }
   if SuperPass <> '' then
   begin
     SaveStringToFile(TmpFile, SuperPass, False);

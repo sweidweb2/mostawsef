@@ -218,7 +218,8 @@ Until Phase 6 exists, you *could* install a friendly first client this same way 
 **Updates (v1)**
 
 - No in-app auto-update
-- You bump `-Version` on `build-setup.ps1`, rebuild Setup, send it to the clinic, they reinstall
+- Run `./scripts/build-setup.ps1` (auto next `Mostawsef-Setup-{version}.exe` under Builds; older files kept) or pass `-Version 1.2.0`
+- Send the new Setup to the clinic; they reinstall
 - Clinic data stays in PostgreSQL
 
 **Done when**

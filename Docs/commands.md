@@ -222,13 +222,16 @@ Stop the service before publishing over the same folder, then start it again (or
 Needs Inno Setup (`ISCC.exe`; the script can install it via winget). Publishes Desktop + API into `artifacts/installer-staging`, then compiles:
 
 ```powershell
-./scripts/build-setup.ps1
-# optional: -Version 1.0.1
+./scripts/build-setup.ps1              # auto next version (1.0.0, 1.0.1, …)
+./scripts/build-setup.ps1 -Version 1.2.0
 # reuse staging: -SkipPublish
+# replace one version only: -Version 1.0.1 -Force
 ```
 
-Output: `C:\Users\User\Desktop\mostawsef-3ammo\[2] Builds\Mostawsef-Setup.exe` (and `artifacts\installer\`).
+Output: `C:\Users\User\Desktop\mostawsef-3ammo\[2] Builds\Mostawsef-Setup-{version}.exe` (older builds are kept; also under `artifacts\installer\`).
 
-Clinic: run **Mostawsef-Setup.exe as Administrator**. It installs to `C:\Mostawsef`, installs PostgreSQL from the **bundled offline** installer if missing, registers `MostawsefApi`, and creates shortcuts (apps are self-contained — no separate .NET install). Prefer this over the manual playbook; keep the playbook as fallback. Build PC needs internet once so `build-setup.ps1` can download the Postgres installer into the package.
+Clinic: run the **versioned** Setup as Administrator (e.g. `Mostawsef-Setup-1.0.1.exe`). It installs to `C:\Mostawsef`, installs PostgreSQL from the **bundled offline** installer if missing, registers `MostawsefApi`, and creates shortcuts (apps are self-contained — no separate .NET install). Prefer this over the manual playbook; keep the playbook as fallback.
 
-Normal releases: rebuild Setup and send it (clinic reinstalls over the old version). If you change install behavior itself (paths, service, Postgres rules), edit `packaging/innosetup/` / `scripts/install-*.ps1` first — see the developer note in `Docs/3-Follow-ups/clinic-install-playbook.md`.
+PostgreSQL installer is downloaded **once** into `artifacts\cache\postgresql\` and reused on every later build (no re-download when staging is wiped). To seed offline: put `postgresql-*-windows-x64.exe` in that folder.
+
+Normal releases: rebuild Setup (auto-bumps) and send the new file (clinic reinstalls over the old version). If you change install behavior itself (paths, service, Postgres rules), edit `packaging/innosetup/` / `scripts/install-*.ps1` first — see the developer note in `Docs/3-Follow-ups/clinic-install-playbook.md`.

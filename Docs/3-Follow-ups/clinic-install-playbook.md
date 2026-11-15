@@ -7,8 +7,8 @@ Related: [`deploy-plan.md`](deploy-plan.md) · publish commands: [`Docs/commands
 
 ## Preferred: Setup.exe (Phase 6)
 
-1. On the build PC: `./scripts/build-setup.ps1`
-2. Copy `mostawsef-3ammo\[2] Builds\Mostawsef-Setup.exe` to the clinic PC
+1. On the build PC: `./scripts/build-setup.ps1` (writes `Mostawsef-Setup-{version}.exe`; does not overwrite older builds)
+2. Copy that versioned Setup from `mostawsef-3ammo\[2] Builds\` to the clinic PC
 3. Run it **as Administrator**
 4. If PostgreSQL is already installed, enter the **postgres** superuser password when asked (leave blank on a new PC — Setup uses the **bundled offline** Postgres installer)
 5. Sign in with install Super/Admin → **change passwords** → set backup folder → smoke test

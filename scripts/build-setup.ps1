@@ -1,12 +1,18 @@
-<#
+﻿<#
 .SYNOPSIS
     Publish Desktop + API and compile Mostawsef-Setup.exe (Inno Setup).
 
 .PARAMETER Version
-    Setup version (semver, default 1.0.0). Also written into the .iss define at build time.
+    Setup version (semver). Default: auto — next patch after the highest Mostawsef-Setup-*.exe
+    already in OutputDir (starts at 1.0.0). Pass an explicit version to force one
+    (fails if that file already exists, unless -Force).
 
 .PARAMETER OutputDir
-    Folder for Mostawsef-Setup.exe (default: Desktop\mostawsef-3ammo\[2] Builds).
+    Folder for versioned Setup exes (default: Desktop\mostawsef-3ammo\[2] Builds).
+    Writes Mostawsef-Setup-{Version}.exe and never deletes older builds.
+
+.PARAMETER Force
+    Allow replacing an existing Mostawsef-Setup-{Version}.exe when -Version is set explicitly.
 
 .PARAMETER SkipPublish
     Reuse existing staging publish folders (Api/Desktop already filled).
@@ -15,13 +21,14 @@
     Do not winget-install Inno Setup if ISCC.exe is missing.
 
 .PARAMETER SkipPostgresDownload
-    Reuse an existing postgresql-*-windows-x64.exe under artifacts\installer-staging\redist
-    (or fail if missing). Use when building offline after a previous download.
+    Do not call winget. Reuse the durable cache (artifacts\cache\postgresql) or fail if missing.
+    Normal builds already reuse the cache; this only blocks a first-time download when offline.
 #>
 [CmdletBinding()]
 param(
-    [string] $Version = '1.0.0',
+    [string] $Version = 'auto',
     [string] $OutputDir = 'C:\Users\User\Desktop\mostawsef-3ammo\[2] Builds',
+    [switch] $Force,
     [switch] $SkipPublish,
     [switch] $SkipInnoInstall,
     [switch] $SkipPostgresDownload
@@ -31,7 +38,11 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..')
 $staging = Join-Path $repoRoot 'artifacts\installer-staging'
 $compilerOut = Join-Path $repoRoot 'artifacts\installer'
+# Durable cache: survives wiping installer-staging every publish. Download once, reuse forever.
+$postgresCache = Join-Path $repoRoot 'artifacts\cache\postgresql'
 $iss = Join-Path $repoRoot 'packaging\innosetup\Mostawsef.iss'
+# Reject partial winget downloads (full EDB installer is ~300–400 MB).
+$minPostgresInstallerBytes = 50MB
 
 function Find-Iscc {
     $candidates = @(
@@ -50,7 +61,44 @@ function Find-Iscc {
     return $null
 }
 
-Write-Host "==> Mostawsef Setup build (version $Version)" -ForegroundColor Cyan
+function Get-SetupVersions([string] $dir) {
+    if (-not (Test-Path -LiteralPath $dir)) { return @() }
+    Get-ChildItem -LiteralPath $dir -File -Filter 'Mostawsef-Setup-*.exe' -ErrorAction SilentlyContinue |
+        ForEach-Object {
+            if ($_.BaseName -match '^Mostawsef-Setup-(\d+)\.(\d+)\.(\d+)$') {
+                [pscustomobject]@{
+                    Major = [int]$Matches[1]
+                    Minor = [int]$Matches[2]
+                    Patch = [int]$Matches[3]
+                    File  = $_.FullName
+                }
+            }
+        }
+}
+
+function Get-NextSetupVersion([string] $dir) {
+    $all = @(Get-SetupVersions $dir)
+    if ($all.Count -eq 0) { return '1.0.0' }
+    $max = $all | Sort-Object Major, Minor, Patch | Select-Object -Last 1
+    return '{0}.{1}.{2}' -f $max.Major, $max.Minor, ($max.Patch + 1)
+}
+
+New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
+
+if ([string]::IsNullOrWhiteSpace($Version) -or $Version -eq 'auto') {
+    $Version = Get-NextSetupVersion $OutputDir
+    Write-Host "Auto version: $Version (next after existing Builds)" -ForegroundColor DarkGray
+} elseif ($Version -notmatch '^\d+\.\d+\.\d+$') {
+    throw "Version must be semver like 1.2.3 (or 'auto'). Got: $Version"
+}
+
+$setupFileName = "Mostawsef-Setup-$Version.exe"
+$dest = Join-Path $OutputDir $setupFileName
+if ((Test-Path -LiteralPath $dest) -and -not $Force) {
+    throw "Already exists: $dest`nPass a new -Version, use -Version auto, or -Force to replace this version only."
+}
+
+Write-Host "==> Mostawsef Setup build (version $Version → $setupFileName)" -ForegroundColor Cyan
 
 # Stop a live service that may lock publish outputs under Builds\Api (not staging, but be safe).
 $svc = Get-Service -Name MostawsefApi -ErrorAction SilentlyContinue
@@ -58,35 +106,88 @@ if ($svc -and $svc.Status -eq 'Running') {
     Write-Host 'Note: MostawsefApi is running. Staging uses artifacts\installer-staging (not the live Builds folder).' -ForegroundColor DarkGray
 }
 
-function Find-StagedPostgresInstaller([string] $redistDir) {
-    if (-not (Test-Path -LiteralPath $redistDir)) { return $null }
-    $hit = Get-ChildItem -LiteralPath $redistDir -Recurse -File -ErrorAction SilentlyContinue |
-        Where-Object { $_.Extension -eq '.exe' -and $_.Name -match 'postgres' } |
+function Find-PostgresInstallerExe([string] $dir) {
+    if (-not (Test-Path -LiteralPath $dir)) { return $null }
+    $hit = Get-ChildItem -LiteralPath $dir -Recurse -File -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.Extension -eq '.exe' -and
+            $_.Name -match 'postgres' -and
+            $_.FullName -notmatch '[\\/]_winget-download[\\/]' -and
+            $_.Length -ge $minPostgresInstallerBytes
+        } |
         Sort-Object Length -Descending |
         Select-Object -First 1
     if ($hit) { return $hit.FullName }
     return $null
 }
 
+function Copy-PostgresInstallerToRedist([string] $sourceExe, [string] $redistDir) {
+    New-Item -ItemType Directory -Force -Path $redistDir | Out-Null
+    $destName = if ((Split-Path $sourceExe -Leaf) -match '^postgresql-.+\.exe$') {
+        Split-Path $sourceExe -Leaf
+    } else {
+        'postgresql-17-windows-x64.exe'
+    }
+    $dest = Join-Path $redistDir $destName
+    if ((Test-Path -LiteralPath $dest) -and (Get-Item -LiteralPath $dest).Length -ge $minPostgresInstallerBytes) {
+        return $dest
+    }
+    Copy-Item -LiteralPath $sourceExe -Destination $dest -Force
+    return $dest
+}
+
+function Save-PostgresInstallerToCache([string] $sourceExe) {
+    New-Item -ItemType Directory -Force -Path $postgresCache | Out-Null
+    $destName = if ((Split-Path $sourceExe -Leaf) -match '^postgresql-.+\.exe$') {
+        Split-Path $sourceExe -Leaf
+    } else {
+        'postgresql-17-windows-x64.exe'
+    }
+    $dest = Join-Path $postgresCache $destName
+    if (-not ((Test-Path -LiteralPath $dest) -and (Get-Item -LiteralPath $dest).Length -eq (Get-Item -LiteralPath $sourceExe).Length)) {
+        Copy-Item -LiteralPath $sourceExe -Destination $dest -Force
+    }
+    return $dest
+}
+
 function Ensure-PostgresRedist([string] $redistDir) {
     New-Item -ItemType Directory -Force -Path $redistDir | Out-Null
-    $existing = Find-StagedPostgresInstaller $redistDir
+    New-Item -ItemType Directory -Force -Path $postgresCache | Out-Null
+
+    # 1) Already staged for this build
+    $existing = Find-PostgresInstallerExe $redistDir
     if ($existing) {
+        Save-PostgresInstallerToCache $existing | Out-Null
         Write-Host "Using bundled PostgreSQL installer: $existing"
         return
     }
 
+    # 2) Durable cache (survives staging wipe) — download once, reuse on every build
+    $cached = Find-PostgresInstallerExe $postgresCache
+    if ($cached) {
+        $dest = Copy-PostgresInstallerToRedist $cached $redistDir
+        Write-Host "Reusing cached PostgreSQL installer (no download): $dest ($([math]::Round((Get-Item $dest).Length / 1MB)) MB)"
+        return
+    }
+
     if ($SkipPostgresDownload) {
-        throw "No PostgreSQL installer under $redistDir and -SkipPostgresDownload was set. Run without that switch once (needs internet on the build PC)."
+        throw @"
+No PostgreSQL installer in cache ($postgresCache) or staging redist, and -SkipPostgresDownload was set.
+Place postgresql-*-windows-x64.exe into $postgresCache once, or run without -SkipPostgresDownload (needs internet once).
+"@
     }
 
     $winget = Get-Command winget -ErrorAction SilentlyContinue
     if (-not $winget) {
-        throw 'winget not found. Install winget, or place postgresql-*-windows-x64.exe into artifacts\installer-staging\redist and re-run with -SkipPostgresDownload.'
+        throw @"
+winget not found. Place postgresql-*-windows-x64.exe into:
+  $postgresCache
+then re-run (no internet needed after that).
+"@
     }
 
-    Write-Host 'Downloading PostgreSQL 17 Windows installer into Setup (build PC needs internet; clinic Setup stays offline)...'
-    $downloadDir = Join-Path $redistDir '_winget-download'
+    Write-Host "Downloading PostgreSQL 17 once into cache ($postgresCache); later builds reuse it..."
+    $downloadDir = Join-Path $postgresCache '_winget-download'
     if (Test-Path -LiteralPath $downloadDir) {
         Remove-Item -LiteralPath $downloadDir -Recurse -Force
     }
@@ -98,27 +199,19 @@ function Ensure-PostgresRedist([string] $redistDir) {
         throw "winget download of PostgreSQL 17 failed ($LASTEXITCODE)."
     }
 
-    $downloaded = Find-StagedPostgresInstaller $downloadDir
+    $downloaded = Find-PostgresInstallerExe $downloadDir
     if (-not $downloaded) {
-        throw "winget download finished but no PostgreSQL .exe was found under $downloadDir"
+        throw "winget download finished but no complete PostgreSQL .exe was found under $downloadDir"
     }
 
-    $destName = if ($downloaded -match 'postgresql-.+\.exe$') { Split-Path $downloaded -Leaf } else { 'postgresql-17-windows-x64.exe' }
-    $dest = Join-Path $redistDir $destName
-    Copy-Item -LiteralPath $downloaded -Destination $dest -Force
+    $cachedPath = Save-PostgresInstallerToCache $downloaded
     Remove-Item -LiteralPath $downloadDir -Recurse -Force -ErrorAction SilentlyContinue
-    Write-Host "Bundled for Setup: $dest ($([math]::Round((Get-Item $dest).Length / 1MB)) MB)"
+    $dest = Copy-PostgresInstallerToRedist $cachedPath $redistDir
+    Write-Host "Cached + bundled for Setup: $dest ($([math]::Round((Get-Item $dest).Length / 1MB)) MB)"
 }
 
 if (-not $SkipPublish) {
     Write-Host 'Publishing Desktop + API (Release win-x64, self-contained)...'
-    # Keep redist across a restage so Postgres is not re-downloaded every build unless missing.
-    $redistKeep = Join-Path $staging 'redist'
-    $redistTemp = Join-Path $repoRoot 'artifacts\installer-redist-keep'
-    if (Test-Path -LiteralPath $redistKeep) {
-        if (Test-Path -LiteralPath $redistTemp) { Remove-Item -LiteralPath $redistTemp -Recurse -Force }
-        Move-Item -LiteralPath $redistKeep -Destination $redistTemp -Force
-    }
     if (Test-Path -LiteralPath $staging) {
         Remove-Item -LiteralPath $staging -Recurse -Force
     }
@@ -126,10 +219,6 @@ if (-not $SkipPublish) {
     New-Item -ItemType Directory -Force -Path (Join-Path $staging 'Desktop') | Out-Null
     New-Item -ItemType Directory -Force -Path (Join-Path $staging 'scripts') | Out-Null
     New-Item -ItemType Directory -Force -Path (Join-Path $staging 'redist') | Out-Null
-    if (Test-Path -LiteralPath $redistTemp) {
-        Copy-Item -LiteralPath (Join-Path $redistTemp '*') -Destination (Join-Path $staging 'redist') -Recurse -Force
-        Remove-Item -LiteralPath $redistTemp -Recurse -Force
-    }
 
     Push-Location $repoRoot
     try {
@@ -169,24 +258,26 @@ if (-not $iscc) {
 }
 
 New-Item -ItemType Directory -Force -Path $compilerOut | Out-Null
-New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
 
+# Inno writes into artifacts\installer; we copy a versioned name into Builds (never delete older Setups).
+$outputBase = "Mostawsef-Setup-$Version"
 Write-Host "Compiling with $iscc ..."
 & $iscc `
     "/DMyAppVersion=$Version" `
+    "/DMyOutputBaseFilename=$outputBase" `
     "/DMyStagingDir=$staging" `
     "/DMyOutputDir=$compilerOut" `
     $iss
 if ($LASTEXITCODE -ne 0) { throw "ISCC failed ($LASTEXITCODE)" }
 
-$built = Join-Path $compilerOut 'Mostawsef-Setup.exe'
+$built = Join-Path $compilerOut "$outputBase.exe"
 if (-not (Test-Path -LiteralPath $built)) {
     throw "Expected output missing: $built"
 }
 
-$dest = Join-Path $OutputDir 'Mostawsef-Setup.exe'
 Copy-Item -LiteralPath $built -Destination $dest -Force
 Write-Host "Setup ready: $dest" -ForegroundColor Green
-Write-Host 'Clinic install: run Mostawsef-Setup.exe as Administrator (offline: apps are self-contained; Postgres is bundled).'
+Write-Host "Older builds in $OutputDir are kept (Mostawsef-Setup-*.exe)." -ForegroundColor DarkGray
+Write-Host 'Clinic install: run the versioned Setup as Administrator (offline: self-contained apps + bundled Postgres).'
 Write-Host 'After install: open Mostawsef from the Desktop shortcut (do not spam-click if a reboot was requested).'
-Write-Host 'Updates: run a newer Setup; Postgres data directory is never deleted.'
+Write-Host 'Updates: send a newer Mostawsef-Setup-{version}.exe; Postgres data directory is never deleted.'
