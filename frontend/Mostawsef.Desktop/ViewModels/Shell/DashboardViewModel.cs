@@ -1,26 +1,28 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Mostawsef.Contracts.Auth;
-using System.Collections.Generic;
-using System.Linq;
+using Mostawsef.Contracts.Dashboards;
 using Mostawsef.Contracts.Orders;
 using Mostawsef.Desktop.Components;
 using Mostawsef.Desktop.Services.Api;
 using Mostawsef.Desktop.Services.Auth;
+using Mostawsef.Desktop.Services.Diagnostics;
 
 namespace Mostawsef.Desktop.ViewModels.Shell;
 
 /// <summary>
-/// Home page of every portal: the welcome line and, for Admin, how many orders are paid, partly paid or unpaid.
+/// Home page of every portal: the welcome line and, for Admin, the orders of a chosen period (<see cref="DashboardPageViewModel.Filter"/>):
+/// how many are paid, partly paid or unpaid, orders per hour/day/month and the most ordered tests. One request per load;
+/// showing the page again reloads, so new orders appear.
 /// Shared by all roles until one needs its own dashboard; then give that role a separate view model + view in AppRoutes.
 /// </summary>
-public partial class DashboardViewModel(SessionService session, OrdersApi orders) : ViewModelBase, ILoadablePage
+public partial class DashboardViewModel(SessionService session, OrdersApi orders, ErrorReporter errors)
+    : DashboardPageViewModel(errors), ILoadablePage
 {
-    private CancellationTokenSource? _loadCancellation;
-
     public string UserName => session.CurrentUser?.Username ?? string.Empty;
 
     /// <summary>Only Admin sees (and may load) the order statistics.</summary>
@@ -28,35 +30,12 @@ public partial class DashboardViewModel(SessionService session, OrdersApi orders
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(
-        nameof(HasOrders), nameof(TotalOrders), nameof(PaidOrders), nameof(PartiallyPaidOrders), nameof(UnpaidOrders),
-        nameof(ChartMaximum), nameof(PaidPercent), nameof(PartiallyPaidPercent), nameof(UnpaidPercent))]
-    public partial OrderStatsDto? Stats { get; private set; }
+        nameof(Stats), nameof(HasOrders), nameof(TotalOrders), nameof(PaidOrders), nameof(PartiallyPaidOrders), nameof(UnpaidOrders),
+        nameof(ChartMaximum), nameof(PaidPercent), nameof(PartiallyPaidPercent), nameof(UnpaidPercent),
+        nameof(OrdersOverTime), nameof(HasOrdersOverTime), nameof(PeriodOrders), nameof(TopTests), nameof(HasTopTests))]
+    public partial OrderDashboardDto? Dashboard { get; private set; }
 
-    /// <summary>How many days the line graph covers.</summary>
-    public const int DailyDays = 30;
-
-    /// <summary>Orders created per day, oldest first, today last (zero-filled).</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasDaily), nameof(DailyTotal))]
-    public partial IReadOnlyList<ChartPoint>? Daily { get; private set; }
-
-    public bool HasDaily => Daily is { Count: > 0 };
-
-    /// <summary>Orders created over the days shown.</summary>
-    public int DailyTotal => Daily?.Sum(p => p.Value) ?? 0;
-
-    /// <summary>How many of the most ordered tests the second graph shows.</summary>
-    public const int TopTestsShown = 20;
-
-    /// <summary>The most ordered tests, most first: each point is a test name and how many times it was ordered.</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasTopTests))]
-    public partial IReadOnlyList<ChartPoint>? TopTests { get; private set; }
-
-    public bool HasTopTests => TopTests is { Count: > 0 };
-
-    [ObservableProperty]
-    public partial bool IsLoading { get; private set; }
+    public OrderStatsDto? Stats => Dashboard?.Stats;
 
     public bool HasOrders => TotalOrders > 0;
 
@@ -77,61 +56,62 @@ public partial class DashboardViewModel(SessionService session, OrdersApi orders
 
     public string UnpaidPercent => Percent(UnpaidOrders);
 
-    /// <summary>Loads (or refreshes) the statistics every time the page is shown, so new orders appear.</summary>
-    public async Task ActivateAsync()
+    // Derived once per load in OnDashboardChanged, so the getters stay O(1).
+
+    /// <summary>Orders created per hour, day or month of the period (zero-filled), oldest first.</summary>
+    public IReadOnlyList<ChartPoint>? OrdersOverTime { get; private set; }
+
+    public bool HasOrdersOverTime => OrdersOverTime is { Count: > 0 };
+
+    /// <summary>Orders created in the period.</summary>
+    public int PeriodOrders { get; private set; }
+
+    /// <summary>The most ordered tests of the period, most first: each point is a test name and how many times it was ordered.</summary>
+    public IReadOnlyList<ChartPoint>? TopTests { get; private set; }
+
+    public bool HasTopTests => TopTests is { Count: > 0 };
+
+    /// <summary>Loads the chosen period every time the page is shown, so new orders appear.</summary>
+    public Task ActivateAsync() => ShowOrderStats ? LoadAsync() : Task.CompletedTask;
+
+    protected override async Task<DashboardRangeDto?> FetchAsync(DateOnly from, DateOnly to, CancellationToken cancellationToken)
     {
-        if (!ShowOrderStats)
+        var result = await orders.GetDashboardAsync(from, to, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!result.IsSuccess)
         {
+            return null;
+        }
+
+        Dashboard = result.Value;
+        return result.Value!.Range;
+    }
+
+    /// <summary>Runs before the generated change notifications, so the bindings read the new values.</summary>
+    partial void OnDashboardChanged(OrderDashboardDto? value)
+    {
+        if (value is null)
+        {
+            (OrdersOverTime, TopTests, PeriodOrders) = (null, null, 0);
             return;
         }
 
-        _loadCancellation?.Cancel();
-        using var cancellation = new CancellationTokenSource();
-        _loadCancellation = cancellation;
-
-        IsLoading = Stats is null;
-        try
+        var unit = DashboardPeriodFilter.UnitOf(value.Range.Bucket);
+        var points = new List<ChartPoint>(value.Orders.Count);
+        var total = 0;
+        foreach (var point in value.Orders)
         {
-            var statsTask = orders.GetStatsAsync(cancellation.Token);
-            var dailyTask = orders.GetDailyCountsAsync(DailyDays, cancellation.Token);
-            var result = await statsTask;
-            var topTask = orders.GetTopTestsAsync(TopTestsShown, cancellation.Token);
-            var daily = await dailyTask;
-            var top = await topTask;
-            cancellation.Token.ThrowIfCancellationRequested();
-            if (result.IsSuccess)
-            {
-                Stats = result.Value;
-            }
-
-            if (daily.IsSuccess)
-            {
-                Daily = daily.Value!.Select(d => ChartPoint.Day(d.Date, d.Count)).ToList();
-            }
-
-            if (top.IsSuccess)
-            {
-                TopTests = top.Value!.Select(t => new ChartPoint(t.Name, t.Count)).ToList();
-            }
+            points.Add(ChartPoint.At(point.Start, unit, point.Count));
+            total += point.Count;
         }
-        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+
+        var top = new List<ChartPoint>(value.TopTests.Count);
+        foreach (var test in value.TopTests)
         {
-            // The user left the page; the next activation loads again.
+            top.Add(new ChartPoint(test.Name, test.Count));
         }
-        finally
-        {
-            if (_loadCancellation == cancellation)
-            {
-                _loadCancellation = null;
-                IsLoading = false;
-            }
-        }
-    }
 
-    public void Deactivate()
-    {
-        _loadCancellation?.Cancel();
-        IsLoading = false;
+        (OrdersOverTime, PeriodOrders, TopTests) = (points, total, top);
     }
 
     private string Percent(int count) =>
