@@ -94,19 +94,41 @@
 
   <data name="Nav.Dashboard" xml:space="preserve"><value>لوحة التحكم</value></data>
   <data name="Dashboard.Welcome" xml:space="preserve"><value>مرحباً، {0}</value></data>
+  <data name="Dashboard.Period.Day" xml:space="preserve"><value>يوم</value></data>
+  <data name="Dashboard.Period.Week" xml:space="preserve"><value>أسبوع</value></data>
+  <data name="Dashboard.Period.Month" xml:space="preserve"><value>شهر</value></data>
+  <data name="Dashboard.Period.Year" xml:space="preserve"><value>سنة</value></data>
+  <data name="Dashboard.Period.Custom" xml:space="preserve"><value>فترة مخصصة</value></data>
+  <data name="Dashboard.Period.PickDay" xml:space="preserve"><value>اختر يومًا</value></data>
+  <data name="Dashboard.Period.PickWeek" xml:space="preserve"><value>اختر أي يوم من الأسبوع</value></data>
+  <data name="Dashboard.Period.From" xml:space="preserve"><value>من</value></data>
+  <data name="Dashboard.Period.To" xml:space="preserve"><value>إلى</value></data>
+  <data name="Dashboard.Period.RangeTo" xml:space="preserve"><value>إلى</value></data>
+  <data name="Dashboard.Bucket.Hour" xml:space="preserve"><value>(لكل ساعة)</value></data>
+  <data name="Dashboard.Bucket.Day" xml:space="preserve"><value>(لكل يوم)</value></data>
+  <data name="Dashboard.Bucket.Month" xml:space="preserve"><value>(لكل شهر)</value></data>
+  <data name="Dashboard.Orders.OverTime" xml:space="preserve"><value>الطلبات المُنشأة</value></data>
+  <data name="Dashboard.Orders.PeriodHint" xml:space="preserve"><value>{0} طلب تم إنشاؤه خلال هذه الفترة</value></data>
+  <data name="Dashboard.Orders.Tooltip" xml:space="preserve"><value>{0}: {1} طلب</value></data>
+  <data name="SuperDashboard.NewPatients" xml:space="preserve"><value>المرضى الجدد</value></data>
+  <data name="SuperDashboard.CurrentTotal" xml:space="preserve"><value>الإجمالي الحالي</value></data>
+  <data name="SuperDashboard.Activity" xml:space="preserve"><value>النشاط</value></data>
+  <data name="SuperDashboard.Errors" xml:space="preserve"><value>الأخطاء</value></data>
+  <data name="SuperDashboard.RevenueOverTime" xml:space="preserve"><value>الإيرادات</value></data>
+  <data name="SuperDashboard.RevenueHint" xml:space="preserve"><value>تم تحصيل {0} خلال هذه الفترة (المدفوعات ناقص المستردات)</value></data>
+  <data name="SuperDashboard.PatientsOverTime" xml:space="preserve"><value>المرضى الجدد</value></data>
+  <data name="SuperDashboard.ActivityOverTime" xml:space="preserve"><value>النشاط</value></data>
+  <data name="SuperDashboard.ErrorsOverTime" xml:space="preserve"><value>الأخطاء</value></data>
   <data name="Dashboard.Orders.Total" xml:space="preserve"><value>الطلبات</value></data>
   <data name="Dashboard.Orders.Paid" xml:space="preserve"><value>مدفوعة بالكامل</value></data>
   <data name="Dashboard.Orders.PartiallyPaid" xml:space="preserve"><value>مدفوعة جزئياً</value></data>
   <data name="Dashboard.Orders.Unpaid" xml:space="preserve"><value>غير مدفوعة</value></data>
   <data name="Dashboard.Orders.Chart" xml:space="preserve"><value>الطلبات حسب حالة الدفع</value></data>
-  <data name="Dashboard.Orders.PerDay" xml:space="preserve"><value>الطلبات يومياً</value></data>
-  <data name="Dashboard.Orders.PerDayHint" xml:space="preserve"><value>{0} طلب تم إنشاؤه خلال آخر 30 يوماً</value></data>
-  <data name="Dashboard.Orders.PerDayTooltip" xml:space="preserve"><value>{0}: {1} طلب</value></data>
   <data name="Dashboard.Tests.Top" xml:space="preserve"><value>أكثر 20 تحليلاً طلباً</value></data>
-  <data name="Dashboard.Tests.TopHint" xml:space="preserve"><value>عدد مرات طلب كل تحليل (دون الطلبات الملغاة والمستردة)</value></data>
+  <data name="Dashboard.Tests.TopHint" xml:space="preserve"><value>عدد مرات طلب كل تحليل خلال هذه الفترة (دون الطلبات الملغاة والمستردة)</value></data>
   <data name="Dashboard.Tests.Tooltip" xml:space="preserve"><value>{0}: طُلب {1} مرة</value></data>
-  <data name="Dashboard.Tests.Empty" xml:space="preserve"><value>لم يُطلب أي تحليل بعد</value></data>
-  <data name="Dashboard.Orders.Empty" xml:space="preserve"><value>لا توجد طلبات بعد</value></data>
+  <data name="Dashboard.Tests.Empty" xml:space="preserve"><value>لم يُطلب أي تحليل خلال هذه الفترة</value></data>
+  <data name="Dashboard.Orders.Empty" xml:space="preserve"><value>لا توجد طلبات خلال هذه الفترة</value></data>
   <data name="Dashboard.Empty.Title" xml:space="preserve"><value>لوحة التحكم فارغة</value></data>
   <data name="Dashboard.Empty.Description" xml:space="preserve"><value>ستظهر هنا المؤشرات والتقارير.</value></data>
 
@@ -502,21 +524,14 @@
   <data name="SystemSettings.ResetConfirm" xml:space="preserve"><value>سيؤدي هذا إلى حذف جميع المرضى والطلبات والمدفوعات والتحاليل وسجلات النشاط وأخطاء النظام نهائيًا. تبقى حسابات المستخدمين والإعدادات فقط. خذ نسخة احتياطية أولًا إذا كنت قد تحتاج هذه البيانات.</value></data>
   <data name="SystemSettings.ResetDone" xml:space="preserve"><value>تمت إعادة تعيين قاعدة البيانات: حُذف {0} مريض و{1} طلب و{2} تحليل و{3} سجل.</value></data>
   <data name="SystemSettings.ResetFailed" xml:space="preserve"><value>تعذرت إعادة تعيين قاعدة البيانات. لم يُحذف أي شيء.</value></data>
-  <data name="SuperDashboard.Revenue" xml:space="preserve"><value>إجمالي الإيرادات</value></data>
+  <data name="SuperDashboard.Revenue" xml:space="preserve"><value>الإيرادات</value></data>
   <data name="SuperDashboard.Outstanding" xml:space="preserve"><value>المبالغ المستحقة</value></data>
   <data name="SuperDashboard.ActiveUsers" xml:space="preserve"><value>{0} نشط</value></data>
-  <data name="SuperDashboard.ActivityToday" xml:space="preserve"><value>النشاط اليوم</value></data>
-  <data name="SuperDashboard.ErrorsToday" xml:space="preserve"><value>الأخطاء اليوم</value></data>
   <data name="SuperDashboard.Statuses" xml:space="preserve"><value>الطلبات حسب الحالة</value></data>
-  <data name="SuperDashboard.StatusesHint" xml:space="preserve"><value>جميع الطلبات حسب حالة الدفع</value></data>
-  <data name="SuperDashboard.RevenuePerDay" xml:space="preserve"><value>الإيرادات اليومية</value></data>
-  <data name="SuperDashboard.RevenuePerDayHint" xml:space="preserve"><value>تم تحصيل {0} خلال آخر 30 يومًا (المدفوعات ناقص المستردات)</value></data>
+  <data name="SuperDashboard.StatusesHint" xml:space="preserve"><value>الطلبات المُنشأة خلال هذه الفترة حسب حالة الدفع</value></data>
   <data name="SuperDashboard.RevenueTooltip" xml:space="preserve"><value>{0}: {1}</value></data>
-  <data name="SuperDashboard.PeriodTotal" xml:space="preserve"><value>{0} خلال آخر 30 يومًا</value></data>
-  <data name="SuperDashboard.PatientsPerDay" xml:space="preserve"><value>المرضى الجدد يوميًا</value></data>
+  <data name="SuperDashboard.PeriodTotal" xml:space="preserve"><value>{0} خلال هذه الفترة</value></data>
   <data name="SuperDashboard.PatientsTooltip" xml:space="preserve"><value>{0}: {1} مريض جديد</value></data>
-  <data name="SuperDashboard.ActivityPerDay" xml:space="preserve"><value>النشاط اليومي</value></data>
   <data name="SuperDashboard.ActivityTooltip" xml:space="preserve"><value>{0}: {1} نشاط</value></data>
-  <data name="SuperDashboard.ErrorsPerDay" xml:space="preserve"><value>الأخطاء اليومية</value></data>
   <data name="SuperDashboard.ErrorsTooltip" xml:space="preserve"><value>{0}: {1} خطأ</value></data>
 </root>

@@ -57,6 +57,10 @@ public static class ValueConverters
     public static readonly IValueConverter ShortDate = new FuncValueConverter<System.DateOnly?, string>(date =>
         date?.ToString("d", App.Services is null ? System.Globalization.CultureInfo.CurrentCulture : App.Localization.Culture) ?? string.Empty);
 
+    /// <summary>A month's first day as "November 2026" in the app's language (dashboard month dropdown).</summary>
+    public static readonly IValueConverter MonthYear = new FuncValueConverter<System.DateOnly?, string>(month =>
+        month?.ToString("MMMM yyyy", App.Services is null ? System.Globalization.CultureInfo.CurrentCulture : App.Localization.Culture) ?? string.Empty);
+
     public static string FormatLocal(DateTime value) =>
         DateTime.SpecifyKind(value, value.Kind == DateTimeKind.Unspecified ? DateTimeKind.Utc : value.Kind)
             .ToLocalTime()

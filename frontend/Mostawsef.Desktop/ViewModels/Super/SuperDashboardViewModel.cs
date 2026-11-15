@@ -2,36 +2,33 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using Mostawsef.Contracts.Common;
+using Mostawsef.Contracts.Dashboards;
 using Mostawsef.Contracts.Maintenance;
 using Mostawsef.Contracts.Orders;
 using Mostawsef.Desktop.Components;
 using Mostawsef.Desktop.Services.Api;
 using Mostawsef.Desktop.Services.Auth;
+using Mostawsef.Desktop.Services.Diagnostics;
 using Mostawsef.Desktop.ViewModels.Shell;
 
 namespace Mostawsef.Desktop.ViewModels.Super;
 
 /// <summary>
-/// Super portal home: whole-system stat cards (money, orders, patients, users, tests, today's activity and errors),
-/// orders by status, and per-day graphs of revenue, orders, new patients, activity and errors. Coming back to the page
-/// reloads only when the figures are older than <see cref="StaleAfter"/> (Refresh always reloads), so switching menu
-/// pages does not run the dashboard queries again each time.
+/// Super portal home for a chosen period (<see cref="DashboardPageViewModel.Filter"/>): revenue, outstanding balance,
+/// orders, new patients, activity and errors of the period, current user and lab test totals, orders by status and
+/// per hour/day/month graphs. Coming back to the page reloads only when the figures are older than
+/// <see cref="StaleAfter"/> (Refresh and a new period always reload), so switching menu pages does not run the
+/// dashboard queries again each time.
 /// </summary>
-public partial class SuperDashboardViewModel(SessionService session, SystemApi api) : ViewModelBase, ILoadablePage
+public partial class SuperDashboardViewModel(SessionService session, SystemApi api, ErrorReporter errors)
+    : DashboardPageViewModel(errors), ILoadablePage
 {
-    /// <summary>How many days the graphs cover.</summary>
-    public const int Days = 30;
-
     /// <summary>How old the shown figures may get before showing the page loads them again.</summary>
     public static readonly TimeSpan StaleAfter = TimeSpan.FromMinutes(1);
-
-    private CancellationTokenSource? _loadCancellation;
 
     /// <summary>Stopwatch timestamp of the last successful load; 0 = never.</summary>
     private long _loadedAt;
@@ -40,33 +37,25 @@ public partial class SuperDashboardViewModel(SessionService session, SystemApi a
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(
-        nameof(HasData), nameof(CurrencyKey), nameof(RevenueText), nameof(OutstandingText), nameof(PeriodRevenueText),
+        nameof(HasData), nameof(CurrencyKey), nameof(RevenueText), nameof(OutstandingText),
         nameof(PaidCount), nameof(PartiallyPaidCount), nameof(PendingCount), nameof(CancelledCount), nameof(RefundedCount),
         nameof(StatusMaximum), nameof(HasOrders),
         nameof(PaidPercent), nameof(PartiallyPaidPercent), nameof(PendingPercent), nameof(CancelledPercent), nameof(RefundedPercent),
-        nameof(RevenuePerDay), nameof(OrdersPerDay), nameof(PatientsPerDay), nameof(ActivityPerDay), nameof(ErrorsPerDay),
-        nameof(PeriodOrders), nameof(PeriodPatients), nameof(PeriodActivity), nameof(PeriodErrors))]
+        nameof(RevenueOverTime), nameof(OrdersOverTime), nameof(PatientsOverTime), nameof(ActivityOverTime), nameof(ErrorsOverTime))]
     public partial SuperDashboardDto? Dashboard { get; private set; }
-
-    [ObservableProperty]
-    public partial bool IsLoading { get; private set; }
-
-    [ObservableProperty]
-    public partial bool HasLoadError { get; private set; }
 
     public bool HasData => Dashboard is not null;
 
     /// <summary>"Currency.EGP": the stat cards' money caption, translated in the view.</summary>
     public string? CurrencyKey => Dashboard is null ? null : "Currency." + Dashboard.Currency;
 
+    /// <summary>Payments minus refunds made in the period.</summary>
     public string RevenueText => Amount(Dashboard?.Revenue ?? 0);
 
+    /// <summary>What the period's pending and partly paid orders still owe.</summary>
     public string OutstandingText => Amount(Dashboard?.Outstanding ?? 0);
 
     // Everything below is derived once per load in OnDashboardChanged, so the getters stay O(1).
-
-    /// <summary>Net payments over the days shown.</summary>
-    public string PeriodRevenueText { get; private set; } = Amount(0);
 
     // Orders by status
 
@@ -95,51 +84,53 @@ public partial class SuperDashboardViewModel(SessionService session, SystemApi a
 
     public string RefundedPercent { get; private set; } = "0%";
 
-    // Per-day graphs (oldest first, today last)
+    // Graphs (oldest first): one point per hour, day or month of the period
 
-    /// <summary>Net payments per day in whole currency units (a day where refunds exceed payments shows 0).</summary>
-    public IReadOnlyList<ChartPoint>? RevenuePerDay { get; private set; }
+    /// <summary>Net payments per point in whole currency units (a point where refunds exceed payments shows 0).</summary>
+    public IReadOnlyList<ChartPoint>? RevenueOverTime { get; private set; }
 
-    public IReadOnlyList<ChartPoint>? OrdersPerDay { get; private set; }
+    public IReadOnlyList<ChartPoint>? OrdersOverTime { get; private set; }
 
-    public IReadOnlyList<ChartPoint>? PatientsPerDay { get; private set; }
+    public IReadOnlyList<ChartPoint>? PatientsOverTime { get; private set; }
 
-    public IReadOnlyList<ChartPoint>? ActivityPerDay { get; private set; }
+    public IReadOnlyList<ChartPoint>? ActivityOverTime { get; private set; }
 
-    public IReadOnlyList<ChartPoint>? ErrorsPerDay { get; private set; }
-
-    public int PeriodOrders { get; private set; }
-
-    public int PeriodPatients { get; private set; }
-
-    public int PeriodActivity { get; private set; }
-
-    public int PeriodErrors { get; private set; }
+    public IReadOnlyList<ChartPoint>? ErrorsOverTime { get; private set; }
 
     public Task ActivateAsync() =>
         Dashboard is null || _loadedAt == 0 || Stopwatch.GetElapsedTime(_loadedAt) >= StaleAfter ? LoadAsync() : Task.CompletedTask;
+
+    protected override async Task<DashboardRangeDto?> FetchAsync(DateOnly from, DateOnly to, CancellationToken cancellationToken)
+    {
+        var result = await api.GetDashboardAsync(from, to, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!result.IsSuccess)
+        {
+            return null;
+        }
+
+        Dashboard = result.Value;
+        _loadedAt = Stopwatch.GetTimestamp();
+        return result.Value!.Range;
+    }
+
     /// <summary>Runs before the generated change notifications, so the bindings read the new values.</summary>
     partial void OnDashboardChanged(SuperDashboardDto? value)
     {
-        RevenuePerDay = Series(value, d => (int)Math.Clamp(Math.Round(Money.ToMajor(d.Revenue)), 0, int.MaxValue));
-        OrdersPerDay = Series(value, d => d.Orders);
-        PatientsPerDay = Series(value, d => d.Patients);
-        ActivityPerDay = Series(value, d => d.Activity);
-        ErrorsPerDay = Series(value, d => d.Errors);
-
-        long periodRevenue = 0;
-        int orders = 0, patients = 0, activity = 0, errors = 0;
-        foreach (var day in value?.Days ?? [])
+        var count = value?.Points.Count ?? 0;
+        var unit = DashboardPeriodFilter.UnitOf(value?.Range.Bucket);
+        List<ChartPoint> revenue = new(count), orders = new(count), patients = new(count), activity = new(count), errors = new(count);
+        foreach (var point in value?.Points ?? [])
         {
-            periodRevenue += day.Revenue;
-            orders += day.Orders;
-            patients += day.Patients;
-            activity += day.Activity;
-            errors += day.Errors;
+            revenue.Add(ChartPoint.At(point.Start, unit, (int)Math.Clamp(Math.Round(Money.ToMajor(point.Revenue)), 0, int.MaxValue)));
+            orders.Add(ChartPoint.At(point.Start, unit, point.Orders));
+            patients.Add(ChartPoint.At(point.Start, unit, point.Patients));
+            activity.Add(ChartPoint.At(point.Start, unit, point.Activity));
+            errors.Add(ChartPoint.At(point.Start, unit, point.Errors));
         }
 
-        PeriodRevenueText = Amount(periodRevenue);
-        (PeriodOrders, PeriodPatients, PeriodActivity, PeriodErrors) = (orders, patients, activity, errors);
+        (RevenueOverTime, OrdersOverTime, PatientsOverTime, ActivityOverTime, ErrorsOverTime) =
+            value is null ? (null, null, null, null, null) : (revenue, orders, patients, activity, errors);
 
         int paid = 0, partlyPaid = 0, pending = 0, cancelled = 0, refunded = 0, total = 0, largest = 0;
         foreach (var status in value?.OrderStatuses ?? [])
@@ -164,51 +155,6 @@ public partial class SuperDashboardViewModel(SessionService session, SystemApi a
         CancelledPercent = Percent(cancelled, total);
         RefundedPercent = Percent(refunded, total);
     }
-
-    public void Deactivate()
-    {
-        _loadCancellation?.Cancel();
-        IsLoading = false;
-    }
-
-    [RelayCommand]
-    private Task RefreshAsync() => LoadAsync();
-
-    private async Task LoadAsync()
-    {
-        _loadCancellation?.Cancel();
-        using var cancellation = new CancellationTokenSource();
-        _loadCancellation = cancellation;
-
-        IsLoading = true;
-        try
-        {
-            var result = await api.GetDashboardAsync(Days, cancellation.Token);
-            cancellation.Token.ThrowIfCancellationRequested();
-            if (result.IsSuccess)
-            {
-                Dashboard = result.Value;
-                _loadedAt = Stopwatch.GetTimestamp();
-            }
-
-            HasLoadError = !result.IsSuccess && Dashboard is null;
-        }
-        catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
-        {
-            // The user left the page; the next activation loads again.
-        }
-        finally
-        {
-            if (_loadCancellation == cancellation)
-            {
-                _loadCancellation = null;
-                IsLoading = false;
-            }
-        }
-    }
-
-    private static List<ChartPoint>? Series(SuperDashboardDto? dashboard, Func<DashboardDayDto, int> value) =>
-        dashboard?.Days.Select(d => ChartPoint.Day(d.Date, value(d))).ToList();
 
     private static string Percent(int count, int total) =>
         total == 0 ? "0%" : string.Create(CultureInfo.InvariantCulture, $"{Math.Round(100.0 * count / total):0}%");

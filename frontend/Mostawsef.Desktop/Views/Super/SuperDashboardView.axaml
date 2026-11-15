@@ -2,7 +2,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="using:Mostawsef.Desktop.Components"
              xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:conv="using:Mostawsef.Desktop.Converters"
              xmlns:vm="using:Mostawsef.Desktop.ViewModels.Super"
+             xmlns:views="using:Mostawsef.Desktop.Views.Shell"
              x:Class="Mostawsef.Desktop.Views.Super.SuperDashboardView"
              x:DataType="vm:SuperDashboardViewModel">
     <ScrollViewer>
@@ -17,6 +19,16 @@
                     </Button>
                 </ui:PageHeader.Actions>
             </ui:PageHeader>
+
+            <StackPanel Spacing="{StaticResource GapControls}">
+                <views:DashboardPeriodBar Name="PeriodBar" DataContext="{Binding Filter}" />
+                <StackPanel Name="PeriodCaption" Orientation="Horizontal" Spacing="6" IsVisible="{Binding ShownRange, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <TextBlock Classes="caption muted" Text="{Binding ShownRange.From, Converter={x:Static conv:ValueConverters.ShortDate}, FallbackValue=''}" />
+                    <TextBlock Classes="caption muted" Text="{l:Tr Dashboard.Period.RangeTo}" IsVisible="{Binding !IsSingleDay}" />
+                    <TextBlock Classes="caption muted" Text="{Binding ShownRange.To, Converter={x:Static conv:ValueConverters.ShortDate}, FallbackValue=''}" IsVisible="{Binding !IsSingleDay}" />
+                    <TextBlock Classes="caption muted" Text="{l:TrKey {Binding BucketKey}}" />
+                </StackPanel>
+            </StackPanel>
 
             <ui:Card IsVisible="{Binding HasLoadError}">
                 <ui:ErrorState Name="DashboardError" Margin="0,24" RetryCommand="{Binding RefreshCommand}" />
@@ -36,7 +48,7 @@
                                  Title="{l:Tr Dashboard.Orders.Total}"
                                  Value="{Binding Dashboard.Orders, FallbackValue='—'}" />
                     <ui:StatCard Name="PatientsCard" Kind="Info" Icon="{StaticResource IconUser}"
-                                 Title="{l:Tr Nav.Patients}"
+                                 Title="{l:Tr SuperDashboard.NewPatients}"
                                  Value="{Binding Dashboard.Patients, FallbackValue='—'}" />
                     <ui:StatCard Name="UsersCard" Kind="Primary" Icon="{StaticResource IconUsers}"
                                  Title="{l:Tr Nav.Users}"
@@ -44,13 +56,14 @@
                                  Caption="{l:Tr SuperDashboard.ActiveUsers, Arg={Binding Dashboard.ActiveUsers, FallbackValue=0}}" />
                     <ui:StatCard Name="LabTestsCard" Kind="Info" Icon="{StaticResource IconLab}"
                                  Title="{l:Tr Nav.LabTests}"
-                                 Value="{Binding Dashboard.LabTests, FallbackValue='—'}" />
-                    <ui:StatCard Name="ActivityTodayCard" Kind="Success" Icon="{StaticResource IconList}"
-                                 Title="{l:Tr SuperDashboard.ActivityToday}"
-                                 Value="{Binding Dashboard.ActivityToday, FallbackValue='—'}" />
-                    <ui:StatCard Name="ErrorsTodayCard" Kind="Danger" Icon="{StaticResource IconWarning}"
-                                 Title="{l:Tr SuperDashboard.ErrorsToday}"
-                                 Value="{Binding Dashboard.ErrorsToday, FallbackValue='—'}" />
+                                 Value="{Binding Dashboard.LabTests, FallbackValue='—'}"
+                                 Caption="{l:Tr SuperDashboard.CurrentTotal}" />
+                    <ui:StatCard Name="ActivityCard" Kind="Success" Icon="{StaticResource IconList}"
+                                 Title="{l:Tr SuperDashboard.Activity}"
+                                 Value="{Binding Dashboard.Activity, FallbackValue='—'}" />
+                    <ui:StatCard Name="ErrorsCard" Kind="Danger" Icon="{StaticResource IconWarning}"
+                                 Title="{l:Tr SuperDashboard.Errors}"
+                                 Value="{Binding Dashboard.Errors, FallbackValue='—'}" />
                 </ui:ResponsiveGrid>
 
                 <!-- Orders by status -->
@@ -116,11 +129,11 @@
                     </Panel>
                 </ui:Card>
 
-                <!-- Per-day graphs -->
-                <ui:Card Name="RevenueChartCard" Title="{l:Tr SuperDashboard.RevenuePerDay}"
-                         Subtitle="{l:Tr SuperDashboard.RevenuePerDayHint, Arg={Binding PeriodRevenueText}}">
+                <!-- Graphs: one point per hour, day or month of the period -->
+                <ui:Card Name="RevenueChartCard" Title="{l:Tr SuperDashboard.RevenueOverTime}"
+                         Subtitle="{l:Tr SuperDashboard.RevenueHint, Arg={Binding RevenueText}}">
                     <Panel MinHeight="220">
-                        <ui:LineChart Name="RevenueChart" Points="{Binding RevenuePerDay}"
+                        <ui:LineChart Name="RevenueChart" Points="{Binding RevenueOverTime}"
                                       Stroke="{DynamicResource BrushSuccess}"
                                       TooltipFormat="{l:Tr SuperDashboard.RevenueTooltip}"
                                       IsVisible="{Binding HasData}" />
@@ -130,20 +143,20 @@
 
                 <ui:ResponsiveGrid MinColumnWidth="420" MaxColumns="2"
                                    ColumnSpacing="{StaticResource GapGrid}" RowSpacing="{StaticResource GapGrid}">
-                    <ui:Card Name="OrdersChartCard" Title="{l:Tr Dashboard.Orders.PerDay}"
-                             Subtitle="{l:Tr SuperDashboard.PeriodTotal, Arg={Binding PeriodOrders}}">
+                    <ui:Card Name="OrdersChartCard" Title="{l:Tr Dashboard.Orders.OverTime}"
+                             Subtitle="{l:Tr SuperDashboard.PeriodTotal, Arg={Binding Dashboard.Orders, FallbackValue=0}}">
                         <Panel MinHeight="220">
-                            <ui:LineChart Name="OrdersChart" Points="{Binding OrdersPerDay}"
-                                          TooltipFormat="{l:Tr Dashboard.Orders.PerDayTooltip}"
+                            <ui:LineChart Name="OrdersChart" Points="{Binding OrdersOverTime}"
+                                          TooltipFormat="{l:Tr Dashboard.Orders.Tooltip}"
                                           IsVisible="{Binding HasData}" />
                             <ui:LoadingOverlay IsLoading="{Binding IsLoading}" />
                         </Panel>
                     </ui:Card>
 
-                    <ui:Card Name="PatientsChartCard" Title="{l:Tr SuperDashboard.PatientsPerDay}"
-                             Subtitle="{l:Tr SuperDashboard.PeriodTotal, Arg={Binding PeriodPatients}}">
+                    <ui:Card Name="PatientsChartCard" Title="{l:Tr SuperDashboard.PatientsOverTime}"
+                             Subtitle="{l:Tr SuperDashboard.PeriodTotal, Arg={Binding Dashboard.Patients, FallbackValue=0}}">
                         <Panel MinHeight="220">
-                            <ui:LineChart Name="PatientsChart" Points="{Binding PatientsPerDay}"
+                            <ui:LineChart Name="PatientsChart" Points="{Binding PatientsOverTime}"
                                           Stroke="{DynamicResource BrushInfo}"
                                           TooltipFormat="{l:Tr SuperDashboard.PatientsTooltip}"
                                           IsVisible="{Binding HasData}" />
@@ -151,10 +164,10 @@
                         </Panel>
                     </ui:Card>
 
-                    <ui:Card Name="ActivityChartCard" Title="{l:Tr SuperDashboard.ActivityPerDay}"
-                             Subtitle="{l:Tr SuperDashboard.PeriodTotal, Arg={Binding PeriodActivity}}">
+                    <ui:Card Name="ActivityChartCard" Title="{l:Tr SuperDashboard.ActivityOverTime}"
+                             Subtitle="{l:Tr SuperDashboard.PeriodTotal, Arg={Binding Dashboard.Activity, FallbackValue=0}}">
                         <Panel MinHeight="220">
-                            <ui:LineChart Name="ActivityChart" Points="{Binding ActivityPerDay}"
+                            <ui:LineChart Name="ActivityChart" Points="{Binding ActivityOverTime}"
                                           Stroke="{DynamicResource BrushWarning}"
                                           TooltipFormat="{l:Tr SuperDashboard.ActivityTooltip}"
                                           IsVisible="{Binding HasData}" />
@@ -162,10 +175,10 @@
                         </Panel>
                     </ui:Card>
 
-                    <ui:Card Name="ErrorsChartCard" Title="{l:Tr SuperDashboard.ErrorsPerDay}"
-                             Subtitle="{l:Tr SuperDashboard.PeriodTotal, Arg={Binding PeriodErrors}}">
+                    <ui:Card Name="ErrorsChartCard" Title="{l:Tr SuperDashboard.ErrorsOverTime}"
+                             Subtitle="{l:Tr SuperDashboard.PeriodTotal, Arg={Binding Dashboard.Errors, FallbackValue=0}}">
                         <Panel MinHeight="220">
-                            <ui:LineChart Name="ErrorsChart" Points="{Binding ErrorsPerDay}"
+                            <ui:LineChart Name="ErrorsChart" Points="{Binding ErrorsOverTime}"
                                           Stroke="{DynamicResource BrushDanger}"
                                           TooltipFormat="{l:Tr SuperDashboard.ErrorsTooltip}"
                                           IsVisible="{Binding HasData}" />

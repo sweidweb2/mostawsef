@@ -94,19 +94,41 @@
 
   <data name="Nav.Dashboard" xml:space="preserve"><value>Dashboard</value></data>
   <data name="Dashboard.Welcome" xml:space="preserve"><value>Welcome, {0}</value></data>
+  <data name="Dashboard.Period.Day" xml:space="preserve"><value>Day</value></data>
+  <data name="Dashboard.Period.Week" xml:space="preserve"><value>Week</value></data>
+  <data name="Dashboard.Period.Month" xml:space="preserve"><value>Month</value></data>
+  <data name="Dashboard.Period.Year" xml:space="preserve"><value>Year</value></data>
+  <data name="Dashboard.Period.Custom" xml:space="preserve"><value>Custom range</value></data>
+  <data name="Dashboard.Period.PickDay" xml:space="preserve"><value>Pick a day</value></data>
+  <data name="Dashboard.Period.PickWeek" xml:space="preserve"><value>Pick any day of the week</value></data>
+  <data name="Dashboard.Period.From" xml:space="preserve"><value>From</value></data>
+  <data name="Dashboard.Period.To" xml:space="preserve"><value>To</value></data>
+  <data name="Dashboard.Period.RangeTo" xml:space="preserve"><value>to</value></data>
+  <data name="Dashboard.Bucket.Hour" xml:space="preserve"><value>(per hour)</value></data>
+  <data name="Dashboard.Bucket.Day" xml:space="preserve"><value>(per day)</value></data>
+  <data name="Dashboard.Bucket.Month" xml:space="preserve"><value>(per month)</value></data>
+  <data name="Dashboard.Orders.OverTime" xml:space="preserve"><value>Orders created</value></data>
+  <data name="Dashboard.Orders.PeriodHint" xml:space="preserve"><value>{0} orders created in this period</value></data>
+  <data name="Dashboard.Orders.Tooltip" xml:space="preserve"><value>{0}: {1} orders</value></data>
+  <data name="SuperDashboard.NewPatients" xml:space="preserve"><value>New patients</value></data>
+  <data name="SuperDashboard.CurrentTotal" xml:space="preserve"><value>Current total</value></data>
+  <data name="SuperDashboard.Activity" xml:space="preserve"><value>Activity</value></data>
+  <data name="SuperDashboard.Errors" xml:space="preserve"><value>Errors</value></data>
+  <data name="SuperDashboard.RevenueOverTime" xml:space="preserve"><value>Revenue</value></data>
+  <data name="SuperDashboard.RevenueHint" xml:space="preserve"><value>{0} collected in this period (payments minus refunds)</value></data>
+  <data name="SuperDashboard.PatientsOverTime" xml:space="preserve"><value>New patients</value></data>
+  <data name="SuperDashboard.ActivityOverTime" xml:space="preserve"><value>Activity</value></data>
+  <data name="SuperDashboard.ErrorsOverTime" xml:space="preserve"><value>Errors</value></data>
   <data name="Dashboard.Orders.Total" xml:space="preserve"><value>Orders</value></data>
   <data name="Dashboard.Orders.Paid" xml:space="preserve"><value>Fully paid</value></data>
   <data name="Dashboard.Orders.PartiallyPaid" xml:space="preserve"><value>Partially paid</value></data>
   <data name="Dashboard.Orders.Unpaid" xml:space="preserve"><value>Nothing paid</value></data>
   <data name="Dashboard.Orders.Chart" xml:space="preserve"><value>Orders by payment status</value></data>
-  <data name="Dashboard.Orders.PerDay" xml:space="preserve"><value>Orders per day</value></data>
-  <data name="Dashboard.Orders.PerDayHint" xml:space="preserve"><value>{0} orders created in the last 30 days</value></data>
-  <data name="Dashboard.Orders.PerDayTooltip" xml:space="preserve"><value>{0}: {1} orders</value></data>
   <data name="Dashboard.Tests.Top" xml:space="preserve"><value>Top 20 most ordered tests</value></data>
-  <data name="Dashboard.Tests.TopHint" xml:space="preserve"><value>How many times each test was ordered (cancelled and refunded orders excluded)</value></data>
+  <data name="Dashboard.Tests.TopHint" xml:space="preserve"><value>How many times each test was ordered in this period (cancelled and refunded orders excluded)</value></data>
   <data name="Dashboard.Tests.Tooltip" xml:space="preserve"><value>{0}: ordered {1} times</value></data>
-  <data name="Dashboard.Tests.Empty" xml:space="preserve"><value>No tests have been ordered yet</value></data>
-  <data name="Dashboard.Orders.Empty" xml:space="preserve"><value>No orders yet</value></data>
+  <data name="Dashboard.Tests.Empty" xml:space="preserve"><value>No tests were ordered in this period</value></data>
+  <data name="Dashboard.Orders.Empty" xml:space="preserve"><value>No orders in this period</value></data>
   <data name="Dashboard.Empty.Title" xml:space="preserve"><value>Your dashboard is empty</value></data>
   <data name="Dashboard.Empty.Description" xml:space="preserve"><value>Widgets and reports will appear here.</value></data>
 
@@ -503,21 +525,14 @@
   <data name="SystemSettings.ResetConfirm" xml:space="preserve"><value>This permanently deletes all patients, orders, payments, lab tests, activity logs and system errors. Only user accounts and settings are kept. Take a backup first if you may need this data.</value></data>
   <data name="SystemSettings.ResetDone" xml:space="preserve"><value>Database reset: {0} patients, {1} orders, {2} lab tests and {3} log records deleted.</value></data>
   <data name="SystemSettings.ResetFailed" xml:space="preserve"><value>The database could not be reset. Nothing was deleted.</value></data>
-  <data name="SuperDashboard.Revenue" xml:space="preserve"><value>Total revenue</value></data>
+  <data name="SuperDashboard.Revenue" xml:space="preserve"><value>Revenue</value></data>
   <data name="SuperDashboard.Outstanding" xml:space="preserve"><value>Outstanding balance</value></data>
   <data name="SuperDashboard.ActiveUsers" xml:space="preserve"><value>{0} active</value></data>
-  <data name="SuperDashboard.ActivityToday" xml:space="preserve"><value>Activity today</value></data>
-  <data name="SuperDashboard.ErrorsToday" xml:space="preserve"><value>Errors today</value></data>
   <data name="SuperDashboard.Statuses" xml:space="preserve"><value>Orders by status</value></data>
-  <data name="SuperDashboard.StatusesHint" xml:space="preserve"><value>Every order, by its payment status</value></data>
-  <data name="SuperDashboard.RevenuePerDay" xml:space="preserve"><value>Revenue per day</value></data>
-  <data name="SuperDashboard.RevenuePerDayHint" xml:space="preserve"><value>{0} collected in the last 30 days (payments minus refunds)</value></data>
+  <data name="SuperDashboard.StatusesHint" xml:space="preserve"><value>Orders created in this period, by payment status</value></data>
   <data name="SuperDashboard.RevenueTooltip" xml:space="preserve"><value>{0}: {1}</value></data>
-  <data name="SuperDashboard.PeriodTotal" xml:space="preserve"><value>{0} in the last 30 days</value></data>
-  <data name="SuperDashboard.PatientsPerDay" xml:space="preserve"><value>New patients per day</value></data>
+  <data name="SuperDashboard.PeriodTotal" xml:space="preserve"><value>{0} in this period</value></data>
   <data name="SuperDashboard.PatientsTooltip" xml:space="preserve"><value>{0}: {1} new patients</value></data>
-  <data name="SuperDashboard.ActivityPerDay" xml:space="preserve"><value>Activity per day</value></data>
   <data name="SuperDashboard.ActivityTooltip" xml:space="preserve"><value>{0}: {1} activities</value></data>
-  <data name="SuperDashboard.ErrorsPerDay" xml:space="preserve"><value>Errors per day</value></data>
   <data name="SuperDashboard.ErrorsTooltip" xml:space="preserve"><value>{0}: {1} errors</value></data>
 </root>

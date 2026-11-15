@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Mostawsef.Api.IntegrationTests.Infrastructure;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Contracts.Common;
+using Mostawsef.Contracts.Dashboards;
 using Mostawsef.Contracts.LabTests;
 using Mostawsef.Contracts.Logs;
 using Mostawsef.Contracts.Orders;
@@ -488,9 +489,12 @@ public class OrdersTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task Top_tests_counts_how_often_each_test_was_ordered_most_first()
+    public async Task The_dashboard_of_one_day_counts_its_orders_per_hour_by_payment_state_and_its_top_tests()
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        var url = $"{Url}/dashboard?from={today:yyyy-MM-dd}&to={today:yyyy-MM-dd}";
+        var before = await admin.GetJsonAsync<OrderDashboardDto>(url);
         var patient = await CreatePatientAsync(admin);
         var popular = await CreateTestAsync(admin, price: 10000);
         var rare = await CreateTestAsync(admin, price: 10000);
@@ -501,37 +505,55 @@ public class OrdersTests(ApiFactory factory)
 
         await CreateOrderAsync(admin, ForPatient(patient.Id, rare.Id));
 
-        var top = await admin.GetJsonAsync<List<TopTestDto>>($"{Url}/top-tests?take=50");
+        var after = await admin.GetJsonAsync<OrderDashboardDto>(url);
 
-        var popularRow = Assert.Single(top, t => t.LabTestId == popular.Id);
-        var rareRow = Assert.Single(top, t => t.LabTestId == rare.Id);
-        Assert.Equal((3, popular.Code, popular.Name), (popularRow.Count, popularRow.Code, popularRow.Name));
-        Assert.Equal(1, rareRow.Count);
-        Assert.True(top.IndexOf(popularRow) < top.IndexOf(rareRow));
-        Assert.Equal(top.OrderByDescending(t => t.Count).Select(t => t.Count), top.Select(t => t.Count));
-        Assert.InRange((await admin.GetJsonAsync<List<TopTestDto>>($"{Url}/top-tests")).Count, 1, 20);
-        Assert.Single(await admin.GetJsonAsync<List<TopTestDto>>($"{Url}/top-tests?take=0"));
+        Assert.Equal((today, today, DashboardBuckets.Hour), (after.Range.From, after.Range.To, after.Range.Bucket));
+        Assert.Equal(today, after.Range.Today);
+        Assert.Equal(Enumerable.Range(0, 24).Select(h => today.ToDateTime(TimeOnly.MinValue).AddHours(h)), after.Orders.Select(p => p.Start));
+        Assert.Equal(4, after.Orders.Sum(p => p.Count) - before.Orders.Sum(p => p.Count));
+        Assert.Equal(4, after.Stats.Unpaid - before.Stats.Unpaid);
+
+        // Other tests order many tests today too: the list is capped, most ordered first.
+        Assert.InRange(after.TopTests.Count, 1, OrderDashboardRules.TopTests);
+        Assert.Equal(after.TopTests.OrderByDescending(t => t.Count).Select(t => t.Count), after.TopTests.Select(t => t.Count));
+        var popularRow = after.TopTests.SingleOrDefault(t => t.LabTestId == popular.Id);
+        if (popularRow is not null)
+        {
+            Assert.Equal((3, popular.Code, popular.Name), (popularRow.Count, popularRow.Code, popularRow.Name));
+        }
+        else
+        {
+            Assert.Equal(OrderDashboardRules.TopTests, after.TopTests.Count);
+            Assert.All(after.TopTests, t => Assert.True(t.Count >= 3));
+        }
+
+        if (after.TopTests.Count < OrderDashboardRules.TopTests)
+        {
+            Assert.Equal(1, Assert.Single(after.TopTests, t => t.LabTestId == rare.Id).Count);
+        }
     }
 
     [Fact]
-    public async Task Daily_counts_cover_every_day_up_to_today_and_include_new_orders()
+    public async Task The_dashboard_period_stays_between_the_first_order_and_today_and_rejects_from_after_to()
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
-        var before = await admin.GetJsonAsync<List<OrderDailyCountDto>>($"{Url}/daily?days=7");
         var patient = await CreatePatientAsync(admin);
         var test = await CreateTestAsync(admin, price: 10000);
         await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id));
-        await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id));
 
-        var after = await admin.GetJsonAsync<List<OrderDailyCountDto>>($"{Url}/daily?days=7");
+        var wide = await admin.GetJsonAsync<OrderDashboardDto>($"{Url}/dashboard?from=2000-01-01&to=2999-12-31");
+        Assert.Equal((wide.Range.FirstDate, wide.Range.Today), (wide.Range.From, wide.Range.To));
+        Assert.True(wide.Range.FirstDate <= wide.Range.Today);
+        Assert.Equal(wide.Range.Today, DateOnly.FromDateTime(DateTime.Now));
 
-        Assert.Equal(7, after.Count);
-        Assert.Equal(Enumerable.Range(0, 7).Select(i => after[0].Date.AddDays(i)), after.Select(d => d.Date));
-        Assert.Equal(DateOnly.FromDateTime(DateTime.Now), after[^1].Date);
-        Assert.Equal(2, after[^1].Count - before[^1].Count);
-        Assert.Single(await admin.GetJsonAsync<List<OrderDailyCountDto>>($"{Url}/daily?days=0"));
-        Assert.Equal(90, (await admin.GetJsonAsync<List<OrderDailyCountDto>>($"{Url}/daily?days=1000")).Count);
-        Assert.Equal(30, (await admin.GetJsonAsync<List<OrderDailyCountDto>>($"{Url}/daily")).Count);
+        var standard = await admin.GetJsonAsync<OrderDashboardDto>($"{Url}/dashboard");
+        Assert.Equal(standard.Range.Today, standard.Range.To);
+        Assert.True(standard.Range.From >= standard.Range.FirstDate);
+        Assert.True(standard.Range.To.DayNumber - standard.Range.From.DayNumber < DashboardRangeRules.DefaultDays);
+
+        var problem = await ProblemResponse.ReadAsync(await admin.GetAsync($"{Url}/dashboard?from=2026-02-02&to=2026-02-01", Ct));
+        Assert.Equal(HttpStatusCode.BadRequest, problem.Status);
+        Assert.Equal([ErrorCodes.Invalid], problem.Errors["From"]);
     }
 
     [Fact]

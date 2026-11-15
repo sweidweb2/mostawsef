@@ -1,0 +1,74 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:l="using:Mostawsef.Desktop.Services.Local"
+             xmlns:conv="using:Mostawsef.Desktop.Converters"
+             xmlns:sys="using:System"
+             xmlns:vm="using:Mostawsef.Desktop.ViewModels.Shell"
+             x:Class="Mostawsef.Desktop.Views.Shell.DashboardPeriodBar"
+             x:DataType="vm:DashboardPeriodFilter">
+    <!-- Period kind, then only the picker that kind needs. Pickers stop at the first recorded day and today. -->
+    <WrapPanel ItemSpacing="{StaticResource GapControls}" LineSpacing="{StaticResource GapControls}">
+        <ComboBox Name="PeriodBox"
+                  MinWidth="160"
+                  ItemsSource="{x:Static vm:DashboardPeriodFilter.PeriodOptions}"
+                  SelectedItem="{Binding SelectedPeriod}">
+            <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:DashboardPeriodOption">
+                    <TextBlock Text="{l:TrKey {Binding LabelKey}}" />
+                </DataTemplate>
+            </ComboBox.ItemTemplate>
+        </ComboBox>
+
+        <CalendarDatePicker Name="DayPicker"
+                            MinWidth="170"
+                            IsVisible="{Binding IsDay}"
+                            SelectedDate="{Binding SelectedDay, Converter={x:Static conv:ValueConverters.DateOnly}}"
+                            DisplayDateStart="{Binding MinDate}"
+                            DisplayDateEnd="{Binding MaxDate}"
+                            PlaceholderText="{l:Tr Dashboard.Period.PickDay}" />
+
+        <CalendarDatePicker Name="WeekPicker"
+                            MinWidth="170"
+                            IsVisible="{Binding IsWeek}"
+                            SelectedDate="{Binding SelectedWeekDay, Converter={x:Static conv:ValueConverters.DateOnly}}"
+                            DisplayDateStart="{Binding MinDate}"
+                            DisplayDateEnd="{Binding MaxDate}"
+                            PlaceholderText="{l:Tr Dashboard.Period.PickWeek}" />
+
+        <ComboBox Name="MonthBox"
+                  MinWidth="170"
+                  IsVisible="{Binding IsMonth}"
+                  ItemsSource="{Binding Months}"
+                  SelectedItem="{Binding SelectedMonth}">
+            <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="sys:DateOnly">
+                    <TextBlock Text="{Binding Converter={x:Static conv:ValueConverters.MonthYear}}" />
+                </DataTemplate>
+            </ComboBox.ItemTemplate>
+        </ComboBox>
+
+        <ComboBox Name="YearBox"
+                  MinWidth="110"
+                  IsVisible="{Binding IsYear}"
+                  ItemsSource="{Binding Years}"
+                  SelectedItem="{Binding SelectedYear}" />
+
+        <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}" IsVisible="{Binding IsCustom}">
+            <TextBlock VerticalAlignment="Center" Text="{l:Tr Dashboard.Period.From}" />
+            <CalendarDatePicker Name="FromPicker"
+                                MinWidth="150"
+                                SelectedDate="{Binding CustomFrom, Converter={x:Static conv:ValueConverters.DateOnly}}"
+                                DisplayDateStart="{Binding MinDate}"
+                                DisplayDateEnd="{Binding CustomFromMax}" />
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}" IsVisible="{Binding IsCustom}">
+            <TextBlock VerticalAlignment="Center" Text="{l:Tr Dashboard.Period.To}" />
+            <CalendarDatePicker Name="ToPicker"
+                                MinWidth="150"
+                                SelectedDate="{Binding CustomTo, Converter={x:Static conv:ValueConverters.DateOnly}}"
+                                DisplayDateStart="{Binding CustomToMin}"
+                                DisplayDateEnd="{Binding MaxDate}" />
+        </StackPanel>
+    </WrapPanel>
+</UserControl>

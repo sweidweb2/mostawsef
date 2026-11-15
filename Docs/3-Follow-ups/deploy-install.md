@@ -21,7 +21,7 @@ Checklist to finish before the first real clinic installation. Each block is ind
 |---|---|---|
 | 1 | First-run setup (JWT key + first Super) | Open |
 | 2 | Multi-PC server address | 🔒 Later (not for one-PC install) |
-| 3 | Scheduled `pg_dump` backups + restore test | Dump ✅; restore verify still open |
+| 3 | Scheduled `pg_dump` backups + restore test | ✅ Done |
 | 4 | HTTPS vs trusted-network decision | ✅ Done (A — one PC) |
 | 5 | Production packaging defaults check | Open (verify + package) |
 | 6 | Clinic logo | 🔒 Later (no logo for now) |
@@ -89,24 +89,21 @@ Checklist to finish before the first real clinic installation. Each block is ind
 
 ---
 
-## Block 3 — Scheduled database backups and restore
+## Block 3 — Scheduled database backups and restore ✅
 
 **Problem.** Medical data needs a real, restorable database backup. The Super “Backups” page only exports selected tables (or all tables except `users`) on demand. That is useful for spreadsheets / scripts, not for disaster recovery.
 
-**Already exists**
+**Done**
 
 - Super Backups page + table exports (not a full restore).
 - `SystemSettings.BackupPath` + Super Settings Browse → scheduled `pg_dump` via `ScheduledBackupWorker` / `IScheduledBackupService` (creates the folder, keeps `ScheduledBackup:KeepCount` files and history rows, shown on Super → Backups, logs `backups.scheduled`, failures → system errors).
 - Restore steps in `Docs/commands.md` (Scheduled database dumps).
-
-**Still missing**
-
-1. A restore from a real dump has been **run successfully** once on a spare / disposable database (then tick below).
+- End-to-end restore verified once: `pg_dump -Fc` of the live `mostawsef` DB → `pg_restore --clean --if-exists --no-owner` into disposable `mostawsef_restore_test` → user/patient/order counts and a sample username matched; live DB untouched; test DB and temp dump removed after.
 
 **Done when**
 
 1. ✅ Clinic sets a backup folder in Super Settings and gets automatic dumps while the API runs.
-2. At least one full restore from that dump has been tested on a spare machine.
+2. ✅ At least one full restore from that dump has been tested on a spare / disposable database.
 3. ✅ Failure of a backup is visible (system error log).
 
 **Evidence / files**
@@ -116,7 +113,7 @@ Checklist to finish before the first real clinic installation. Each block is ind
 - Super Settings form (Browse)
 
 - [x] Scheduled dump implemented
-- [ ] Restore tested once end-to-end
+- [x] Restore tested once end-to-end
 - [x] Restore steps written (`Docs/commands.md`)
 
 ---
@@ -230,7 +227,7 @@ Checklist to finish before the first real clinic installation. Each block is ind
 1. Block 1 (nothing starts without JWT + Super).
 2. Block 5 packaging enough to run Blocks 1–2 on a spare PC.
 3. Block 2 🔒 only if a clinic will use more than one PC.
-4. Block 3 before real patient data.
+4. Block 3 ✅ done.
 5. Block 4 ✅ done (A — one PC; revisit only for multi-PC).
 6. Block 6 🔒 only if a clinic needs a logo on printouts/headers.
 7. Block 7 ✅ done.

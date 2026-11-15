@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Mostawsef.Api.IntegrationTests.Infrastructure;
 using Mostawsef.Contracts.Common;
+using Mostawsef.Contracts.Dashboards;
 using Mostawsef.Contracts.LabTests;
 using Mostawsef.Contracts.Logs;
 using Mostawsef.Contracts.Maintenance;
@@ -18,28 +19,29 @@ public class SystemMaintenanceTests(ApiFactory factory)
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     [Fact]
-    public async Task Dashboard_counts_todays_order_patient_and_payment_and_lists_every_status()
+    public async Task The_dashboard_of_today_counts_its_order_patient_and_payment_and_lists_every_status()
     {
         var super = await factory.CreateClientAsAsync(TestUsers.Super);
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
-        var before = await super.GetJsonAsync<SuperDashboardDto>("api/system/dashboard?days=30");
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        var url = $"api/system/dashboard?from={today:yyyy-MM-dd}&to={today:yyyy-MM-dd}";
+        var before = await super.GetJsonAsync<SuperDashboardDto>(url);
 
         var test = await CreateTestAsync(admin, price: 5000);
         await CreateOrderAsync(admin, test.Id, paid: 2000);
 
-        var after = await super.GetJsonAsync<SuperDashboardDto>("api/system/dashboard?days=30");
+        var after = await super.GetJsonAsync<SuperDashboardDto>(url);
 
-        Assert.Equal(30, after.Days.Count);
-        Assert.Equal(DateOnly.FromDateTime(DateTime.Now), after.Days[^1].Date);
+        Assert.Equal((today, today, DashboardBuckets.Hour), (after.Range.From, after.Range.To, after.Range.Bucket));
+        Assert.Equal(24, after.Points.Count);
         Assert.Equal(before.Orders + 1, after.Orders);
         Assert.Equal(before.Patients + 1, after.Patients);
         Assert.Equal(before.LabTests + 1, after.LabTests);
         Assert.Equal(before.Revenue + 2000, after.Revenue);
         Assert.Equal(before.Outstanding + 3000, after.Outstanding);
-        Assert.Equal(before.Days[^1].Orders + 1, after.Days[^1].Orders);
-        Assert.Equal(before.Days[^1].Patients + 1, after.Days[^1].Patients);
-        Assert.Equal(before.Days[^1].Revenue + 2000, after.Days[^1].Revenue);
-        Assert.True(after.Days[^1].Activity > before.Days[^1].Activity);
+        Assert.True(after.Activity > before.Activity);
+        Assert.Equal(after.Orders, after.Points.Sum(p => p.Orders));
+        Assert.Equal(after.Revenue, after.Points.Sum(p => p.Revenue));
         Assert.Equal(OrderStatuses.All, after.OrderStatuses.Select(s => s.Status));
         Assert.Equal(
             before.OrderStatuses.Single(s => s.Status == OrderStatuses.PartiallyPaid).Count + 1,
@@ -48,12 +50,18 @@ public class SystemMaintenanceTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task Dashboard_days_are_kept_between_7_and_90()
+    public async Task The_dashboard_period_stays_between_the_first_record_and_today_and_rejects_from_after_to()
     {
         var super = await factory.CreateClientAsAsync(TestUsers.Super);
 
-        Assert.Equal(7, (await super.GetJsonAsync<SuperDashboardDto>("api/system/dashboard?days=1")).Days.Count);
-        Assert.Equal(90, (await super.GetJsonAsync<SuperDashboardDto>("api/system/dashboard?days=500")).Days.Count);
+        var wide = await super.GetJsonAsync<SuperDashboardDto>("api/system/dashboard?from=2000-01-01&to=2999-12-31");
+        Assert.Equal((wide.Range.FirstDate, wide.Range.Today), (wide.Range.From, wide.Range.To));
+        Assert.Equal(DateOnly.FromDateTime(DateTime.Now), wide.Range.Today);
+
+        var problem = await ProblemResponse.ReadAsync(
+            await super.GetAsync("api/system/dashboard?from=2026-02-02&to=2026-02-01", Ct));
+        Assert.Equal(HttpStatusCode.BadRequest, problem.Status);
+        Assert.Equal([ErrorCodes.Invalid], problem.Errors["From"]);
     }
 
     [Fact]
