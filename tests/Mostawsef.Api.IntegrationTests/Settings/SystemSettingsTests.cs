@@ -1,9 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Mostawsef.Api.IntegrationTests.Infrastructure;
+using Mostawsef.Application.Interfaces;
+using Mostawsef.Application.Modules.Backups;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.Logs;
 using Mostawsef.Contracts.Settings;
+using Mostawsef.Infrastructure.Persistence;
 
 namespace Mostawsef.Api.IntegrationTests.Settings;
 
@@ -69,6 +73,22 @@ public class SystemSettingsTests(ApiFactory factory)
             .Content.ReadFromJsonAsync<SystemSettingsDto>(Ct);
 
         Assert.Null(updated!.BackupPath);
+    }
+
+    [Fact]
+    public async Task An_empty_backup_path_is_filled_with_the_api_Backups_folder_on_initialize()
+    {
+        var super = await factory.CreateClientAsAsync(TestUsers.Super);
+        var current = await super.GetJsonAsync<SystemSettingsDto>(Url);
+        await (await super.PutAsJsonAsync(
+                Url, new UpdateSystemSettingsRequest { BackupPath = " ", Version = current.Version }, Ct))
+            .EnsureSuccessStatusCode();
+
+        await factory.Services.InitializeDatabaseAsync([], Ct);
+        factory.Services.GetRequiredService<ISystemSettingsCache>().Invalidate();
+
+        var restored = await super.GetJsonAsync<SystemSettingsDto>(Url);
+        Assert.Equal(ScheduledBackupPaths.DefaultFolder, restored.BackupPath);
     }
 
     [Fact]
