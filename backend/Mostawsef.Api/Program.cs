@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting.WindowsServices;
 using Mostawsef.Api.Extensions;
 using Mostawsef.Api.Middleware;
 using Mostawsef.Api.Services;
@@ -11,7 +12,13 @@ using Mostawsef.Contracts.Common;
 using Mostawsef.Infrastructure;
 using Mostawsef.Infrastructure.Persistence;
 
-var builder = WebApplication.CreateBuilder(args);
+// As a Windows service the process cwd is System32; keep config next to the exe.
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    ContentRootPath = WindowsServiceHelpers.IsWindowsService() ? AppContext.BaseDirectory : default,
+});
+builder.Host.UseWindowsService(options => options.ServiceName = "MostawsefApi");
 
 // Production first-run: load/create appsettings.Clinic.json with a unique Jwt:Key (never committed).
 Mostawsef.Api.ClinicLocalConfig.Apply(builder);

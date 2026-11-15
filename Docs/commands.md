@@ -202,3 +202,33 @@ dotnet publish backend/Mostawsef.Api -c Release -o "C:\Users\User\Desktop\mostaw
 Same rules as the desktop: `win-x64` unless `-r` says otherwise, with ReadyToRun so the first requests after a start
 are not slowed down by JIT compilation. At start the API also runs the everyday queries once (`DatabaseWarmUp`).
 `appsettings.Development.json` is not included in the publish output (clinic builds must not ship Docker / dev seed users).
+Re-publishing overwrites `appsettings.json` — keep a copy of the clinic connection string (and never delete `appsettings.Clinic.json`).
+
+## Install the API as a Windows service
+
+Needs Administrator. Points at the published API folder and starts **after** native PostgreSQL:
+
+```powershell
+./scripts/install-api-service.ps1
+# optional: -ApiPath "D:\Mostawsef\Api" -PostgresService postgresql-x64-17
+# remove:  ./scripts/install-api-service.ps1 -Uninstall
+```
+
+Service name: `MostawsefApi` (Display name: Mostawsef API). Default path: `C:\Mostawsef\Api`. Listens on `http://localhost:5270`.
+Stop the service before publishing over the same folder, then start it again (or re-run the install script).
+
+## Build the clinic Setup.exe
+
+Needs Inno Setup (`ISCC.exe`; the script can install it via winget). Publishes Desktop + API into `artifacts/installer-staging`, then compiles:
+
+```powershell
+./scripts/build-setup.ps1
+# optional: -Version 1.0.1
+# reuse staging: -SkipPublish
+```
+
+Output: `C:\Users\User\Desktop\mostawsef-3ammo\[2] Builds\Mostawsef-Setup.exe` (and `artifacts\installer\`).
+
+Clinic: run **Mostawsef-Setup.exe as Administrator**. It installs to `C:\Mostawsef`, configures PostgreSQL (winget if missing), registers `MostawsefApi`, and creates shortcuts. Prefer this over the manual playbook; keep the playbook as fallback.
+
+Normal releases: rebuild Setup and send it (clinic reinstalls over the old version). If you change install behavior itself (paths, service, Postgres rules), edit `packaging/innosetup/` / `scripts/install-*.ps1` first — see the developer note in `Docs/3-Follow-ups/clinic-install-playbook.md`.

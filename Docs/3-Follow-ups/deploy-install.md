@@ -25,7 +25,7 @@ Checklist to finish before the first real clinic installation. Each block is ind
 | 2 | Multi-PC server address | 🔒 Later (not for one-PC install) |
 | 3 | Scheduled `pg_dump` backups + restore test | ✅ Done |
 | 4 | HTTPS vs trusted-network decision | ✅ Done (A — one PC) |
-| 5 | Production packaging defaults check | Open (verify + package) |
+| 5 | Production packaging defaults check | ✅ Done (Inno Setup `Mostawsef-Setup.exe`) |
 | 6 | Clinic logo | 🔒 Later (no logo for now) |
 | 7 | Large dev seed (perf) | ✅ Done |
 | 8 | Session expiry vs wrong PC clock | ✅ Done |
@@ -139,7 +139,7 @@ Checklist to finish before the first real clinic installation. Each block is ind
 4. API runs as a Windows service (or equivalent always-on host), starts after PostgreSQL, and survives reboot.
 5. Desktop ships as a Release publish.
 6. `MOSTAWSEF_PERF` is not set on clinic PCs.
-7. Installer / update story chosen (e.g. Velopack).
+7. Installer / update story chosen: **Inno Setup** → `Mostawsef-Setup.exe` (`./scripts/build-setup.ps1`). Not Velopack (cannot host the API Windows service).
 
 **Done when**
 
@@ -152,8 +152,8 @@ Checklist to finish before the first real clinic installation. Each block is ind
 - `Docs/foundation.md` (native PostgreSQL on clinic PCs)
 
 - [x] Publish layout reviewed once (Phase 1: `mostawsef-3ammo\[2] Builds`; Dev config excluded from API publish)
-- [ ] Clean-machine install smoke test passed
-- [ ] Installer / update method chosen
+- [x] Clean-machine install smoke test passed ✅
+- [x] Installer / update method chosen ✅ — Inno Setup (`Mostawsef-Setup.exe`)
 
 ---
 
