@@ -10,7 +10,7 @@ Related: [`deploy-plan.md`](deploy-plan.md) · publish commands: [`Docs/commands
 1. On the build PC: `./scripts/build-setup.ps1`
 2. Copy `mostawsef-3ammo\[2] Builds\Mostawsef-Setup.exe` to the clinic PC
 3. Run it **as Administrator**
-4. If PostgreSQL is already installed, enter the **postgres** superuser password when asked (leave blank only for a new winget install)
+4. If PostgreSQL is already installed, enter the **postgres** superuser password when asked (leave blank on a new PC — Setup uses the **bundled offline** Postgres installer)
 5. Sign in with install Super/Admin → **change passwords** → set backup folder → smoke test
 
 Installs to `C:\Mostawsef\` (Api + Desktop + scripts), registers `MostawsefApi`, shortcuts for staff.  
@@ -33,7 +33,7 @@ Only if you change **how install works** (service name, install path, Postgres r
 | Published **Api** folder | From build PC: `mostawsef-3ammo\[2] Builds\Api` (or fresh `dotnet publish`) |
 | Published **Desktop** folder | From build PC: `mostawsef-3ammo\[2] Builds\Desktop` |
 | `scripts\install-api-service.ps1` | From the repo (or copy next to the Api folder) |
-| PostgreSQL 17 Windows installer | Or `winget install PostgreSQL.PostgreSQL.17` |
+| PostgreSQL 17 | Prefer Setup.exe (bundled offline). Manual: EDB installer / winget only as fallback |
 | Admin rights on the clinic PC | Needed for Postgres + Windows service |
 
 **Suggested layout on the clinic PC**
@@ -52,10 +52,10 @@ Staff shortcut → `C:\Mostawsef\Desktop\Mostawsef.Desktop.exe`
 
 ### 1. Install PostgreSQL 17 (native)
 
-- [ ] Install PostgreSQL 17 for Windows (EDB / winget). **Do not use Docker.**
+- [ ] Prefer **Mostawsef-Setup.exe** (bundled offline Postgres when missing). **Do not use Docker.**
 - [ ] Port **5432** (default). On a build PC that already has Docker on 5432, use another port (smoke used **5433**) — a real clinic has no Docker, so use **5432**.
-- [ ] Remember the **postgres** superuser password you set at install.
-- [ ] Confirm service `postgresql-x64-17` is **Running** / **Automatic**.
+- [ ] If installing manually, remember the **postgres** superuser password.
+- [ ] Confirm service `postgresql-x64-17` is **Running** / **Automatic**. A first Postgres install may require **one reboot** — reboot once, then open Mostawsef (do not spam-click).
 
 ### 2. Create database and app user
 

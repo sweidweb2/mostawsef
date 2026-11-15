@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Post-copy clinic setup for Mostawsef Setup.exe (Postgres, DB, config, Windows service).
 
@@ -112,6 +112,19 @@ function Get-PostgresPort {
     return 5432
 }
 
+function Get-BundledPostgresInstaller {
+    $redist = Join-Path $InstallRoot 'redist'
+    if (-not (Test-Path -LiteralPath $redist)) { return $null }
+    $exe = Get-ChildItem -LiteralPath $redist -Filter 'postgresql-*-windows-x64.exe' -File -ErrorAction SilentlyContinue |
+        Sort-Object Name -Descending |
+        Select-Object -First 1
+    if ($exe) { return $exe.FullName }
+    return Get-ChildItem -LiteralPath $redist -Filter '*.exe' -File -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -match 'postgres' } |
+        Sort-Object Name -Descending |
+        Select-Object -First 1 -ExpandProperty FullName
+}
+
 function Ensure-Postgres {
     $svc = Get-Service -Name $PostgresService -ErrorAction SilentlyContinue
     if ($svc) {
@@ -120,11 +133,6 @@ function Ensure-Postgres {
         }
         Write-Host "PostgreSQL service '$PostgresService' is running."
         return
-    }
-
-    $winget = Get-Command winget -ErrorAction SilentlyContinue
-    if (-not $winget) {
-        throw 'PostgreSQL is not installed and winget was not found. Install PostgreSQL 17 natively, then run Setup again.'
     }
 
     # Fresh clinic install: port 5432. Superuser password is local to this machine only.
@@ -143,14 +151,28 @@ function Ensure-Postgres {
         Write-Host "Could not tighten ACL on $superPassFile : $($_.Exception.Message)" -ForegroundColor Yellow
     }
 
-    Write-Host 'Installing PostgreSQL 17 via winget (this can take several minutes)...'
-    $override = "--mode unattended --unattendedmodeui none --superpassword `"$superPass`" --serverport 5432 --servicename $PostgresService"
-    & winget install --id PostgreSQL.PostgreSQL.17 -e --accept-package-agreements --accept-source-agreements --disable-interactivity --override $override
-    if ($LASTEXITCODE -ne 0) {
-        throw "winget failed to install PostgreSQL 17 (exit $LASTEXITCODE)."
+    $silentArgs = "--mode unattended --unattendedmodeui none --superpassword `"$superPass`" --serverport 5432 --servicename $PostgresService --disable-components stackbuilder"
+    $bundled = Get-BundledPostgresInstaller
+    if ($bundled) {
+        Write-Host "Installing PostgreSQL 17 from bundled installer (offline): $bundled"
+        $proc = Start-Process -FilePath $bundled -ArgumentList $silentArgs -Wait -PassThru -NoNewWindow
+        if ($proc.ExitCode -ne 0) {
+            throw "Bundled PostgreSQL installer failed (exit $($proc.ExitCode))."
+        }
+    } else {
+        $winget = Get-Command winget -ErrorAction SilentlyContinue
+        if (-not $winget) {
+            throw 'PostgreSQL is not installed, no bundled installer under redist\, and winget was not found. Rebuild Setup with build-setup.ps1 (downloads Postgres into the package).'
+        }
+
+        Write-Host 'WARNING: No bundled Postgres installer — falling back to winget (needs internet)...' -ForegroundColor Yellow
+        & winget install --id PostgreSQL.PostgreSQL.17 -e --accept-package-agreements --accept-source-agreements --disable-interactivity --override $silentArgs
+        if ($LASTEXITCODE -ne 0) {
+            throw "winget failed to install PostgreSQL 17 (exit $LASTEXITCODE)."
+        }
     }
 
-    $deadline = (Get-Date).AddMinutes(3)
+    $deadline = (Get-Date).AddMinutes(5)
     do {
         $svc = Get-Service -Name $PostgresService -ErrorAction SilentlyContinue
         if ($svc -and $svc.Status -eq 'Running') { break }
@@ -158,7 +180,7 @@ function Ensure-Postgres {
     } while ((Get-Date) -lt $deadline)
 
     if (-not $svc -or $svc.Status -ne 'Running') {
-        throw "PostgreSQL service '$PostgresService' did not start after install."
+        throw "PostgreSQL service '$PostgresService' did not start after install. A reboot may be required after the first Postgres install; then run Setup again (or start the service and Desktop)."
     }
 
     $script:NewPostgresSuperPassword = $superPass

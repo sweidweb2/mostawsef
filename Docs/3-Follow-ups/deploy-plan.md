@@ -9,7 +9,7 @@ Related: open packaging work in [`deploy-install.md`](deploy-install.md) (especi
 | Decision | Choice |
 | --- | --- |
 | Target | One Windows PC (API + Desktop + database on the same machine) |
-| Installer | **One** elevated `Mostawsef-Setup.exe` (Inno Setup: Desktop + API + service; PostgreSQL via winget or existing) |
+| Installer | **One** elevated `Mostawsef-Setup.exe` (Inno Setup: self-contained Desktop + API + service + **bundled offline PostgreSQL 17** installer; winget only as build-PC download / last-resort fallback) |
 | Docker | **Never** on clinic PCs — native PostgreSQL 17 only (Docker is for development) |
 | Network | `http://localhost:5270` only (no multi-PC / HTTPS yet) |
 | Updates | **No auto-update for now.** Rebuild, make a new Setup, send it; client reinstalls. Do not wipe clinic data on update |
@@ -209,7 +209,7 @@ Until Phase 6 exists, you *could* install a friendly first client this same way 
 **Steps**
 
 1. Choose packaging ✅ — Inno Setup (`packaging/innosetup/Mostawsef.iss`)
-2. Package **Desktop + API**; install/configure **PostgreSQL** in the same install flow ✅ (`install-clinic.ps1`: winget Postgres if missing, else prompt for postgres password)
+2. Package **Desktop + API** (self-contained) + **bundled PostgreSQL 17** installer; install/configure DB in the same flow ✅ (`build-setup.ps1` downloads Postgres once; `install-clinic.ps1` runs the offline installer if Postgres is missing, else prompts for postgres password)
 3. Build `Setup.exe` ✅ — `./scripts/build-setup.ps1` → `mostawsef-3ammo\[2] Builds\Mostawsef-Setup.exe`
 4. Test on a clean PC: install → first-run → sign-in → create data (run Setup as Admin; see playbook)
 5. Document reinstall/update ✅ — newer Setup replaces app files; **never** deletes the PostgreSQL data directory; preserves `appsettings.Clinic.json` + connection string

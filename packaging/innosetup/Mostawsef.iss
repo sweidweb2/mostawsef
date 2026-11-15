@@ -46,6 +46,8 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "{#MyStagingDir}\Api\*"; DestDir: "{app}\Api"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "appsettings.Clinic.json"
 Source: "{#MyStagingDir}\Desktop\*"; DestDir: "{app}\Desktop"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#MyStagingDir}\scripts\*"; DestDir: "{app}\scripts"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Offline PostgreSQL 17 Windows installer (downloaded on the build PC by build-setup.ps1).
+Source: "{#MyStagingDir}\redist\*"; DestDir: "{app}\redist"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\Desktop\{#MyAppExeName}"; WorkingDir: "{app}\Desktop"
@@ -57,7 +59,8 @@ Filename: "powershell.exe"; \
   Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\scripts\install-clinic.ps1"" -InstallRoot ""{app}"" -ConfigBackup ""{tmp}\mostawsef-config"""; \
   StatusMsg: "Configuring PostgreSQL and the Mostawsef API service..."; \
   Flags: runhidden waituntilterminated
-Filename: "{app}\Desktop\{#MyAppExeName}"; Description: "Launch Mostawsef"; Flags: nowait postinstall skipifsilent
+; Unchecked: do not auto-launch (avoids .NET/error dialogs + browser spam if something still fails).
+Filename: "{app}\Desktop\{#MyAppExeName}"; Description: "Launch Mostawsef"; Flags: nowait postinstall skipifsilent unchecked
 
 [UninstallRun]
 ; Stop/remove API service only. Never uninstall PostgreSQL or delete its data directory.
@@ -74,7 +77,7 @@ begin
   PgPage := CreateInputQueryPage(wpSelectTasks,
     'PostgreSQL', 'Database setup',
     'If PostgreSQL 17 is already installed on this PC, enter the postgres superuser password.' #13#10 +
-    'Leave blank to install PostgreSQL via winget (new clinic PCs).' #13#10 +
+    'Leave blank on a new PC: Setup installs PostgreSQL from the bundled offline installer.' #13#10 +
     'On upgrades that already have a connection string, you can leave this blank.');
   PgPage.Add('postgres password:', True);
 end;
