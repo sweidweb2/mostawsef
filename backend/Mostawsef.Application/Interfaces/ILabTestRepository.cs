@@ -8,7 +8,6 @@ public record LabTestListRow(
     Guid Id,
     string Code,
     string Name,
-    long Price,
     long LabCost,
     bool IsActive,
     DateTime CreatedAt,
@@ -21,7 +20,6 @@ public record LabTestExportRow(
     Guid Id,
     string Code,
     string Name,
-    long Price,
     long LabCost,
     bool IsActive);
 

@@ -24,7 +24,7 @@ public class LabTestsTests(ApiFactory factory)
 
         var response = await admin.PostAsJsonAsync(
             Url,
-            new CreateLabTestRequest { Code = $"  {code.ToLowerInvariant()} ", Name = $"  Complete blood count {code} ", Price = 15050, LabCost = 9000 },
+            new CreateLabTestRequest { Code = $"  {code.ToLowerInvariant()} ", Name = $"  Complete blood count {code} ", LabCost = 9000 },
             Ct);
         var created = await response.Content.ReadFromJsonAsync<LabTestDto>(Ct);
 
@@ -32,7 +32,7 @@ public class LabTestsTests(ApiFactory factory)
         Assert.EndsWith($"{Url}/{created!.Id}", response.Headers.Location!.ToString());
         Assert.Equal(code, created.Code);
         Assert.Equal($"Complete blood count {code}", created.Name);
-        Assert.Equal((15050, 9000), (created.Price, created.LabCost));
+        Assert.Equal(9000, created.LabCost);
         Assert.True(created.IsActive);
         Assert.Equal(0, created.Version);
         var reread = await admin.GetJsonAsync<LabTestDto>($"{Url}/{created.Id}");
@@ -46,31 +46,29 @@ public class LabTestsTests(ApiFactory factory)
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
 
         var problem = await ProblemResponse.ReadAsync(await admin.PostAsJsonAsync(
-            Url, new CreateLabTestRequest { Code = new string('X', 21), Name = " ", Price = -1 }, Ct));
+            Url, new CreateLabTestRequest { Code = new string('X', 21), Name = " ", LabCost = -1 }, Ct));
 
         Assert.Equal(HttpStatusCode.BadRequest, problem.Status);
         Assert.Equal(ErrorCodes.Validation, problem.Code);
         Assert.Equal([$"max_length|{LabTestRules.CodeMaxLength}"], problem.Errors["Code"]);
         Assert.Equal([ErrorCodes.Required], problem.Errors["Name"]);
-        Assert.Equal([$"range|0|{LabTestRules.MaxAmount}"], problem.Errors["Price"]);
-        Assert.Equal([ErrorCodes.Required], problem.Errors["LabCost"]);
+        Assert.Equal([$"range|0|{LabTestRules.MaxAmount}"], problem.Errors["LabCost"]);
     }
 
     [Fact]
-    public async Task Prices_above_the_limit_and_too_long_names_are_rejected_on_update_too()
+    public async Task Lab_costs_above_the_limit_and_too_long_names_are_rejected_on_update_too()
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var test = await CreateAsync(admin);
 
         var problem = await ProblemResponse.ReadAsync(await admin.PutAsJsonAsync($"{Url}/{test.Id}", new UpdateLabTestRequest
         {
-            Code = test.Code, Name = new string('x', 151), Price = LabTestRules.MaxAmount + 1, LabCost = LabTestRules.MaxAmount, Version = test.Version,
+            Code = test.Code, Name = new string('x', 151), LabCost = LabTestRules.MaxAmount + 1, Version = test.Version,
         }, Ct));
 
         Assert.Equal(HttpStatusCode.BadRequest, problem.Status);
         Assert.Equal([$"max_length|{LabTestRules.NameMaxLength}"], problem.Errors["Name"]);
-        Assert.Equal([$"range|0|{LabTestRules.MaxAmount}"], problem.Errors["Price"]);
-        Assert.False(problem.Errors.ContainsKey("LabCost"));
+        Assert.Equal([$"range|0|{LabTestRules.MaxAmount}"], problem.Errors["LabCost"]);
     }
 
     [Fact]
@@ -92,9 +90,9 @@ public class LabTestsTests(ApiFactory factory)
         var existing = await CreateAsync(admin, name: $"تحليل السكر {Guid.NewGuid():N}");
 
         var sameCode = await ProblemResponse.ReadAsync(await admin.PostAsJsonAsync(
-            Url, new CreateLabTestRequest { Code = existing.Code.ToLowerInvariant(), Name = "Another name", Price = 1, LabCost = 1 }, Ct));
+            Url, new CreateLabTestRequest { Code = existing.Code.ToLowerInvariant(), Name = "Another name", LabCost = 1 }, Ct));
         var sameName = await ProblemResponse.ReadAsync(await admin.PostAsJsonAsync(
-            Url, new CreateLabTestRequest { Code = UniqueCode(), Name = existing.Name.Replace("السكر", "الس\u0651كر"), Price = 1, LabCost = 1 }, Ct));
+            Url, new CreateLabTestRequest { Code = UniqueCode(), Name = existing.Name.Replace("السكر", "الس\u0651كر"), LabCost = 1 }, Ct));
 
         Assert.Equal(HttpStatusCode.Conflict, sameCode.Status);
         Assert.Equal([ErrorCodes.Taken], sameCode.Errors["Code"]);
@@ -112,7 +110,6 @@ public class LabTestsTests(ApiFactory factory)
         {
             Code = code,
             Name = $"Race {Guid.NewGuid():N}",
-            Price = 10,
             LabCost = 1,
         };
 
@@ -164,7 +161,7 @@ public class LabTestsTests(ApiFactory factory)
         var responses = new[]
         {
             await admin.GetAsync(url, Ct),
-            await admin.PutAsJsonAsync(url, new UpdateLabTestRequest { Code = "X", Name = "X", Price = 1, LabCost = 1 }, Ct),
+            await admin.PutAsJsonAsync(url, new UpdateLabTestRequest { Code = "X", Name = "X", LabCost = 1 }, Ct),
             await admin.DeleteAsync(url, Ct),
         };
 
@@ -185,12 +182,12 @@ public class LabTestsTests(ApiFactory factory)
 
         var response = await admin.PutAsJsonAsync($"{Url}/{test.Id}", new UpdateLabTestRequest
         {
-            Code = newCode, Name = test.Name + " (fasting)", Price = 2500, LabCost = 1200, IsActive = false, Version = test.Version,
+            Code = newCode, Name = test.Name + " (fasting)", LabCost = 1200, IsActive = false, Version = test.Version,
         }, Ct);
         var updated = await response.Content.ReadFromJsonAsync<LabTestDto>(Ct);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal((newCode, test.Name + " (fasting)", 2500L, 1200L, false), (updated!.Code, updated.Name, updated.Price, updated.LabCost, updated.IsActive));
+        Assert.Equal((newCode, test.Name + " (fasting)", 1200L, false), (updated!.Code, updated.Name, updated.LabCost, updated.IsActive));
         Assert.Equal(test.Version + 1, updated.Version);
         Assert.Equal(TestUsers.Admin.Username, updated.UpdatedBy);
         Assert.NotNull(updated.UpdatedAt);
@@ -204,7 +201,7 @@ public class LabTestsTests(ApiFactory factory)
 
         var response = await admin.PutAsJsonAsync($"{Url}/{test.Id}", new UpdateLabTestRequest
         {
-            Code = test.Code, Name = test.Name, Price = test.Price + 100, LabCost = test.LabCost, Version = test.Version,
+            Code = test.Code, Name = test.Name, LabCost = test.LabCost + 100, Version = test.Version,
         }, Ct);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -215,10 +212,10 @@ public class LabTestsTests(ApiFactory factory)
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var test = await CreateAsync(admin);
-        var request = new UpdateLabTestRequest { Code = test.Code, Name = test.Name, Price = 1, LabCost = 1, Version = test.Version };
+        var request = new UpdateLabTestRequest { Code = test.Code, Name = test.Name, LabCost = 1, Version = test.Version };
         (await admin.PutAsJsonAsync($"{Url}/{test.Id}", request, Ct)).EnsureSuccessStatusCode();
 
-        var problem = await ProblemResponse.ReadAsync(await admin.PutAsJsonAsync($"{Url}/{test.Id}", request with { Price = 2 }, Ct));
+        var problem = await ProblemResponse.ReadAsync(await admin.PutAsJsonAsync($"{Url}/{test.Id}", request with { LabCost = 2 }, Ct));
 
         Assert.Equal(HttpStatusCode.Conflict, problem.Status);
         Assert.Equal(ErrorCodes.ConcurrencyConflict, problem.Code);
@@ -234,7 +231,7 @@ public class LabTestsTests(ApiFactory factory)
 
         Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, (await admin.GetAsync($"{Url}/{test.Id}", Ct)).StatusCode);
-        var again = await admin.PostAsJsonAsync(Url, new CreateLabTestRequest { Code = test.Code, Name = test.Name, Price = 1, LabCost = 1 }, Ct);
+        var again = await admin.PostAsJsonAsync(Url, new CreateLabTestRequest { Code = test.Code, Name = test.Name, LabCost = 1 }, Ct);
         Assert.Equal(HttpStatusCode.Created, again.StatusCode);
     }
 
@@ -294,7 +291,7 @@ public class LabTestsTests(ApiFactory factory)
         var retired = await CreateAsync(admin);
         (await admin.PutAsJsonAsync($"{Url}/{retired.Id}", new UpdateLabTestRequest
         {
-            Code = retired.Code, Name = retired.Name, Price = retired.Price, LabCost = retired.LabCost, IsActive = false, Version = retired.Version,
+            Code = retired.Code, Name = retired.Name, LabCost = retired.LabCost, IsActive = false, Version = retired.Version,
         }, Ct)).EnsureSuccessStatusCode();
 
         var onlyActive = await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?active=true&pageSize=100&search={active.Code}");
@@ -324,7 +321,7 @@ public class LabTestsTests(ApiFactory factory)
         var test = await CreateAsync(admin);
         await admin.PutAsJsonAsync($"{Url}/{test.Id}", new UpdateLabTestRequest
         {
-            Code = test.Code, Name = test.Name, Price = 1, LabCost = 1, Version = test.Version,
+            Code = test.Code, Name = test.Name, LabCost = 1, Version = test.Version,
         }, Ct);
         await admin.DeleteAsync($"{Url}/{test.Id}", Ct);
 
@@ -350,7 +347,7 @@ public class LabTestsTests(ApiFactory factory)
     {
         var code = UniqueCode();
         var response = await admin.PostAsJsonAsync(
-            Url, new CreateLabTestRequest { Code = code, Name = name ?? $"Test {Guid.NewGuid():N}", Price = 10000, LabCost = 6000 }, Ct);
+            Url, new CreateLabTestRequest { Code = code, Name = name ?? $"Test {Guid.NewGuid():N}", LabCost = 6000 }, Ct);
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<LabTestDto>(Ct))!;
     }

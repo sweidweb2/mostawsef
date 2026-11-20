@@ -152,11 +152,58 @@ public partial class OrderDetailsViewModel(
         var form = new AddPaymentFormViewModel(orders, dialogs, localization, order.Id, order.Balance);
         if (await dialogs.ShowFormAsync(form, localization.Get("OrderDetails.AddPaymentTitle")) && form.SavedValue is OrderDetailsDto updated)
         {
-            Order = updated;
-            LoadError = null;
-            WeakReferenceMessenger.Default.Send(new OrderChangedMessage(updated));
-            toasts.Success(localization.Get("OrderDetails.PaymentAdded"));
+            ApplyOrder(updated, "OrderDetails.PaymentAdded");
         }
+    }
+
+    [RelayCommand]
+    private async Task EditPaymentAsync(OrderPaymentDto? payment)
+    {
+        if (Order is not { } order || payment is null)
+        {
+            return;
+        }
+
+        var form = new AddPaymentFormViewModel(orders, dialogs, localization, order.Id, order.Balance, payment);
+        if (await dialogs.ShowFormAsync(form, localization.Get("OrderDetails.EditPaymentTitle")) && form.SavedValue is OrderDetailsDto updated)
+        {
+            ApplyOrder(updated, "OrderDetails.PaymentUpdated");
+        }
+    }
+
+    [RelayCommand]
+    private async Task DeletePaymentAsync(OrderPaymentDto? payment)
+    {
+        if (Order is not { } order || payment is null
+            || !await dialogs.ConfirmAsync(
+                localization.Get("OrderDetails.DeletePaymentConfirm"),
+                confirmText: localization.Get("Common.Delete"),
+                isDanger: true))
+        {
+            return;
+        }
+
+        var result = await orders.DeletePaymentAsync(order.Id, payment.Id);
+        if (!result.IsSuccess)
+        {
+            var code = result.Problem?.Code;
+            var codeKey = code is null ? null : "ErrorCode." + code;
+            toasts.Error(localization.Get(
+                result.Error == ApiError.Unreachable ? "Login.ServerUnreachable"
+                : codeKey is not null && localization.Get(codeKey) != codeKey ? codeKey
+                : "Error.RequestFailed"));
+            return;
+        }
+
+        ApplyOrder(result.Value!, "OrderDetails.PaymentDeleted");
+    }
+
+    private void ApplyOrder(OrderDetailsDto updated, string successKey)
+    {
+        Order = updated;
+        LoadError = null;
+        WeakReferenceMessenger.Default.Send(new OrderChangedMessage(updated));
+        toasts.Success(localization.Get(successKey));
     }
 
     [RelayCommand]

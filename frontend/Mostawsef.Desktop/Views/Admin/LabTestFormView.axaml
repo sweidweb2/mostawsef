@@ -23,28 +23,16 @@
                      PlaceholderText="{l:Tr LabTests.Field.CodePlaceholder}" />
         </ui:FormField>
 
-        <ui:ResponsiveGrid MinColumnWidth="180" MaxColumns="2" ColumnSpacing="{StaticResource GapGrid}" RowSpacing="{StaticResource GapGrid}">
-            <ui:FormField Label="{l:Tr LabTests.Col.Price}" IsRequired="True" Hint="{l:Tr LabTests.Field.PriceHint, Arg={Binding MaxAmount}}" Error="{l:FieldError {Binding Errors[Price]}}">
-                <NumericUpDown Name="PriceBox"
-                               Value="{Binding Price}"
-                               Minimum="0"
-                               Maximum="{Binding MaxAmount}"
-                               ClipValueToMinMax="True"
-                               FormatString="0.00"
-                               PlaceholderText="{l:Tr LabTests.Field.AmountPlaceholder}"
-                               HorizontalAlignment="Stretch" />
-            </ui:FormField>
-            <ui:FormField Label="{l:Tr LabTests.Col.LabCost}" IsRequired="True" Hint="{l:Tr LabTests.Field.LabCostHint}" Error="{l:FieldError {Binding Errors[LabCost]}}">
-                <NumericUpDown Name="LabCostBox"
-                               Value="{Binding LabCost}"
-                               Minimum="0"
-                               Maximum="{Binding MaxAmount}"
-                               ClipValueToMinMax="True"
-                               FormatString="0.00"
-                               PlaceholderText="{l:Tr LabTests.Field.AmountPlaceholder}"
-                               HorizontalAlignment="Stretch" />
-            </ui:FormField>
-        </ui:ResponsiveGrid>
+        <ui:FormField Label="{l:Tr LabTests.Col.LabCost}" IsRequired="True" Hint="{l:Tr LabTests.Field.LabCostHint, Arg={Binding MaxAmount}}" Error="{l:FieldError {Binding Errors[LabCost]}}">
+            <NumericUpDown Name="LabCostBox"
+                           Value="{Binding LabCost}"
+                           Minimum="0"
+                           Maximum="{Binding MaxAmount}"
+                           ClipValueToMinMax="True"
+                           FormatString="0.00"
+                           PlaceholderText="{l:Tr LabTests.Field.AmountPlaceholder}"
+                           HorizontalAlignment="Stretch" />
+        </ui:FormField>
 
         <CheckBox Name="IsActiveBox" Content="{l:Tr LabTests.Field.IsActive}" IsChecked="{Binding IsActive}" IsVisible="{Binding !IsNew}" />
     </StackPanel>

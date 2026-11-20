@@ -286,7 +286,6 @@
   <data name="Common.GridView" xml:space="preserve"><value>Show as cards</value></data>
   <data name="LabTests.Col.Code" xml:space="preserve"><value>Code</value></data>
   <data name="LabTests.Col.Name" xml:space="preserve"><value>Test name</value></data>
-  <data name="LabTests.Col.Price" xml:space="preserve"><value>Price</value></data>
   <data name="LabTests.Col.LabCost" xml:space="preserve"><value>Lab cost</value></data>
   <data name="LabTests.Col.Status" xml:space="preserve"><value>Status</value></data>
   <data name="LabTests.Active" xml:space="preserve"><value>Available</value></data>
@@ -297,8 +296,7 @@
   <data name="LabTests.Field.CodePlaceholder" xml:space="preserve"><value>e.g. CBC</value></data>
   <data name="LabTests.Field.AmountPlaceholder" xml:space="preserve"><value>0.00</value></data>
   <data name="LabTests.Field.CodeHint" xml:space="preserve"><value>Short and unique. Saved in capital letters.</value></data>
-  <data name="LabTests.Field.PriceHint" xml:space="preserve"><value>What the patient pays, up to {0}.</value></data>
-  <data name="LabTests.Field.LabCostHint" xml:space="preserve"><value>What the lab charges the clinic.</value></data>
+  <data name="LabTests.Field.LabCostHint" xml:space="preserve"><value>What the lab charges the clinic, up to {0}.</value></data>
   <data name="LabTests.Field.IsActive" xml:space="preserve"><value>Available for new orders</value></data>
   <data name="LabTests.Saved" xml:space="preserve"><value>Lab test saved.</value></data>
   <data name="LabTests.Deleted" xml:space="preserve"><value>Lab test deleted.</value></data>
@@ -388,7 +386,7 @@
   <data name="NewOrder.PaymentNotesPlaceholder" xml:space="preserve"><value>Optional, e.g. a receipt number</value></data>
   <data name="NewOrder.RemoveTest" xml:space="preserve"><value>Remove</value></data>
   <data name="NewOrder.Addon" xml:space="preserve"><value>Our price</value></data>
-  <data name="NewOrder.AddonHint" xml:space="preserve"><value>Added on top of the selected tests' total. Leave empty for none.</value></data>
+  <data name="NewOrder.AddonHint" xml:space="preserve"><value>What the clinic charges for this order. Leave empty for none.</value></data>
   <data name="NewOrder.NoTests" xml:space="preserve"><value>No tests yet</value></data>
   <data name="NewOrder.NoTestsHint" xml:space="preserve"><value>Click a test in the catalog to add it.</value></data>
   <data name="NewOrder.Total" xml:space="preserve"><value>Total</value></data>
@@ -397,7 +395,7 @@
   <data name="NewOrder.CatalogEmpty" xml:space="preserve"><value>No active test matches.</value></data>
   <data name="OrderDetails.Title" xml:space="preserve"><value>Order {0}</value></data>
   <data name="OrderDetails.Subtitle" xml:space="preserve"><value>The order's patient, amounts and tests.</value></data>
-  <data name="OrderDetails.Balance" xml:space="preserve"><value>Balance</value></data>
+  <data name="OrderDetails.Balance" xml:space="preserve"><value>Amount due</value></data>
   <data name="OrderDetails.Info" xml:space="preserve"><value>Order</value></data>
   <data name="OrderDetails.CreatedBy" xml:space="preserve"><value>Created by</value></data>
   <data name="OrderDetails.Payments" xml:space="preserve"><value>Payments ({0})</value></data>
@@ -408,17 +406,22 @@
   <data name="PaymentType.Refund" xml:space="preserve"><value>Refund</value></data>
   <data name="ErrorCode.exceeds_balance" xml:space="preserve"><value>The payment can't be more than what is still due.</value></data>
   <data name="Action.orders.payment_added" xml:space="preserve"><value>Order payment added</value></data>
+  <data name="Action.orders.payment_updated" xml:space="preserve"><value>Order payment updated</value></data>
+  <data name="Action.orders.payment_deleted" xml:space="preserve"><value>Order payment deleted</value></data>
   <data name="OrderDetails.AddPayment" xml:space="preserve"><value>Add payment</value></data>
   <data name="OrderDetails.AddPaymentTitle" xml:space="preserve"><value>Add a payment</value></data>
+  <data name="OrderDetails.EditPaymentTitle" xml:space="preserve"><value>Edit payment</value></data>
+  <data name="OrderDetails.DeletePaymentConfirm" xml:space="preserve"><value>Delete this payment?</value></data>
   <data name="OrderDetails.PaymentAdded" xml:space="preserve"><value>Payment added.</value></data>
+  <data name="OrderDetails.PaymentUpdated" xml:space="preserve"><value>Payment updated.</value></data>
+  <data name="OrderDetails.PaymentDeleted" xml:space="preserve"><value>Payment deleted.</value></data>
   <data name="OrderDetails.RefundNeeded" xml:space="preserve"><value>Needs a refund of {0}</value></data>
   <data name="OrderDetails.PrintInvoice" xml:space="preserve"><value>Print invoice</value></data>
   <data name="OrderDetails.ExportInvoice" xml:space="preserve"><value>Export invoice</value></data>
   <data name="Invoice.Title" xml:space="preserve"><value>Invoice</value></data>
   <data name="Invoice.BilledTo" xml:space="preserve"><value>BILLED TO</value></data>
   <data name="Invoice.Details" xml:space="preserve"><value>INVOICE DETAILS</value></data>
-  <data name="Invoice.TestsTotal" xml:space="preserve"><value>Tests subtotal</value></data>
-  <data name="Invoice.Addon" xml:space="preserve"><value>Additional charge</value></data>
+  <data name="Invoice.Addon" xml:space="preserve"><value>Our price</value></data>
   <data name="Invoice.BalanceDue" xml:space="preserve"><value>Balance due</value></data>
   <data name="Invoice.RefundDue" xml:space="preserve"><value>Refund due</value></data>
   <data name="Invoice.Payments" xml:space="preserve"><value>Payments received</value></data>

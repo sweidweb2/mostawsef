@@ -25,10 +25,10 @@ public class LabTestsPageTests : UiTestBase
     private const string TestsPath = "/api/lab-tests";
 
     private static readonly LabTestDto Cbc =
-        new(Guid.NewGuid(), "CBC", "Complete blood count", 15050, 9000, true, DateTime.UtcNow, null, null, 2);
+        new(Guid.NewGuid(), "CBC", "Complete blood count", 9000, true, DateTime.UtcNow, null, null, 2);
 
     private static readonly LabTestDto Sugar =
-        new(Guid.NewGuid(), "FBS", "تحليل السكر الصائم", 4000, 2500, false, DateTime.UtcNow, null, null, 0);
+        new(Guid.NewGuid(), "FBS", "تحليل السكر الصائم", 2500, false, DateTime.UtcNow, null, null, 0);
 
     [AvaloniaFact]
     public void Only_admins_can_open_the_lab_tests_page()
@@ -44,7 +44,7 @@ public class LabTestsPageTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task The_table_lists_each_test_with_its_prices_status_and_row_actions()
+    public async Task The_table_lists_each_test_with_its_lab_cost_status_and_row_actions()
     {
         using var app = AdminWithTests(Cbc, Sugar);
 
@@ -56,8 +56,9 @@ public class LabTestsPageTests : UiTestBase
         var texts = Texts(window);
         Assert.Contains("Complete blood count", texts);
         Assert.Contains("CBC", texts);
-        Assert.Contains("150.50", texts);
         Assert.Contains("90.00", texts);
+        Assert.Contains("25.00", texts);
+        Assert.DoesNotContain("150.50", texts);
         Assert.Contains("2 tests", texts);
         Assert.Contains("Unavailable", window.GetVisualDescendants().OfType<Badge>().Where(b => b.IsEffectivelyVisible).Select(b => b.Text));
         Assert.Equal(2, RowButtons(Table(window)).Count(b => b.Command == page.EditCommand));
@@ -83,9 +84,8 @@ public class LabTestsPageTests : UiTestBase
         Assert.All(cards, card =>
             Assert.Equal<object?>([page.EditCommand, page.DeleteCommand], RowButtons(card).Select(b => b.Command)));
         var cardTexts = cards.SelectMany(c => c.GetVisualDescendants().OfType<TextBlock>()).Select(t => t.Text).ToList();
-        Assert.Contains("150.50", cardTexts);
-        Assert.DoesNotContain("90.00", cardTexts);
-        Assert.DoesNotContain("Lab cost", cardTexts);
+        Assert.Contains("90.00", cardTexts);
+        Assert.Contains("25.00", cardTexts);
         Assert.Contains("selected", Named<Button>(window, "GridViewButton").Classes);
         Assert.DoesNotContain("selected", Named<Button>(window, "TableViewButton").Classes);
 
@@ -215,14 +215,14 @@ public class LabTestsPageTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task Edit_on_a_card_opens_the_form_filled_in_and_saves_prices_in_minor_units()
+    public async Task Edit_on_a_card_opens_the_form_filled_in_and_saves_the_lab_cost_in_minor_units()
     {
         using var app = AdminWithTests(Cbc);
         UpdateLabTestRequest? sent = null;
         app.Api.On(HttpMethod.Put, $"{TestsPath}/{Cbc.Id}", request =>
         {
             sent = request.Content!.ReadFromJsonAsync<UpdateLabTestRequest>().GetAwaiter().GetResult();
-            return FakeApiHandler.Json(Cbc with { Price = sent!.Price!.Value, Version = 3 });
+            return FakeApiHandler.Json(Cbc with { LabCost = sent!.LabCost!.Value, Version = 3 });
         });
         var (page, window) = await ShowPage(app);
         page.ShowGridCommand.Execute(null);
@@ -234,17 +234,17 @@ public class LabTestsPageTests : UiTestBase
         Dispatcher.UIThread.RunJobs();
         var form = CurrentForm(window);
         Assert.False(form.IsNew);
-        Assert.Equal(("CBC", "Complete blood count", 150.50m, 90.00m, true), (form.Code, form.Name, form.Price, form.LabCost, form.IsActive));
+        Assert.Equal(("CBC", "Complete blood count", 90.00m, true), (form.Code, form.Name, form.LabCost, form.IsActive));
         Assert.Equal("Edit lab test", window.GetVisualDescendants().OfType<Modal>().Single().Title);
         Assert.Empty(app.Api.RequestsTo(HttpMethod.Get, $"{TestsPath}/{Cbc.Id}"));
 
-        form.Price = 200.25m;
+        form.LabCost = 120.25m;
         form.IsActive = false;
         await form.SaveCommand.ExecuteAsync(null);
         Dispatcher.UIThread.RunJobs();
 
         Assert.Equal(
-            new UpdateLabTestRequest { Code = "CBC", Name = "Complete blood count", Price = 20025, LabCost = 9000, IsActive = false, Version = Cbc.Version },
+            new UpdateLabTestRequest { Code = "CBC", Name = "Complete blood count", LabCost = 12025, IsActive = false, Version = Cbc.Version },
             sent);
         Assert.Empty(window.GetVisualDescendants().OfType<Modal>());
         var reload = Assert.Single(app.Api.RequestsTo(HttpMethod.Get, TestsPath).Skip(listRequests));
@@ -265,10 +265,10 @@ public class LabTestsPageTests : UiTestBase
         Assert.Equal(ErrorCodes.Required, form.Errors[nameof(form.Code)]);
         Assert.Equal(ErrorCodes.Required, form.Errors[nameof(form.Name)]);
         Assert.Equal(ErrorCodes.Required, form.Errors[nameof(form.LabCost)]);
-        Assert.Equal("This field is required.", FieldError(window, "Price"));
+        Assert.Equal("This field is required.", FieldError(window, "Lab cost"));
         Assert.False(Named<CheckBox>(window, "IsActiveBox").IsEffectivelyVisible);
         app.Localization.SetLanguage(AppLanguage.Arabic);
-        Assert.Equal("هذا الحقل مطلوب.", FieldError(window, "السعر"));
+        Assert.Equal("هذا الحقل مطلوب.", FieldError(window, "تكلفة المعمل"));
         Assert.Empty(app.Api.RequestsTo(HttpMethod.Post, TestsPath));
     }
 
@@ -280,7 +280,6 @@ public class LabTestsPageTests : UiTestBase
         {
             Code = new string('C', LabTestRules.CodeMaxLength + 1),
             Name = new string('n', LabTestRules.NameMaxLength + 1),
-            Price = -1,
             LabCost = Money.ToMajor(LabTestRules.MaxAmount) + 1,
         };
 
@@ -288,7 +287,6 @@ public class LabTestsPageTests : UiTestBase
 
         Assert.Equal($"max_length|{LabTestRules.CodeMaxLength}", form.Errors[nameof(form.Code)]);
         Assert.Equal($"max_length|{LabTestRules.NameMaxLength}", form.Errors[nameof(form.Name)]);
-        Assert.Equal($"range|0|{LabTestRules.MaxAmount}", form.Errors[nameof(form.Price)]);
         Assert.Equal($"range|0|{LabTestRules.MaxAmount}", form.Errors[nameof(form.LabCost)]);
         Assert.Equal("This value is outside the allowed range.", app.Localization.Get("ErrorCode.range"));
         Assert.Empty(app.Api.RequestsTo(HttpMethod.Post, TestsPath));
@@ -303,25 +301,21 @@ public class LabTestsPageTests : UiTestBase
 
         var name = Named<TextBox>(window, "NameBox");
         var code = Named<TextBox>(window, "CodeBox");
-        var price = Named<NumericUpDown>(window, "PriceBox");
         var labCost = Named<NumericUpDown>(window, "LabCostBox");
         Assert.Equal(("e.g. Complete blood count", LabTestRules.NameMaxLength), (name.PlaceholderText, name.MaxLength));
         Assert.Equal(("e.g. CBC", LabTestRules.CodeMaxLength), (code.PlaceholderText, code.MaxLength));
-        Assert.All(new[] { price, labCost }, input =>
-        {
-            Assert.Equal("0.00", input.PlaceholderText);
-            Assert.Equal(0, input.Minimum);
-            Assert.Equal(Money.ToMajor(LabTestRules.MaxAmount), input.Maximum);
-        });
-        Assert.Contains("What the patient pays, up to 1000000.", window.GetVisualDescendants().OfType<FormField>().Select(f => f.Hint));
+        Assert.Equal("0.00", labCost.PlaceholderText);
+        Assert.Equal(0, labCost.Minimum);
+        Assert.Equal(Money.ToMajor(LabTestRules.MaxAmount), labCost.Maximum);
+        Assert.Contains("What the lab charges the clinic, up to 1000000.", window.GetVisualDescendants().OfType<FormField>().Select(f => f.Hint));
 
-        var typed = price.GetVisualDescendants().OfType<TextBox>().Single();
+        var typed = labCost.GetVisualDescendants().OfType<TextBox>().Single();
         typed.Focus();
         window.KeyTextInput("2000000");
         window.KeyPressQwerty(Avalonia.Input.PhysicalKey.Enter, Avalonia.Input.RawInputModifiers.None);
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal(Money.ToMajor(LabTestRules.MaxAmount), form.Price);
+        Assert.Equal(Money.ToMajor(LabTestRules.MaxAmount), form.LabCost);
     }
 
     [AvaloniaFact]
@@ -342,13 +336,12 @@ public class LabTestsPageTests : UiTestBase
         var form = CurrentForm(window);
         form.Code = " fbs ";
         form.Name = "  Fasting blood sugar ";
-        form.Price = 40;
         form.LabCost = 25.5m;
         await form.SaveCommand.ExecuteAsync(null);
         await add;
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal(new CreateLabTestRequest { Code = "fbs", Name = "Fasting blood sugar", Price = 4000, LabCost = 2550 }, sent);
+        Assert.Equal(new CreateLabTestRequest { Code = "fbs", Name = "Fasting blood sugar", LabCost = 2550 }, sent);
         Assert.Empty(window.GetVisualDescendants().OfType<Modal>());
         Assert.Equal(listRequests, app.Api.RequestsTo(HttpMethod.Get, TestsPath).Count());
         Assert.Contains(page.Items, t => t.Id == Sugar.Id);
@@ -365,7 +358,6 @@ public class LabTestsPageTests : UiTestBase
         var form = OpenAddForm(page, window);
         form.Code = "CBC";
         form.Name = "Blood count";
-        form.Price = 10;
         form.LabCost = 5;
 
         await form.SaveCommand.ExecuteAsync(null);

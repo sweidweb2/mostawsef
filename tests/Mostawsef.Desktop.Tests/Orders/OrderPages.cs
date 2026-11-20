@@ -22,11 +22,11 @@ internal static class OrderPages
     public const string TestsPath = "/api/lab-tests";
     public const string PatientsPath = "/api/patients";
 
-    public static readonly LabTestDto Cbc = new(Guid.NewGuid(), "CBC", "Complete blood count", 15000, 9000, true, DateTime.UtcNow, null, null, 0);
+    public static readonly LabTestDto Cbc = new(Guid.NewGuid(), "CBC", "Complete blood count", 15000, true, DateTime.UtcNow, null, null, 0);
 
-    public static readonly LabTestDto Sugar = new(Guid.NewGuid(), "GLU", "سكر صائم", 5000, 2000, true, DateTime.UtcNow, null, null, 0);
+    public static readonly LabTestDto Sugar = new(Guid.NewGuid(), "GLU", "سكر صائم", 5000, true, DateTime.UtcNow, null, null, 0);
 
-    public static readonly LabTestDto Retired = new(Guid.NewGuid(), "OLD", "Retired test", 1000, 500, false, DateTime.UtcNow, null, null, 0);
+    public static readonly LabTestDto Retired = new(Guid.NewGuid(), "OLD", "Retired test", 1000, false, DateTime.UtcNow, null, null, 0);
 
     public static readonly PatientDto Mona = new(
         Guid.NewGuid(), "Mona Adel", "010 1234 5678", null, null, false, Genders.Female, null, DateTime.UtcNow, null, null, 0);
@@ -40,11 +40,13 @@ internal static class OrderPages
     public static readonly OrderListItemDto Unpaid = new(
         Guid.NewGuid(), "ORD-000008", DateTime.UtcNow, "عمر خالد", "011 2222 3333", 1, 5000, 0, OrderStatuses.Pending);
 
+    public static readonly Guid PaymentId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+
     public static OrderDetailsDto Details(Guid id) => new(
         id, "ORD-000007", DateTime.UtcNow, "admin@test.local", Mona.Id, Mona.FullName, Mona.Phone, OrderStatuses.PartiallyPaid,
-        Currencies.Egp, 20000, 5000, 15000, 0L,
-        [new OrderItemDto(Cbc.Id, Cbc.Code, Cbc.Name, 15000), new OrderItemDto(Sugar.Id, Sugar.Code, Sugar.Name, 5000)],
-        [new OrderPaymentDto(DateTime.UtcNow, PaymentTypes.Payment, PaymentMethods.Cash, 5000, "Receipt 12")]);
+        Currencies.Egp, 20000, 5000, 15000, 20000L,
+        [new OrderItemDto(Cbc.Id, Cbc.Code, Cbc.Name, Cbc.LabCost), new OrderItemDto(Sugar.Id, Sugar.Code, Sugar.Name, Sugar.LabCost)],
+        [new OrderPaymentDto(PaymentId, DateTime.UtcNow, PaymentTypes.Payment, PaymentMethods.Cash, 5000, "Receipt 12")]);
 
     /// <summary>Signed in as Admin; the server knows two orders and a catalog of two active tests and one inactive.</summary>
     public static TestServices Admin(AppLanguage language = AppLanguage.English)

@@ -43,3 +43,6 @@ public record DashboardRangeDto(DateOnly From, DateOnly To, DateOnly FirstDate, 
 
 /// <summary>One graph point: the start of its hour, day or month (server local time) and the count in it.</summary>
 public record DashboardCountDto(DateTime Start, int Count);
+
+/// <summary>One money graph point: the start of its hour, day or month (server local time) and the amount in minor units.</summary>
+public record DashboardMoneyDto(DateTime Start, long Amount);

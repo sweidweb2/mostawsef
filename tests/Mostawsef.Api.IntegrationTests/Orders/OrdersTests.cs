@@ -24,12 +24,12 @@ public class OrdersTests(ApiFactory factory)
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     [Fact]
-    public async Task An_order_for_an_existing_patient_copies_the_patient_and_the_prices()
+    public async Task An_order_for_an_existing_patient_copies_the_patient_and_the_lab_costs()
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var patient = await CreatePatientAsync(admin);
-        var cbc = await CreateTestAsync(admin, price: 15000, labCost: 9000);
-        var sugar = await CreateTestAsync(admin, price: 5000, labCost: 2000);
+        var cbc = await CreateTestAsync(admin, labCost: 9000);
+        var sugar = await CreateTestAsync(admin, labCost: 2000);
         var currency = (await admin.GetJsonAsync<ClinicSettingsDto>("api/clinic-settings")).CurrencyCode;
 
         var response = await admin.PostAsJsonAsync(Url, new CreateOrderRequest
@@ -44,20 +44,20 @@ public class OrdersTests(ApiFactory factory)
         Assert.EndsWith($"{Url}/{order!.Id}", response.Headers.Location!.ToString());
         Assert.Matches(@"^ORD-\d{6,}$", order.Number);
         Assert.Equal((patient.Id, patient.FullName, patient.Phone), (order.PatientId, order.PatientName, order.PatientPhone));
-        Assert.Equal((OrderStatuses.Pending, currency, 23000L, 0L, 23000L, 3000L),
+        Assert.Equal((OrderStatuses.Pending, currency, 3000L, 0L, 3000L, 3000L),
             (order.Status, order.Currency, order.Total, order.Paid, order.Balance, order.Addon));
         Assert.Equal(TestUsers.Admin.Username, order.CreatedBy);
         Assert.Equal(
-            [new OrderItemDto(cbc.Id, cbc.Code, cbc.Name, 15000), new OrderItemDto(sugar.Id, sugar.Code, sugar.Name, 5000)],
+            [new OrderItemDto(cbc.Id, cbc.Code, cbc.Name, 9000), new OrderItemDto(sugar.Id, sugar.Code, sugar.Name, 2000)],
             order.Items);
         Assert.Equal(order, await admin.GetJsonAsync<OrderDetailsDto>($"{Url}/{order.Id}") with { CreatedAt = order.CreatedAt, Items = order.Items, Payments = order.Payments });
 
         await using var scope = factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var labPrices = await db.OrderItems
-            .Where(i => i.OrderId == order.Id).OrderByDescending(i => i.Price).Select(i => i.LabPrice).ToListAsync(Ct);
+            .Where(i => i.OrderId == order.Id).OrderByDescending(i => i.LabPrice).Select(i => i.LabPrice).ToListAsync(Ct);
         Assert.Equal([9000L, 2000L], labPrices);
-        Assert.Equal(23000L, await db.Orders.Where(o => o.Id == order.Id).Select(o => o.Total).SingleAsync(Ct));
+        Assert.Equal(3000L, await db.Orders.Where(o => o.Id == order.Id).Select(o => o.Total).SingleAsync(Ct));
     }
 
     [Theory]
@@ -67,21 +67,22 @@ public class OrdersTests(ApiFactory factory)
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var patient = await CreatePatientAsync(admin);
-        var test = await CreateTestAsync(admin, price: 10000);
+        var test = await CreateTestAsync(admin);
 
         var order = await CreateOrderAsync(admin, new CreateOrderRequest
         {
             PatientId = patient.Id,
             Items = [new() { LabTestId = test.Id }],
+            Addon = 10000,
             FirstPayment = new() { Amount = amount, Method = PaymentMethods.Card, Notes = " Visa " },
         });
 
-        Assert.Equal((status, amount, balance, 0L), (order.Status, order.Paid, order.Balance, order.Addon));
+        Assert.Equal((status, amount, balance, 10000L), (order.Status, order.Paid, order.Balance, order.Addon));
         var listed = (await admin.GetJsonAsync<PagedResult<OrderListItemDto>>($"{Url}?search={order.Number}")).Items.Single();
         Assert.Equal((1, 10000L, amount, status), (listed.TestsCount, listed.Total, listed.Paid, listed.Status));
 
         var reloaded = await admin.GetJsonAsync<OrderDetailsDto>($"{Url}/{order.Id}");
-        Assert.Equal((status, amount, balance, 0L, 1), (reloaded.Status, reloaded.Paid, reloaded.Balance, reloaded.Addon, reloaded.Items.Count));
+        Assert.Equal((status, amount, balance, 10000L, 1), (reloaded.Status, reloaded.Paid, reloaded.Balance, reloaded.Addon, reloaded.Items.Count));
         Assert.Equal(test.Code, reloaded.Items[0].Code);
         Assert.Equal(
             [(PaymentTypes.Payment, PaymentMethods.Card, amount, "Visa")],
@@ -95,15 +96,15 @@ public class OrdersTests(ApiFactory factory)
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var patient = await CreatePatientAsync(admin, phone: "01234567890");
-        var first = await CreateTestAsync(admin, price: 1500);
-        var second = await CreateTestAsync(admin, price: 2500);
-        var third = await CreateTestAsync(admin, price: 500);
+        var first = await CreateTestAsync(admin, labCost: 1500);
+        var second = await CreateTestAsync(admin, labCost: 2500);
+        var third = await CreateTestAsync(admin, labCost: 500);
 
         var order = await CreateOrderAsync(admin, new CreateOrderRequest
         {
             PatientId = patient.Id,
             Items = [new() { LabTestId = first.Id }, new() { LabTestId = second.Id }, new() { LabTestId = third.Id }],
-            Addon = 700,
+            Addon = 3000,
             FirstPayment = new() { Amount = 1000, Method = PaymentMethods.Cash },
         });
 
@@ -113,8 +114,8 @@ public class OrdersTests(ApiFactory factory)
         Assert.Equal(
             (details.Number, details.PatientName, details.PatientPhone, details.Items.Count, details.Total, details.Paid, details.Status),
             (listed.Number, listed.PatientName, listed.PatientPhone, listed.TestsCount, listed.Total, listed.Paid, listed.Status));
-        Assert.Equal(first.Price + second.Price + third.Price + 700, details.Total);
-        Assert.Equal(details.Items.Sum(i => i.Price) + details.Addon, details.Total);
+        Assert.Equal((3000L, 3000L), (details.Total, details.Addon));
+        Assert.Equal(first.LabCost + second.LabCost + third.LabCost, details.Items.Sum(i => i.LabCost));
     }
 
     [Fact]
@@ -151,7 +152,6 @@ public class OrdersTests(ApiFactory factory)
         {
             Code = test.Code,
             Name = $"Renamed {test.Code}",
-            Price = test.Price,
             LabCost = test.LabCost,
             IsActive = true,
             Version = test.Version,
@@ -330,7 +330,7 @@ public class OrdersTests(ApiFactory factory)
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var patient = await CreatePatientAsync(admin);
-        var test = await CreateTestAsync(admin, price: 10000);
+        var test = await CreateTestAsync(admin);
 
         var problem = await ProblemResponse.ReadAsync(await admin.PostAsJsonAsync(Url, ForPatient(patient.Id, test.Id) with
         {
@@ -342,17 +342,17 @@ public class OrdersTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task A_first_payment_may_cover_the_catalog_plus_addon()
+    public async Task A_first_payment_may_cover_the_whole_total()
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var patient = await CreatePatientAsync(admin);
-        var test = await CreateTestAsync(admin, price: 4000);
+        var test = await CreateTestAsync(admin);
 
         var order = await CreateOrderAsync(admin, new CreateOrderRequest
         {
             PatientId = patient.Id,
             Items = [new() { LabTestId = test.Id }],
-            Addon = 500,
+            Addon = 4500,
             FirstPayment = new() { Amount = 4500, Method = PaymentMethods.Cash },
         });
 
@@ -362,7 +362,7 @@ public class OrdersTests(ApiFactory factory)
         {
             PatientId = patient.Id,
             Items = [new() { LabTestId = test.Id }],
-            Addon = 500,
+            Addon = 4500,
             FirstPayment = new() { Amount = 4501, Method = PaymentMethods.Cash },
         }, Ct));
 
@@ -375,11 +375,12 @@ public class OrdersTests(ApiFactory factory)
     public async Task A_refused_order_saves_nothing_not_even_the_new_patient(bool inactiveTest)
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
-        var test = await CreateTestAsync(admin, price: 1000, isActive: !inactiveTest);
+        var test = await CreateTestAsync(admin, isActive: !inactiveTest);
         var request = new CreateOrderRequest
         {
             NewPatient = NewPatient(),
             Items = [new() { LabTestId = test.Id }],
+            Addon = 1000,
             FirstPayment = inactiveTest ? null : new() { Amount = 5000, Method = PaymentMethods.Cash },
         };
         var ordersBefore = await CountOrdersAsync();
@@ -444,7 +445,7 @@ public class OrdersTests(ApiFactory factory)
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var token = $"Statusfilter{Guid.NewGuid():N}";
         var patient = await CreatePatientAsync(admin, fullName: token);
-        var test = await CreateTestAsync(admin, price: 10000);
+        var test = await CreateTestAsync(admin);
         var unpaid = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id));
         var partly = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id) with { FirstPayment = new() { Amount = 100, Method = PaymentMethods.Cash } });
         var paid = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id) with { FirstPayment = new() { Amount = 10000, Method = PaymentMethods.Cash } });
@@ -472,7 +473,7 @@ public class OrdersTests(ApiFactory factory)
         var none = await CreatePatientAsync(admin, fullName: token + " none");
         var settled = await CreatePatientAsync(admin, fullName: token + " settled");
         var owing = await CreatePatientAsync(admin, fullName: token + " owing");
-        var test = await CreateTestAsync(admin, price: 10000);
+        var test = await CreateTestAsync(admin);
         await CreateOrderAsync(admin, ForPatient(settled.Id, test.Id) with { FirstPayment = new() { Amount = 10000, Method = PaymentMethods.Cash } });
         var open = await CreateOrderAsync(admin, ForPatient(owing.Id, test.Id) with { FirstPayment = new() { Amount = 100, Method = PaymentMethods.Cash } });
 
@@ -496,8 +497,8 @@ public class OrdersTests(ApiFactory factory)
         var url = $"{Url}/dashboard?from={today:yyyy-MM-dd}&to={today:yyyy-MM-dd}";
         var before = await admin.GetJsonAsync<OrderDashboardDto>(url);
         var patient = await CreatePatientAsync(admin);
-        var popular = await CreateTestAsync(admin, price: 10000);
-        var rare = await CreateTestAsync(admin, price: 10000);
+        var popular = await CreateTestAsync(admin);
+        var rare = await CreateTestAsync(admin);
         for (var i = 0; i < 3; i++)
         {
             await CreateOrderAsync(admin, ForPatient(patient.Id, popular.Id));
@@ -509,7 +510,9 @@ public class OrdersTests(ApiFactory factory)
 
         Assert.Equal((today, today, DashboardBuckets.Hour), (after.Range.From, after.Range.To, after.Range.Bucket));
         Assert.Equal(today, after.Range.Today);
+        Assert.False(string.IsNullOrWhiteSpace(after.Currency));
         Assert.Equal(Enumerable.Range(0, 24).Select(h => today.ToDateTime(TimeOnly.MinValue).AddHours(h)), after.Orders.Select(p => p.Start));
+        Assert.Equal(after.Orders.Select(p => p.Start), after.RevenuePoints.Select(p => p.Start));
         Assert.Equal(4, after.Orders.Sum(p => p.Count) - before.Orders.Sum(p => p.Count));
         Assert.Equal(4, after.Stats.Unpaid - before.Stats.Unpaid);
 
@@ -534,11 +537,36 @@ public class OrdersTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task The_dashboard_of_today_adds_revenue_and_outstanding_from_a_partial_payment()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        var url = $"{Url}/dashboard?from={today:yyyy-MM-dd}&to={today:yyyy-MM-dd}";
+        var before = await admin.GetJsonAsync<OrderDashboardDto>(url);
+        var patient = await CreatePatientAsync(admin);
+        var test = await CreateTestAsync(admin);
+
+        await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id) with
+        {
+            Addon = 5000,
+            FirstPayment = new() { Amount = 2000, Method = PaymentMethods.Cash },
+        });
+
+        var after = await admin.GetJsonAsync<OrderDashboardDto>(url);
+
+        Assert.False(string.IsNullOrWhiteSpace(after.Currency));
+        Assert.Equal(before.Revenue + 2000, after.Revenue);
+        Assert.Equal(before.Outstanding + 3000, after.Outstanding);
+        Assert.Equal(after.Revenue, after.RevenuePoints.Sum(p => p.Amount));
+        Assert.Equal(1, after.Stats.PartiallyPaid - before.Stats.PartiallyPaid);
+    }
+
+    [Fact]
     public async Task The_dashboard_period_stays_between_the_first_order_and_today_and_rejects_from_after_to()
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var patient = await CreatePatientAsync(admin);
-        var test = await CreateTestAsync(admin, price: 10000);
+        var test = await CreateTestAsync(admin);
         await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id));
 
         var wide = await admin.GetJsonAsync<OrderDashboardDto>($"{Url}/dashboard?from=2000-01-01&to=2999-12-31");
@@ -562,7 +590,7 @@ public class OrdersTests(ApiFactory factory)
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var first = await CreatePatientAsync(admin);
         var second = await CreatePatientAsync(admin);
-        var test = await CreateTestAsync(admin, price: 10000);
+        var test = await CreateTestAsync(admin);
         var a1 = await CreateOrderAsync(admin, ForPatient(first.Id, test.Id));
         var a2 = await CreateOrderAsync(admin, ForPatient(first.Id, test.Id));
         var b1 = await CreateOrderAsync(admin, ForPatient(second.Id, test.Id));
@@ -580,7 +608,7 @@ public class OrdersTests(ApiFactory factory)
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var patient = await CreatePatientAsync(admin);
-        var test = await CreateTestAsync(admin, price: 10000);
+        var test = await CreateTestAsync(admin);
         var order = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id) with
         {
             FirstPayment = new() { Amount = 2500, Method = PaymentMethods.Cash },
@@ -604,7 +632,7 @@ public class OrdersTests(ApiFactory factory)
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var patient = await CreatePatientAsync(admin);
-        var test = await CreateTestAsync(admin, price: 10000);
+        var test = await CreateTestAsync(admin);
         var order = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id) with
         {
             FirstPayment = new() { Amount = 4000, Method = PaymentMethods.Cash },
@@ -648,6 +676,100 @@ public class OrdersTests(ApiFactory factory)
         var response = await admin.PostAsJsonAsync($"{Url}/{orderId}/payments", request, Ct);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         return (await response.Content.ReadFromJsonAsync<OrderDetailsDto>(Ct))!;
+    }
+
+    [Fact]
+    public async Task Updating_a_payment_recalculates_paid_status_and_balance()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var patient = await CreatePatientAsync(admin);
+        var test = await CreateTestAsync(admin);
+        var order = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id) with
+        {
+            FirstPayment = new() { Amount = 4000, Method = PaymentMethods.Cash, Notes = "first" },
+        });
+        var paymentId = order.Payments.Single().Id;
+
+        var response = await admin.PutAsJsonAsync(
+            $"{Url}/{order.Id}/payments/{paymentId}",
+            new UpdatePaymentRequest { Amount = 10000, Method = PaymentMethods.Card, Notes = " settled " },
+            Ct);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var updated = (await response.Content.ReadFromJsonAsync<OrderDetailsDto>(Ct))!;
+
+        Assert.Equal((OrderStatuses.Paid, 10000L, 0L), (updated.Status, updated.Paid, updated.Balance));
+        Assert.Equal(
+            (paymentId, PaymentMethods.Card, 10000L, "settled"),
+            (updated.Payments.Single().Id, updated.Payments.Single().Method, updated.Payments.Single().Amount, updated.Payments.Single().Notes));
+
+        var over = await ProblemResponse.ReadAsync(await admin.PutAsJsonAsync(
+            $"{Url}/{order.Id}/payments/{paymentId}",
+            new UpdatePaymentRequest { Amount = 10001, Method = PaymentMethods.Cash },
+            Ct));
+        Assert.Equal(HttpStatusCode.BadRequest, over.Status);
+        Assert.Equal([ErrorCodes.ExceedsBalance], over.Errors["Amount"]);
+    }
+
+    [Fact]
+    public async Task Deleting_a_payment_recalculates_paid_status_and_balance()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var patient = await CreatePatientAsync(admin);
+        var test = await CreateTestAsync(admin);
+        var order = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id) with
+        {
+            FirstPayment = new() { Amount = 2500, Method = PaymentMethods.Cash },
+        });
+        var second = await PayAsync(admin, order.Id, new() { Amount = 3000, Method = PaymentMethods.Card });
+        var firstId = second.Payments[0].Id;
+        var secondId = second.Payments[1].Id;
+
+        var afterDelete = await admin.DeleteAsync($"{Url}/{order.Id}/payments/{firstId}", Ct);
+        Assert.Equal(HttpStatusCode.OK, afterDelete.StatusCode);
+        var remaining = (await afterDelete.Content.ReadFromJsonAsync<OrderDetailsDto>(Ct))!;
+
+        Assert.Equal((OrderStatuses.PartiallyPaid, 3000L, 7000L), (remaining.Status, remaining.Paid, remaining.Balance));
+        Assert.Equal([secondId], remaining.Payments.Select(p => p.Id).ToList());
+
+        var cleared = await admin.DeleteAsync($"{Url}/{order.Id}/payments/{secondId}", Ct);
+        Assert.Equal(HttpStatusCode.OK, cleared.StatusCode);
+        var unpaid = (await cleared.Content.ReadFromJsonAsync<OrderDetailsDto>(Ct))!;
+        Assert.Equal((OrderStatuses.Pending, 0L, 10000L), (unpaid.Status, unpaid.Paid, unpaid.Balance));
+        Assert.Empty(unpaid.Payments);
+
+        var listed = (await admin.GetJsonAsync<PagedResult<OrderListItemDto>>($"{Url}?search={order.Number}")).Items.Single();
+        Assert.Equal((0L, OrderStatuses.Pending), (listed.Paid, listed.Status));
+    }
+
+    [Fact]
+    public async Task Updating_or_deleting_a_payment_needs_an_existing_order_payment_and_the_admin_role()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var patient = await CreatePatientAsync(admin);
+        var test = await CreateTestAsync(admin);
+        var order = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id) with
+        {
+            FirstPayment = new() { Amount = 1000, Method = PaymentMethods.Cash },
+        });
+        var paymentId = order.Payments.Single().Id;
+
+        var missingPayment = await ProblemResponse.ReadAsync(await admin.PutAsJsonAsync(
+            $"{Url}/{order.Id}/payments/{Guid.NewGuid()}",
+            new UpdatePaymentRequest { Amount = 500, Method = PaymentMethods.Cash },
+            Ct));
+        Assert.Equal((HttpStatusCode.NotFound, ErrorCodes.NotFound), (missingPayment.Status, missingPayment.Code));
+
+        var missingOrder = await ProblemResponse.ReadAsync(await admin.DeleteAsync(
+            $"{Url}/{Guid.NewGuid()}/payments/{paymentId}", Ct));
+        Assert.Equal((HttpStatusCode.NotFound, ErrorCodes.NotFound), (missingOrder.Status, missingOrder.Code));
+
+        var super = await factory.CreateClientAsAsync(TestUsers.Super);
+        Assert.Equal(HttpStatusCode.Forbidden, (await super.PutAsJsonAsync(
+            $"{Url}/{order.Id}/payments/{paymentId}",
+            new UpdatePaymentRequest { Amount = 500, Method = PaymentMethods.Cash },
+            Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await super.DeleteAsync(
+            $"{Url}/{order.Id}/payments/{paymentId}", Ct)).StatusCode);
     }
 
     [Fact]
@@ -752,7 +874,7 @@ public class OrdersTests(ApiFactory factory)
     }
 
     private static CreateOrderRequest ForPatient(Guid patientId, Guid testId) =>
-        new() { PatientId = patientId, Items = [new() { LabTestId = testId }] };
+        new() { PatientId = patientId, Items = [new() { LabTestId = testId }], Addon = 10000 };
 
     private static async Task<OrderDetailsDto> CreateOrderAsync(HttpClient admin, CreateOrderRequest request)
     {
@@ -768,11 +890,11 @@ public class OrdersTests(ApiFactory factory)
         return (await response.Content.ReadFromJsonAsync<PatientDto>(Ct))!;
     }
 
-    private static async Task<LabTestDto> CreateTestAsync(HttpClient admin, long price = 1000, long labCost = 500, bool isActive = true)
+    private static async Task<LabTestDto> CreateTestAsync(HttpClient admin, long labCost = 500, bool isActive = true)
     {
         var code = $"T{Guid.NewGuid():N}"[..12].ToUpperInvariant();
         var response = await admin.PostAsJsonAsync(
-            "api/lab-tests", new CreateLabTestRequest { Code = code, Name = $"Test {code}", Price = price, LabCost = labCost }, Ct);
+            "api/lab-tests", new CreateLabTestRequest { Code = code, Name = $"Test {code}", LabCost = labCost }, Ct);
         response.EnsureSuccessStatusCode();
         var test = (await response.Content.ReadFromJsonAsync<LabTestDto>(Ct))!;
         if (isActive)
@@ -782,7 +904,7 @@ public class OrdersTests(ApiFactory factory)
 
         var update = await admin.PutAsJsonAsync($"api/lab-tests/{test.Id}", new UpdateLabTestRequest
         {
-            Code = test.Code, Name = test.Name, Price = test.Price, LabCost = test.LabCost, IsActive = false, Version = test.Version,
+            Code = test.Code, Name = test.Name, LabCost = test.LabCost, IsActive = false, Version = test.Version,
         }, Ct);
         update.EnsureSuccessStatusCode();
         return (await update.Content.ReadFromJsonAsync<LabTestDto>(Ct))!;

@@ -34,11 +34,11 @@ public record OrderDetailsRow(
     IReadOnlyList<OrderItemRow> Items,
     IReadOnlyList<OrderPaymentRow> Payments);
 
-public record OrderItemRow(Guid LabTestId, string Code, string Name, long Price);
+public record OrderItemRow(Guid LabTestId, string Code, string Name, long LabCost);
 
 public record TopTestRow(Guid LabTestId, string Code, string Name, int Count);
 
-public record OrderPaymentRow(DateTime PaidAt, PaymentType Type, PaymentMethod Method, long Amount, string? Notes);
+public record OrderPaymentRow(Guid Id, DateTime PaidAt, PaymentType Type, PaymentMethod Method, long Amount, string? Notes);
 
 /// <summary>Optional narrowing of the orders list: one status and/or one patient's orders.</summary>
 public record OrderListFilter(OrderStatus? Status, Guid? PatientId);
@@ -59,6 +59,18 @@ public interface IOrderRepository
     Task<IReadOnlyList<HourlyValue>> GetCreatedPerHourAsync(DateTime sinceUtc, DateTime untilUtc, CancellationToken cancellationToken);
 
     /// <summary>
+    /// What pending and partly paid orders created in [<paramref name="sinceUtc"/>, <paramref name="untilUtc"/>) still owe
+    /// (Total − Paid), in minor units.
+    /// </summary>
+    Task<long> GetOutstandingAsync(DateTime sinceUtc, DateTime untilUtc, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Net payments per UTC hour in [<paramref name="sinceUtc"/>, <paramref name="untilUtc"/>) (payments minus refunds by
+    /// PaidAt); hours without payments are absent. Values are minor units (refunds are negative).
+    /// </summary>
+    Task<IReadOnlyList<HourlyValue>> GetRevenuePerHourAsync(DateTime sinceUtc, DateTime untilUtc, CancellationToken cancellationToken);
+
+    /// <summary>
     /// The most ordered tests on orders created in [<paramref name="sinceUtc"/>, <paramref name="untilUtc"/>), most first
     /// (ties by name): order lines of cancelled and refunded orders are not counted.
     /// </summary>
@@ -72,6 +84,9 @@ public interface IOrderRepository
 
     /// <summary>Marks a payment added to an already saved order as new (its id is set up front, so it is not found by tracking).</summary>
     void AddPayment(Payment payment);
+
+    /// <summary>Marks a payment removed from an order for hard delete.</summary>
+    void RemovePayment(Payment payment);
 
     void Add(Order order);
 

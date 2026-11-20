@@ -211,9 +211,6 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
 
-                    b.Property<long>("Price")
-                        .HasColumnType("bigint");
-
                     b.Property<string>("SearchName")
                         .IsRequired()
                         .HasMaxLength(150)
@@ -389,9 +386,6 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
 
                     b.Property<Guid>("OrderId")
                         .HasColumnType("uuid");
-
-                    b.Property<long>("Price")
-                        .HasColumnType("bigint");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");

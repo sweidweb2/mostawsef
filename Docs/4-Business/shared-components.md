@@ -76,7 +76,7 @@ Usage namespace: `xmlns:ui="using:Mostawsef.Desktop.Components"`.
 | DetailsView (label/value pairs) | Built | `ui:DetailsView` + `ui:DetailsItem Label Value` (`IsCode` for JSON / stack traces) |
 | Badge / StatusTag | Built | `ui:Badge Text="Paid" Kind="Success"` (`Neutral`, `Primary`, `Success`, `Warning`, `Danger`, `Info`) |
 | Avatar | Built | `ui:Avatar` (initials or image); `MaxInitials="1"` for the first letter only, `IsColorful="True"` for one of five tones picked from the name (same name, same color), e.g. beside patient names |
-| StatCard (dashboard numbers) | Built | `ui:StatCard Title Value Caption Icon Kind` |
+| StatCard (dashboard numbers) | Built | `ui:StatCard Title Value Caption Icon Kind` (Kind tints the icon tile and the left accent stripe) |
 | Chart | Deferred | |
 | Timeline (patient history) | Deferred | |
 | Calendar / Scheduler (appointments) | Deferred | Removed while unused (day / week `Scheduler`) |

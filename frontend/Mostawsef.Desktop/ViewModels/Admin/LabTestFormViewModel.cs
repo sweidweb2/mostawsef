@@ -10,7 +10,7 @@ using Mostawsef.Desktop.ViewModels.Shell;
 
 namespace Mostawsef.Desktop.ViewModels.Admin;
 
-/// <summary>Create a lab test (no <paramref name="existing"/>) or edit one. Prices are typed in currency units.</summary>
+/// <summary>Create a lab test (no <paramref name="existing"/>) or edit one. Lab cost is typed in currency units.</summary>
 public partial class LabTestFormViewModel : FormViewModel
 {
     private readonly LabTestsApi _tests;
@@ -26,7 +26,6 @@ public partial class LabTestFormViewModel : FormViewModel
         {
             Code = existing.Code;
             Name = existing.Name;
-            Price = Money.ToMajor(existing.Price);
             LabCost = Money.ToMajor(existing.LabCost);
             IsActive = existing.IsActive;
         }
@@ -36,7 +35,7 @@ public partial class LabTestFormViewModel : FormViewModel
 
     public bool IsNew => _existing is null;
 
-    /// <summary>Highest price the inputs accept, in currency units.</summary>
+    /// <summary>Highest amount the input accepts, in currency units.</summary>
     public decimal MaxAmount { get; } = Money.ToMajor(LabTestRules.MaxAmount);
 
     [ObservableProperty]
@@ -46,21 +45,17 @@ public partial class LabTestFormViewModel : FormViewModel
     public partial string Name { get; set; } = string.Empty;
 
     [ObservableProperty]
-    public partial decimal? Price { get; set; }
-
-    [ObservableProperty]
     public partial decimal? LabCost { get; set; }
 
     [ObservableProperty]
     public partial bool IsActive { get; set; } = true;
 
     protected override object BuildRequest() => _existing is null
-        ? new CreateLabTestRequest { Code = Code.Trim(), Name = Name.Trim(), Price = ToMinor(Price), LabCost = ToMinor(LabCost) }
+        ? new CreateLabTestRequest { Code = Code.Trim(), Name = Name.Trim(), LabCost = ToMinor(LabCost) }
         : new UpdateLabTestRequest
         {
             Code = Code.Trim(),
             Name = Name.Trim(),
-            Price = ToMinor(Price),
             LabCost = ToMinor(LabCost),
             IsActive = IsActive,
             Version = _existing.Version,

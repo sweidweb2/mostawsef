@@ -221,14 +221,10 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
 
     public decimal MaxAddon { get; } = Money.ToMajor(OrderRules.MaxAddon);
 
-    private long _catalogTotal;
-
-    public long CatalogTotal => _catalogTotal;
-
     [ObservableProperty]
     public partial decimal? Addon { get; set; }
 
-    public long Total => _catalogTotal + (Addon is { } price ? Money.ToMinor(price) : 0);
+    public long Total => Addon is { } price ? Money.ToMinor(price) : 0;
 
     public decimal MaxPayableAmount => Money.ToMajor(Math.Min(Total, OrderRules.MaxPaymentAmount));
 
@@ -793,19 +789,8 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
 
     private void NotifyTestsInputsChanged()
     {
-        long total = 0;
-        foreach (var test in SelectedTests)
-        {
-            total += test.Test.Price;
-        }
-
-        _catalogTotal = total;
         OnPropertyChanged(nameof(HasSelectedTests));
         OnPropertyChanged(nameof(IsTestsSatisfied));
-        OnPropertyChanged(nameof(CatalogTotal));
-        OnPropertyChanged(nameof(Total));
-        OnPropertyChanged(nameof(MaxPayableAmount));
-        OnPropertyChanged(nameof(Remaining));
         Errors.Clear(nameof(SelectedTests));
         if (IsTestsSatisfied)
         {

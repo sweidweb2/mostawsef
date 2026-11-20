@@ -52,6 +52,8 @@ public static class ActivityActions
 
     public const string OrderCreated = "orders.created";
     public const string OrderPaymentAdded = "orders.payment_added";
+    public const string OrderPaymentUpdated = "orders.payment_updated";
+    public const string OrderPaymentDeleted = "orders.payment_deleted";
 
     public const string BackupCreated = "backups.created";
     public const string BackupExported = "backups.exported";

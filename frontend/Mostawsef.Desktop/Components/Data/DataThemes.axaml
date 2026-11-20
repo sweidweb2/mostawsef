@@ -170,45 +170,56 @@
         <Setter Property="Background" Value="{DynamicResource BrushSurface}" />
         <Setter Property="Template">
             <ControlTemplate>
-                <Border Padding="{StaticResource PaddingCard}"
-                        Background="{TemplateBinding Background}"
+                <Border Background="{TemplateBinding Background}"
                         BorderBrush="{DynamicResource BrushBorder}"
                         BorderThickness="{StaticResource BorderWidth}"
                         CornerRadius="{StaticResource RadiusLg}"
-                        BoxShadow="{DynamicResource ShadowSm}">
-                    <Grid ColumnDefinitions="Auto,*">
-                        <Border Name="PART_IconTile"
-                                Width="44"
-                                Margin="0,0,16,0"
-                                IsVisible="{TemplateBinding Icon, Converter={x:Static ObjectConverters.IsNotNull}}"
-                                Height="44"
-                                CornerRadius="{StaticResource RadiusMd}"
-                                Background="{DynamicResource BrushPrimarySubtle}"
-                                VerticalAlignment="Top">
-                            <PathIcon Name="PART_Icon"
-                                      Data="{TemplateBinding Icon}"
-                                      Width="{StaticResource IconSize}"
-                                      Height="{StaticResource IconSize}"
-                                      Foreground="{DynamicResource BrushPrimary}" />
-                        </Border>
-                        <StackPanel Grid.Column="1" Spacing="{StaticResource Space1}" VerticalAlignment="Center">
-                            <TextBlock Classes="caption muted" Text="{TemplateBinding Title}" TextTrimming="CharacterEllipsis" />
-                            <TextBlock Classes="h2" Text="{TemplateBinding Value}" />
-                            <TextBlock Classes="caption muted"
-                                       Text="{TemplateBinding Caption}"
-                                       TextWrapping="Wrap"
-                                       IsVisible="{TemplateBinding Caption, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                        </StackPanel>
+                        BoxShadow="{DynamicResource ShadowSm}"
+                        ClipToBounds="True">
+                    <Grid ColumnDefinitions="4,*">
+                        <Border Name="PART_Accent" Background="{DynamicResource BrushPrimary}" />
+                        <Grid Grid.Column="1"
+                              Margin="{StaticResource PaddingCard}"
+                              ColumnDefinitions="Auto,*">
+                            <Border Name="PART_IconTile"
+                                    Width="44"
+                                    Margin="0,0,16,0"
+                                    IsVisible="{TemplateBinding Icon, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                    Height="44"
+                                    CornerRadius="{StaticResource RadiusMd}"
+                                    Background="{DynamicResource BrushPrimarySubtle}"
+                                    VerticalAlignment="Top">
+                                <PathIcon Name="PART_Icon"
+                                          Data="{TemplateBinding Icon}"
+                                          Width="{StaticResource IconSize}"
+                                          Height="{StaticResource IconSize}"
+                                          Foreground="{DynamicResource BrushPrimary}" />
+                            </Border>
+                            <StackPanel Grid.Column="1" Spacing="{StaticResource Space1}" VerticalAlignment="Center">
+                                <TextBlock Classes="caption muted" Text="{TemplateBinding Title}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Classes="h2" Text="{TemplateBinding Value}" />
+                                <TextBlock Classes="caption muted"
+                                           Text="{TemplateBinding Caption}"
+                                           TextWrapping="Wrap"
+                                           IsVisible="{TemplateBinding Caption, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                            </StackPanel>
+                        </Grid>
                     </Grid>
                 </Border>
             </ControlTemplate>
         </Setter>
 
+        <Style Selector="^:success /template/ Border#PART_Accent">
+            <Setter Property="Background" Value="{DynamicResource BrushSuccess}" />
+        </Style>
         <Style Selector="^:success /template/ Border#PART_IconTile">
             <Setter Property="Background" Value="{DynamicResource BrushSuccessSubtle}" />
         </Style>
         <Style Selector="^:success /template/ PathIcon#PART_Icon">
             <Setter Property="Foreground" Value="{DynamicResource BrushSuccess}" />
+        </Style>
+        <Style Selector="^:warning /template/ Border#PART_Accent">
+            <Setter Property="Background" Value="{DynamicResource BrushWarning}" />
         </Style>
         <Style Selector="^:warning /template/ Border#PART_IconTile">
             <Setter Property="Background" Value="{DynamicResource BrushWarningSubtle}" />
@@ -216,11 +227,17 @@
         <Style Selector="^:warning /template/ PathIcon#PART_Icon">
             <Setter Property="Foreground" Value="{DynamicResource BrushWarning}" />
         </Style>
+        <Style Selector="^:danger /template/ Border#PART_Accent">
+            <Setter Property="Background" Value="{DynamicResource BrushDanger}" />
+        </Style>
         <Style Selector="^:danger /template/ Border#PART_IconTile">
             <Setter Property="Background" Value="{DynamicResource BrushDangerSubtle}" />
         </Style>
         <Style Selector="^:danger /template/ PathIcon#PART_Icon">
             <Setter Property="Foreground" Value="{DynamicResource BrushDanger}" />
+        </Style>
+        <Style Selector="^:info /template/ Border#PART_Accent">
+            <Setter Property="Background" Value="{DynamicResource BrushInfo}" />
         </Style>
         <Style Selector="^:info /template/ Border#PART_IconTile">
             <Setter Property="Background" Value="{DynamicResource BrushInfoSubtle}" />

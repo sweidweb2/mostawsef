@@ -15,7 +15,7 @@ public class LabTestRepository(AppDbContext db) : ILabTestRepository
         db.LabTests.AsNoTracking()
             .Where(t => t.Id == id)
             .Select(t => new LabTestListRow(
-                t.Id, t.Code, t.Name, t.Price, t.LabCost, t.IsActive, t.CreatedAt, t.UpdatedAt, t.UpdatedBy, t.Version))
+                t.Id, t.Code, t.Name, t.LabCost, t.IsActive, t.CreatedAt, t.UpdatedAt, t.UpdatedBy, t.Version))
             .FirstOrDefaultAsync(cancellationToken);
 
     public async Task<(LabTest? Test, bool IsUsed)> GetWithUsageAsync(Guid id, CancellationToken cancellationToken)
@@ -60,7 +60,7 @@ public class LabTestRepository(AppDbContext db) : ILabTestRepository
             .OrderBy(t => t.SearchName)
             .ThenBy(t => t.Code)
             .Select(t => new LabTestListRow(
-                t.Id, t.Code, t.Name, t.Price, t.LabCost, t.IsActive, t.CreatedAt, t.UpdatedAt, t.UpdatedBy, t.Version));
+                t.Id, t.Code, t.Name, t.LabCost, t.IsActive, t.CreatedAt, t.UpdatedAt, t.UpdatedBy, t.Version));
 
         return await rows.ToPageAsync(tests, query, cancellationToken);
     }
@@ -70,7 +70,7 @@ public class LabTestRepository(AppDbContext db) : ILabTestRepository
             .OrderBy(t => t.SearchName)
             .ThenBy(t => t.Code)
             .Take(PageQuery.MaxExportRows)
-            .Select(t => new LabTestExportRow(t.Id, t.Code, t.Name, t.Price, t.LabCost, t.IsActive))
+            .Select(t => new LabTestExportRow(t.Id, t.Code, t.Name, t.LabCost, t.IsActive))
             .ToListAsync(cancellationToken);
 
     public void Add(LabTest test) => db.LabTests.Add(test);

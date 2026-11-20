@@ -17,7 +17,7 @@ public static class OrderRules
     /// <summary>10,000,000.00 in the clinic currency.</summary>
     public const long MaxPaymentAmount = 1_000_000_000;
 
-    /// <summary>Same ceiling as a payment: the optional amount added on top of the catalog.</summary>
+    /// <summary>Same ceiling as a payment: the clinic's charge for the order ("our price").</summary>
     public const long MaxAddon = MaxPaymentAmount;
 }
 
@@ -66,13 +66,19 @@ public record OrderStatsDto(int Paid, int PartiallyPaid, int Unpaid)
 public record TopTestDto(Guid LabTestId, string Code, string Name, int Count);
 
 /// <summary>
-/// The Admin dashboard for one period (GET api/orders/dashboard): orders created in it by payment state, orders per
-/// hour/day/month (every bucket listed, zero included) and the <see cref="OrderDashboardRules.TopTests"/> most ordered tests.
+/// The Admin dashboard for one period (GET api/orders/dashboard). Money values are minor units of <see cref="Currency"/>.
+/// For the period: Stats and Orders count orders created in it, Revenue is payments minus refunds made in it,
+/// Outstanding is what its pending and partly paid orders still owe, RevenuePoints lists every bucket (zero included)
+/// and TopTests the <see cref="OrderDashboardRules.TopTests"/> most ordered tests.
 /// </summary>
 public record OrderDashboardDto(
+    string Currency,
     DashboardRangeDto Range,
     OrderStatsDto Stats,
+    long Revenue,
+    long Outstanding,
     IReadOnlyList<DashboardCountDto> Orders,
+    IReadOnlyList<DashboardMoneyDto> RevenuePoints,
     IReadOnlyList<TopTestDto> TopTests);
 
 public static class OrderDashboardRules
@@ -81,7 +87,8 @@ public static class OrderDashboardRules
     public const int TopTests = 20;
 }
 
-public record OrderItemDto(Guid LabTestId, string Code, string Name, long Price);
+/// <param name="LabCost">Lab cost snapshot at order time (what the lab charges the clinic).</param>
+public record OrderItemDto(Guid LabTestId, string Code, string Name, long LabCost);
 
 /// <summary>Payment types. The desktop shows "PaymentType.&lt;value&gt;".</summary>
 public static class PaymentTypes
@@ -92,9 +99,9 @@ public static class PaymentTypes
 
 /// <param name="Type">One of <see cref="PaymentTypes"/>.</param>
 /// <param name="Method">One of <see cref="PaymentMethods"/>.</param>
-public record OrderPaymentDto(DateTime PaidAt, string Type, string Method, long Amount, string? Notes);
+public record OrderPaymentDto(Guid Id, DateTime PaidAt, string Type, string Method, long Amount, string? Notes);
 
-/// <param name="Addon">Amount added on top of the tests' catalog prices when the order was created; 0 if none.</param>
+/// <param name="Addon">What the clinic charged for the order ("our price"); equals <see cref="OrderDetailsDto.Total"/>.</param>
 public record OrderDetailsDto(
     Guid Id,
     string Number,
@@ -127,7 +134,7 @@ public record CreateOrderRequest
     [MaxLength(OrderRules.MaxItems, ErrorMessage = ErrorCodes.MaxLength)]
     public IReadOnlyList<CreateOrderItemRequest> Items { get; init; } = [];
 
-    /// <summary>Optional amount added on top of the selected tests' catalog prices; null or 0 charges the catalog total only.</summary>
+    /// <summary>What the clinic charges for the order ("our price"); null or 0 means a free order.</summary>
     [Range(0, OrderRules.MaxAddon, ErrorMessage = ErrorCodes.Range)]
     public long? Addon { get; init; }
 
@@ -143,6 +150,21 @@ public record CreateOrderItemRequest
 
 /// <summary>An additional payment on an existing order, in the order currency. At most what the order still owes.</summary>
 public record AddPaymentRequest
+{
+    [Required(ErrorMessage = ErrorCodes.Required)]
+    [Range(1, OrderRules.MaxPaymentAmount, ErrorMessage = ErrorCodes.Range)]
+    public long? Amount { get; init; }
+
+    [Required(ErrorMessage = ErrorCodes.Required)]
+    [AllowedValues(PaymentMethods.Cash, PaymentMethods.Card, PaymentMethods.Transfer, PaymentMethods.Insurance, ErrorMessage = ErrorCodes.Invalid)]
+    public string Method { get; init; } = PaymentMethods.Cash;
+
+    [MaxLength(OrderRules.PaymentNotesMaxLength, ErrorMessage = ErrorCodes.MaxLength)]
+    public string? Notes { get; init; }
+}
+
+/// <summary>Edits an existing payment; for a Payment-type row the amount may be at most the balance plus that row's current amount.</summary>
+public record UpdatePaymentRequest
 {
     [Required(ErrorMessage = ErrorCodes.Required)]
     [Range(1, OrderRules.MaxPaymentAmount, ErrorMessage = ErrorCodes.Range)]

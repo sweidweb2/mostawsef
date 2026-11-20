@@ -14,7 +14,6 @@ public class LabTestConfiguration : IEntityTypeConfiguration<LabTest>
         builder.Property(t => t.Code).HasMaxLength(LabTest.CodeMaxLength).IsRequired();
         builder.Property(t => t.Name).HasMaxLength(LabTest.NameMaxLength).IsRequired();
         builder.Property(t => t.SearchName).HasMaxLength(LabTest.NameMaxLength).IsRequired();
-        builder.Property(t => t.Price).IsRequired();
         builder.Property(t => t.LabCost).IsRequired();
         builder.Property(t => t.IsActive).IsRequired();
 

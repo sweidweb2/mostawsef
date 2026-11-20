@@ -10,7 +10,7 @@ namespace Mostawsef.Desktop.Services.Printing;
 
 /// <summary>
 /// An order's invoice on the shared clinic page: a title block (invoice number, date, status), who it is billed to,
-/// the tests with their prices, the totals (what is owed, paid and still due) and the payments received.
+/// the tests, the totals (what is owed, paid and still due) and the payments received.
 /// Amounts use the order's own currency, so an old invoice never changes with the clinic's settings.
 /// </summary>
 public sealed class InvoiceDocument(PrintContext context, OrderDetailsDto order) : IDocument
@@ -104,7 +104,6 @@ public sealed class InvoiceDocument(PrintContext context, OrderDetailsDto order)
                 columns.ConstantColumn(28);
                 columns.RelativeColumn(2);
                 columns.RelativeColumn(6);
-                columns.RelativeColumn(2.5f);
             });
 
             table.Header(header =>
@@ -112,7 +111,6 @@ public sealed class InvoiceDocument(PrintContext context, OrderDetailsDto order)
                 header.Cell().Element(HeaderCell).Text("#");
                 header.Cell().Element(HeaderCell).Text(context.Text("LabTests.Col.Code"));
                 header.Cell().Element(HeaderCell).Text(context.Text("LabTests.Col.Name"));
-                header.Cell().Element(HeaderCell).AlignRight().Text(context.Text("LabTests.Col.Price"));
             });
 
             var number = 0;
@@ -122,7 +120,6 @@ public sealed class InvoiceDocument(PrintContext context, OrderDetailsDto order)
                 table.Cell().Element(BodyCell).Text(number.ToString(context.Localization.Culture));
                 table.Cell().Element(BodyCell).Text(item.Code).DirectionFromLeftToRight();
                 table.Cell().Element(BodyCell).Text(item.Name);
-                table.Cell().Element(BodyCell).AlignRight().Text(Money(item.Price)).DirectionFromLeftToRight();
             }
         });
     });
@@ -130,10 +127,8 @@ public sealed class InvoiceDocument(PrintContext context, OrderDetailsDto order)
     private void Totals(IContainer container) => container.AlignRight().Width(250).Column(column =>
     {
         column.Spacing(4);
-        var catalog = order.Items.Sum(i => i.Price);
         if (order.Addon != 0)
         {
-            Amount(column, context.Text("Invoice.TestsTotal"), catalog);
             Amount(column, context.Text("Invoice.Addon"), order.Addon);
         }
 

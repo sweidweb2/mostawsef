@@ -110,8 +110,12 @@ public class OrdersPageTests : UiTestBase
         Assert.Contains("admin@test.local", texts);
         Assert.Contains("Partially paid", window.GetVisualDescendants().OfType<Badge>().Where(b => b.IsEffectivelyVisible).Select(b => b.Text));
         Assert.Equal(["200.00", "50.00", "150.00"], Named<StackPanel>(window, "OrderSidebar").GetVisualDescendants().OfType<StatCard>().Select(c => c.Value));
-        Assert.False(details.HasAddon);
-        Assert.False(Named<StackPanel>(window, "AddonRow").IsVisible);
+        var amountDue = Named<StatCard>(window, "BalanceCard");
+        Assert.Equal("Amount due", amountDue.Title);
+        Assert.Equal(BadgeKind.Warning, amountDue.Kind);
+        Assert.Contains("PART_Accent", amountDue.GetVisualDescendants().OfType<Border>().Select(b => b.Name));
+        Assert.True(details.HasAddon);
+        Assert.Equal("200.00", Named<TextBlock>(window, "AddonText").Text);
 
         await details.BackCommand.ExecuteAsync(null);
         Dispatcher.UIThread.RunJobs();
@@ -123,10 +127,10 @@ public class OrdersPageTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task Details_show_the_addon_when_the_order_has_one()
+    public async Task Details_show_our_price_as_the_addon_and_the_total()
     {
         using var app = Admin();
-        var order = Details(PartlyPaid.Id) with { Total = 23000, Balance = 18000, Addon = 3000 };
+        var order = Details(PartlyPaid.Id) with { Total = 8000, Balance = 3000, Addon = 8000 };
         app.Api.OnGet($"{OrdersPath}/{PartlyPaid.Id}", order);
         var (shell, orders, window) = await ShowOrdersPageAsync(app);
 
@@ -136,9 +140,9 @@ public class OrdersPageTests : UiTestBase
 
         Assert.True(details.HasAddon);
         Assert.True(Named<StackPanel>(window, "AddonRow").IsVisible);
-        Assert.Equal("30.00", Named<TextBlock>(window, "AddonText").Text);
+        Assert.Equal("80.00", Named<TextBlock>(window, "AddonText").Text);
         Assert.Contains("Our price", Texts(window));
-        Assert.Equal(["230.00", "50.00", "180.00"], Named<StackPanel>(window, "OrderSidebar").GetVisualDescendants().OfType<StatCard>().Select(c => c.Value));
+        Assert.Equal(["80.00", "50.00", "30.00"], Named<StackPanel>(window, "OrderSidebar").GetVisualDescendants().OfType<StatCard>().Select(c => c.Value));
     }
 
     [AvaloniaFact]

@@ -6,7 +6,7 @@ using Avalonia.Media;
 
 namespace Mostawsef.Desktop.Components;
 
-/// <summary>Dashboard number: icon tile, title, big value and an optional caption. Kind tints the icon.</summary>
+/// <summary>Dashboard number: icon tile, title, big value and an optional caption. Kind tints the icon and the left accent stripe.</summary>
 [PseudoClasses(":primary", ":success", ":warning", ":danger", ":info")]
 public class StatCard : TemplatedControl
 {

@@ -30,7 +30,7 @@ public class InvoiceTests : UiTestBase
         using var app = new TestServices(language);
         app.Get<ClinicContext>().Update(new ClinicSettingsDto("عيادة النور / Al Nour", "12 Nile St", "0223456789", Currencies.Egp, 0, null, null));
         var print = app.Get<PrintService>();
-        var order = Details(Guid.NewGuid()) with { Addon = 3000, Total = 23000, Balance = 18000 };
+        var order = Details(Guid.NewGuid()) with { Addon = 23000, Total = 23000, Balance = 18000 };
 
         var pdf = print.Render(new InvoiceDocument(print.CreateContext(), order));
 

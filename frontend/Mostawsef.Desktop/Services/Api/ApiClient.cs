@@ -62,6 +62,10 @@ public class ApiClient(Lazy<HttpClient> http, PerformanceMonitor perf, TimeSpan?
     public Task<ApiResult<bool>> DeleteAsync(string path, CancellationToken cancellationToken = default) =>
         SendAsync("DELETE", path, token => Http.DeleteAsync(path, token), NoContent, null, cancellationToken);
 
+    /// <summary>DELETE that returns a JSON body (e.g. the updated order after removing a payment).</summary>
+    public Task<ApiResult<TResponse>> DeleteAsync<TResponse>(string path, CancellationToken cancellationToken = default) =>
+        SendAsync("DELETE", path, token => Http.DeleteAsync(path, token), ReadJson<TResponse>, null, cancellationToken);
+
     /// <summary>A DELETE with its own limit: <see cref="LongRequestTimeout"/> for work over a whole table.</summary>
     public Task<ApiResult<bool>> DeleteAsync(string path, TimeSpan timeout, CancellationToken cancellationToken = default) =>
         SendAsync("DELETE", path, token => Http.DeleteAsync(path, token), NoContent, timeout, cancellationToken);

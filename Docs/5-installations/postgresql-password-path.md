@@ -1,7 +1,6 @@
-Postgres already installed: whatever that PC’s postgres password already is (you type it in Setup).
+# Postgres password (short)
 
-Fresh install (field blank): Setup generates a random 24-character password and saves it at:
+See full list: [clinic-paths.md](clinic-paths.md)
 
-C:\Mostawsef\postgres-superuser.password.txt
-
-You don’t choose it — read it from that file after install.
+- **Already installed Postgres:** enter the existing `postgres` password in Setup.
+- **Fresh install (blank):** random password at `C:\Mostawsef\postgres-superuser.password.txt`

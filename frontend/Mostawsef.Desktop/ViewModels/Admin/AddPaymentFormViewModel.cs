@@ -12,25 +12,48 @@ using Mostawsef.Desktop.ViewModels.Shell;
 
 namespace Mostawsef.Desktop.ViewModels.Admin;
 
-/// <summary>An additional payment on an existing order; it can never be more than what the order still owes.</summary>
+/// <summary>
+/// Add or edit a payment on an existing order. A new payment cannot exceed the balance; an edit cannot exceed
+/// the balance plus that payment's current amount.
+/// </summary>
 public partial class AddPaymentFormViewModel : FormViewModel
 {
     private readonly OrdersApi _orders;
     private readonly Guid _orderId;
-    private readonly long _balance;
+    private readonly long _maxMinor;
+    private readonly Guid? _paymentId;
 
+    /// <param name="existing">When set, the form edits that payment; otherwise it adds a new one.</param>
     public AddPaymentFormViewModel(
-        OrdersApi orders, IDialogService dialogs, LocalizationService localization, Guid orderId, long balance)
+        OrdersApi orders,
+        IDialogService dialogs,
+        LocalizationService localization,
+        Guid orderId,
+        long balance,
+        OrderPaymentDto? existing = null)
         : base(dialogs, localization)
     {
         _orders = orders;
         _orderId = orderId;
-        _balance = balance;
-        MaxAmount = Money.ToMajor(Math.Min(balance, OrderRules.MaxPaymentAmount));
+        _paymentId = existing?.Id;
+        var room = existing is null ? balance : balance + existing.Amount;
+        _maxMinor = Math.Min(room, OrderRules.MaxPaymentAmount);
+        MaxAmount = Money.ToMajor(_maxMinor);
+
+        if (existing is not null)
+        {
+            Amount = Money.ToMajor(existing.Amount);
+            Method = existing.Method;
+            Notes = existing.Notes ?? string.Empty;
+        }
+
         MarkClean();
     }
 
-    /// <summary>What is still due, in currency units: the most this payment may be.</summary>
+    /// <summary>True when the form edits an existing payment instead of adding one.</summary>
+    public bool IsEditing => _paymentId is not null;
+
+    /// <summary>What is still due (or due plus this row when editing), in currency units: the most this payment may be.</summary>
     public decimal MaxAmount { get; }
 
     public IReadOnlyList<string> MethodOptions => PaymentMethods.All;
@@ -45,21 +68,34 @@ public partial class AddPaymentFormViewModel : FormViewModel
     [ObservableProperty]
     public partial string Notes { get; set; } = string.Empty;
 
-    protected override object BuildRequest() => new AddPaymentRequest
+    protected override object BuildRequest()
     {
-        Amount = Amount is { } amount ? Money.ToMinor(amount) : null,
-        Method = Method,
-        Notes = string.IsNullOrWhiteSpace(Notes) ? null : Notes.Trim(),
-    };
+        var amount = Amount is { } value ? Money.ToMinor(value) : (long?)null;
+        var notes = string.IsNullOrWhiteSpace(Notes) ? null : Notes.Trim();
+        if (_paymentId is not null)
+        {
+            return new UpdatePaymentRequest { Amount = amount, Method = Method, Notes = notes };
+        }
+
+        return new AddPaymentRequest { Amount = amount, Method = Method, Notes = notes };
+    }
 
     protected override void ValidateMore(FormErrors errors)
     {
-        if (errors[nameof(Amount)] is null && ((AddPaymentRequest)BuildRequest()).Amount > _balance)
+        if (errors[nameof(Amount)] is not null)
+        {
+            return;
+        }
+
+        var amount = Amount is { } value ? Money.ToMinor(value) : 0;
+        if (amount > _maxMinor)
         {
             errors.Set(nameof(Amount), ErrorCodes.ExceedsBalance);
         }
     }
 
     protected override async Task<IApiResult> SubmitAsync(object request, CancellationToken cancellationToken) =>
-        await _orders.AddPaymentAsync(_orderId, (AddPaymentRequest)request, cancellationToken);
+        _paymentId is { } paymentId
+            ? await _orders.UpdatePaymentAsync(_orderId, paymentId, (UpdatePaymentRequest)request, cancellationToken)
+            : await _orders.AddPaymentAsync(_orderId, (AddPaymentRequest)request, cancellationToken);
 }

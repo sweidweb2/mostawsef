@@ -15,8 +15,8 @@
     Steps: wipe the data (a backup goes to backups/ first, see wipe.ps1; -NoWipe adds on top instead), create the
     patients, orders and payments through the running API (so validation, order numbers, search text and activity logs
     behave as in real use), then move their dates back in time so the dashboard graphs and the lists have history.
-    The mix is repeatable (fixed seed): about 30% unpaid orders, 25% partly paid, 45% paid, 10% with an extra "our price"
-    amount, and some of the partly paid orders get a second payment. A few tests are ordered much more than the rest, so
+    The mix is repeatable (fixed seed): about 30% unpaid orders, 25% partly paid, 45% paid, every order charged
+    its "our price" (lab costs plus a markup), and some of the partly paid orders get a second payment. A few tests are ordered much more than the rest, so
     the top-tests graph has a shape.
 
     If the API is not running it is started for the seeding and stopped afterwards. -Run then opens the app
@@ -194,15 +194,12 @@ try {
             if ($chosen -notcontains $test) { [void]$chosen.Add($test) }
         }
 
-        $catalogTotal = 0L
-        $items = @(foreach ($test in $chosen) { $catalogTotal += $test.price; @{ labTestId = $test.id } })
+        $labCostTotal = 0L
+        $items = @(foreach ($test in $chosen) { $labCostTotal += $test.labCost; @{ labTestId = $test.id } })
         $order = @{ items = $items }
-        $total = $catalogTotal
-        if ($random.Next(10) -eq 0) {
-            $addon = [long](Pick @(500, 1000, 2000, 5000))
-            $order.addon = $addon
-            $total += $addon
-        }
+        # Our price: the lab costs plus a markup; it is the order total.
+        $total = [long]([Math]::Max(500, [Math]::Floor($labCostTotal * (1.3 + $random.NextDouble() * 0.7) / 500) * 500))
+        $order.addon = $total
 
         $patient = Pick-Skewed $patients 1.5
         $order.patientId = $patient.id

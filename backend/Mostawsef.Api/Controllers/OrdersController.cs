@@ -19,7 +19,7 @@ public class OrdersController(IOrderService orders) : ControllerBase
         [FromQuery] PageQuery query, [FromQuery] OrderListFilterRequest filter, CancellationToken cancellationToken) =>
         orders.GetPageAsync(query, filter, cancellationToken);
 
-    /// <summary>The Admin dashboard for a period (days in the server's time zone, kept between the first order and today).</summary>
+    /// <summary>The Admin dashboard for a period: money (revenue, outstanding) and order counts (days in the server's time zone, kept between the first order and today).</summary>
     [HttpGet("dashboard")]
     [ProducesResponseType<OrderDashboardDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -37,6 +37,20 @@ public class OrdersController(IOrderService orders) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public Task<OrderDetailsDto> AddPayment(Guid id, AddPaymentRequest request, CancellationToken cancellationToken) =>
         orders.AddPaymentAsync(id, request, cancellationToken);
+
+    [HttpPut("{id:guid}/payments/{paymentId:guid}")]
+    [ProducesResponseType<OrderDetailsDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<OrderDetailsDto> UpdatePayment(
+        Guid id, Guid paymentId, UpdatePaymentRequest request, CancellationToken cancellationToken) =>
+        orders.UpdatePaymentAsync(id, paymentId, request, cancellationToken);
+
+    [HttpDelete("{id:guid}/payments/{paymentId:guid}")]
+    [ProducesResponseType<OrderDetailsDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<OrderDetailsDto> DeletePayment(Guid id, Guid paymentId, CancellationToken cancellationToken) =>
+        orders.DeletePaymentAsync(id, paymentId, cancellationToken);
 
     [HttpPost]
     [ProducesResponseType<OrderDetailsDto>(StatusCodes.Status201Created)]

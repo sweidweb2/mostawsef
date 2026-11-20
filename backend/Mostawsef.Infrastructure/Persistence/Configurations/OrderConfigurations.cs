@@ -53,7 +53,6 @@ public class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
         builder.Property(i => i.LabTestCode).HasMaxLength(LabTest.CodeMaxLength).IsRequired();
         builder.Property(i => i.LabTestName).HasMaxLength(LabTest.NameMaxLength).IsRequired();
         builder.Property(i => i.LabPrice).IsRequired();
-        builder.Property(i => i.Price).IsRequired();
 
         builder.HasOne(i => i.LabTest).WithMany().HasForeignKey(i => i.LabTestId).OnDelete(DeleteBehavior.Restrict);
 

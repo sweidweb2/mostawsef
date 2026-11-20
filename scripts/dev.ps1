@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Runs the whole app for development with one command: database, API and desktop.
 
@@ -26,8 +26,54 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-# Running instances lock the build output.
-Get-Process Mostawsef.Api, Mostawsef.Desktop -ErrorAction SilentlyContinue | Stop-Process -Force
+function Stop-DevInstances {
+    # Clinic Setup registers MostawsefApi as a Windows service — needs Admin to stop.
+    $svc = Get-Service -Name MostawsefApi -ErrorAction SilentlyContinue
+    if ($svc -and $svc.Status -ne 'Stopped') {
+        $stopped = $false
+        try {
+            Stop-Service -Name MostawsefApi -Force -ErrorAction Stop
+            $stopped = $true
+        }
+        catch {
+            Write-Host "MostawsefApi service needs Administrator — approve the UAC prompt to stop it for dev." -ForegroundColor Yellow
+            $arg = "-NoProfile -ExecutionPolicy Bypass -Command `"Stop-Service -Name MostawsefApi -Force`""
+            try {
+                $p = Start-Process -FilePath powershell.exe -Verb RunAs -ArgumentList $arg -Wait -PassThru
+                if ($p.ExitCode -ne 0) { throw "elevated Stop-Service exited $($p.ExitCode)" }
+            }
+            catch {
+                throw @"
+Could not stop MostawsefApi (need Admin). Right-click PowerShell → Run as administrator, then:
+  Stop-Service MostawsefApi
+Re-run ./scripts/dev.ps1 after that.
+"@
+            }
+            $svc = Get-Service -Name MostawsefApi -ErrorAction SilentlyContinue
+            if ($svc -and $svc.Status -ne 'Stopped') {
+                throw "MostawsefApi is still running after UAC stop. Run elevated: Stop-Service MostawsefApi"
+            }
+            $stopped = $true
+        }
+        if ($stopped) {
+            Write-Host "Stopped Windows service MostawsefApi (clinic install on this PC)." -ForegroundColor Yellow
+            Write-Host "After dev, start it again if needed: Start-Service MostawsefApi (Admin)" -ForegroundColor DarkGray
+        }
+    }
+
+    Get-Process Mostawsef.Desktop -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    Get-Process Mostawsef.Api -ErrorAction SilentlyContinue | ForEach-Object {
+        try {
+            Stop-Process -Id $_.Id -Force -ErrorAction Stop
+        }
+        catch {
+            throw "Cannot stop Mostawsef.Api (PID $($_.Id)). Elevated: Stop-Service MostawsefApi"
+        }
+    }
+}
+
+# Running instances lock the build output (and bind :5270).
+Stop-DevInstances
 
 Push-Location $root
 $api = $null
@@ -70,8 +116,8 @@ try {
 }
 finally {
     if ($api -and -not $api.HasExited) { Stop-Process -Id $api.Id -Force -ErrorAction SilentlyContinue }
-    # `dotnet run` starts the API as a child process; stop it as well.
-    Get-Process Mostawsef.Api -ErrorAction SilentlyContinue | Stop-Process -Force
+    # Child Mostawsef.Api from `dotnet run` (clinic Windows service was already stopped at start if present).
+    Get-Process Mostawsef.Api -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
     Pop-Location
     Write-Host "Stopped." -ForegroundColor Cyan
 }

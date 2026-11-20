@@ -51,7 +51,8 @@
                     <StackPanel Name="OrderSidebar" Spacing="{StaticResource GapGrid}">
                         <ui:StatCard Name="TotalCard" Title="{l:Tr Orders.Col.Total}" Value="{l:Money {Binding Order.Total}}" />
                         <ui:StatCard Name="PaidCard" Kind="Success" Title="{l:Tr Orders.Col.Paid}" Value="{l:Money {Binding Order.Paid}}" />
-                        <ui:StatCard Name="BalanceCard" Kind="Warning" Title="{l:Tr OrderDetails.Balance}" Value="{l:Money {Binding Order.Balance}}" />
+                        <ui:StatCard Name="BalanceCard" Kind="Warning" Icon="{StaticResource IconClock}"
+                                     Title="{l:Tr OrderDetails.Balance}" Value="{l:Money {Binding Order.Balance}}" />
 
                         <ui:Card Title="{l:Tr OrderDetails.Info}">
                             <StackPanel Spacing="{StaticResource GapControls}">
@@ -115,6 +116,24 @@
                                                             Binding="{Binding Amount, Converter={x:Static conv:ValueConverters.Money}}" />
                                         <DataGridTextColumn x:DataType="orders:OrderPaymentDto" Header="{l:Tr NewOrder.PaymentNotes}" Width="*"
                                                             Binding="{Binding Notes}" />
+                                        <DataGridTemplateColumn Header="{l:Tr Common.Actions}" Width="100">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate x:DataType="orders:OrderPaymentDto">
+                                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space1}" Margin="8,0" VerticalAlignment="Center">
+                                                        <ui:IconButton Classes="ghost sm"
+                                                                       Icon="{StaticResource IconEdit}"
+                                                                       ToolTip.Tip="{l:Tr Common.Edit}"
+                                                                       Command="{Binding $parent[DataGrid].((vm:OrderDetailsViewModel)DataContext).EditPaymentCommand}"
+                                                                       CommandParameter="{Binding}" />
+                                                        <ui:IconButton Classes="ghost destructive sm"
+                                                                       Icon="{StaticResource IconDelete}"
+                                                                       ToolTip.Tip="{l:Tr Common.Delete}"
+                                                                       Command="{Binding $parent[DataGrid].((vm:OrderDetailsViewModel)DataContext).DeletePaymentCommand}"
+                                                                       CommandParameter="{Binding}" />
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
                                     </DataGrid.Columns>
                                 </DataGrid>
                                 <TextBlock Name="PaymentsEmpty" Classes="muted" Margin="20,16" IsVisible="{Binding !HasPayments}"
@@ -130,8 +149,8 @@
                                                         Binding="{Binding Code}" />
                                     <DataGridTextColumn x:DataType="orders:OrderItemDto" Header="{l:Tr LabTests.Col.Name}" Width="*"
                                                         Binding="{Binding Name}" />
-                                    <DataGridTextColumn x:DataType="orders:OrderItemDto" Header="{l:Tr LabTests.Col.Price}" Width="140"
-                                                        Binding="{Binding Price, Converter={x:Static conv:ValueConverters.Money}}" />
+                                    <DataGridTextColumn x:DataType="orders:OrderItemDto" Header="{l:Tr LabTests.Col.LabCost}" Width="140"
+                                                        Binding="{Binding LabCost, Converter={x:Static conv:ValueConverters.Money}}" />
                                 </DataGrid.Columns>
                             </DataGrid>
                         </ui:Card>

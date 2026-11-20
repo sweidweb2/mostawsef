@@ -215,30 +215,34 @@ public class NewOrderPageTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task The_total_adds_the_addon_on_top_of_the_catalog_and_caps_the_payment_live()
+    public async Task The_total_is_the_addon_only_and_caps_the_payment_live()
     {
         using var app = Admin();
         var (_, page, window) = await ShowNewOrderAsync(app);
         await GoToReviewAsync(page, Cbc, Sugar);
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal(20000, page.CatalogTotal);
-        Assert.Equal(20000, page.Total);
-        Assert.Equal(200m, page.MaxPayableAmount);
-        Assert.Equal("200.00", Named<TextBlock>(window, "TotalText").Text);
+        Assert.Equal(0, page.Total);
+        Assert.Equal(0m, page.MaxPayableAmount);
+        Assert.Equal("0.00", Named<TextBlock>(window, "TotalText").Text);
         Assert.False(Named<TextBlock>(window, "RemainingText").IsEffectivelyVisible);
 
         page.Addon = 5m;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(500, page.Total);
+        Assert.Equal(5m, page.MaxPayableAmount);
+
+        page.Addon = 200m;
         page.PaymentAmount = 50m;
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal(20000, page.CatalogTotal);
-        Assert.Equal(20500, page.Total);
-        Assert.Equal(205m, page.MaxPayableAmount);
-        Assert.Equal("205.00", Named<TextBlock>(window, "TotalText").Text);
-        Assert.Equal("155.00", Named<TextBlock>(window, "RemainingText").Text);
+        Assert.Equal(20000, page.Total);
+        Assert.Equal(200m, page.MaxPayableAmount);
+        Assert.Equal("200.00", Named<TextBlock>(window, "TotalText").Text);
+        Assert.Equal("150.00", Named<TextBlock>(window, "RemainingText").Text);
         Assert.True(Named<TextBlock>(window, "RemainingText").IsEffectivelyVisible);
-        Assert.Equal(205m, Named<NumericUpDown>(window, "PaymentAmountBox").Maximum);
+        Assert.Equal(200m, Named<NumericUpDown>(window, "PaymentAmountBox").Maximum);
     }
 
     [AvaloniaFact]
@@ -365,6 +369,7 @@ public class NewOrderPageTests : UiTestBase
         AddTests(page, Sugar);
         page.NextStepCommand.Execute(null);
         await WaitUntil(() => page.SelectedStep == NewOrderViewModel.ReviewStep);
+        page.Addon = 50m;
         page.PaymentAmount = 60m;
 
         await page.SaveCommand.ExecuteAsync(null);
@@ -381,7 +386,7 @@ public class NewOrderPageTests : UiTestBase
     public async Task A_valid_order_is_sent_with_an_addon_then_its_details_open()
     {
         using var app = Admin();
-        var created = Details(Guid.NewGuid()) with { Total = 20500, Paid = 5000, Balance = 15500, Addon = 500 };
+        var created = Details(Guid.NewGuid()) with { Total = 20500, Paid = 5000, Balance = 15500, Addon = 20500 };
         CreateOrderRequest? sent = null;
         app.Api.On(HttpMethod.Post, OrdersPath, request =>
         {
@@ -394,7 +399,7 @@ public class NewOrderPageTests : UiTestBase
         page.PatientForm.Phone = " 0111 ";
         page.PatientForm.Gender = Genders.Male;
         await GoToReviewAsync(page, Cbc, Sugar);
-        page.Addon = 5m;
+        page.Addon = 205m;
         page.PaymentAmount = 50m;
         page.PaymentMethod = PaymentMethods.Card;
         page.PaymentNotes = "  ";
@@ -405,9 +410,9 @@ public class NewOrderPageTests : UiTestBase
 
         Assert.True(details.HasOrder);
         Assert.True(details.HasAddon);
-        Assert.Equal(500, details.Order!.Addon);
+        Assert.Equal(20500, details.Order!.Addon);
         Assert.True(Named<StackPanel>(window, "AddonRow").IsVisible);
-        Assert.Equal("5.00", Named<TextBlock>(window, "AddonText").Text);
+        Assert.Equal("205.00", Named<TextBlock>(window, "AddonText").Text);
         Assert.Empty(app.Api.RequestsTo(HttpMethod.Get, $"{OrdersPath}/{created.Id}"));
         Assert.NotNull(sent);
         Assert.Null(sent.PatientId);
@@ -415,7 +420,7 @@ public class NewOrderPageTests : UiTestBase
         Assert.Equal(
             [new CreateOrderItemRequest { LabTestId = Cbc.Id }, new CreateOrderItemRequest { LabTestId = Sugar.Id }],
             sent.Items);
-        Assert.Equal(500, sent.Addon);
+        Assert.Equal(20500, sent.Addon);
         Assert.Equal(new CreateFirstPaymentRequest { Amount = 5000, Method = PaymentMethods.Card, Notes = null }, sent.FirstPayment);
         Assert.Equal(created.Id, details.OrderId);
         Assert.Equal(created.Number, details.Order.Number);
@@ -438,6 +443,7 @@ public class NewOrderPageTests : UiTestBase
         page.PatientForm.Phone = "0111";
         page.PatientForm.Gender = Genders.Male;
         await GoToReviewAsync(page, Cbc, Sugar);
+        page.Addon = 200m;
         page.PaymentAmount = 10m;
 
         await page.SaveCommand.ExecuteAsync(null);

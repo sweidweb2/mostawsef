@@ -20,13 +20,20 @@ public interface IOrderService
     Task<OrderDetailsDto> GetAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>
-    /// The Admin dashboard for a period (see <see cref="DashboardRangeQuery"/>): orders created in it by payment state,
-    /// orders per hour/day/month and the most ordered tests. The period is kept between the first order's day and today.
+    /// The Admin dashboard for a period (see <see cref="DashboardRangeQuery"/>): revenue and outstanding balance,
+    /// orders created in it by payment state, orders and revenue per hour/day/month, and the most ordered tests.
+    /// The period is kept between the first order's day and today.
     /// </summary>
     Task<OrderDashboardDto> GetDashboardAsync(DashboardRangeQuery query, CancellationToken cancellationToken);
 
     /// <summary>Adds a payment of at most what the order still owes; returns the updated order.</summary>
     Task<OrderDetailsDto> AddPaymentAsync(Guid id, AddPaymentRequest request, CancellationToken cancellationToken);
+
+    /// <summary>Edits a payment and recalculates Paid and status; returns the updated order.</summary>
+    Task<OrderDetailsDto> UpdatePaymentAsync(Guid id, Guid paymentId, UpdatePaymentRequest request, CancellationToken cancellationToken);
+
+    /// <summary>Deletes a payment and recalculates Paid and status; returns the updated order.</summary>
+    Task<OrderDetailsDto> DeletePaymentAsync(Guid id, Guid paymentId, CancellationToken cancellationToken);
 
     /// <summary>Creates the patient (if new), the order, its items and the first payment in one transaction.</summary>
     Task<OrderDetailsDto> CreateAsync(CreateOrderRequest request, CancellationToken cancellationToken);
@@ -68,22 +75,37 @@ public class OrderService(
     {
         // One DbContext per request: the queries run one after another (each is a single indexed statement).
         var range = DashboardRange.Resolve(query, await orders.GetFirstCreatedAtAsync(cancellationToken), time);
+        var currency = await clinic.GetCurrencyCodeAsync(cancellationToken);
         var counts = await orders.GetStatusCountsAsync(range.SinceUtc, range.UntilUtc, cancellationToken);
+        var outstanding = await orders.GetOutstandingAsync(range.SinceUtc, range.UntilUtc, cancellationToken);
         var perHour = await orders.GetCreatedPerHourAsync(range.SinceUtc, range.UntilUtc, cancellationToken);
+        var revenuePerHour = await orders.GetRevenuePerHourAsync(range.SinceUtc, range.UntilUtc, cancellationToken);
         var top = await orders.GetTopTestsAsync(OrderDashboardRules.TopTests, range.SinceUtc, range.UntilUtc, cancellationToken);
 
-        var perBucket = range.Sum(perHour);
-        var points = range.BucketStarts()
-            .Select(start => new DashboardCountDto(start, (int)perBucket.GetValueOrDefault(start)))
-            .ToList();
+        var orderBuckets = range.Sum(perHour);
+        var revenueBuckets = range.Sum(revenuePerHour);
+        var orderPoints = new List<DashboardCountDto>();
+        var revenuePoints = new List<DashboardMoneyDto>();
+        long revenueTotal = 0;
+        foreach (var start in range.BucketStarts())
+        {
+            orderPoints.Add(new DashboardCountDto(start, (int)orderBuckets.GetValueOrDefault(start)));
+            var amount = revenueBuckets.GetValueOrDefault(start);
+            revenuePoints.Add(new DashboardMoneyDto(start, amount));
+            revenueTotal += amount;
+        }
 
         return new OrderDashboardDto(
+            currency,
             range.ToDto(),
             new OrderStatsDto(
                 counts.GetValueOrDefault(OrderStatus.Paid),
                 counts.GetValueOrDefault(OrderStatus.PartiallyPaid),
                 counts.GetValueOrDefault(OrderStatus.Pending)),
-            points,
+            revenueTotal,
+            outstanding,
+            orderPoints,
+            revenuePoints,
             top.Select(t => new TopTestDto(t.LabTestId, t.Code, t.Name, t.Count)).ToList());
     }
 
@@ -113,6 +135,57 @@ public class OrderService(
         return ToDetails(order); // the order is already loaded with its items and payments: no second read
     }
 
+    public async Task<OrderDetailsDto> UpdatePaymentAsync(
+        Guid id, Guid paymentId, UpdatePaymentRequest request, CancellationToken cancellationToken)
+    {
+        var order = await orders.GetForPaymentAsync(id, cancellationToken) ?? throw AppException.NotFound();
+        var payment = order.Payments.FirstOrDefault(p => p.Id == paymentId) ?? throw AppException.NotFound();
+        var amount = request.Amount!.Value;
+        if (payment.Type == PaymentType.Payment && amount > order.Balance + payment.Amount)
+        {
+            throw AppException.Validation(nameof(UpdatePaymentRequest.Amount), ErrorCodes.ExceedsBalance);
+        }
+
+        order.UpdatePayment(payment, Enum.Parse<PaymentMethod>(request.Method), amount, request.Notes);
+        order.UpdateStatus();
+        await orders.SaveChangesAsync(cancellationToken);
+
+        await activity.LogAsync(
+            new ActivityEntry(ActivityActions.OrderPaymentUpdated, ActivityModules.Orders, "Updated a payment on an order")
+            {
+                EntityType = nameof(Order),
+                EntityId = order.Id.ToString(),
+                Details = new { order.Number, PaymentId = paymentId, Amount = amount, request.Method, order.Total, order.Paid },
+            },
+            cancellationToken);
+
+        return ToDetails(order);
+    }
+
+    public async Task<OrderDetailsDto> DeletePaymentAsync(Guid id, Guid paymentId, CancellationToken cancellationToken)
+    {
+        var order = await orders.GetForPaymentAsync(id, cancellationToken) ?? throw AppException.NotFound();
+        var payment = order.Payments.FirstOrDefault(p => p.Id == paymentId) ?? throw AppException.NotFound();
+        var amount = payment.Amount;
+        var method = payment.Method;
+
+        order.RemovePayment(payment);
+        orders.RemovePayment(payment);
+        order.UpdateStatus();
+        await orders.SaveChangesAsync(cancellationToken);
+
+        await activity.LogAsync(
+            new ActivityEntry(ActivityActions.OrderPaymentDeleted, ActivityModules.Orders, "Deleted a payment from an order")
+            {
+                EntityType = nameof(Order),
+                EntityId = order.Id.ToString(),
+                Details = new { order.Number, PaymentId = paymentId, Amount = amount, Method = method.ToString(), order.Total, order.Paid },
+            },
+            cancellationToken);
+
+        return ToDetails(order);
+    }
+
     public async Task<OrderDetailsDto> GetAsync(Guid id, CancellationToken cancellationToken)
     {
         var order = await orders.GetByIdAsync(id, cancellationToken) ?? throw AppException.NotFound();
@@ -138,7 +211,7 @@ public class OrderService(
         }
 
         var currencyCode = await currencyTask;
-        var total = TotalOf(request, lines); // validated before a number is taken, so a refused order never burns one
+        var total = TotalOf(request); // validated before a number is taken, so a refused order never burns one
         var order = new Order(
             DocumentNumber.Format(NumberPrefix, await numbers.NextAsync(NumberSequence, cancellationToken)),
             patient.Id,
@@ -160,10 +233,10 @@ public class OrderService(
         return ToDetails(order);
     }
 
-    /// <summary>The order total (tests plus add-on). A first payment over it is refused.</summary>
-    private static long TotalOf(CreateOrderRequest request, IReadOnlyList<LabTest> lines)
+    /// <summary>The order total is the clinic's charge ("our price"). A first payment over it is refused.</summary>
+    private static long TotalOf(CreateOrderRequest request)
     {
-        var total = lines.Sum(t => t.Price) + (request.Addon ?? 0);
+        var total = request.Addon ?? 0;
         if (request.FirstPayment?.Amount > total)
         {
             throw AppException.Validation(
@@ -287,12 +360,13 @@ public class OrderService(
     private static OrderDetailsDto ToDetails(OrderDetailsRow o) => new(
         o.Id, o.Number, o.CreatedAt, o.CreatedBy, o.PatientId, o.PatientName, o.PatientPhone, o.Status.ToString(), o.Currency,
         o.Total, o.Paid, o.Balance, o.Addon,
-        o.Items.Select(i => new OrderItemDto(i.LabTestId, i.Code, i.Name, i.Price)).ToList(),
-        o.Payments.Select(p => new OrderPaymentDto(p.PaidAt, p.Type.ToString(), p.Method.ToString(), p.Amount, p.Notes)).ToList());
+        o.Items.Select(i => new OrderItemDto(i.LabTestId, i.Code, i.Name, i.LabCost)).ToList(),
+        o.Payments.Select(p => new OrderPaymentDto(p.Id, p.PaidAt, p.Type.ToString(), p.Method.ToString(), p.Amount, p.Notes)).ToList());
 
     private static OrderDetailsDto ToDetails(Order o) => new(
         o.Id, o.Number, o.CreatedAt, o.CreatedBy, o.PatientId, o.PatientName, o.PatientPhone, o.Status.ToString(), o.Currency,
         o.Total, o.Paid, o.Balance, o.Addon,
-        o.Items.Select(i => new OrderItemDto(i.LabTestId, i.LabTestCode, i.LabTestName, i.Price)).ToList(),
-        o.Payments.OrderBy(p => p.PaidAt).ThenBy(p => p.Id).Select(p => new OrderPaymentDto(p.PaidAt, p.Type.ToString(), p.Method.ToString(), p.Amount, p.Notes)).ToList());
+        o.Items.Select(i => new OrderItemDto(i.LabTestId, i.LabTestCode, i.LabTestName, i.LabPrice)).ToList(),
+        o.Payments.OrderBy(p => p.PaidAt).ThenBy(p => p.Id)
+            .Select(p => new OrderPaymentDto(p.Id, p.PaidAt, p.Type.ToString(), p.Method.ToString(), p.Amount, p.Notes)).ToList());
 }

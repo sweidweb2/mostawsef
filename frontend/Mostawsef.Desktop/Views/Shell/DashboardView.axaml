@@ -37,13 +37,31 @@
                 </ui:Card>
 
                 <StackPanel Spacing="{StaticResource GapGrid}" IsVisible="{Binding !HasLoadError}">
-                    <ui:ResponsiveGrid MinColumnWidth="180" MaxColumns="4"
+                    <ui:ResponsiveGrid MinColumnWidth="200" MaxColumns="4"
                                        ColumnSpacing="{StaticResource GapGrid}" RowSpacing="{StaticResource GapGrid}">
+                        <ui:StatCard Name="RevenueCard" Kind="Success" Icon="{StaticResource IconSuccess}"
+                                     Title="{l:Tr SuperDashboard.Revenue}"
+                                     Value="{Binding RevenueText}" Caption="{l:TrKey {Binding CurrencyKey}}" />
+                        <ui:StatCard Name="OutstandingCard" Kind="Warning" Icon="{StaticResource IconClock}"
+                                     Title="{l:Tr SuperDashboard.Outstanding}"
+                                     Value="{Binding OutstandingText}" Caption="{l:TrKey {Binding CurrencyKey}}" />
                         <ui:StatCard Name="TotalOrdersCard" Title="{l:Tr Dashboard.Orders.Total}" Value="{Binding TotalOrders}" />
                         <ui:StatCard Name="PaidOrdersCard" Kind="Success" Title="{l:Tr Dashboard.Orders.Paid}" Value="{Binding PaidOrders}" />
                         <ui:StatCard Name="PartiallyPaidOrdersCard" Kind="Info" Title="{l:Tr Dashboard.Orders.PartiallyPaid}" Value="{Binding PartiallyPaidOrders}" />
                         <ui:StatCard Name="UnpaidOrdersCard" Kind="Warning" Title="{l:Tr Dashboard.Orders.Unpaid}" Value="{Binding UnpaidOrders}" />
                     </ui:ResponsiveGrid>
+
+                    <ui:Card Name="RevenueChartCard" Title="{l:Tr SuperDashboard.RevenueOverTime}"
+                             Subtitle="{l:Tr SuperDashboard.RevenueHint, Arg={Binding RevenueText}}">
+                        <Panel MinHeight="220">
+                            <ui:LineChart Name="RevenueChart"
+                                          Points="{Binding RevenueOverTime}"
+                                          Stroke="{DynamicResource BrushSuccess}"
+                                          TooltipFormat="{l:Tr SuperDashboard.RevenueTooltip}"
+                                          IsVisible="{Binding HasOrdersOverTime}" />
+                            <ui:LoadingOverlay IsLoading="{Binding IsLoading}" />
+                        </Panel>
+                    </ui:Card>
 
                     <ui:Card Name="OrdersChart" Title="{l:Tr Dashboard.Orders.Chart}">
                         <Panel MinHeight="140">

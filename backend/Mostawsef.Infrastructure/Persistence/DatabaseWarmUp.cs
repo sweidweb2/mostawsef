@@ -59,7 +59,9 @@ public static class DatabaseWarmUp
             var sinceUtc = untilUtc.AddDays(-1);
             await orders.GetFirstCreatedAtAsync(cancellationToken);
             await orders.GetStatusCountsAsync(sinceUtc, untilUtc, cancellationToken);
+            await orders.GetOutstandingAsync(sinceUtc, untilUtc, cancellationToken);
             await orders.GetCreatedPerHourAsync(sinceUtc, untilUtc, cancellationToken);
+            await orders.GetRevenuePerHourAsync(sinceUtc, untilUtc, cancellationToken);
             await orders.GetTopTestsAsync(1, sinceUtc, untilUtc, cancellationToken);
             await maintenance.GetFirstRecordAtAsync(cancellationToken);
             await maintenance.GetTotalsAsync(cancellationToken);

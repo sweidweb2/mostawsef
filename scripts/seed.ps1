@@ -71,42 +71,42 @@ $script:headers = @{ Authorization = "Bearer $($login.accessToken)" }
 
 # --- Lab tests -----------------------------------------------------------------------------------------------------
 $catalog = @(
-    @("CBC", "Complete Blood Count (CBC)", 150, 90),
-    @("ESR", "Erythrocyte Sedimentation Rate (ESR)", 60, 30),
-    @("HB", "Hemoglobin", 50, 25),
-    @("FBS", "Fasting Blood Sugar", 40, 20),
-    @("RBS", "Random Blood Sugar", 40, 20),
-    @("PPBS", "2h Post-Prandial Blood Sugar", 45, 22),
-    @("HBA1C", "Glycated Hemoglobin (HbA1c)", 250, 150),
-    @("LIPID", "Lipid Profile", 350, 200),
-    @("CHOL", "Total Cholesterol", 70, 35),
-    @("TG", "Triglycerides", 70, 35),
-    @("ALT", "ALT (SGPT)", 60, 30),
-    @("AST", "AST (SGOT)", 60, 30),
-    @("LFT", "Liver Function Tests", 400, 240),
-    @("KFT", "Kidney Function Tests", 300, 180),
-    @("CREAT", "Serum Creatinine", 60, 30),
-    @("UREA", "Blood Urea", 60, 30),
-    @("UA", "Uric Acid", 60, 30),
-    @("CA", "Serum Calcium", 70, 40),
-    @("TSH", "Thyroid Stimulating Hormone (TSH)", 200, 120),
-    @("FT3", "Free T3", 200, 120),
-    @("FT4", "Free T4", 200, 120),
-    @("VITD", "Vitamin D (25-OH)", 600, 400),
-    @("B12", "Vitamin B12", 450, 300),
-    @("FERR", "Ferritin", 350, 220),
-    @("IRON", "Serum Iron", 120, 70),
-    @("CRP", "C-Reactive Protein (CRP)", 120, 70),
-    @("ASO", "Anti-Streptolysin O (ASO)", 120, 70),
-    @("RF", "Rheumatoid Factor (RF)", 120, 70),
-    @("PT", "Prothrombin Time and INR", 150, 90),
-    @("HCV", "HCV Antibodies", 250, 150),
-    @("HBSAG", "Hepatitis B Surface Antigen (HBsAg)", 200, 120),
-    @("HIV", "HIV 1 and 2 Antibodies", 300, 180),
-    @("BHCG", "Pregnancy Test (Beta hCG)", 180, 100),
-    @("PSA", "Prostate Specific Antigen (PSA)", 300, 180),
-    @("URINE", "Complete Urine Analysis", 50, 25),
-    @("STOOL", "Complete Stool Analysis", 50, 25)
+    @("CBC", "Complete Blood Count (CBC)", 90),
+    @("ESR", "Erythrocyte Sedimentation Rate (ESR)", 30),
+    @("HB", "Hemoglobin", 25),
+    @("FBS", "Fasting Blood Sugar", 20),
+    @("RBS", "Random Blood Sugar", 20),
+    @("PPBS", "2h Post-Prandial Blood Sugar", 22),
+    @("HBA1C", "Glycated Hemoglobin (HbA1c)", 150),
+    @("LIPID", "Lipid Profile", 200),
+    @("CHOL", "Total Cholesterol", 35),
+    @("TG", "Triglycerides", 35),
+    @("ALT", "ALT (SGPT)", 30),
+    @("AST", "AST (SGOT)", 30),
+    @("LFT", "Liver Function Tests", 240),
+    @("KFT", "Kidney Function Tests", 180),
+    @("CREAT", "Serum Creatinine", 30),
+    @("UREA", "Blood Urea", 30),
+    @("UA", "Uric Acid", 30),
+    @("CA", "Serum Calcium", 40),
+    @("TSH", "Thyroid Stimulating Hormone (TSH)", 120),
+    @("FT3", "Free T3", 120),
+    @("FT4", "Free T4", 120),
+    @("VITD", "Vitamin D (25-OH)", 400),
+    @("B12", "Vitamin B12", 300),
+    @("FERR", "Ferritin", 220),
+    @("IRON", "Serum Iron", 70),
+    @("CRP", "C-Reactive Protein (CRP)", 70),
+    @("ASO", "Anti-Streptolysin O (ASO)", 70),
+    @("RF", "Rheumatoid Factor (RF)", 70),
+    @("PT", "Prothrombin Time and INR", 90),
+    @("HCV", "HCV Antibodies", 150),
+    @("HBSAG", "Hepatitis B Surface Antigen (HBsAg)", 120),
+    @("HIV", "HIV 1 and 2 Antibodies", 180),
+    @("BHCG", "Pregnancy Test (Beta hCG)", 100),
+    @("PSA", "Prostate Specific Antigen (PSA)", 180),
+    @("URINE", "Complete Urine Analysis", 25),
+    @("STOOL", "Complete Stool Analysis", 25)
 )
 
 $existingCodes = @{}
@@ -114,7 +114,7 @@ foreach ($test in Get-All "lab-tests") { $existingCodes[$test.code] = $true }
 $addedTests = 0
 foreach ($row in $catalog) {
     if ($existingCodes.ContainsKey($row[0])) { continue }
-    Invoke-Api POST "lab-tests" @{ code = $row[0]; name = $row[1]; price = (Egp $row[2]); labCost = (Egp $row[3]) } | Out-Null
+    Invoke-Api POST "lab-tests" @{ code = $row[0]; name = $row[1]; labCost = (Egp $row[2]) } | Out-Null
     $addedTests++
 }
 Write-Host "Lab tests: $addedTests added, $($catalog.Count - $addedTests) already there"
@@ -161,18 +161,18 @@ $statusCounts = @{}
 for ($i = 0; $i -lt $Orders; $i++) {
     $count = Pick @(1, 1, 2, 2, 3, 3, 4, 5, 6)
     $chosen = @($tests | Sort-Object { $random.Next() } | Select-Object -First $count)
-    $catalogTotal = 0L
+    $labCostTotal = 0L
     $items = @(foreach ($test in $chosen) {
-            $catalogTotal += $test.price
+            $labCostTotal += $test.labCost
             @{ labTestId = $test.id }
         })
 
     $order = @{ items = $items }
-    # One order in eight gets a typed our-price below the catalog total.
-    $total = $catalogTotal
-    if ($catalogTotal -gt 0 -and $random.Next(8) -eq 0) {
-        $total = [long]([Math]::Max(100, [Math]::Floor($catalogTotal * 0.9 / 500) * 500))
-        $order.ourPrice = $total
+    # Our price: what the clinic charges, the lab costs plus a markup (an order has no total without it).
+    $total = 0L
+    if ($labCostTotal -gt 0) {
+        $total = [long]([Math]::Max(500, [Math]::Floor($labCostTotal * (1.3 + $random.NextDouble() * 0.7) / 500) * 500))
+        $order.addon = $total
     }
     $insured = $false
     if ($random.Next(10) -eq 0) {

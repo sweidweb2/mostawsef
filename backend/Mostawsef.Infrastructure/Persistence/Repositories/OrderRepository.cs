@@ -25,13 +25,14 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
                 o.Total,
                 o.Paid,
                 o.Total - o.Paid,
-                o.Total - o.Items.Sum(i => i.Price),
+                o.Total,
                 o.Items.Select(i => new OrderItemRow(
                     i.LabTestId,
                     i.LabTestCode,
                     i.LabTestName,
-                    i.Price)).ToList(),
+                    i.LabPrice)).ToList(),
                 o.Payments.OrderBy(p => p.PaidAt).ThenBy(p => p.Id).Select(p => new OrderPaymentRow(
+                    p.Id,
                     p.PaidAt,
                     p.Type,
                     p.Method,
@@ -91,6 +92,21 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
             .Select(o => o.CreatedAt)
             .CountPerHourAsync(cancellationToken);
 
+    public Task<long> GetOutstandingAsync(DateTime sinceUtc, DateTime untilUtc, CancellationToken cancellationToken) =>
+        db.Orders.AsNoTracking()
+            .Where(o => o.CreatedAt >= sinceUtc && o.CreatedAt < untilUtc
+                && (o.Status == OrderStatus.Pending || o.Status == OrderStatus.PartiallyPaid))
+            .SumAsync(o => o.Total - o.Paid, cancellationToken);
+
+    public async Task<IReadOnlyList<HourlyValue>> GetRevenuePerHourAsync(DateTime sinceUtc, DateTime untilUtc, CancellationToken cancellationToken) =>
+        HourlySeries.ToHours(await db.Set<Payment>().AsNoTracking()
+            .Where(p => p.PaidAt >= sinceUtc && p.PaidAt < untilUtc)
+            .GroupBy(p => new { p.PaidAt.Year, p.PaidAt.Month, p.PaidAt.Day, p.PaidAt.Hour })
+            .Select(g => new HourlySeries.HourRow(
+                g.Key.Year, g.Key.Month, g.Key.Day, g.Key.Hour,
+                g.Sum(p => p.Type == PaymentType.Refund ? -p.Amount : p.Amount)))
+            .ToListAsync(cancellationToken));
+
     public Task<DateTime?> GetFirstCreatedAtAsync(CancellationToken cancellationToken) =>
         db.Orders.AsNoTracking().MinAsync(o => (DateTime?)o.CreatedAt, cancellationToken);
 
@@ -117,6 +133,8 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
         db.Orders.Include(o => o.Items).Include(o => o.Payments).FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
 
     public void AddPayment(Payment payment) => db.Set<Payment>().Add(payment);
+
+    public void RemovePayment(Payment payment) => db.Set<Payment>().Remove(payment);
 
     public void Add(Order order) => db.Orders.Add(order);
 

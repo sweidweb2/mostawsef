@@ -206,8 +206,8 @@
                                                     <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError {Binding Errors[LabTestId]}}"
                                                                IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                                                 </StackPanel>
-                                                <TextBlock Grid.Column="1" Classes="strong" VerticalAlignment="Center"
-                                                           Text="{l:Money {Binding Test.Price}}" />
+                                                <TextBlock Grid.Column="1" Classes="caption muted" VerticalAlignment="Center"
+                                                           Text="{l:Money {Binding Test.LabCost}}" />
                                                 <ui:IconButton Grid.Column="2"
                                                                Classes="ghost destructive sm"
                                                                VerticalAlignment="Center"
@@ -254,7 +254,7 @@
                                                 <TextBlock Classes="caption muted" TextTrimming="CharacterEllipsis" Text="{Binding Test.Code}" />
                                                 <TextBlock FontWeight="Medium" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
                                                            Text="{Binding Test.Name}" />
-                                                <TextBlock Classes="caption" Text="{l:Money {Binding Test.Price}}" />
+                                                <TextBlock Classes="caption" Text="{l:Money {Binding Test.LabCost}}" />
                                             </StackPanel>
                                         </Button>
                                     </DataTemplate>
@@ -361,8 +361,8 @@
                                                 <TextBlock Classes="caption danger" TextWrapping="Wrap" Text="{l:FieldError {Binding Errors[LabTestId]}}"
                                                            IsVisible="{Binding $self.Text, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                                             </StackPanel>
-                                            <TextBlock Grid.Column="1" Classes="strong" VerticalAlignment="Center"
-                                                       Text="{l:Money {Binding Test.Price}}" />
+                                            <TextBlock Grid.Column="1" Classes="caption muted" VerticalAlignment="Center"
+                                                       Text="{l:Money {Binding Test.LabCost}}" />
                                         </Grid>
                                     </Border>
                                 </DataTemplate>

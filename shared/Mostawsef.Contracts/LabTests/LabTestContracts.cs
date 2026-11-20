@@ -3,7 +3,7 @@ using Mostawsef.Contracts.Common;
 
 namespace Mostawsef.Contracts.LabTests;
 
-/// <summary>Limits shared by the API and the desktop forms. Prices are minor units of the clinic currency.</summary>
+/// <summary>Limits shared by the API and the desktop forms. Amounts are minor units of the clinic currency.</summary>
 public static class LabTestRules
 {
     public const int CodeMaxLength = 20;
@@ -17,7 +17,6 @@ public record LabTestDto(
     Guid Id,
     string Code,
     string Name,
-    long Price,
     long LabCost,
     bool IsActive,
     DateTime CreatedAt,
@@ -37,10 +36,6 @@ public record CreateLabTestRequest
 
     [Required(ErrorMessage = ErrorCodes.Required)]
     [Range(0, LabTestRules.MaxAmount, ErrorMessage = ErrorCodes.Range)]
-    public long? Price { get; init; }
-
-    [Required(ErrorMessage = ErrorCodes.Required)]
-    [Range(0, LabTestRules.MaxAmount, ErrorMessage = ErrorCodes.Range)]
     public long? LabCost { get; init; }
 }
 
@@ -54,10 +49,6 @@ public record UpdateLabTestRequest
     [Required(ErrorMessage = ErrorCodes.Required)]
     [MaxLength(LabTestRules.NameMaxLength, ErrorMessage = ErrorCodes.MaxLength)]
     public string Name { get; init; } = string.Empty;
-
-    [Required(ErrorMessage = ErrorCodes.Required)]
-    [Range(0, LabTestRules.MaxAmount, ErrorMessage = ErrorCodes.Range)]
-    public long? Price { get; init; }
 
     [Required(ErrorMessage = ErrorCodes.Required)]
     [Range(0, LabTestRules.MaxAmount, ErrorMessage = ErrorCodes.Range)]

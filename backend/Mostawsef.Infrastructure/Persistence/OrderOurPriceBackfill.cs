@@ -29,7 +29,8 @@ public static class OrderOurPriceBackfill
             var batch = await query.OrderBy(o => o.Id).Take(BatchSize).ToListAsync(cancellationToken);
             foreach (var order in batch)
             {
-                order.SetTotal(order.CatalogTotal);
+                // Pre-drop, Total was filled from catalog patient prices; only LabCost remains on items now.
+                order.SetTotal(order.Items.Sum(i => i.LabPrice));
             }
 
             await db.SaveChangesAsync(cancellationToken);

@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Mostawsef.Contracts.Auth;
+using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.Dashboards;
 using Mostawsef.Contracts.Orders;
 using Mostawsef.Desktop.Components;
@@ -15,9 +16,10 @@ using Mostawsef.Desktop.Services.Diagnostics;
 namespace Mostawsef.Desktop.ViewModels.Shell;
 
 /// <summary>
-/// Home page of every portal: the welcome line and, for Admin, the orders of a chosen period (<see cref="DashboardPageViewModel.Filter"/>):
-/// how many are paid, partly paid or unpaid, orders per hour/day/month and the most ordered tests. One request per load;
-/// showing the page again reloads, so new orders appear.
+/// Home page of every portal: the welcome line and, for Admin, the money and orders of a chosen period
+/// (<see cref="DashboardPageViewModel.Filter"/>): revenue and outstanding balance, how many orders are paid, partly
+/// paid or unpaid, orders and revenue per hour/day/month and the most ordered tests. One request per load; showing
+/// the page again reloads, so new orders appear.
 /// Shared by all roles until one needs its own dashboard; then give that role a separate view model + view in AppRoutes.
 /// </summary>
 public partial class DashboardViewModel(SessionService session, OrdersApi orders, ErrorReporter errors)
@@ -32,7 +34,9 @@ public partial class DashboardViewModel(SessionService session, OrdersApi orders
     [NotifyPropertyChangedFor(
         nameof(Stats), nameof(HasOrders), nameof(TotalOrders), nameof(PaidOrders), nameof(PartiallyPaidOrders), nameof(UnpaidOrders),
         nameof(ChartMaximum), nameof(PaidPercent), nameof(PartiallyPaidPercent), nameof(UnpaidPercent),
-        nameof(OrdersOverTime), nameof(HasOrdersOverTime), nameof(PeriodOrders), nameof(TopTests), nameof(HasTopTests))]
+        nameof(CurrencyKey), nameof(RevenueText), nameof(OutstandingText),
+        nameof(OrdersOverTime), nameof(HasOrdersOverTime), nameof(PeriodOrders),
+        nameof(RevenueOverTime), nameof(TopTests), nameof(HasTopTests))]
     public partial OrderDashboardDto? Dashboard { get; private set; }
 
     public OrderStatsDto? Stats => Dashboard?.Stats;
@@ -56,6 +60,15 @@ public partial class DashboardViewModel(SessionService session, OrdersApi orders
 
     public string UnpaidPercent => Percent(UnpaidOrders);
 
+    /// <summary>"Currency.EGP": the money cards' caption, translated in the view.</summary>
+    public string? CurrencyKey => Dashboard is null ? null : "Currency." + Dashboard.Currency;
+
+    /// <summary>Payments minus refunds made in the period.</summary>
+    public string RevenueText => Amount(Dashboard?.Revenue ?? 0);
+
+    /// <summary>What the period's pending and partly paid orders still owe.</summary>
+    public string OutstandingText => Amount(Dashboard?.Outstanding ?? 0);
+
     // Derived once per load in OnDashboardChanged, so the getters stay O(1).
 
     /// <summary>Orders created per hour, day or month of the period (zero-filled), oldest first.</summary>
@@ -65,6 +78,9 @@ public partial class DashboardViewModel(SessionService session, OrdersApi orders
 
     /// <summary>Orders created in the period.</summary>
     public int PeriodOrders { get; private set; }
+
+    /// <summary>Net payments per point in whole currency units (a point where refunds exceed payments shows 0).</summary>
+    public IReadOnlyList<ChartPoint>? RevenueOverTime { get; private set; }
 
     /// <summary>The most ordered tests of the period, most first: each point is a test name and how many times it was ordered.</summary>
     public IReadOnlyList<ChartPoint>? TopTests { get; private set; }
@@ -92,17 +108,23 @@ public partial class DashboardViewModel(SessionService session, OrdersApi orders
     {
         if (value is null)
         {
-            (OrdersOverTime, TopTests, PeriodOrders) = (null, null, 0);
+            (OrdersOverTime, RevenueOverTime, TopTests, PeriodOrders) = (null, null, null, 0);
             return;
         }
 
         var unit = DashboardPeriodFilter.UnitOf(value.Range.Bucket);
-        var points = new List<ChartPoint>(value.Orders.Count);
+        var ordersOverTime = new List<ChartPoint>(value.Orders.Count);
         var total = 0;
         foreach (var point in value.Orders)
         {
-            points.Add(ChartPoint.At(point.Start, unit, point.Count));
+            ordersOverTime.Add(ChartPoint.At(point.Start, unit, point.Count));
             total += point.Count;
+        }
+
+        var revenue = new List<ChartPoint>(value.RevenuePoints.Count);
+        foreach (var point in value.RevenuePoints)
+        {
+            revenue.Add(ChartPoint.At(point.Start, unit, (int)Math.Clamp(Math.Round(Money.ToMajor(point.Amount)), 0, int.MaxValue)));
         }
 
         var top = new List<ChartPoint>(value.TopTests.Count);
@@ -111,9 +133,11 @@ public partial class DashboardViewModel(SessionService session, OrdersApi orders
             top.Add(new ChartPoint(test.Name, test.Count));
         }
 
-        (OrdersOverTime, PeriodOrders, TopTests) = (points, total, top);
+        (OrdersOverTime, RevenueOverTime, PeriodOrders, TopTests) = (ordersOverTime, revenue, total, top);
     }
 
     private string Percent(int count) =>
         TotalOrders == 0 ? "0%" : string.Create(CultureInfo.InvariantCulture, $"{Math.Round(100.0 * count / TotalOrders):0}%");
+
+    private static string Amount(long minorUnits) => Money.ToMajor(minorUnits).ToString("N2", CultureInfo.InvariantCulture);
 }

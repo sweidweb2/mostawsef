@@ -110,9 +110,6 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTextColumn x:DataType="tests:LabTestDto" Header="{l:Tr LabTests.Col.Price}" Width="140"
-                                               Binding="{Binding Price, Converter={x:Static conv:ValueConverters.Money}}"
-                                               IsReadOnly="True" />
                             <DataGridTextColumn x:DataType="tests:LabTestDto" Header="{l:Tr LabTests.Col.LabCost}" Width="140"
                                                Binding="{Binding LabCost, Converter={x:Static conv:ValueConverters.Money}}"
                                                IsReadOnly="True" />
@@ -185,7 +182,7 @@
                                                 <ui:Badge Kind="Success" Text="{l:Tr LabTests.Active}" IsVisible="{Binding IsActive}" />
                                                 <ui:Badge Text="{l:Tr LabTests.Inactive}" IsVisible="{Binding !IsActive}" />
                                             </Panel>
-                                            <TextBlock Classes="h3" Text="{l:Money {Binding Price}}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                            <TextBlock Classes="h3" Text="{l:Money {Binding LabCost}}" TextWrapping="Wrap" VerticalAlignment="Center" />
                                         </DockPanel>
                                     </ui:Card>
                                 </DataTemplate>

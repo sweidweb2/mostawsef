@@ -93,7 +93,7 @@ public class AddPaymentTests : UiTestBase
             Payments =
             [
                 .. Details(PartlyPaid.Id).Payments,
-                new OrderPaymentDto(DateTime.UtcNow, PaymentTypes.Payment, PaymentMethods.Card, 15000, null),
+                new OrderPaymentDto(Guid.NewGuid(), DateTime.UtcNow, PaymentTypes.Payment, PaymentMethods.Card, 15000, null),
             ],
         };
         app.Api.On(HttpMethod.Post, $"{OrdersPath}/{PartlyPaid.Id}/payments", request =>
@@ -128,6 +128,81 @@ public class AddPaymentTests : UiTestBase
         Assert.True(badge.IsEffectivelyVisible);
         Assert.Equal(BadgeKind.Info, badge.Kind);
         Assert.Equal("Needs a refund of 20.00", badge.Text);
+    }
+
+    [AvaloniaFact]
+    public async Task Editing_a_payment_opens_the_form_and_saving_updates_the_order()
+    {
+        using var app = Admin();
+        var (details, window) = await OpenDetailsAsync(app, PartlyPaid, Details(PartlyPaid.Id));
+        UpdatePaymentRequest? sent = null;
+        var payment = details.Order!.Payments.Single();
+        var updated = Details(PartlyPaid.Id) with
+        {
+            Status = OrderStatuses.Paid,
+            Paid = 20000,
+            Balance = 0,
+            Payments = [payment with { Amount = 20000, Method = PaymentMethods.Card, Notes = "Full" }],
+        };
+        app.Api.On(HttpMethod.Put, $"{OrdersPath}/{PartlyPaid.Id}/payments/{PaymentId}", request =>
+        {
+            sent = request.Content!.ReadFromJsonAsync<UpdatePaymentRequest>().GetAwaiter().GetResult();
+            return FakeApiHandler.Json(updated);
+        });
+
+        _ = details.EditPaymentCommand.ExecuteAsync(payment);
+        Dispatcher.UIThread.RunJobs();
+        var form = (AddPaymentFormViewModel)window.GetVisualDescendants().OfType<Modal>().Last().Content!;
+        Assert.True(form.IsEditing);
+        Assert.Equal(200.00m, form.MaxAmount);
+        Assert.Equal(50.00m, form.Amount);
+        form.Amount = 200m;
+        form.Method = PaymentMethods.Card;
+        form.Notes = "Full";
+        await form.SaveCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(new UpdatePaymentRequest { Amount = 20000, Method = PaymentMethods.Card, Notes = "Full" }, sent);
+        Assert.Empty(window.GetVisualDescendants().OfType<Modal>());
+        Assert.Equal(OrderStatuses.Paid, details.Order!.Status);
+        Assert.False(details.CanAddPayment);
+        Assert.Contains("Payment updated.", Toasts(window));
+    }
+
+    [AvaloniaFact]
+    public async Task Deleting_a_payment_asks_first_then_updates_the_order()
+    {
+        using var app = Admin();
+        var (details, window) = await OpenDetailsAsync(app, PartlyPaid, Details(PartlyPaid.Id));
+        var payment = details.Order!.Payments.Single();
+        var unpaid = Details(PartlyPaid.Id) with
+        {
+            Status = OrderStatuses.Pending,
+            Paid = 0,
+            Balance = 20000,
+            Payments = [],
+        };
+        app.Api.On(HttpMethod.Delete, $"{OrdersPath}/{PartlyPaid.Id}/payments/{PaymentId}", _ => FakeApiHandler.Json(unpaid));
+
+        var cancelled = details.DeletePaymentCommand.ExecuteAsync(payment);
+        Dispatcher.UIThread.RunJobs();
+        var confirm = window.GetVisualDescendants().OfType<ConfirmDialog>().Single();
+        Assert.Contains(Texts(window), t => t == "Delete this payment?");
+        confirm.Close(false);
+        await cancelled;
+        Assert.Empty(app.Api.RequestsTo(HttpMethod.Delete, $"{OrdersPath}/{PartlyPaid.Id}/payments/{PaymentId}"));
+
+        var delete = details.DeletePaymentCommand.ExecuteAsync(payment);
+        Dispatcher.UIThread.RunJobs();
+        window.GetVisualDescendants().OfType<ConfirmDialog>().Single().Close(true);
+        await delete;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Single(app.Api.RequestsTo(HttpMethod.Delete, $"{OrdersPath}/{PartlyPaid.Id}/payments/{PaymentId}"));
+        Assert.Equal(OrderStatuses.Pending, details.Order!.Status);
+        Assert.Empty(details.Order.Payments);
+        Assert.True(details.CanAddPayment);
+        Assert.Contains("Payment deleted.", Toasts(window));
     }
 
     [AvaloniaFact]

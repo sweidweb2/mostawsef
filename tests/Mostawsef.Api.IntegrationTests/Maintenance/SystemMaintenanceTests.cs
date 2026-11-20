@@ -27,8 +27,8 @@ public class SystemMaintenanceTests(ApiFactory factory)
         var url = $"api/system/dashboard?from={today:yyyy-MM-dd}&to={today:yyyy-MM-dd}";
         var before = await super.GetJsonAsync<SuperDashboardDto>(url);
 
-        var test = await CreateTestAsync(admin, price: 5000);
-        await CreateOrderAsync(admin, test.Id, paid: 2000);
+        var test = await CreateTestAsync(admin);
+        await CreateOrderAsync(admin, test.Id, total: 5000, paid: 2000);
 
         var after = await super.GetJsonAsync<SuperDashboardDto>(url);
 
@@ -99,8 +99,8 @@ public class SystemMaintenanceTests(ApiFactory factory)
         var super = await factory.CreateClientAsAsync(TestUsers.Super);
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var (createdUser, createdLogin) = await super.CreateUserAsync();
-        var test = await CreateTestAsync(admin, price: 1000);
-        var order = await CreateOrderAsync(admin, test.Id, paid: 1000);
+        var test = await CreateTestAsync(admin);
+        var order = await CreateOrderAsync(admin, test.Id, total: 1000, paid: 1000);
         var clinicBefore = await admin.GetJsonAsync<ClinicSettingsDto>("api/clinic-settings");
 
         var response = await super.PostAsJsonAsync(
@@ -131,7 +131,7 @@ public class SystemMaintenanceTests(ApiFactory factory)
         Assert.Equal(clinicBefore.Name, (await admin.GetJsonAsync<ClinicSettingsDto>("api/clinic-settings")).Name);
 
         // Numbering starts again and new data can be added right away.
-        var next = await CreateOrderAsync(admin, (await CreateTestAsync(admin, price: 500)).Id, paid: 0);
+        var next = await CreateOrderAsync(admin, (await CreateTestAsync(admin)).Id, total: 500, paid: 0);
         Assert.Equal("ORD-000001", next.Number);
     }
 
@@ -145,17 +145,17 @@ public class SystemMaintenanceTests(ApiFactory factory)
         return (await response.Content.ReadFromJsonAsync<PatientDto>(Ct))!;
     }
 
-    private static async Task<LabTestDto> CreateTestAsync(HttpClient admin, long price)
+    private static async Task<LabTestDto> CreateTestAsync(HttpClient admin)
     {
         var code = $"T{Guid.NewGuid():N}"[..12].ToUpperInvariant();
         var response = await admin.PostAsJsonAsync(
-            "api/lab-tests", new CreateLabTestRequest { Code = code, Name = $"Test {code}", Price = price, LabCost = 0 }, Ct);
+            "api/lab-tests", new CreateLabTestRequest { Code = code, Name = $"Test {code}", LabCost = 0 }, Ct);
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<LabTestDto>(Ct))!;
     }
 
-    /// <summary>A new patient's order of one test, with a first payment when <paramref name="paid"/> is above 0.</summary>
-    private static async Task<OrderDetailsDto> CreateOrderAsync(HttpClient admin, Guid testId, long paid)
+    /// <summary>A new patient's order of one test charged <paramref name="total"/>, with a first payment when <paramref name="paid"/> is above 0.</summary>
+    private static async Task<OrderDetailsDto> CreateOrderAsync(HttpClient admin, Guid testId, long total, long paid)
     {
         var response = await admin.PostAsJsonAsync(
             "api/orders",
@@ -163,6 +163,7 @@ public class SystemMaintenanceTests(ApiFactory factory)
             {
                 NewPatient = new CreatePatientRequest { FullName = $"Patient {Guid.NewGuid():N}", Phone = "01000000000", Gender = Genders.Male },
                 Items = [new() { LabTestId = testId }],
+                Addon = total,
                 FirstPayment = paid > 0 ? new() { Amount = paid, Method = PaymentMethods.Cash } : null,
             },
             Ct);

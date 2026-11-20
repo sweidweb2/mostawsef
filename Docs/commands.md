@@ -99,7 +99,7 @@ moves the dates back so the lists and the dashboard graphs have history. The mix
 | `medium` | 80       | 500    | 60 days  | a normal busy clinic: paging, search, filters, dashboard             |
 | `high`   | 1,500    | 10,500 | 365 days | volume: the "10,000+" count cap, many pages, speed, heavy graphs     |
 
-About 30% of the orders are unpaid, 25% partly paid and 45% paid; some have an extra "our price" amount and some partly
+About 30% of the orders are unpaid, 25% partly paid and 45% paid; every order is charged its "our price" (lab costs plus a markup) and some partly
 paid ones got a second payment, so the yellow rows, the status filter and the payment form all have something to show.
 
 ```powershell

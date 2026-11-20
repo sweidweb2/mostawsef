@@ -285,7 +285,6 @@
   <data name="Common.GridView" xml:space="preserve"><value>عرض كبطاقات</value></data>
   <data name="LabTests.Col.Code" xml:space="preserve"><value>الكود</value></data>
   <data name="LabTests.Col.Name" xml:space="preserve"><value>اسم التحليل</value></data>
-  <data name="LabTests.Col.Price" xml:space="preserve"><value>السعر</value></data>
   <data name="LabTests.Col.LabCost" xml:space="preserve"><value>تكلفة المعمل</value></data>
   <data name="LabTests.Col.Status" xml:space="preserve"><value>الحالة</value></data>
   <data name="LabTests.Active" xml:space="preserve"><value>متاح</value></data>
@@ -296,8 +295,7 @@
   <data name="LabTests.Field.CodePlaceholder" xml:space="preserve"><value>مثال: CBC</value></data>
   <data name="LabTests.Field.AmountPlaceholder" xml:space="preserve"><value>0.00</value></data>
   <data name="LabTests.Field.CodeHint" xml:space="preserve"><value>قصير وغير مكرر. يُحفظ بحروف كبيرة.</value></data>
-  <data name="LabTests.Field.PriceHint" xml:space="preserve"><value>ما يدفعه المريض، بحد أقصى {0}.</value></data>
-  <data name="LabTests.Field.LabCostHint" xml:space="preserve"><value>ما يتقاضاه المعمل من العيادة.</value></data>
+  <data name="LabTests.Field.LabCostHint" xml:space="preserve"><value>ما يتقاضاه المعمل من العيادة، بحد أقصى {0}.</value></data>
   <data name="LabTests.Field.IsActive" xml:space="preserve"><value>متاح للطلبات الجديدة</value></data>
   <data name="LabTests.Saved" xml:space="preserve"><value>تم حفظ التحليل.</value></data>
   <data name="LabTests.Deleted" xml:space="preserve"><value>تم حذف التحليل.</value></data>
@@ -387,7 +385,7 @@
   <data name="NewOrder.PaymentNotesPlaceholder" xml:space="preserve"><value>اختياري، مثل رقم الإيصال</value></data>
   <data name="NewOrder.RemoveTest" xml:space="preserve"><value>إزالة</value></data>
   <data name="NewOrder.Addon" xml:space="preserve"><value>سعرنا</value></data>
-  <data name="NewOrder.AddonHint" xml:space="preserve"><value>يُضاف فوق مجموع أسعار التحاليل. اتركه فارغاً إن لم يكن هناك مبلغ إضافي.</value></data>
+  <data name="NewOrder.AddonHint" xml:space="preserve"><value>ما تتقاضاه العيادة لهذا الطلب. اتركه فارغاً إن لم يكن هناك مبلغ.</value></data>
   <data name="NewOrder.NoTests" xml:space="preserve"><value>لا توجد تحاليل بعد</value></data>
   <data name="NewOrder.NoTestsHint" xml:space="preserve"><value>اضغط على تحليل من القائمة لإضافته.</value></data>
   <data name="NewOrder.Total" xml:space="preserve"><value>الإجمالي</value></data>
@@ -396,7 +394,7 @@
   <data name="NewOrder.CatalogEmpty" xml:space="preserve"><value>لا يوجد تحليل فعّال مطابق.</value></data>
   <data name="OrderDetails.Title" xml:space="preserve"><value>الطلب {0}</value></data>
   <data name="OrderDetails.Subtitle" xml:space="preserve"><value>مريض الطلب ومبالغه وتحاليله.</value></data>
-  <data name="OrderDetails.Balance" xml:space="preserve"><value>المتبقي</value></data>
+  <data name="OrderDetails.Balance" xml:space="preserve"><value>المبلغ المستحق</value></data>
   <data name="OrderDetails.Info" xml:space="preserve"><value>الطلب</value></data>
   <data name="OrderDetails.CreatedBy" xml:space="preserve"><value>أنشأه</value></data>
   <data name="OrderDetails.Payments" xml:space="preserve"><value>المدفوعات ({0})</value></data>
@@ -407,17 +405,22 @@
   <data name="PaymentType.Refund" xml:space="preserve"><value>استرداد</value></data>
   <data name="ErrorCode.exceeds_balance" xml:space="preserve"><value>لا يمكن أن تزيد الدفعة عن المبلغ المتبقي.</value></data>
   <data name="Action.orders.payment_added" xml:space="preserve"><value>إضافة دفعة لطلب</value></data>
+  <data name="Action.orders.payment_updated" xml:space="preserve"><value>تعديل دفعة لطلب</value></data>
+  <data name="Action.orders.payment_deleted" xml:space="preserve"><value>حذف دفعة من طلب</value></data>
   <data name="OrderDetails.AddPayment" xml:space="preserve"><value>إضافة دفعة</value></data>
   <data name="OrderDetails.AddPaymentTitle" xml:space="preserve"><value>إضافة دفعة</value></data>
+  <data name="OrderDetails.EditPaymentTitle" xml:space="preserve"><value>تعديل الدفعة</value></data>
+  <data name="OrderDetails.DeletePaymentConfirm" xml:space="preserve"><value>حذف هذه الدفعة؟</value></data>
   <data name="OrderDetails.PaymentAdded" xml:space="preserve"><value>تمت إضافة الدفعة.</value></data>
+  <data name="OrderDetails.PaymentUpdated" xml:space="preserve"><value>تم تحديث الدفعة.</value></data>
+  <data name="OrderDetails.PaymentDeleted" xml:space="preserve"><value>تم حذف الدفعة.</value></data>
   <data name="OrderDetails.RefundNeeded" xml:space="preserve"><value>يحتاج إلى استرداد {0}</value></data>
   <data name="OrderDetails.PrintInvoice" xml:space="preserve"><value>طباعة الفاتورة</value></data>
   <data name="OrderDetails.ExportInvoice" xml:space="preserve"><value>تصدير الفاتورة</value></data>
   <data name="Invoice.Title" xml:space="preserve"><value>فاتورة</value></data>
   <data name="Invoice.BilledTo" xml:space="preserve"><value>الفاتورة إلى</value></data>
   <data name="Invoice.Details" xml:space="preserve"><value>تفاصيل الفاتورة</value></data>
-  <data name="Invoice.TestsTotal" xml:space="preserve"><value>مجموع التحاليل</value></data>
-  <data name="Invoice.Addon" xml:space="preserve"><value>مبلغ إضافي</value></data>
+  <data name="Invoice.Addon" xml:space="preserve"><value>سعرنا</value></data>
   <data name="Invoice.BalanceDue" xml:space="preserve"><value>المبلغ المتبقي</value></data>
   <data name="Invoice.RefundDue" xml:space="preserve"><value>مبلغ مستحق الاسترداد</value></data>
   <data name="Invoice.Payments" xml:space="preserve"><value>المدفوعات المستلمة</value></data>

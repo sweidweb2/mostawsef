@@ -3,7 +3,7 @@ using Mostawsef.Domain.Enums;
 
 namespace Mostawsef.Domain.Entities;
 
-/// <summary>Money received for (or refunded from) an order. Never edited or deleted; corrections are Refund rows.</summary>
+/// <summary>Money received for (or refunded from) an order. Edits and deletes recalculate the order's Paid and status.</summary>
 public class Payment : Entity
 {
     public const int NotesMaxLength = 500;
@@ -40,4 +40,12 @@ public class Payment : Entity
     public DateTime PaidAt { get; private set; }
 
     public string? Notes { get; private set; }
+
+    /// <summary>Changes method, amount and notes; <see cref="PaidAt"/> stays the original payment time.</summary>
+    internal void Update(PaymentMethod method, long amount, string? notes)
+    {
+        Method = method;
+        Amount = amount;
+        Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
+    }
 }

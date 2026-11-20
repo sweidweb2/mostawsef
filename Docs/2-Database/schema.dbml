@@ -193,12 +193,11 @@ Table lab_tests {
   Code varchar(20) [not null, unique, note: 'trimmed, upper-case']
   Name varchar(150) [not null]
   SearchName varchar(150) [not null, unique, note: 'Name normalized for search; unique so names cannot differ only in spelling']
-  Price bigint [not null, note: 'our price, minor units']
   LabCost bigint [not null, note: 'what the lab charges us, minor units']
   IsActive boolean [not null, default: true]
   CreatedAt timestamptz [not null]
   CreatedBy varchar(50)
-  UpdatedAt timestamptz [note: 'last price/name change']
+  UpdatedAt timestamptz [note: 'last lab-cost/name change']
   UpdatedBy varchar(50)
   Version integer [not null]
 
@@ -216,7 +215,7 @@ Table orders {
   Status OrderStatus [not null, default: 'Pending', note: 'Paid/PartiallyPaid derived from payments']
   DiscountType DiscountType
   DiscountValue bigint [not null, default: 0, note: 'Percent: 0-100; Fixed: minor units']
-  Total bigint [not null, note: 'chargeable total: sum(order_items.Price) + CreateOrderRequest.Addon; Addon on details = Total - catalog sum']
+  Total bigint [not null, note: 'clinic charge for the order (our price); equals CreateOrderRequest.Addon / OrderDetailsDto.Addon']
   TestsCount integer [not null, note: 'denormalized item count for the list page']
   Paid bigint [not null, note: 'denormalized payments minus refunds for the list page']
   Currency varchar(3) [not null]
@@ -235,7 +234,7 @@ Table orders {
     SearchText [type: gin, note: 'gin_trgm_ops']
   }
 
-  Note: 'Implemented (migration AddOrders; Total renamed from OurPrice after AddOrderOurPrice; SearchText on AddOrderSearchText; TestsCount/Paid on AddOrderListAggregates). List search is LIKE on SearchText (trigram; min 3 letters/digits). List reads TestsCount and Paid from the row. Total = catalog sum + addon - discount; Discounts not used yet (DiscountValue 0).'
+  Note: 'Implemented (migration AddOrders; Total renamed from OurPrice after AddOrderOurPrice; SearchText on AddOrderSearchText; TestsCount/Paid on AddOrderListAggregates). List search is LIKE on SearchText (trigram; min 3 letters/digits). List reads TestsCount and Paid from the row. Total is the clinic our-price (Addon); Discounts not used yet (DiscountValue 0).'
 }
 
 Table order_items {
@@ -244,8 +243,7 @@ Table order_items {
   LabTestId uuid [not null]
   LabTestCode varchar(20) [not null, note: 'code snapshot at order time']
   LabTestName varchar(150) [not null, note: 'name snapshot at order time']
-  LabPrice bigint [not null, note: 'copied from lab_tests.LabCost']
-  Price bigint [not null, note: 'catalog price snapshot from lab_tests.Price']
+  LabPrice bigint [not null, note: 'copied from lab_tests.LabCost at order time']
   CreatedAt timestamptz [not null]
   CreatedBy varchar(50)
   UpdatedAt timestamptz

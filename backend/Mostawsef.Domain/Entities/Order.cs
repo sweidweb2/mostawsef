@@ -78,11 +78,8 @@ public class Order : Entity
 
     public IReadOnlyList<Payment> Payments => _payments;
 
-    /// <summary>Sum of the items' catalog prices (before the optional order-level addon).</summary>
-    public long CatalogTotal => _items.Sum(i => i.Price);
-
-    /// <summary>Amount added on top of <see cref="CatalogTotal"/>; 0 when the patient pays catalog prices only.</summary>
-    public long Addon => Total - CatalogTotal;
+    /// <summary>What the clinic charges for this order (same as <see cref="Total"/>; set when the order is created).</summary>
+    public long Addon => Total;
 
     public long Balance => Total - Paid;
 
@@ -102,6 +99,20 @@ public class Order : Entity
         _payments.Add(payment);
         Paid = SumPayments();
         return payment;
+    }
+
+    /// <summary>Updates an existing payment and refreshes <see cref="Paid"/>.</summary>
+    public void UpdatePayment(Payment payment, PaymentMethod method, long amount, string? notes)
+    {
+        payment.Update(method, amount, notes);
+        Paid = SumPayments();
+    }
+
+    /// <summary>Removes a payment and refreshes <see cref="Paid"/>.</summary>
+    public void RemovePayment(Payment payment)
+    {
+        _payments.Remove(payment);
+        Paid = SumPayments();
     }
 
     /// <summary>Paid once nothing is owed, PartiallyPaid after a first payment, Pending before.</summary>

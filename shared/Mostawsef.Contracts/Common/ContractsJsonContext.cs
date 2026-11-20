@@ -49,6 +49,7 @@ namespace Mostawsef.Contracts.Common;
 [JsonSerializable(typeof(OrderDashboardDto))]
 [JsonSerializable(typeof(CreateOrderRequest))]
 [JsonSerializable(typeof(AddPaymentRequest))]
+[JsonSerializable(typeof(UpdatePaymentRequest))]
 [JsonSerializable(typeof(OrderListFilterRequest))]
 [JsonSerializable(typeof(PagedResult<OrderListItemDto>))]
 [JsonSerializable(typeof(ActivityLogDto))]

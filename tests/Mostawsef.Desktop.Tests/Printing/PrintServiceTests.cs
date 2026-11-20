@@ -15,8 +15,8 @@ public class PrintServiceTests : UiTestBase
 {
     private static readonly LabTestDto[] Tests =
     [
-        new(Guid.NewGuid(), "CBC", "تحليل صورة دم كاملة / Complete blood count", 18050, 9000, true, DateTime.UtcNow, null, null, 0),
-        new(Guid.NewGuid(), "FBS", "Fasting blood sugar", 4000, 2500, false, DateTime.UtcNow, null, null, 0),
+        new(Guid.NewGuid(), "CBC", "تحليل صورة دم كاملة / Complete blood count", 18050, true, DateTime.UtcNow, null, null, 0),
+        new(Guid.NewGuid(), "FBS", "Fasting blood sugar", 4000, false, DateTime.UtcNow, null, null, 0),
     ];
 
     [AvaloniaTheory]

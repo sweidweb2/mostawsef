@@ -12,8 +12,8 @@ public class LabTestCatalogTests : UiTestBase
 {
     private const string CatalogPath = "/api/lab-tests/all";
 
-    private static readonly LabTestDto Cbc = new(Guid.NewGuid(), "CBC", "Complete blood count", 15000, 9000, true, default, null, null, 0);
-    private static readonly LabTestDto Old = new(Guid.NewGuid(), "OLD", "Retired", 1000, 500, false, default, null, null, 0);
+    private static readonly LabTestDto Cbc = new(Guid.NewGuid(), "CBC", "Complete blood count", 15000, true, default, null, null, 0);
+    private static readonly LabTestDto Old = new(Guid.NewGuid(), "OLD", "Retired", 1000, false, default, null, null, 0);
 
     [AvaloniaFact]
     public async Task The_catalog_is_one_request_keeps_active_tests_and_is_reused()

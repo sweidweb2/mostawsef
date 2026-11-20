@@ -68,9 +68,9 @@ Login protection (configuration keys under `RateLimit:`; the API answers like a 
 | `PUT /api/system-settings` `{ backupPath, maintenanceMode, version }` | Super | `200`, `400` (`max_length\|260`), `409 concurrency_conflict` |
 | `GET /api/lab-tests?page=&pageSize=&search=` | Admin | Paged list sorted by name; search (cut to 100 characters) matches the normalized name or the code |
 | `GET /api/lab-tests/all` | Admin | Every test for print/export |
-| `GET /api/lab-tests/{id}` | Admin | `200 { id, code, name, price, labCost, isActive, ..., version }`, `404` |
-| `POST /api/lab-tests` `{ code, name, price, labCost }` | Admin | `201`, `400` (`max_length\|20`/`\|150`, `range\|0\|100000000` for a price outside 0 to 1,000,000.00), `409 taken` on `Code` or `Name` |
-| `PUT /api/lab-tests/{id}` `{ code, name, price, labCost, isActive, version }` | Admin | `200`, `400`, `404`, `409 taken` or `concurrency_conflict` |
+| `GET /api/lab-tests/{id}` | Admin | `200 { id, code, name, labCost, isActive, ..., version }`, `404` |
+| `POST /api/lab-tests` `{ code, name, labCost }` | Admin | `201`, `400` (`max_length\|20`/`\|150`, `range\|0\|100000000` for a lab cost outside 0 to 1,000,000.00), `409 taken` on `Code` or `Name` |
+| `PUT /api/lab-tests/{id}` `{ code, name, labCost, isActive, version }` | Admin | `200`, `400`, `404`, `409 taken` or `concurrency_conflict` |
 | `DELETE /api/lab-tests/{id}` | Admin | `204`, `404` |
 | `GET /api/patients?page=&pageSize=&search=` | Admin | Paged list sorted by SearchName; search matches SearchText (name/phones; trigram, min 3 letters/digits or 400) |
 | `GET /api/patients/all` | Admin | Every patient for print/export (notes omitted) |
@@ -128,7 +128,7 @@ Seeded once on first Production start from `appsettings.json`. Change these pass
 | `Services/Navigation/NavigationService` | Opens the login screen or the user's portal; the single access check (`CanAccess`, `CreatePage`) |
 | `ViewModels/Auth/LoginViewModel` + `Views/Auth/LoginView` | Sign-in form |
 | `ViewModels/Shell/PortalShellViewModel` + `Views/Shell/PortalShellView` | The one portal layout for every role: sidebar from the role's menu, top bar (user, `ui:PreferencesBar`), sign out |
-| `ViewModels/Shell/DashboardViewModel` + `Views/Shell/DashboardView` | Empty dashboard, the first page of every portal (split per role in `AppRoutes` when one needs its own) |
+| `ViewModels/Shell/DashboardViewModel` + `Views/Shell/DashboardView` | Admin home: revenue, outstanding, order counts and graphs for a chosen period (other roles see an empty card until they get their own dashboard in `AppRoutes`) |
 
 ### Route protection
 

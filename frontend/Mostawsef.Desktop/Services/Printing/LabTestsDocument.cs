@@ -7,11 +7,11 @@ using QuestPDF.Infrastructure;
 
 namespace Mostawsef.Desktop.Services.Printing;
 
-/// <summary>The whole lab test catalog: code, name, price, lab cost and status, in the order given.</summary>
+/// <summary>The whole lab test catalog: code, name, lab cost and status, in the order given.</summary>
 public sealed class LabTestsDocument(PrintContext context, IReadOnlyList<LabTestDto> tests) : IDocument
 {
     private static readonly string[] Columns =
-        ["LabTests.Col.Code", "LabTests.Col.Name", "LabTests.Col.Price", "LabTests.Col.LabCost", "LabTests.Col.Status"];
+        ["LabTests.Col.Code", "LabTests.Col.Name", "LabTests.Col.LabCost", "LabTests.Col.Status"];
 
     public void Compose(IDocumentContainer container) => ClinicPage.Compose(container, context, content => content.Column(column =>
     {
@@ -29,7 +29,6 @@ public sealed class LabTestsDocument(PrintContext context, IReadOnlyList<LabTest
                 columns.RelativeColumn(2);
                 columns.RelativeColumn(5);
                 columns.RelativeColumn(2.5f);
-                columns.RelativeColumn(2.5f);
                 columns.RelativeColumn(2);
             });
 
@@ -45,7 +44,6 @@ public sealed class LabTestsDocument(PrintContext context, IReadOnlyList<LabTest
             {
                 table.Cell().Element(BodyCell).Text(test.Code);
                 table.Cell().Element(BodyCell).Text(test.Name);
-                table.Cell().Element(BodyCell).Text(Money(test.Price));
                 table.Cell().Element(BodyCell).Text(Money(test.LabCost));
                 table.Cell().Element(BodyCell).Text(context.Text(test.IsActive ? "LabTests.Active" : "LabTests.Inactive"));
             }

@@ -23,16 +23,27 @@ public class DashboardStatsTests : UiTestBase
     private static DateOnly FirstOfMonth => new(Today.Year, Today.Month, 1);
 
     /// <summary>This month per day (the default period), or today per hour.</summary>
-    private static OrderDashboardDto Sample(OrderStatsDto? stats = null, IReadOnlyList<TopTestDto>? top = null, string bucket = DashboardBuckets.Day)
+    private static OrderDashboardDto Sample(
+        OrderStatsDto? stats = null,
+        IReadOnlyList<TopTestDto>? top = null,
+        string bucket = DashboardBuckets.Day,
+        long revenue = 123_450,
+        long outstanding = 30_000)
     {
-        var points = bucket == DashboardBuckets.Hour
-            ? Enumerable.Range(0, 24).Select(h => new DashboardCountDto(Today.ToDateTime(TimeOnly.MinValue).AddHours(h), h % 3)).ToList()
-            : Enumerable.Range(0, Today.Day).Select(i => new DashboardCountDto(FirstOfMonth.AddDays(i).ToDateTime(TimeOnly.MinValue), i % 5)).ToList();
+        var starts = bucket == DashboardBuckets.Hour
+            ? Enumerable.Range(0, 24).Select(h => Today.ToDateTime(TimeOnly.MinValue).AddHours(h)).ToList()
+            : Enumerable.Range(0, Today.Day).Select(i => FirstOfMonth.AddDays(i).ToDateTime(TimeOnly.MinValue)).ToList();
+        var points = starts.Select((start, i) => new DashboardCountDto(start, bucket == DashboardBuckets.Hour ? i % 3 : i % 5)).ToList();
+        var revenuePoints = starts.Select((start, i) => new DashboardMoneyDto(start, i == starts.Count - 1 ? 25_075 : 0)).ToList();
         var from = bucket == DashboardBuckets.Hour ? Today : FirstOfMonth;
         return new OrderDashboardDto(
+            "EGP",
             new DashboardRangeDto(from, Today, Today.AddYears(-1), Today, bucket),
             stats ?? new OrderStatsDto(1, 1, 1),
+            revenue,
+            outstanding,
             points,
+            revenuePoints,
             top ?? []);
     }
 
@@ -58,13 +69,39 @@ public class DashboardStatsTests : UiTestBase
         var request = Assert.Single(app.Api.RequestsTo(HttpMethod.Get, "/api/orders"));
         Assert.Equal($"?from={FirstOfMonth:yyyy-MM-dd}&to={Today:yyyy-MM-dd}", request.RequestUri!.Query);
         Assert.Equal((10, 6, 3, 1), (page.TotalOrders, page.PaidOrders, page.PartiallyPaidOrders, page.UnpaidOrders));
-        Assert.Equal(["10", "6", "3", "1"], window.GetVisualDescendants().OfType<StatCard>().Select(c => c.Value));
+        Assert.Equal("1,234.50", Named<StatCard>(window, "RevenueCard").Value);
+        Assert.Equal("EGP", Named<StatCard>(window, "RevenueCard").Caption);
+        Assert.Equal("300.00", Named<StatCard>(window, "OutstandingCard").Value);
+        Assert.Equal("10", Named<StatCard>(window, "TotalOrdersCard").Value);
+        Assert.Equal("6", Named<StatCard>(window, "PaidOrdersCard").Value);
+        Assert.Equal("3", Named<StatCard>(window, "PartiallyPaidOrdersCard").Value);
+        Assert.Equal("1", Named<StatCard>(window, "UnpaidOrdersCard").Value);
         Assert.Equal((6.0, 6.0), (Named<ProgressBar>(window, "PaidBar").Maximum, Named<ProgressBar>(window, "PaidBar").Value));
         Assert.Equal("60%", page.PaidPercent);
         Assert.Equal("30%", page.PartiallyPaidPercent);
         Assert.Equal("10%", page.UnpaidPercent);
         Assert.True(Named<StackPanel>(window, "PeriodCaption").IsEffectivelyVisible);
         Assert.Contains("(per day)", TestServices.Texts(window));
+    }
+
+    [AvaloniaFact]
+    public async Task Admin_dashboard_draws_revenue_per_day_of_the_period()
+    {
+        using var app = new TestServices();
+        app.SignInAs(Roles.Admin);
+        var sample = Sample();
+        app.Api.OnGet(DashboardPath, sample);
+
+        var (page, window) = await ShowAsync(app);
+
+        Assert.Equal(sample.RevenuePoints.Count, page.RevenueOverTime!.Count);
+        Assert.All(page.RevenueOverTime, p => Assert.Equal(ChartUnit.Day, p.Unit));
+        // Revenue is drawn in whole currency units: 250.75 rounds to 251.
+        Assert.Equal(251, page.RevenueOverTime[^1].Value);
+        var chart = Named<LineChart>(window, "RevenueChart");
+        Assert.True(chart.IsEffectivelyVisible);
+        Assert.Same(page.RevenueOverTime, chart.Points);
+        Assert.Contains("1,234.50 collected in this period (payments minus refunds)", TestServices.Texts(window));
     }
 
     [AvaloniaFact]

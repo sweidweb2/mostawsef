@@ -41,7 +41,7 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
     {
         await EnsureUniqueAsync(request.Code, request.Name, null, cancellationToken);
 
-        var test = new LabTest(request.Code, request.Name, SearchText.Normalize(request.Name), request.Price!.Value, request.LabCost!.Value);
+        var test = new LabTest(request.Code, request.Name, SearchText.Normalize(request.Name), request.LabCost!.Value);
         tests.Add(test);
         await SaveUniqueAsync(request.Code, request.Name, null, cancellationToken);
 
@@ -60,7 +60,7 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
         await EnsureUniqueAsync(request.Code, request.Name, test.Id, cancellationToken);
 
         test.Update(
-            request.Code, request.Name, SearchText.Normalize(request.Name), request.Price!.Value, request.LabCost!.Value, request.IsActive);
+            request.Code, request.Name, SearchText.Normalize(request.Name), request.LabCost!.Value, request.IsActive);
         await SaveUniqueAsync(request.Code, request.Name, test.Id, cancellationToken);
 
         await LogAsync(ActivityActions.LabTestUpdated, "Updated a lab test", test, cancellationToken);
@@ -127,16 +127,16 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
             {
                 EntityType = nameof(LabTest),
                 EntityId = test.Id.ToString(),
-                Details = new { test.Code, test.Name, test.Price, test.LabCost, test.IsActive },
+                Details = new { test.Code, test.Name, test.LabCost, test.IsActive },
             },
             cancellationToken);
 
     private static LabTestDto ToListDto(LabTestListRow t) => new(
-        t.Id, t.Code, t.Name, t.Price, t.LabCost, t.IsActive, t.CreatedAt, t.UpdatedAt, t.UpdatedBy, t.Version);
+        t.Id, t.Code, t.Name, t.LabCost, t.IsActive, t.CreatedAt, t.UpdatedAt, t.UpdatedBy, t.Version);
 
     private static LabTestDto ToExportDto(LabTestExportRow t) => new(
-        t.Id, t.Code, t.Name, t.Price, t.LabCost, t.IsActive, default, null, null, 0);
+        t.Id, t.Code, t.Name, t.LabCost, t.IsActive, default, null, null, 0);
 
     private static LabTestDto ToDto(LabTest t) => new(
-        t.Id, t.Code, t.Name, t.Price, t.LabCost, t.IsActive, t.CreatedAt, t.UpdatedAt, t.UpdatedBy, t.Version);
+        t.Id, t.Code, t.Name, t.LabCost, t.IsActive, t.CreatedAt, t.UpdatedAt, t.UpdatedBy, t.Version);
 }
