@@ -66,7 +66,7 @@ catch {
     exit 1
 }
 
-$login = Invoke-Api POST "auth/login" @{ username = "admin@example.com"; password = "password" }
+$login = Invoke-Api POST "auth/clinic-session" @{}
 $script:headers = @{ Authorization = "Bearer $($login.accessToken)" }
 
 # --- Lab tests -----------------------------------------------------------------------------------------------------
@@ -166,12 +166,13 @@ for ($i = 0; $i -lt $Orders; $i++) {
         })
 
     $order = @{ items = $items }
-    # Our price: what the clinic charges, the lab costs plus a markup (an order has no total without it).
-    $total = 0L
+    # Addon is our price on top of lab costs; the patient total is labs + addon.
+    $addon = 0L
     if ($labCostTotal -gt 0) {
-        $total = [long]([Math]::Max(500, [Math]::Floor($labCostTotal * (1.3 + $random.NextDouble() * 0.7) / 500) * 500))
-        $order.addon = $total
+        $addon = [long]([Math]::Max(0, [Math]::Floor($labCostTotal * (0.3 + $random.NextDouble() * 0.7) / 500) * 500))
+        if ($addon -gt 0) { $order.addon = $addon }
     }
+    $total = $labCostTotal + $addon
     if ($random.Next(10) -eq 0) {
         $order.newPatient = New-PatientRequest
     }
@@ -192,4 +193,4 @@ for ($i = 0; $i -lt $Orders; $i++) {
 }
 $summary = ($statusCounts.GetEnumerator() | Sort-Object Name | ForEach-Object { "$($_.Value) $($_.Name)" }) -join ", "
 Write-Host "Orders: $Orders added ($summary)"
-Write-Host "Done. Sign in as admin@example.com / password to see the data." -ForegroundColor Green
+Write-Host "Done. Use Enter clinic on the login screen (or Super: super@example.com / password)." -ForegroundColor Green

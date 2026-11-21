@@ -50,8 +50,10 @@ public partial class OrderDetailsViewModel(
 
     public string? BreadcrumbArg => Order?.Number;
 
-    /// <summary>True when the order has an amount added on top of the tests' catalog prices.</summary>
-    public bool HasAddon => Order is { Addon: > 0 };
+    /// <summary>
+    /// True when our price is part of the lab-inclusive total (hidden for legacy rows where Addon only mirrors Total).
+    /// </summary>
+    public bool HasAddon => Order is { } order && OrderPricing.ShowsAddon(order);
 
     [ObservableProperty]
     public partial bool IsLoading { get; private set; }

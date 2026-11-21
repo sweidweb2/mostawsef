@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Application.Modules.Backups;
+using Mostawsef.Contracts.Auth;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Domain.Entities;
 using Mostawsef.Domain.Enums;
@@ -63,7 +64,8 @@ public static class DatabaseInitializer
             logger.LogInformation("Filled SearchText on {Count} existing patients", patients);
         }
 
-        if (pending.Contains(PatientSearchTextRebuild.Migration))
+        if (pending.Contains(PatientSearchTextRebuild.Migration)
+            || await PatientSearchTextRebuild.ShouldRunAsync(db, cancellationToken))
         {
             var rebuilt = await PatientSearchTextRebuild.RunAsync(db, cancellationToken);
             logger.LogInformation("Rebuilt SearchText on {Count} patients after dropping guardian phone", rebuilt);
@@ -81,7 +83,8 @@ public static class DatabaseInitializer
             logger.LogInformation("Filled lab-test snapshots on {Count} existing order items", snapshots);
         }
 
-        if (pending.Contains(OrderAddonBackfill.Migration))
+        if (pending.Contains(OrderAddonBackfill.Migration)
+            || await OrderAddonBackfill.ShouldRunAsync(db, cancellationToken))
         {
             var addons = await OrderAddonBackfill.RunAsync(db, cancellationToken);
             logger.LogInformation("Copied the saved total into Addon on {Count} existing orders", addons);
@@ -109,6 +112,8 @@ public static class DatabaseInitializer
             logger.LogInformation("Filled empty backup folder with default {BackupPath}", systemSettings.BackupPath);
         }
 
+        await EnsureClinicUserAsync(db, hasher, logger, cancellationToken);
+
         foreach (var seed in seedUsers)
         {
             if (string.IsNullOrWhiteSpace(seed.Username) || string.IsNullOrWhiteSpace(seed.Password))
@@ -117,6 +122,12 @@ public static class DatabaseInitializer
             }
 
             var username = User.NormalizeUsername(seed.Username);
+            if (username == ClinicIdentity.Username || seed.Role != UserRole.Super)
+            {
+                // Clinic is seeded above; password login is Super-only — never seed Admin accounts from config.
+                continue;
+            }
+
             if (await db.Users.IgnoreQueryFilters().AnyAsync(u => u.Username == username, cancellationToken))
             {
                 continue;
@@ -134,5 +145,30 @@ public static class DatabaseInitializer
         {
             scope.ServiceProvider.GetService<ISystemSettingsCache>()?.Invalidate();
         }
+    }
+
+    /// <summary>
+    /// Built-in Admin identity for passwordless clinic entry. Password is a random unusable hash (no password login).
+    /// </summary>
+    private static async Task EnsureClinicUserAsync(
+        AppDbContext db,
+        IPasswordHasher hasher,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        var username = ClinicIdentity.Username;
+        if (await db.Users.IgnoreQueryFilters().AnyAsync(u => u.Username == username, cancellationToken))
+        {
+            return;
+        }
+
+        var fullName = ClinicIdentity.FullName;
+        db.Users.Add(new User(
+            username,
+            fullName,
+            SearchText.Normalize(fullName),
+            hasher.Hash(Guid.NewGuid().ToString("N")),
+            UserRole.Admin));
+        logger.LogInformation("Seeded clinic identity {Username}", username);
     }
 }

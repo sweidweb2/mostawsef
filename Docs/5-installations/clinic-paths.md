@@ -43,14 +43,12 @@ One-PC install. Default root: `C:\Mostawsef`.
 | **Fresh** Postgres via Setup (field blank) | Random password → `C:\Mostawsef\postgres-superuser.password.txt` |
 | Typed in Setup (existing Postgres) | Briefly saved as `C:\Mostawsef\scripts\postgres-super.password` (removed after successful install) |
 
-### App login (seeded once)
+### App access
 
-| Role | Username | Password |
-| --- | --- | --- |
-| Super | `ali@etkan` | `ali@1234` |
-| Admin | `ana_mostawsef` | `123456789` |
-
-Change after first sign-in.
+| Path | How |
+| --- | --- |
+| Admin (clinic) | **Enter clinic** on the login screen (no password) |
+| Super | `ali@etkan` / `ali@1234` (seeded once) — change after first sign-in |
 
 ---
 

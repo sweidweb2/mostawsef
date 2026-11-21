@@ -5,45 +5,50 @@ namespace Mostawsef.Infrastructure.Persistence;
 
 /// <summary>
 /// Rebuilds patients.SearchText after GuardianPhone was dropped so old guardian digits are no longer searchable.
-/// DatabaseInitializer runs it once after DropPatientGuardianPhoneAndIsInsured.
+/// One set-based <c>ExecuteUpdate</c> (no Version / UpdatedAt bump); a crash before the marker re-runs safely
+/// because already-correct rows are skipped. Matches <c>Patient.ComposeSearchText</c>.
 /// </summary>
 public static class PatientSearchTextRebuild
 {
     public const string Migration = "20261121092036_DropPatientGuardianPhoneAndIsInsured";
 
-    public const int BatchSize = 500;
+    /// <summary>Completion marker in <c>number_sequences</c> (not a real document counter).</summary>
+    public const string CompletionMarker = "backfill.patient-search-no-guardian";
+
+    /// <summary>True when the drop migration is applied but this rebuild has not finished.</summary>
+    public static async Task<bool> ShouldRunAsync(AppDbContext db, CancellationToken cancellationToken = default)
+    {
+        var applied = await db.Database.GetAppliedMigrationsAsync(cancellationToken);
+        if (!applied.Contains(Migration))
+        {
+            return false;
+        }
+
+        return !await DataBackfillMarker.ExistsAsync(db, CompletionMarker, cancellationToken);
+    }
 
     /// <summary>Returns how many patients were updated.</summary>
     public static async Task<int> RunAsync(AppDbContext db, CancellationToken cancellationToken = default)
     {
-        var updated = 0;
-        Guid? lastId = null;
-        while (true)
-        {
-            var query = db.Patients.IgnoreQueryFilters().AsQueryable();
-            if (lastId is { } after)
-            {
-                query = query.Where(p => p.Id.CompareTo(after) > 0);
-            }
+        // Same join as Patient.ComposeSearchText: name, phone, or "name\nphone" when both are present.
+        var updated = await db.Patients.IgnoreQueryFilters()
+            .Where(p => p.SearchText != (
+                p.SearchName == string.Empty
+                    ? p.Phone
+                    : p.Phone == string.Empty
+                        ? p.SearchName
+                        : p.SearchName + "\n" + p.Phone))
+            .ExecuteUpdateAsync(
+                s => s.SetProperty(
+                    p => p.SearchText,
+                    p => p.SearchName == string.Empty
+                        ? p.Phone
+                        : p.Phone == string.Empty
+                            ? p.SearchName
+                            : p.SearchName + "\n" + p.Phone),
+                cancellationToken);
 
-            var batch = await query.OrderBy(p => p.Id).Take(BatchSize).ToListAsync(cancellationToken);
-            foreach (var patient in batch)
-            {
-                patient.Update(
-                    patient.FullName, patient.SearchName, patient.Phone,
-                    patient.Notes, patient.Gender, patient.DateOfBirth);
-            }
-
-            await db.SaveChangesAsync(cancellationToken);
-            db.ChangeTracker.Clear();
-            updated += batch.Count;
-
-            if (batch.Count < BatchSize)
-            {
-                return updated;
-            }
-
-            lastId = batch[^1].Id;
-        }
+        await DataBackfillMarker.EnsureAsync(db, CompletionMarker, cancellationToken);
+        return updated;
     }
 }

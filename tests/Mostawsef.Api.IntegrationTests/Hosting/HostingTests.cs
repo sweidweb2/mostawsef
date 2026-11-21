@@ -14,7 +14,7 @@ public class HostingTests(ApiFactory factory)
     [Fact]
     public async Task Http_requests_are_not_redirected_to_https_when_an_https_port_is_configured()
     {
-        var token = (await factory.CreateClient().LoginAsAsync(TestUsers.Admin)).AccessToken;
+        var token = (await factory.CreateClient().OpenClinicSessionAsync()).AccessToken;
         using var httpsFactory = factory.WithWebHostBuilder(builder =>
             builder.ConfigureAppConfiguration(config =>
                 config.AddInMemoryCollection(new Dictionary<string, string?> { ["HTTPS_PORT"] = "7027" })));
@@ -39,7 +39,7 @@ public class HostingTests(ApiFactory factory)
     public async Task Api_responses_include_server_timing_except_health()
     {
         var client = factory.CreateClient();
-        var token = (await client.LoginAsAsync(TestUsers.Admin)).AccessToken;
+        var token = (await client.OpenClinicSessionAsync()).AccessToken;
 
         var me = await client.WithBearer(token).GetAsync("api/clinic-settings", TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.OK, me.StatusCode);

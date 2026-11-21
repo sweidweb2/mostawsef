@@ -28,7 +28,7 @@
 
         <ui:AppShell.SidebarFooter>
             <ui:NavMenuItem Icon="{StaticResource IconLogout}"
-                            Text="{l:Tr Auth.Logout}"
+                            Text="{l:TrKey {Binding LeaveKey}}"
                             IsCompact="{Binding #Shell.IsSidebarCompact}"
                             Command="{Binding SignOutCommand}" />
         </ui:AppShell.SidebarFooter>
@@ -58,12 +58,15 @@
                         <Button Name="UserMenuButton" Classes="ghost">
                             <Button.Flyout>
                                 <MenuFlyout Placement="BottomEdgeAlignedRight">
-                                    <MenuItem Name="ChangePasswordMenuItem" Header="{l:Tr Auth.ChangePassword}" Command="{Binding ChangePasswordCommand}">
+                                    <MenuItem Name="ChangePasswordMenuItem"
+                                              Header="{l:Tr Auth.ChangePassword}"
+                                              Command="{Binding ChangePasswordCommand}"
+                                              IsVisible="{Binding CanManageAccount}">
                                         <MenuItem.Icon>
                                             <PathIcon Data="{StaticResource IconKey}" />
                                         </MenuItem.Icon>
                                     </MenuItem>
-                                    <MenuItem Name="LogoutMenuItem" Header="{l:Tr Auth.Logout}" Command="{Binding SignOutCommand}">
+                                    <MenuItem Name="LogoutMenuItem" Header="{l:TrKey {Binding LeaveKey}}" Command="{Binding SignOutCommand}">
                                         <MenuItem.Icon>
                                             <PathIcon Data="{StaticResource IconLogout}" />
                                         </MenuItem.Icon>

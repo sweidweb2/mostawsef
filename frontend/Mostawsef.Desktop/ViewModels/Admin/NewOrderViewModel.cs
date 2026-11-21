@@ -171,25 +171,16 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
     [ObservableProperty]
     public partial decimal? Addon { get; set; }
 
-    public long LabsTotal
-    {
-        get
-        {
-            long sum = 0;
-            foreach (var draft in SelectedTests)
-            {
-                sum += draft.Test.LabCost;
-            }
+    public long LabsTotal => OrderPricing.LabsTotal(SelectedTests.Select(d => d.Test.LabCost));
 
-            return sum;
-        }
-    }
+    /// <summary>Our price in minor units (0 when the field is empty).</summary>
+    public long OurPrice => Addon is { } price ? Money.ToMinor(price) : 0;
 
-    public long Total => LabsTotal + (Addon is { } price ? Money.ToMinor(price) : 0);
+    public long Total => OrderPricing.PatientTotal(OurPrice, LabsTotal);
 
     public decimal MaxPayableAmount => Money.ToMajor(Math.Min(Total, OrderRules.MaxPaymentAmount));
 
-    public long Remaining => Total - (PaymentAmount is { } amount ? Money.ToMinor(amount) : 0);
+    public long Remaining => Total - (OrderPaymentMapping.ToMinorAmount(PaymentAmount) ?? 0);
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsCatalogEmpty))]
@@ -312,14 +303,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
         NewPatient = IsNewPatient ? PatientForm.ToCreateRequest() : null,
         Items = SelectedTests.Select(t => new CreateOrderItemRequest { LabTestId = t.Test.Id }).ToList(),
         Addon = Addon is { } price ? Money.ToMinor(price) : null,
-        FirstPayment = PaymentAmount is { } amount
-            ? new CreateFirstPaymentRequest
-            {
-                Amount = Money.ToMinor(amount),
-                Method = PaymentMethod,
-                Notes = string.IsNullOrWhiteSpace(PaymentNotes) ? null : PaymentNotes.Trim(),
-            }
-            : null,
+        FirstPayment = OrderPaymentMapping.ToFirstPayment(PaymentAmount, PaymentMethod, PaymentNotes),
     };
 
     /// <summary>
@@ -453,6 +437,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
                 NotifyPatientInputsChanged(e.PropertyName);
                 break;
             case nameof(Addon):
+                OnPropertyChanged(nameof(OurPrice));
                 OnPropertyChanged(nameof(Total));
                 OnPropertyChanged(nameof(MaxPayableAmount));
                 OnPropertyChanged(nameof(Remaining));

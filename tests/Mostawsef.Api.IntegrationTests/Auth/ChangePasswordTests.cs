@@ -13,12 +13,10 @@ public class ChangePasswordTests(ApiFactory factory)
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    [Theory]
-    [InlineData(Roles.Admin)]
-    [InlineData(Roles.Super)]
-    public async Task Any_signed_in_user_changes_their_own_password(string role)
+    [Fact]
+    public async Task A_signed_in_super_changes_their_own_password()
     {
-        var (_, login) = await (await factory.CreateClientAsAsync(TestUsers.Super)).CreateUserAsync(role);
+        var (_, login) = await (await factory.CreateClientAsAsync(TestUsers.Super)).CreateUserAsync();
         var oldSession = await factory.CreateClient().LoginAsAsync(login);
         var client = factory.CreateClient().WithBearer(oldSession.AccessToken);
 

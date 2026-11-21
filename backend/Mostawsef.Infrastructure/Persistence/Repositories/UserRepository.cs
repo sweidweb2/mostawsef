@@ -3,6 +3,7 @@ using Mostawsef.Application.Interfaces;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Domain.Common;
 using Mostawsef.Domain.Entities;
+using Mostawsef.Domain.Enums;
 using Mostawsef.Infrastructure.Persistence.Context;
 
 namespace Mostawsef.Infrastructure.Persistence.Repositories;
@@ -37,7 +38,8 @@ public class UserRepository(AppDbContext db) : IUserRepository
 
     public async Task<(IReadOnlyList<UserListRow> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken)
     {
-        var users = db.Users.AsNoTracking();
+        // The Users page manages Super accounts only; the built-in clinic Admin stays hidden.
+        var users = db.Users.AsNoTracking().Where(u => u.Role == UserRole.Super);
 
         var term = SearchText.Normalize(query.Search);
         if (term.Length > 0)

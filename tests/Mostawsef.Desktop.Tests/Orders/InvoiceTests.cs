@@ -39,9 +39,9 @@ public class InvoiceTests : UiTestBase
     }
 
     [AvaloniaTheory]
-    [InlineData(OrderStatuses.Pending, 0L, 20000L)]
-    [InlineData(OrderStatuses.Paid, 20000L, 0L)]
-    [InlineData(OrderStatuses.Paid, 22000L, -2000L)]
+    [InlineData(OrderStatuses.Pending, 0L, 25000L)]
+    [InlineData(OrderStatuses.Paid, 25000L, 0L)]
+    [InlineData(OrderStatuses.Paid, 27000L, -2000L)]
     public void The_invoice_renders_for_unpaid_settled_and_overpaid_orders(string status, long paid, long balance)
     {
         using var app = new TestServices();

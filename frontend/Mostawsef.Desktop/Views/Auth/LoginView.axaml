@@ -150,6 +150,21 @@
                                             IsVisible="{Binding IsBusy}" />
                             </Panel>
                         </Button>
+
+                        <ui:Divider />
+
+                        <Button Classes="secondary lg"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                Command="{Binding EnterClinicCommand}">
+                            <TextBlock Text="{l:Tr Login.EnterClinic}" />
+                        </Button>
+                        <TextBlock Classes="caption muted"
+                                   Text="{l:Tr Login.ClinicUnavailable}"
+                                   IsVisible="{Binding ShowClinicUnavailable}"
+                                   HorizontalAlignment="Center"
+                                   TextAlignment="Center"
+                                   TextWrapping="Wrap" />
                     </StackPanel>
 
                     <TextBlock Classes="caption muted"

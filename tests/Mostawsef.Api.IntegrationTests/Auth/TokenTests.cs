@@ -33,7 +33,7 @@ public class TokenTests(ApiFactory factory)
     public async Task With_a_tampered_token_returns_401()
     {
         var client = factory.CreateClient();
-        var login = await client.LoginAsAsync(TestUsers.Admin);
+        var login = await client.OpenClinicSessionAsync();
         var tampered = login.AccessToken[..^4] + "abcd";
 
         var response = await client.WithBearer(tampered).GetAsync("api/clinic-settings", TestContext.Current.CancellationToken);

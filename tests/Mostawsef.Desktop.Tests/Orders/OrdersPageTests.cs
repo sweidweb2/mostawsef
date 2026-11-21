@@ -5,6 +5,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Mostawsef.Contracts.Auth;
 using Mostawsef.Contracts.Common;
+using Mostawsef.Contracts.Orders;
 using Mostawsef.Contracts.Patients;
 using Mostawsef.Desktop.Components;
 using Mostawsef.Desktop.Services.Local;
@@ -109,13 +110,13 @@ public class OrdersPageTests : UiTestBase
         Assert.Contains("سكر صائم", texts);
         Assert.Contains("admin@test.local", texts);
         Assert.Contains("Partially paid", window.GetVisualDescendants().OfType<Badge>().Where(b => b.IsEffectivelyVisible).Select(b => b.Text));
-        Assert.Equal(["200.00", "50.00", "150.00"], Named<StackPanel>(window, "OrderSidebar").GetVisualDescendants().OfType<StatCard>().Select(c => c.Value));
+        Assert.Equal(["250.00", "50.00", "200.00"], Named<StackPanel>(window, "OrderSidebar").GetVisualDescendants().OfType<StatCard>().Select(c => c.Value));
         var amountDue = Named<StatCard>(window, "BalanceCard");
         Assert.Equal("Amount due", amountDue.Title);
         Assert.Equal(BadgeKind.Warning, amountDue.Kind);
         Assert.Contains("PART_Accent", amountDue.GetVisualDescendants().OfType<Border>().Select(b => b.Name));
         Assert.True(details.HasAddon);
-        Assert.Equal("200.00", Named<TextBlock>(window, "AddonText").Text);
+        Assert.Equal("50.00", Named<TextBlock>(window, "AddonText").Text);
 
         await details.BackCommand.ExecuteAsync(null);
         Dispatcher.UIThread.RunJobs();
@@ -127,10 +128,11 @@ public class OrdersPageTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task Details_show_our_price_as_the_addon_and_the_total()
+    public async Task Details_show_our_price_when_total_is_labs_plus_addon()
     {
         using var app = Admin();
-        var order = Details(PartlyPaid.Id) with { Total = 8000, Balance = 3000, Addon = 8000 };
+        var order = Details(PartlyPaid.Id) with { Total = 8000, Paid = 5000, Balance = 3000, Addon = 3000,
+            Items = [new OrderItemDto(Cbc.Id, Cbc.Code, Cbc.Name, 3000), new OrderItemDto(Sugar.Id, Sugar.Code, Sugar.Name, 2000)] };
         app.Api.OnGet($"{OrdersPath}/{PartlyPaid.Id}", order);
         var (shell, orders, window) = await ShowOrdersPageAsync(app);
 
@@ -140,8 +142,26 @@ public class OrdersPageTests : UiTestBase
 
         Assert.True(details.HasAddon);
         Assert.True(Named<StackPanel>(window, "AddonRow").IsVisible);
-        Assert.Equal("80.00", Named<TextBlock>(window, "AddonText").Text);
+        Assert.Equal("30.00", Named<TextBlock>(window, "AddonText").Text);
         Assert.Contains("Our price", Texts(window));
+        Assert.Equal(["80.00", "50.00", "30.00"], Named<StackPanel>(window, "OrderSidebar").GetVisualDescendants().OfType<StatCard>().Select(c => c.Value));
+    }
+
+    [AvaloniaFact]
+    public async Task Legacy_orders_hide_our_price_when_addon_only_mirrors_total()
+    {
+        using var app = Admin();
+        // Pre-Addon pricing: patient total was our price alone; Addon was copied from Total and labs are not part of it.
+        var order = Details(PartlyPaid.Id) with { Total = 8000, Paid = 5000, Balance = 3000, Addon = 8000 };
+        app.Api.OnGet($"{OrdersPath}/{PartlyPaid.Id}", order);
+        var (shell, orders, window) = await ShowOrdersPageAsync(app);
+
+        await orders.ViewCommand.ExecuteAsync(PartlyPaid);
+        var details = Assert.IsType<OrderDetailsViewModel>(shell.CurrentPage);
+        await WaitUntil(() => details.HasOrder);
+
+        Assert.False(details.HasAddon);
+        Assert.False(Named<StackPanel>(window, "AddonRow").IsVisible);
         Assert.Equal(["80.00", "50.00", "30.00"], Named<StackPanel>(window, "OrderSidebar").GetVisualDescendants().OfType<StatCard>().Select(c => c.Value));
     }
 

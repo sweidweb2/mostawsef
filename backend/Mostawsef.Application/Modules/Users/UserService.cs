@@ -1,5 +1,6 @@
 using Mostawsef.Application.Common;
 using Mostawsef.Application.Interfaces;
+using Mostawsef.Contracts.Auth;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.Users;
 using Mostawsef.Domain.Entities;
@@ -44,6 +45,11 @@ public class UserService(
     public async Task<UserDetailsDto> GetAsync(Guid id, CancellationToken cancellationToken)
     {
         var user = await users.GetDetailsAsync(id, cancellationToken) ?? throw AppException.NotFound();
+        if (user.Role != UserRole.Super)
+        {
+            throw AppException.NotFound();
+        }
+
         return new UserDetailsDto(
             user.Id, user.Username, user.FullName, user.Role.ToString(), user.IsActive, user.LastLoginAt,
             user.CreatedAt, user.CreatedBy, user.UpdatedAt, user.UpdatedBy, user.Version);
@@ -52,13 +58,24 @@ public class UserService(
     public async Task<UserDetailsDto> CreateAsync(CreateUserRequest request, CancellationToken cancellationToken)
     {
         var username = User.NormalizeUsername(request.Username);
+        if (username == ClinicIdentity.Username)
+        {
+            throw AppException.Conflict(ErrorCodes.UsernameTaken, nameof(CreateUserRequest.Username));
+        }
+
         if (await users.UsernameExistsAsync(username, cancellationToken))
         {
             throw AppException.Conflict(ErrorCodes.UsernameTaken, nameof(CreateUserRequest.Username));
         }
 
+        var role = ParseRole(request.Role);
+        if (role != UserRole.Super)
+        {
+            throw AppException.Validation(nameof(CreateUserRequest.Role), ErrorCodes.Invalid);
+        }
+
         var user = new User(
-            username, request.FullName, SearchText.Normalize(request.FullName), passwordHasher.Hash(request.Password), ParseRole(request.Role));
+            username, request.FullName, SearchText.Normalize(request.FullName), passwordHasher.Hash(request.Password), role);
         users.Add(user);
         try
         {
@@ -76,13 +93,18 @@ public class UserService(
 
     public async Task<UserDetailsDto> UpdateAsync(Guid id, UpdateUserRequest request, CancellationToken cancellationToken)
     {
-        var user = await FindAsync(id, cancellationToken);
+        var user = await FindManagedAsync(id, cancellationToken);
         if (user.Version != request.Version)
         {
             throw AppException.Conflict(ErrorCodes.ConcurrencyConflict);
         }
 
         var role = ParseRole(request.Role);
+        if (role != UserRole.Super)
+        {
+            throw AppException.Validation(nameof(UpdateUserRequest.Role), ErrorCodes.Invalid);
+        }
+
         if (IsCurrentUser(user) && (!request.IsActive || role != user.Role))
         {
             throw AppException.Conflict(ErrorCodes.OwnAccount);
@@ -108,7 +130,7 @@ public class UserService(
 
     public async Task ResetPasswordAsync(Guid id, ResetPasswordRequest request, CancellationToken cancellationToken)
     {
-        var user = await FindAsync(id, cancellationToken);
+        var user = await FindManagedAsync(id, cancellationToken);
         if (IsCurrentUser(user))
         {
             throw AppException.Conflict(ErrorCodes.OwnAccount);
@@ -123,7 +145,7 @@ public class UserService(
 
     public async Task DeleteAsync(Guid id, CancellationToken cancellationToken)
     {
-        var user = await FindAsync(id, cancellationToken);
+        var user = await FindManagedAsync(id, cancellationToken);
         if (IsCurrentUser(user))
         {
             throw AppException.Conflict(ErrorCodes.OwnAccount);
@@ -136,8 +158,17 @@ public class UserService(
         await LogAsync(ActivityActions.UserDeleted, "Deleted a user", user, cancellationToken);
     }
 
-    private async Task<User> FindAsync(Guid id, CancellationToken cancellationToken) =>
-        await users.GetByIdAsync(id, cancellationToken) ?? throw AppException.NotFound();
+    /// <summary>Managed Super accounts only; the clinic Admin identity is not editable.</summary>
+    private async Task<User> FindManagedAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var user = await users.GetByIdAsync(id, cancellationToken) ?? throw AppException.NotFound();
+        if (user.Role != UserRole.Super || user.Username == ClinicIdentity.Username)
+        {
+            throw AppException.NotFound();
+        }
+
+        return user;
+    }
 
     private bool IsCurrentUser(User user) => currentUser.UserId == user.Id;
 

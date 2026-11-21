@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -11,7 +10,7 @@ using Mostawsef.Desktop.ViewModels.Shell;
 
 namespace Mostawsef.Desktop.ViewModels.Super;
 
-/// <summary>Create a user (no <paramref name="existing"/>) or edit one. The username is fixed once created.</summary>
+/// <summary>Create a Super user (no <paramref name="existing"/>) or edit one. The username is fixed once created.</summary>
 public partial class UserFormViewModel : FormViewModel
 {
     private readonly UsersApi _users;
@@ -27,7 +26,6 @@ public partial class UserFormViewModel : FormViewModel
         {
             FullName = existing.FullName;
             Username = existing.Username;
-            Role = existing.Role;
             IsActive = existing.IsActive;
         }
 
@@ -35,8 +33,6 @@ public partial class UserFormViewModel : FormViewModel
     }
 
     public bool IsNew => _existing is null;
-
-    public IReadOnlyList<string> RoleOptions { get; } = [Roles.Admin, Roles.Super];
 
     [ObservableProperty]
     public partial string FullName { get; set; } = string.Empty;
@@ -48,14 +44,23 @@ public partial class UserFormViewModel : FormViewModel
     public partial string Password { get; set; } = string.Empty;
 
     [ObservableProperty]
-    public partial string Role { get; set; } = Roles.Admin;
-
-    [ObservableProperty]
     public partial bool IsActive { get; set; } = true;
 
     protected override object BuildRequest() => _existing is null
-        ? new CreateUserRequest { FullName = FullName.Trim(), Username = Username.Trim(), Password = Password, Role = Role }
-        : new UpdateUserRequest { FullName = FullName.Trim(), Role = Role, IsActive = IsActive, Version = _existing.Version };
+        ? new CreateUserRequest
+        {
+            FullName = FullName.Trim(),
+            Username = Username.Trim(),
+            Password = Password,
+            Role = Roles.Super,
+        }
+        : new UpdateUserRequest
+        {
+            FullName = FullName.Trim(),
+            Role = Roles.Super,
+            IsActive = IsActive,
+            Version = _existing.Version,
+        };
 
     protected override async Task<IApiResult> SubmitAsync(object request, CancellationToken cancellationToken) => request switch
     {

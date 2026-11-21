@@ -23,6 +23,8 @@ public static class ActivityActions
     public const string SignedIn = "auth.signed_in";
     public const string SignInFailed = "auth.sign_in_failed";
     public const string SignInBlocked = "auth.sign_in_blocked";
+    public const string ClinicOpened = "auth.clinic_opened";
+    public const string ClinicBlocked = "auth.clinic_blocked";
     public const string SignedOut = "auth.signed_out";
     public const string PasswordChanged = "auth.password_changed";
 

@@ -27,16 +27,6 @@
             <ui:PasswordField Name="PasswordBox" Text="{Binding Password}" />
         </ui:FormField>
 
-        <ui:FormField Label="{l:Tr Users.Col.Role}" IsRequired="True" Error="{l:FieldError {Binding Errors[Role]}}">
-            <ComboBox Name="RoleBox" ItemsSource="{Binding RoleOptions}" SelectedItem="{Binding Role}" HorizontalAlignment="Stretch">
-                <ComboBox.ItemTemplate>
-                    <DataTemplate x:DataType="x:String">
-                        <TextBlock Text="{l:TrKey {Binding}, Prefix=Role.}" />
-                    </DataTemplate>
-                </ComboBox.ItemTemplate>
-            </ComboBox>
-        </ui:FormField>
-
         <CheckBox Name="IsActiveBox" Content="{l:Tr Users.Field.IsActive}" IsChecked="{Binding IsActive}" IsVisible="{Binding !IsNew}" />
     </StackPanel>
 </UserControl>

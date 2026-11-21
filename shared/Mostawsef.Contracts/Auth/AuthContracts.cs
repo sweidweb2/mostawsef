@@ -33,3 +33,16 @@ public static class Roles
     public const string Admin = "Admin";
     public const string Super = "Super";
 }
+
+/// <summary>
+/// Built-in Admin identity for the passwordless clinic session. Seeded at API startup; not managed in the Users page.
+/// Audit fields and activity logs use <see cref="Username"/> as the actor.
+/// </summary>
+public static class ClinicIdentity
+{
+    public const string Username = "clinic";
+    public const string FullName = "Clinic";
+}
+
+/// <summary>Whether the login screen may open the Admin portal without a password (false while maintenance mode is on).</summary>
+public record ClinicAccessResponse(bool Available);

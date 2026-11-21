@@ -27,19 +27,32 @@ public partial class LoginViewModel : ViewModelBase
         {
             ErrorKey = "Login.SessionExpired";
         }
+
+        _ = RefreshClinicAccessAsync();
     }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LoginCommand))]
+    [NotifyCanExecuteChangedFor(nameof(EnterClinicCommand))]
     public partial string Username { get; set; } = string.Empty;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LoginCommand))]
+    [NotifyCanExecuteChangedFor(nameof(EnterClinicCommand))]
     public partial string Password { get; set; } = string.Empty;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(LoginCommand))]
+    [NotifyCanExecuteChangedFor(nameof(EnterClinicCommand))]
     public partial bool IsBusy { get; set; }
+
+    /// <summary>False while maintenance mode is on (Enter clinic stays disabled). True until the first access check fails closed only after a known maintenance response.</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(EnterClinicCommand))]
+    [NotifyPropertyChangedFor(nameof(ShowClinicUnavailable))]
+    public partial bool IsClinicEntryAvailable { get; private set; } = true;
+
+    public bool ShowClinicUnavailable => !IsClinicEntryAvailable;
 
     /// <summary>Resource key of the error to show (translated by the view), or null.</summary>
     [ObservableProperty]
@@ -52,6 +65,8 @@ public partial class LoginViewModel : ViewModelBase
     public bool ShowInsecureConnectionWarning { get; }
 
     private bool CanLogin() => !IsBusy && !string.IsNullOrWhiteSpace(Username) && !string.IsNullOrEmpty(Password);
+
+    private bool CanEnterClinic() => !IsBusy && IsClinicEntryAvailable;
 
     [RelayCommand(CanExecute = nameof(CanLogin))]
     private async Task LoginAsync()
@@ -75,7 +90,6 @@ public partial class LoginViewModel : ViewModelBase
             {
                 ApiError.Unauthorized => "Login.Invalid",
                 ApiError.TooManyRequests => "Login.TooMany",
-                ApiError.Conflict when result.Problem?.Code == ErrorCodes.MaintenanceMode => "Login.Maintenance",
                 ApiError.Unreachable => "Login.ServerUnreachable",
                 _ => "Login.Failed",
             };
@@ -84,5 +98,53 @@ public partial class LoginViewModel : ViewModelBase
         {
             IsBusy = false;
         }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanEnterClinic))]
+    private async Task EnterClinicAsync()
+    {
+        ErrorKey = null;
+        IsBusy = true;
+
+        try
+        {
+            var result = await _authApi.OpenClinicSessionAsync();
+            if (result.IsSuccess)
+            {
+                _session.SignIn(result.Value!);
+                Password = string.Empty;
+                _navigation.NavigateToHome();
+                return;
+            }
+
+            if (result.Error == ApiError.Conflict && result.Problem?.Code == ErrorCodes.MaintenanceMode)
+            {
+                IsClinicEntryAvailable = false;
+                ErrorKey = "Login.Maintenance";
+                return;
+            }
+
+            ErrorKey = result.Error switch
+            {
+                ApiError.Forbidden => "Login.ClinicForbidden",
+                ApiError.TooManyRequests => "Login.TooMany",
+                ApiError.Unreachable => "Login.ServerUnreachable",
+                _ => "Login.Failed",
+            };
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private async Task RefreshClinicAccessAsync()
+    {
+        var result = await _authApi.GetClinicAccessAsync();
+        if (result.IsSuccess)
+        {
+            IsClinicEntryAvailable = result.Value!.Available;
+        }
+        // Unreachable / other errors: leave the button enabled so a click surfaces Login.ServerUnreachable.
     }
 }

@@ -35,16 +35,17 @@ internal static class OrderPages
         Guid.NewGuid(), "عمر خالد", "011 2222 3333", null, Genders.Male, null, DateTime.UtcNow, null, null, 0);
 
     public static readonly OrderListItemDto PartlyPaid = new(
-        Guid.NewGuid(), "ORD-000007", DateTime.UtcNow, Mona.FullName, Mona.Phone, 2, 20000, 5000, OrderStatuses.PartiallyPaid);
+        Guid.NewGuid(), "ORD-000007", DateTime.UtcNow, Mona.FullName, Mona.Phone, 2, 25000, 5000, OrderStatuses.PartiallyPaid);
 
     public static readonly OrderListItemDto Unpaid = new(
         Guid.NewGuid(), "ORD-000008", DateTime.UtcNow, "عمر خالد", "011 2222 3333", 1, 5000, 0, OrderStatuses.Pending);
 
     public static readonly Guid PaymentId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
 
+    /// <summary>Labs 200.00 + our price 50.00 = total 250.00; 50.00 paid.</summary>
     public static OrderDetailsDto Details(Guid id) => new(
         id, "ORD-000007", DateTime.UtcNow, "admin@test.local", Mona.Id, Mona.FullName, Mona.Phone, OrderStatuses.PartiallyPaid,
-        Currencies.Egp, 20000, 5000, 15000, 20000L,
+        Currencies.Egp, 25000, 5000, 20000, 5000L,
         [new OrderItemDto(Cbc.Id, Cbc.Code, Cbc.Name, Cbc.LabCost), new OrderItemDto(Sugar.Id, Sugar.Code, Sugar.Name, Sugar.LabCost)],
         [new OrderPaymentDto(PaymentId, DateTime.UtcNow, PaymentTypes.Payment, PaymentMethods.Cash, 5000, "Receipt 12")]);
 

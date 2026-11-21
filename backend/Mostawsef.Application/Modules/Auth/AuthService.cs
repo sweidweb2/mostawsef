@@ -10,17 +10,26 @@ namespace Mostawsef.Application.Modules.Auth;
 public interface IAuthService
 {
     /// <summary>
-    /// Returns null when the credentials are invalid or the user is inactive.
-    /// Throws AppException 409 maintenance_mode for non-Super users while maintenance mode is on.
+    /// Super password sign-in. Returns null when the credentials are invalid, the user is inactive,
+    /// or the account is not Super (Admin / clinic never signs in with a password).
     /// </summary>
     Task<LoginResponse?> LoginAsync(LoginRequest request, CancellationToken cancellationToken);
+
+    /// <summary>Whether the login screen may open the Admin portal without a password.</summary>
+    Task<ClinicAccessResponse> GetClinicAccessAsync(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Issues an Admin JWT for the built-in <see cref="ClinicIdentity"/> user (no password).
+    /// Throws AppException 409 maintenance_mode while maintenance mode is on.
+    /// </summary>
+    Task<LoginResponse> OpenClinicSessionAsync(CancellationToken cancellationToken);
 
     /// <summary>Records the sign-out of the current user (tokens are stateless, the client discards it).</summary>
     Task SignOutAsync(CancellationToken cancellationToken);
 
     /// <summary>
-    /// Throws AppException: 400 wrong_password on CurrentPassword, 404 if the user no longer exists.
-    /// Returns a fresh access token (password change bumps TokenVersion and invalidates the previous JWT).
+    /// Super only. Throws AppException: 400 wrong_password on CurrentPassword, 404 if the user no longer exists
+    /// or is not Super. Returns a fresh access token (password change bumps TokenVersion and invalidates the previous JWT).
     /// </summary>
     Task<LoginResponse> ChangePasswordAsync(Guid userId, ChangePasswordRequest request, CancellationToken cancellationToken);
 }
@@ -47,7 +56,7 @@ public class AuthService(
         }
 
         var user = await users.GetByUsernameAsync(username, cancellationToken);
-        if (user is null || !user.IsActive)
+        if (user is null || !user.IsActive || user.Role != UserRole.Super)
         {
             // Same hashing cost as a real attempt, so response time does not reveal which usernames exist.
             passwordHasher.Verify(DummyHash(), request.Password);
@@ -55,26 +64,11 @@ public class AuthService(
             return null;
         }
 
-        // Overlap the settings read with PBKDF2 for non-Super users (Super skips maintenance).
-        var settingsTask = user.Role == UserRole.Super ? null : systemSettings.GetAsync(cancellationToken);
-
-        var check = await VerifyPasswordAsync(user, request.Password, settingsTask);
+        var check = await VerifyPasswordAsync(user, request.Password);
         if (check == PasswordCheck.Failed)
         {
             await LogFailedSignInAsync(username, cancellationToken);
             return null;
-        }
-
-        if (settingsTask is not null && (await settingsTask).MaintenanceMode)
-        {
-            await activity.LogAsync(
-                new ActivityEntry(ActivityActions.SignInBlocked, ActivityModules.Auth, "Sign-in blocked by maintenance mode")
-                {
-                    UserId = user.Id,
-                    Username = user.Username,
-                },
-                cancellationToken);
-            throw AppException.Conflict(ErrorCodes.MaintenanceMode);
         }
 
         await RecordSignInAsync(user, request.Password, check, cancellationToken);
@@ -83,29 +77,49 @@ public class AuthService(
         return new LoginResponse(token.Token, token.ExpiresAt, ToDto(user), (int)token.Lifetime.TotalSeconds);
     }
 
-    /// <summary>
-    /// Checks the password. The settings read started next to it is always awaited, so a fault in it is observed
-    /// whichever way the check ends.
-    /// </summary>
-    private async Task<PasswordCheck> VerifyPasswordAsync(User user, string password, Task? racingSettings)
+    public async Task<ClinicAccessResponse> GetClinicAccessAsync(CancellationToken cancellationToken)
     {
-        PasswordCheck check;
-        try
+        var settings = await systemSettings.GetAsync(cancellationToken);
+        return new ClinicAccessResponse(!settings.MaintenanceMode);
+    }
+
+    public async Task<LoginResponse> OpenClinicSessionAsync(CancellationToken cancellationToken)
+    {
+        var settings = await systemSettings.GetAsync(cancellationToken);
+        if (settings.MaintenanceMode)
         {
-            check = passwordHasher.Verify(user.PasswordHash, password);
-        }
-        catch
-        {
-            await racingSettings.ObserveAsync();
-            throw;
+            await activity.LogAsync(
+                new ActivityEntry(ActivityActions.ClinicBlocked, ActivityModules.Auth, "Clinic entry blocked by maintenance mode")
+                {
+                    Username = ClinicIdentity.Username,
+                },
+                cancellationToken);
+            throw AppException.Conflict(ErrorCodes.MaintenanceMode);
         }
 
-        if (check == PasswordCheck.Failed)
+        var user = await users.GetByUsernameAsync(ClinicIdentity.Username, cancellationToken);
+        if (user is null || !user.IsActive || user.Role != UserRole.Admin)
         {
-            await racingSettings.ObserveAsync();
+            throw AppException.NotFound();
         }
 
-        return check;
+        await users.RecordLoginAsync(user.Id, time.GetUtcNow().UtcDateTime, cancellationToken);
+        await activity.LogAsync(
+            new ActivityEntry(ActivityActions.ClinicOpened, ActivityModules.Auth, "Opened the clinic portal")
+            {
+                UserId = user.Id,
+                Username = user.Username,
+                Details = new { Role = user.Role.ToString() },
+            },
+            cancellationToken);
+
+        var token = tokens.CreateAccessToken(user);
+        return new LoginResponse(token.Token, token.ExpiresAt, ToDto(user), (int)token.Lifetime.TotalSeconds);
+    }
+
+    private async Task<PasswordCheck> VerifyPasswordAsync(User user, string password)
+    {
+        return passwordHasher.Verify(user.PasswordHash, password);
     }
 
     /// <summary>Last login, an upgraded password hash when the hasher asks for one, and the sign-in activity.</summary>
@@ -142,6 +156,11 @@ public class AuthService(
     public async Task<LoginResponse> ChangePasswordAsync(Guid userId, ChangePasswordRequest request, CancellationToken cancellationToken)
     {
         var user = await users.GetByIdAsync(userId, cancellationToken) ?? throw AppException.NotFound();
+        if (user.Role != UserRole.Super)
+        {
+            throw AppException.NotFound();
+        }
+
         if (passwordHasher.Verify(user.PasswordHash, request.CurrentPassword) == PasswordCheck.Failed)
         {
             throw AppException.Validation(nameof(ChangePasswordRequest.CurrentPassword), ErrorCodes.WrongPassword);

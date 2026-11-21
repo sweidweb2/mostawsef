@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http;
 using Avalonia.Headless.XUnit;
 using Mostawsef.Contracts.Auth;
 using Mostawsef.Contracts.Common;
@@ -20,7 +21,7 @@ public class LoginViewModelTests : UiTestBase
 
         Assert.False(vm.LoginCommand.CanExecute(null));
 
-        vm.Username = "admin@test.local";
+        vm.Username = "super@test.local";
         Assert.False(vm.LoginCommand.CanExecute(null));
 
         vm.Password = "secret";
@@ -28,34 +29,40 @@ public class LoginViewModelTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public void Login_starts_with_empty_username_and_password()
+    public async Task Login_starts_with_empty_username_and_password_and_clinic_entry_enabled()
     {
         using var app = new TestServices();
+        app.Api.RespondToClinicAccess(available: true);
         var vm = app.Get<LoginViewModel>();
+        await UiWait.UntilAsync(() => vm.IsClinicEntryAvailable && vm.EnterClinicCommand.CanExecute(null));
 
         Assert.Empty(vm.Username);
         Assert.Empty(vm.Password);
+        Assert.True(vm.IsClinicEntryAvailable);
     }
 
     [AvaloniaFact]
-    public async Task Admin_sign_in_opens_the_admin_portal()
+    public async Task Enter_clinic_opens_the_admin_portal()
     {
         using var app = new TestServices();
-        app.Api.RespondToLoginWith(Roles.Admin);
-        var vm = Filled(app.Get<LoginViewModel>());
+        app.Api.RespondToClinicAccess(available: true);
+        app.Api.RespondToClinicSession();
+        var vm = app.Get<LoginViewModel>();
+        await UiWait.UntilAsync(() => vm.EnterClinicCommand.CanExecute(null));
 
-        await vm.LoginCommand.ExecuteAsync(null);
+        await vm.EnterClinicCommand.ExecuteAsync(null);
 
         var shell = Assert.IsType<PortalShellViewModel>(app.Navigation.CurrentPage);
         Assert.Equal("Portal.Admin", shell.PortalTitleKey);
         Assert.True(app.Session.IsInRole(Roles.Admin));
-        Assert.Empty(vm.Password);
+        Assert.Equal(ClinicIdentity.Username, app.Session.CurrentUser!.Username);
     }
 
     [AvaloniaFact]
     public async Task Super_sign_in_opens_the_super_portal()
     {
         using var app = new TestServices();
+        app.Api.RespondToClinicAccess(available: true);
         app.Api.RespondToLoginWith(Roles.Super);
         var vm = Filled(app.Get<LoginViewModel>());
 
@@ -69,6 +76,7 @@ public class LoginViewModelTests : UiTestBase
     public async Task Wrong_credentials_show_an_error_clear_the_password_and_stay_signed_out()
     {
         using var app = new TestServices();
+        app.Api.RespondToClinicAccess(available: true);
         app.Api.RespondWithStatus(HttpStatusCode.Unauthorized);
         var vm = Filled(app.Get<LoginViewModel>());
         var window = app.Show(vm);
@@ -87,6 +95,7 @@ public class LoginViewModelTests : UiTestBase
     public async Task Unreachable_server_shows_a_connection_error()
     {
         using var app = new TestServices();
+        app.Api.RespondToClinicAccess(available: true);
         app.Api.FailWithNetworkError();
         var vm = Filled(app.Get<LoginViewModel>());
 
@@ -100,6 +109,7 @@ public class LoginViewModelTests : UiTestBase
     public async Task Too_many_attempts_show_a_wait_message()
     {
         using var app = new TestServices();
+        app.Api.RespondToClinicAccess(available: true);
         app.Api.RespondWithStatus(HttpStatusCode.TooManyRequests);
         var vm = Filled(app.Get<LoginViewModel>());
 
@@ -110,16 +120,32 @@ public class LoginViewModelTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task Maintenance_mode_shows_a_maintenance_message_and_stays_signed_out()
+    public async Task Maintenance_mode_from_clinic_access_disables_enter_clinic()
     {
         using var app = new TestServices();
-        app.Api.Respond = _ => FakeApiHandler.Problem(HttpStatusCode.Conflict, ErrorCodes.MaintenanceMode);
-        var vm = Filled(app.Get<LoginViewModel>());
+        app.Api.RespondToClinicAccess(available: false);
+        var vm = app.Get<LoginViewModel>();
+        await UiWait.UntilAsync(() => !vm.IsClinicEntryAvailable);
 
-        await vm.LoginCommand.ExecuteAsync(null);
+        Assert.False(vm.EnterClinicCommand.CanExecute(null));
+        Assert.True(vm.ShowClinicUnavailable);
+    }
+
+    [AvaloniaFact]
+    public async Task Enter_clinic_during_maintenance_shows_a_maintenance_message_and_stays_signed_out()
+    {
+        using var app = new TestServices();
+        app.Api.RespondToClinicAccess(available: true);
+        app.Api.On(HttpMethod.Post, "/api/auth/clinic-session",
+            _ => FakeApiHandler.Problem(HttpStatusCode.Conflict, ErrorCodes.MaintenanceMode));
+        var vm = app.Get<LoginViewModel>();
+        await UiWait.UntilAsync(() => vm.EnterClinicCommand.CanExecute(null));
+
+        await vm.EnterClinicCommand.ExecuteAsync(null);
 
         Assert.Equal("Login.Maintenance", vm.ErrorKey);
         Assert.Equal("The system is under maintenance. Please try again later.", app.Localization.Get(vm.ErrorKey!));
+        Assert.False(vm.IsClinicEntryAvailable);
         Assert.False(app.Session.IsAuthenticated);
     }
 
@@ -127,6 +153,7 @@ public class LoginViewModelTests : UiTestBase
     public async Task Error_message_follows_the_selected_language()
     {
         using var app = new TestServices();
+        app.Api.RespondToClinicAccess(available: true);
         app.Api.RespondWithStatus(HttpStatusCode.Unauthorized);
         var vm = Filled(app.Get<LoginViewModel>());
         var window = app.Show(vm);

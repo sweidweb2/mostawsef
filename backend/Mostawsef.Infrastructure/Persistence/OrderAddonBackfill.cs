@@ -4,45 +4,39 @@ using Mostawsef.Infrastructure.Persistence.Context;
 namespace Mostawsef.Infrastructure.Persistence;
 
 /// <summary>
-/// Copies orders.Total into orders.Addon for rows created when the two were the same number.
+/// Copies orders.Total into orders.Addon for legacy rows created when the two were the same number.
 /// The saved total is left alone, so an order already charged is not recalculated.
-/// Plain EF Core instead of SQL in the migration. DatabaseInitializer runs it once after AddOrderAddon.
+/// Skips new-model rows where Addon is 0 and Total already equals the snapshotted lab sum.
+/// Uses <c>ExecuteUpdate</c> (no Version bump) and a race-safe completion marker.
 /// </summary>
 public static class OrderAddonBackfill
 {
     public const string Migration = "20261121092802_AddOrderAddon";
 
-    public const int BatchSize = 500;
+    /// <summary>Completion marker in <c>number_sequences</c> (not a real document counter).</summary>
+    public const string CompletionMarker = "backfill.order-addon";
+
+    /// <summary>True when the Addon migration is applied but this backfill has not finished.</summary>
+    public static async Task<bool> ShouldRunAsync(AppDbContext db, CancellationToken cancellationToken = default)
+    {
+        var applied = await db.Database.GetAppliedMigrationsAsync(cancellationToken);
+        if (!applied.Contains(Migration))
+        {
+            return false;
+        }
+
+        return !await DataBackfillMarker.ExistsAsync(db, CompletionMarker, cancellationToken);
+    }
 
     /// <summary>Returns how many orders were updated.</summary>
     public static async Task<int> RunAsync(AppDbContext db, CancellationToken cancellationToken = default)
     {
-        var updated = 0;
-        Guid? lastId = null;
-        while (true)
-        {
-            var query = db.Orders.Where(o => o.Addon == 0 && o.Total != 0);
-            if (lastId is { } after)
-            {
-                query = query.Where(o => o.Id.CompareTo(after) > 0);
-            }
+        // Legacy unfinished: Total was our price alone (not labs + addon). New Addon=0 orders have Total == Σ LabPrice.
+        var updated = await db.Orders
+            .Where(o => o.Addon == 0 && o.Total != 0 && o.Total != o.Items.Sum(i => i.LabPrice))
+            .ExecuteUpdateAsync(s => s.SetProperty(o => o.Addon, o => o.Total), cancellationToken);
 
-            var batch = await query.OrderBy(o => o.Id).Take(BatchSize).ToListAsync(cancellationToken);
-            foreach (var order in batch)
-            {
-                order.KeepSavedTotalAsAddon();
-            }
-
-            await db.SaveChangesAsync(cancellationToken);
-            db.ChangeTracker.Clear();
-            updated += batch.Count;
-
-            if (batch.Count < BatchSize)
-            {
-                return updated;
-            }
-
-            lastId = batch[^1].Id;
-        }
+        await DataBackfillMarker.EnsureAsync(db, CompletionMarker, cancellationToken);
+        return updated;
     }
 }

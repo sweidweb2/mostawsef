@@ -24,6 +24,7 @@ namespace Mostawsef.Contracts.Common;
 [JsonSerializable(typeof(HealthDto))]
 [JsonSerializable(typeof(LoginRequest))]
 [JsonSerializable(typeof(LoginResponse))]
+[JsonSerializable(typeof(ClinicAccessResponse))]
 [JsonSerializable(typeof(ChangePasswordRequest))]
 [JsonSerializable(typeof(UserDto))]
 [JsonSerializable(typeof(UserDetailsDto))]

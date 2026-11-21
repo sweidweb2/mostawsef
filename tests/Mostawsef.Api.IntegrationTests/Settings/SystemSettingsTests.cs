@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Mostawsef.Api.IntegrationTests.Infrastructure;
 using Mostawsef.Application.Modules.Backups;
+using Mostawsef.Contracts.Auth;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.Logs;
 using Mostawsef.Contracts.Settings;
@@ -134,36 +135,36 @@ public class SystemSettingsTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task Maintenance_mode_blocks_new_admin_sign_ins_but_not_super_or_existing_sessions()
+    public async Task Maintenance_mode_blocks_new_clinic_sessions_but_not_super_or_existing_sessions()
     {
         var super = await factory.CreateClientAsAsync(TestUsers.Super);
-        var signedInAdmin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var signedInClinic = await factory.CreateClientAsAsync(TestUsers.Admin);
 
         await SetMaintenanceModeAsync(super, true);
         try
         {
             var blocked = await ProblemResponse.ReadAsync(
-                await factory.CreateClient().LoginAsync(TestUsers.Admin.Username, TestUsers.Admin.Password));
-            var wrongPassword = await factory.CreateClient().LoginAsync(TestUsers.Admin.Username, "wrong-password");
+                await factory.CreateClient().PostAsJsonAsync("api/auth/clinic-session", new { }, Ct));
+            var access = await factory.CreateClient().GetJsonAsync<ClinicAccessResponse>("api/auth/clinic-access");
             var superLogin = await factory.CreateClient().LoginAsync(TestUsers.Super.Username, TestUsers.Super.Password);
-            var existingSession = await signedInAdmin.GetAsync("api/clinic-settings", Ct);
+            var existingSession = await signedInClinic.GetAsync("api/clinic-settings", Ct);
 
             Assert.Equal(HttpStatusCode.Conflict, blocked.Status);
             Assert.Equal(ErrorCodes.MaintenanceMode, blocked.Code);
-            Assert.Equal(HttpStatusCode.Unauthorized, wrongPassword.StatusCode);
+            Assert.False(access.Available);
             Assert.Equal(HttpStatusCode.OK, superLogin.StatusCode);
             Assert.Equal(HttpStatusCode.OK, existingSession.StatusCode);
 
-            var log = await super.GetJsonAsync<CursorPage<ActivityLogListItemDto>>("api/activity-logs?search=auth.sign_in_blocked");
-            Assert.Contains(log.Items, i => i.Username == TestUsers.Admin.Username);
+            var log = await super.GetJsonAsync<CursorPage<ActivityLogListItemDto>>("api/activity-logs?search=auth.clinic_blocked");
+            Assert.Contains(log.Items, i => i.Username == ClinicIdentity.Username);
         }
         finally
         {
             await SetMaintenanceModeAsync(super, false);
         }
 
-        var afterwards = await factory.CreateClient().LoginAsync(TestUsers.Admin.Username, TestUsers.Admin.Password);
-        Assert.Equal(HttpStatusCode.OK, afterwards.StatusCode);
+        var afterwards = await factory.CreateClient().OpenClinicSessionAsync();
+        Assert.Equal(Roles.Admin, afterwards.User.Role);
     }
 
     private async Task SetMaintenanceModeAsync(HttpClient super, bool on)

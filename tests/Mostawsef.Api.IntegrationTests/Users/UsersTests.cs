@@ -27,7 +27,7 @@ public class UsersTests(ApiFactory factory)
 
         var response = await super.PostAsJsonAsync(
             "api/users",
-            new CreateUserRequest { FullName = "  Sara Mahmoud ", Username = "  " + username.ToUpperInvariant(), Password = "Welcome#123", Role = Roles.Admin },
+            new CreateUserRequest { FullName = "  Sara Mahmoud ", Username = "  " + username.ToUpperInvariant(), Password = "Welcome#123", Role = Roles.Super },
             Ct);
         var created = await response.Content.ReadFromJsonAsync<UserDetailsDto>(Ct);
 
@@ -35,7 +35,7 @@ public class UsersTests(ApiFactory factory)
         Assert.EndsWith($"api/users/{created!.Id}", response.Headers.Location!.ToString());
         Assert.Equal(username, created.Username);
         Assert.Equal("Sara Mahmoud", created.FullName);
-        Assert.Equal(Roles.Admin, created.Role);
+        Assert.Equal(Roles.Super, created.Role);
         Assert.True(created.IsActive);
         Assert.Equal(0, created.Version);
         Assert.Equal(TestUsers.Super.Username, created.CreatedBy);
@@ -128,7 +128,7 @@ public class UsersTests(ApiFactory factory)
             FullName = "Race User",
             Username = username,
             Password = "Welcome#123",
-            Role = Roles.Admin,
+            Role = Roles.Super,
         };
 
         var responses = await Task.WhenAll(
@@ -231,7 +231,6 @@ public class UsersTests(ApiFactory factory)
         var responses = new[]
         {
             await super.PutAsJsonAsync($"api/users/{me.Id}", new UpdateUserRequest { FullName = "Me", Role = Roles.Super, IsActive = false, Version = me.Version }, Ct),
-            await super.PutAsJsonAsync($"api/users/{me.Id}", new UpdateUserRequest { FullName = "Me", Role = Roles.Admin, Version = me.Version }, Ct),
             await super.PostAsJsonAsync($"api/users/{me.Id}/reset-password", new ResetPasswordRequest { NewPassword = "Another#Pass1" }, Ct),
             await super.DeleteAsync($"api/users/{me.Id}", Ct),
         };
@@ -261,17 +260,26 @@ public class UsersTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task A_role_change_stops_the_old_token()
+    public async Task Creating_an_admin_user_is_rejected_and_the_clinic_identity_stays_hidden()
     {
         var super = await factory.CreateClientAsAsync(TestUsers.Super);
-        var (user, login) = await super.CreateUserAsync(Roles.Super);
-        var oldToken = await factory.CreateClientAsAsync(login);
+        var create = await ProblemResponse.ReadAsync(await super.PostAsJsonAsync(
+            "api/users",
+            new CreateUserRequest
+            {
+                FullName = "Nope",
+                Username = $"{HttpClientExtensions.Unique("admin")}@test.local",
+                Password = "Welcome#123",
+                Role = Roles.Admin,
+            },
+            Ct));
 
-        await super.PutAsJsonAsync($"api/users/{user.Id}", new UpdateUserRequest { FullName = user.FullName, Role = Roles.Admin, Version = user.Version }, Ct);
+        Assert.Equal(HttpStatusCode.BadRequest, create.Status);
+        Assert.Equal([ErrorCodes.Invalid], create.Errors["Role"]);
 
-        Assert.Equal(HttpStatusCode.Unauthorized, (await oldToken.GetAsync("api/users", Ct)).StatusCode);
-        var newLogin = await factory.CreateClient().LoginAsAsync(login with { Role = Roles.Admin });
-        Assert.Equal(Roles.Admin, newLogin.User.Role);
+        var page = await super.GetJsonAsync<PagedResult<UserListItemDto>>("api/users?pageSize=100");
+        Assert.DoesNotContain(page.Items, u => u.Username == ClinicIdentity.Username);
+        Assert.All(page.Items, u => Assert.Equal(Roles.Super, u.Role));
     }
 
     [Fact]

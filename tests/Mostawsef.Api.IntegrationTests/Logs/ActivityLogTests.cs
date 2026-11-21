@@ -9,7 +9,7 @@ namespace Mostawsef.Api.IntegrationTests.Logs;
 public class ActivityLogTests(ApiFactory factory)
 {
     [Fact]
-    public async Task Successful_sign_in_is_recorded_with_user_and_ip()
+    public async Task Successful_clinic_session_is_recorded_with_user_and_ip()
     {
         await factory.CreateClientAsAsync(TestUsers.Admin);
         var super = await factory.CreateClientAsAsync(TestUsers.Super);
@@ -17,11 +17,11 @@ public class ActivityLogTests(ApiFactory factory)
         var page = await super.GetJsonAsync<CursorPage<ActivityLogListItemDto>>(
             $"api/activity-logs?search={TestUsers.Admin.Username}&pageSize=100");
 
-        var signIn = Assert.Single(page.Items.Where(i => i.Action == "auth.signed_in").Take(1));
-        Assert.Equal(TestUsers.Admin.Username, signIn.Username);
-        Assert.Equal("Auth", signIn.Module);
+        var opened = Assert.Single(page.Items.Where(i => i.Action == "auth.clinic_opened").Take(1));
+        Assert.Equal(TestUsers.Admin.Username, opened.Username);
+        Assert.Equal("Auth", opened.Module);
 
-        var details = await super.GetJsonAsync<ActivityLogDto>($"api/activity-logs/{signIn.Id}");
+        var details = await super.GetJsonAsync<ActivityLogDto>($"api/activity-logs/{opened.Id}");
         Assert.NotNull(details.UserId);
         Assert.Contains("Admin", details.Details);
     }
@@ -167,7 +167,7 @@ public class ActivityLogTests(ApiFactory factory)
     [Fact]
     public async Task Stats_count_todays_activity_and_failed_sign_ins()
     {
-        await factory.CreateClient().LoginAsync(TestUsers.Admin.Username, "wrong");
+        await factory.CreateClient().LoginAsync(TestUsers.Super.Username, "wrong");
         var super = await factory.CreateClientAsAsync(TestUsers.Super);
 
         var stats = await super.GetJsonAsync<ActivityLogStatsDto>("api/activity-logs/stats");

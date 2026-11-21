@@ -20,7 +20,7 @@ dotnet run --project backend/Mostawsef.Api --launch-profile http
 dotnet run --project frontend/Mostawsef.Desktop
 ```
 
-Sign in with `admin@example.com` / `password` (Admin portal) or `super@example.com` / `password` (Super portal).
+On the login screen use **Enter clinic** for the Admin portal, or sign in as `super@example.com` / `password` for the Super portal.
 The API creates and updates the database on startup. Health check: http://localhost:5270/api/health
 
 ## Tests

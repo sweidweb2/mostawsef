@@ -20,6 +20,16 @@ public static class HttpClientExtensions
         return (await response.Content.ReadFromJsonAsync<LoginResponse>(TestContext.Current.CancellationToken))!;
     }
 
+    public static async Task<LoginResponse> OpenClinicSessionAsync(this HttpClient client)
+    {
+        var response = await client.PostAsJsonAsync("api/auth/clinic-session", new { }, TestContext.Current.CancellationToken);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<LoginResponse>(TestContext.Current.CancellationToken))!;
+    }
+
+    public static Task<HttpResponseMessage> GetClinicAccessAsync(this HttpClient client) =>
+        client.GetAsync("api/auth/clinic-access", TestContext.Current.CancellationToken);
+
     public static HttpClient WithBearer(this HttpClient client, string token)
     {
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -60,9 +70,9 @@ public static class HttpClientExtensions
 
     public static string Unique(string prefix) => $"{prefix}-{Guid.NewGuid():N}";
 
-    /// <summary>Creates a new user through the API (the client must be signed in as Super) and returns it with its credentials.</summary>
+    /// <summary>Creates a new Super user through the API (the client must be signed in as Super) and returns it with its credentials.</summary>
     public static async Task<(UserDetailsDto User, TestUser Login)> CreateUserAsync(
-        this HttpClient super, string role = Roles.Admin, string? fullName = null)
+        this HttpClient super, string role = Roles.Super, string? fullName = null)
     {
         var login = new TestUser($"{Unique("user")}@test.local", "Created#Pass1", role);
         var response = await super.PostAsJsonAsync(

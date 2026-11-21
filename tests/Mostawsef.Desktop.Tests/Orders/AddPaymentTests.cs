@@ -56,7 +56,7 @@ public class AddPaymentTests : UiTestBase
     public async Task A_fully_paid_order_has_no_add_payment_button()
     {
         using var app = Admin();
-        var paid = Details(PartlyPaid.Id) with { Status = OrderStatuses.Paid, Paid = 20000, Balance = 0 };
+        var paid = Details(PartlyPaid.Id) with { Status = OrderStatuses.Paid, Paid = 25000, Balance = 0 };
         var (details, window) = await OpenDetailsAsync(app, PartlyPaid, paid);
 
         Assert.False(details.CanAddPayment);
@@ -71,8 +71,8 @@ public class AddPaymentTests : UiTestBase
         var (details, window) = await OpenDetailsAsync(app, PartlyPaid, Details(PartlyPaid.Id));
         var form = OpenForm(details, window);
 
-        Assert.Equal(150.00m, form.MaxAmount);
-        form.Amount = 150.01m;
+        Assert.Equal(200.00m, form.MaxAmount);
+        form.Amount = 200.01m;
         await form.SaveCommand.ExecuteAsync(null);
 
         Assert.Equal(ErrorCodes.ExceedsBalance, form.Errors[nameof(form.Amount)]);
@@ -88,12 +88,12 @@ public class AddPaymentTests : UiTestBase
         var settled = Details(PartlyPaid.Id) with
         {
             Status = OrderStatuses.Paid,
-            Paid = 20000,
+            Paid = 25000,
             Balance = 0,
             Payments =
             [
                 .. Details(PartlyPaid.Id).Payments,
-                new OrderPaymentDto(Guid.NewGuid(), DateTime.UtcNow, PaymentTypes.Payment, PaymentMethods.Card, 15000, null),
+                new OrderPaymentDto(Guid.NewGuid(), DateTime.UtcNow, PaymentTypes.Payment, PaymentMethods.Card, 20000, null),
             ],
         };
         app.Api.On(HttpMethod.Post, $"{OrdersPath}/{PartlyPaid.Id}/payments", request =>
@@ -103,12 +103,12 @@ public class AddPaymentTests : UiTestBase
         });
 
         var form = OpenForm(details, window);
-        form.Amount = 150m;
+        form.Amount = 200m;
         form.Method = PaymentMethods.Card;
         await form.SaveCommand.ExecuteAsync(null);
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal(new AddPaymentRequest { Amount = 15000, Method = PaymentMethods.Card }, sent);
+        Assert.Equal(new AddPaymentRequest { Amount = 20000, Method = PaymentMethods.Card }, sent);
         Assert.Empty(window.GetVisualDescendants().OfType<Modal>());
         Assert.Equal(OrderStatuses.Paid, details.Order!.Status);
         Assert.Equal(2, details.Order.Payments.Count);
@@ -140,9 +140,9 @@ public class AddPaymentTests : UiTestBase
         var updated = Details(PartlyPaid.Id) with
         {
             Status = OrderStatuses.Paid,
-            Paid = 20000,
+            Paid = 25000,
             Balance = 0,
-            Payments = [payment with { Amount = 20000, Method = PaymentMethods.Card, Notes = "Full" }],
+            Payments = [payment with { Amount = 25000, Method = PaymentMethods.Card, Notes = "Full" }],
         };
         app.Api.On(HttpMethod.Put, $"{OrdersPath}/{PartlyPaid.Id}/payments/{PaymentId}", request =>
         {
@@ -154,15 +154,15 @@ public class AddPaymentTests : UiTestBase
         Dispatcher.UIThread.RunJobs();
         var form = (AddPaymentFormViewModel)window.GetVisualDescendants().OfType<Modal>().Last().Content!;
         Assert.True(form.IsEditing);
-        Assert.Equal(200.00m, form.MaxAmount);
+        Assert.Equal(250.00m, form.MaxAmount);
         Assert.Equal(50.00m, form.Amount);
-        form.Amount = 200m;
+        form.Amount = 250m;
         form.Method = PaymentMethods.Card;
         form.Notes = "Full";
         await form.SaveCommand.ExecuteAsync(null);
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal(new UpdatePaymentRequest { Amount = 20000, Method = PaymentMethods.Card, Notes = "Full" }, sent);
+        Assert.Equal(new UpdatePaymentRequest { Amount = 25000, Method = PaymentMethods.Card, Notes = "Full" }, sent);
         Assert.Empty(window.GetVisualDescendants().OfType<Modal>());
         Assert.Equal(OrderStatuses.Paid, details.Order!.Status);
         Assert.False(details.CanAddPayment);
@@ -179,7 +179,7 @@ public class AddPaymentTests : UiTestBase
         {
             Status = OrderStatuses.Pending,
             Paid = 0,
-            Balance = 20000,
+            Balance = 25000,
             Payments = [],
         };
         app.Api.On(HttpMethod.Delete, $"{OrdersPath}/{PartlyPaid.Id}/payments/{PaymentId}", _ => FakeApiHandler.Json(unpaid));

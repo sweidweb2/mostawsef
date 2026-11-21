@@ -18,13 +18,11 @@ public class ChangePasswordFormTests : UiTestBase
 {
     private const string ChangePasswordPath = "/api/auth/change-password";
 
-    [AvaloniaTheory]
-    [InlineData(Roles.Admin)]
-    [InlineData(Roles.Super)]
-    public void Every_portal_opens_change_password_from_the_user_menu(string role)
+    [AvaloniaFact]
+    public void Super_portal_opens_change_password_from_the_user_menu()
     {
         using var app = new TestServices();
-        var window = ShowPortal(app, role);
+        var window = ShowPortal(app, Roles.Super);
 
         ClickChangePassword(window);
 
@@ -34,12 +32,26 @@ public class ChangePasswordFormTests : UiTestBase
     }
 
     [AvaloniaFact]
+    public void Clinic_portal_hides_change_password()
+    {
+        using var app = new TestServices();
+        var window = ShowPortal(app, Roles.Admin);
+        var button = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "UserMenuButton");
+        var menu = Assert.IsType<MenuFlyout>(button.Flyout);
+        menu.ShowAt(button);
+        Dispatcher.UIThread.RunJobs();
+        var changePassword = menu.Items.OfType<MenuItem>().Single(i => i.Name == "ChangePasswordMenuItem");
+
+        Assert.False(changePassword.IsVisible);
+    }
+
+    [AvaloniaFact]
     public async Task A_wrong_current_password_from_the_server_shows_on_that_field()
     {
         using var app = new TestServices();
         app.Api.On(HttpMethod.Post, ChangePasswordPath, _ =>
             FakeApiHandler.Problem(HttpStatusCode.BadRequest, ErrorCodes.Validation, ("CurrentPassword", ErrorCodes.WrongPassword)));
-        var window = ShowPortal(app, Roles.Admin);
+        var window = ShowPortal(app, Roles.Super);
         var form = OpenForm(window);
 
         form.CurrentPassword = "not-it";

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Mostawsef.Api.IntegrationTests.Infrastructure;
 using Mostawsef.Application.Interfaces;
+using Mostawsef.Contracts.Auth;
 using Mostawsef.Contracts.Users;
 using Mostawsef.Infrastructure.Persistence.Context;
 
@@ -22,7 +23,7 @@ public class PasswordStorageTests(ApiFactory factory)
 
         var users = await db.Users.AsNoTracking().ToListAsync(TestContext.Current.CancellationToken);
 
-        foreach (var testUser in TestUsers.All)
+        foreach (var testUser in TestUsers.SeededLogins)
         {
             var stored = Assert.Single(users, u => u.Username == testUser.Username);
 
@@ -31,6 +32,9 @@ public class PasswordStorageTests(ApiFactory factory)
             Assert.StartsWith("AQAAAAI", stored.PasswordHash); // ASP.NET Identity v3 format (PBKDF2)
             Assert.Equal(PasswordCheck.Success, hasher.Verify(stored.PasswordHash, testUser.Password));
         }
+
+        var clinic = Assert.Single(users, u => u.Username == ClinicIdentity.Username);
+        Assert.StartsWith("AQAAAAI", clinic.PasswordHash);
 
         // Same password hashed twice gives different hashes (random salt).
         Assert.NotEqual(hasher.Hash("same"), hasher.Hash("same"));

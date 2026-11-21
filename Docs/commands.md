@@ -75,7 +75,7 @@ dotnet run --project backend/Mostawsef.Api --launch-profile http
 dotnet run --project frontend/Mostawsef.Desktop
 ```
 
-Dev logins: `admin@example.com` / `password`, `super@example.com` / `password`
+Dev: Enter clinic on the login screen, or Super `super@example.com` / `password`
 
 Sample data (while the API runs): 36 lab tests, 45 patients (Arabic and English names) and 80 orders with cash, card,
 transfer and insurance first payments. Tests and patients that already exist are skipped; each run adds `-Orders` new
@@ -230,7 +230,7 @@ Needs Inno Setup (`ISCC.exe`; the script can install it via winget). Publishes D
 
 Output: `C:\Users\User\Desktop\mostawsef-3ammo\[2] Builds\Mostawsef-Setup-{version}.exe` (older builds are kept; also under `artifacts\installer\`).
 
-Clinic: run the **versioned** Setup as Administrator (e.g. `Mostawsef-Setup-1.0.1.exe`). It installs to `C:\Mostawsef`, installs PostgreSQL from the **bundled offline** installer if missing, registers `MostawsefApi`, and creates shortcuts (apps are self-contained — no separate .NET install). Prefer this over the manual playbook; keep the playbook as fallback.
+Clinic: run the **versioned** Setup as Administrator (e.g. `Mostawsef-Setup-1.0.1.exe`). It installs to `C:\Mostawsef`, installs PostgreSQL from the **bundled offline** installer if missing, registers `MostawsefApi`, and creates Start Menu / Desktop shortcuts that use the Mostawsef app icon (`Assets/app.ico`, also the Setup.exe icon). Apps are self-contained — no separate .NET install. Prefer this over the manual playbook; keep the playbook as fallback.
 
 PostgreSQL installer is downloaded **once** into `artifacts\cache\postgresql\` and reused on every later build (no re-download when staging is wiped). To seed offline: put `postgresql-*-windows-x64.exe` in that folder.
 

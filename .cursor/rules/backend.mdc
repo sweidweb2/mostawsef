@@ -29,7 +29,7 @@ alwaysApply: false
 
 ## Auth (see `Docs/4-Business/auth.md`)
 - JWT bearer auth is on. Every new controller/endpoint needs `[Authorize]` or a role policy
-  (`AuthPolicies.AdminOnly`, `AuthPolicies.SuperOnly`); only `login` and `health` are anonymous.
+  (`AuthPolicies.AdminOnly`, `AuthPolicies.SuperOnly`); anonymous: `login`, `clinic-access`, `clinic-session` (loopback), `health`, and `system-errors/report`.
 - Passwords go through `IPasswordHasher` (PBKDF2). Never store, log or return a password or hash.
 - Role names come from `Mostawsef.Contracts.Auth.Roles` / `Domain.Enums.UserRole`.
 - Secrets (`Jwt:Key`) are never committed for production; dev values live in `appsettings.Development.json` only.
@@ -87,7 +87,8 @@ alwaysApply: false
 - **Clinic settings** (`IClinicSettingsService`): name, address, phone, currency. One row, created at startup; everyone
   reads it, Admin edits it.
 - **System settings** (`ISystemSettingsService`): backup folder and maintenance mode. One row, created at startup; Super
-  only. While maintenance mode is on, `AuthService` refuses non-Super sign-ins with `409 maintenance_mode`.
+  only. While maintenance mode is on, clinic-session returns `409 maintenance_mode` and clinic-access is unavailable;
+  Super password login still works.
 
 ## Conventions
 - Async all the way with `CancellationToken` on I/O methods.

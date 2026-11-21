@@ -107,6 +107,12 @@ public partial class PortalShellViewModel : ViewModelBase
     /// <summary>Resource key of the user's role name, e.g. "Role.Super".</summary>
     public string RoleKey => $"Role.{_session.CurrentUser?.Role}";
 
+    /// <summary>Super can change password and uses a confirmed sign-out; the clinic Admin session only leaves back to the login screen.</summary>
+    public bool CanManageAccount => _session.IsInRole(Roles.Super);
+
+    /// <summary>Sidebar / menu label: Sign out for Super, Back to sign-in for the clinic session.</summary>
+    public string LeaveKey => CanManageAccount ? "Auth.Logout" : "Auth.BackToSignIn";
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(MenuTitleKey))]
     public partial int SelectedMenuIndex { get; set; } = -1;
@@ -392,6 +398,11 @@ public partial class PortalShellViewModel : ViewModelBase
     [RelayCommand]
     private async Task ChangePasswordAsync()
     {
+        if (!CanManageAccount)
+        {
+            return;
+        }
+
         var form = new ChangePasswordFormViewModel(_authApi, _session, _dialogs, _localization);
         if (await _dialogs.ShowFormAsync(form, _localization.Get("Auth.ChangePassword")))
         {
@@ -402,6 +413,12 @@ public partial class PortalShellViewModel : ViewModelBase
     [RelayCommand]
     private async Task SignOutAsync()
     {
+        if (!CanManageAccount)
+        {
+            _session.SignOut();
+            return;
+        }
+
         if (await _dialogs.ConfirmAsync(_localization.Get("Auth.LogoutConfirm"), confirmText: _localization.Get("Auth.Logout")))
         {
             await _authApi.LogoutAsync();

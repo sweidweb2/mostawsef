@@ -20,7 +20,21 @@ namespace Mostawsef.Desktop.Tests.Views;
 public class PortalShellViewTests : UiTestBase
 {
     [AvaloniaFact]
-    public void Clicking_the_avatar_opens_a_menu_with_change_password_and_sign_out()
+    public void Super_avatar_menu_has_change_password_and_sign_out()
+    {
+        using var app = new TestServices();
+        var window = ShowPortal(app, Roles.Super);
+
+        var flyout = OpenUserMenu(window);
+
+        Assert.True(flyout.IsOpen);
+        Assert.Equal(
+            ["Change password", "Sign out"],
+            flyout.Items.OfType<MenuItem>().Where(i => i.IsVisible).Select(i => i.Header));
+    }
+
+    [AvaloniaFact]
+    public void Clinic_avatar_menu_only_has_back_to_sign_in()
     {
         using var app = new TestServices();
         var window = ShowPortal(app, Roles.Admin);
@@ -28,7 +42,9 @@ public class PortalShellViewTests : UiTestBase
         var flyout = OpenUserMenu(window);
 
         Assert.True(flyout.IsOpen);
-        Assert.Equal(["Change password", "Sign out"], flyout.Items.OfType<MenuItem>().Select(i => i.Header));
+        Assert.Equal(
+            ["Back to sign-in"],
+            flyout.Items.OfType<MenuItem>().Where(i => i.IsVisible).Select(i => i.Header));
     }
 
     [AvaloniaFact]
@@ -53,10 +69,10 @@ public class PortalShellViewTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public void Sidebar_sign_out_asks_to_confirm_and_cancel_keeps_the_user_signed_in()
+    public void Sidebar_sign_out_asks_to_confirm_and_cancel_keeps_the_super_signed_in()
     {
         using var app = new TestServices();
-        var window = ShowPortal(app, Roles.Admin);
+        var window = ShowPortal(app, Roles.Super);
         var signOut = window.GetVisualDescendants().OfType<NavMenuItem>().Single(i => i.Text == "Sign out");
         var center = signOut.TranslatePoint(new Point(signOut.Bounds.Width / 2, signOut.Bounds.Height / 2), window)!.Value;
 
@@ -70,6 +86,23 @@ public class PortalShellViewTests : UiTestBase
 
         Assert.True(app.Session.IsAuthenticated);
         Assert.Empty(window.GetVisualDescendants().OfType<ConfirmDialog>());
+    }
+
+    [AvaloniaFact]
+    public void Clinic_back_to_sign_in_returns_to_login_without_a_confirm()
+    {
+        using var app = new TestServices();
+        var window = ShowPortal(app, Roles.Admin);
+        var leave = window.GetVisualDescendants().OfType<NavMenuItem>().Single(i => i.Text == "Back to sign-in");
+        var center = leave.TranslatePoint(new Point(leave.Bounds.Width / 2, leave.Bounds.Height / 2), window)!.Value;
+
+        window.MouseDown(center, MouseButton.Left);
+        window.MouseUp(center, MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Empty(window.GetVisualDescendants().OfType<ConfirmDialog>());
+        Assert.False(app.Session.IsAuthenticated);
+        Assert.IsType<LoginViewModel>(app.Navigation.CurrentPage);
     }
 
     [AvaloniaTheory]

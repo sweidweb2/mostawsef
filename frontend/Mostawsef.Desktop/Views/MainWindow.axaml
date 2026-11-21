@@ -6,7 +6,7 @@
         xmlns:vm="using:Mostawsef.Desktop.ViewModels"
         x:Class="Mostawsef.Desktop.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico"
+        Icon="/Assets/app.ico"
         Title="{l:Tr App.Title}"
         Width="1280"
         Height="820"

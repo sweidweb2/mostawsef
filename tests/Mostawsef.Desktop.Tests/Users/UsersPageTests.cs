@@ -22,7 +22,7 @@ public class UsersPageTests : UiTestBase
     private const string UsersPath = "/api/users";
 
     private static readonly UserListItemDto Sara =
-        new(Guid.NewGuid(), "sara@test.local", "Sara Mahmoud", Roles.Admin, true, DateTime.UtcNow, DateTime.UtcNow, 3);
+        new(Guid.NewGuid(), "sara@test.local", "Sara Mahmoud", Roles.Super, true, DateTime.UtcNow, DateTime.UtcNow, 3);
 
     private static readonly UserListItemDto Omar =
         new(Guid.NewGuid(), "omar@test.local", "Omar Khaled", Roles.Super, false, null, DateTime.UtcNow, 0);
@@ -157,7 +157,6 @@ public class UsersPageTests : UiTestBase
         form.FullName = "  Sara Mahmoud ";
         form.Username = " sara@test.local ";
         form.Password = "Welcome#123";
-        form.Role = Roles.Super;
         await form.SaveCommand.ExecuteAsync(null);
         await add;
         Dispatcher.UIThread.RunJobs();

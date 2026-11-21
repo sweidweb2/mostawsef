@@ -68,17 +68,10 @@ public partial class AddPaymentFormViewModel : FormViewModel
     [ObservableProperty]
     public partial string Notes { get; set; } = string.Empty;
 
-    protected override object BuildRequest()
-    {
-        var amount = Amount is { } value ? Money.ToMinor(value) : (long?)null;
-        var notes = string.IsNullOrWhiteSpace(Notes) ? null : Notes.Trim();
-        if (_paymentId is not null)
-        {
-            return new UpdatePaymentRequest { Amount = amount, Method = Method, Notes = notes };
-        }
-
-        return new AddPaymentRequest { Amount = amount, Method = Method, Notes = notes };
-    }
+    protected override object BuildRequest() =>
+        _paymentId is not null
+            ? OrderPaymentMapping.ToUpdate(Amount, Method, Notes)
+            : OrderPaymentMapping.ToAdd(Amount, Method, Notes);
 
     protected override void ValidateMore(FormErrors errors)
     {
@@ -87,7 +80,7 @@ public partial class AddPaymentFormViewModel : FormViewModel
             return;
         }
 
-        var amount = Amount is { } value ? Money.ToMinor(value) : 0;
+        var amount = OrderPaymentMapping.ToMinorAmount(Amount) ?? 0;
         if (amount > _maxMinor)
         {
             errors.Set(nameof(Amount), ErrorCodes.ExceedsBalance);

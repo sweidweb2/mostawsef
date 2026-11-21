@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Mostawsef.Application.Interfaces;
+using Mostawsef.Contracts.Auth;
 using Mostawsef.Infrastructure.Persistence.Context;
 using Testcontainers.PostgreSql;
 
@@ -64,29 +65,40 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         Environment.SetEnvironmentVariable("RateLimit__LoginFailuresPerUser", "1000");
         Environment.SetEnvironmentVariable("RateLimit__HealthPermitLimit", "100000");
 
-        for (var i = 0; i < TestUsers.All.Length; i++)
+        for (var i = 0; i < TestUsers.SeededLogins.Length; i++)
         {
-            Environment.SetEnvironmentVariable($"Seed__Users__{i}__Username", TestUsers.All[i].Username);
-            Environment.SetEnvironmentVariable($"Seed__Users__{i}__Password", TestUsers.All[i].Password);
-            Environment.SetEnvironmentVariable($"Seed__Users__{i}__Role", TestUsers.All[i].Role);
+            Environment.SetEnvironmentVariable($"Seed__Users__{i}__Username", TestUsers.SeededLogins[i].Username);
+            Environment.SetEnvironmentVariable($"Seed__Users__{i}__Password", TestUsers.SeededLogins[i].Password);
+            Environment.SetEnvironmentVariable($"Seed__Users__{i}__Role", TestUsers.SeededLogins[i].Role);
+        }
+
+        // Drop leftover Admin seed slots from older test runs in this process.
+        for (var i = TestUsers.SeededLogins.Length; i < 4; i++)
+        {
+            Environment.SetEnvironmentVariable($"Seed__Users__{i}__Username", null);
+            Environment.SetEnvironmentVariable($"Seed__Users__{i}__Password", null);
+            Environment.SetEnvironmentVariable($"Seed__Users__{i}__Role", null);
+            Environment.SetEnvironmentVariable($"Seed__Users__{i}__FullName", null);
         }
     }
 
     public SqlRecorder Sql { get; } = new();
 
     /// <summary>
-    /// Access token for <paramref name="user"/>. Seeded Admin/Super tokens are cached for the factory lifetime;
+    /// Access token for <paramref name="user"/>. Seeded Super and clinic tokens are cached for the factory lifetime;
     /// dynamically created users always log in fresh (password/role may change mid-suite).
     /// </summary>
     public async Task<string> GetAccessTokenAsync(TestUser user)
     {
-        if (IsSeeded(user) && _seededTokens.TryGetValue(user.Username, out var cached))
+        if (IsCachedIdentity(user) && _seededTokens.TryGetValue(user.Username, out var cached))
         {
             return cached;
         }
 
-        var login = await CreateClient().LoginAsAsync(user);
-        if (IsSeeded(user))
+        var login = user.Role == Roles.Admin || string.Equals(user.Username, ClinicIdentity.Username, StringComparison.Ordinal)
+            ? await CreateClient().OpenClinicSessionAsync()
+            : await CreateClient().LoginAsAsync(user);
+        if (IsCachedIdentity(user))
         {
             _seededTokens[user.Username] = login.AccessToken;
         }
@@ -141,8 +153,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         }
     }
 
-    private static bool IsSeeded(TestUser user) =>
-        TestUsers.All.Any(seeded =>
+    private static bool IsCachedIdentity(TestUser user) =>
+        string.Equals(user.Username, TestUsers.Admin.Username, StringComparison.Ordinal)
+        || TestUsers.SeededLogins.Any(seeded =>
             string.Equals(seeded.Username, user.Username, StringComparison.Ordinal)
             && string.Equals(seeded.Password, user.Password, StringComparison.Ordinal));
 

@@ -60,9 +60,13 @@
   <data name="Login.FeaturePatients" xml:space="preserve"><value>Patient records and lab orders, always at hand</value></data>
   <data name="Login.FeatureReports" xml:space="preserve"><value>Payment tracking and ready-to-print results</value></data>
   <data name="Login.FeatureSecure" xml:space="preserve"><value>Role-based access with a full activity log</value></data>
+  <data name="Login.EnterClinic" xml:space="preserve"><value>Enter clinic</value></data>
+  <data name="Login.ClinicUnavailable" xml:space="preserve"><value>The clinic is under maintenance. Sign in as Super to continue.</value></data>
+  <data name="Login.ClinicForbidden" xml:space="preserve"><value>Clinic entry is only available on this computer.</value></data>
 
   <data name="Auth.Logout" xml:space="preserve"><value>Sign out</value></data>
   <data name="Auth.LogoutConfirm" xml:space="preserve"><value>Do you want to sign out?</value></data>
+  <data name="Auth.BackToSignIn" xml:space="preserve"><value>Back to sign-in</value></data>
 
   <data name="Portal.Admin" xml:space="preserve"><value>Admin portal</value></data>
   <data name="Portal.Super" xml:space="preserve"><value>Super portal</value></data>
@@ -163,6 +167,8 @@
   <data name="Action.auth.signed_in" xml:space="preserve"><value>Signed in</value></data>
   <data name="Action.auth.sign_in_failed" xml:space="preserve"><value>Failed sign-in</value></data>
   <data name="Action.auth.sign_in_blocked" xml:space="preserve"><value>Sign-in blocked (maintenance mode)</value></data>
+  <data name="Action.auth.clinic_opened" xml:space="preserve"><value>Opened the clinic portal</value></data>
+  <data name="Action.auth.clinic_blocked" xml:space="preserve"><value>Clinic entry blocked (maintenance mode)</value></data>
   <data name="Action.auth.signed_out" xml:space="preserve"><value>Signed out</value></data>
   <data name="Action.logs.activity_deleted" xml:space="preserve"><value>Deleted activity log records</value></data>
   <data name="Action.logs.error_deleted" xml:space="preserve"><value>Deleted error record</value></data>

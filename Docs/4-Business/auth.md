@@ -3,16 +3,23 @@
 ## Overview
 
 ```
-Desktop LoginView ──POST /api/auth/login──► API ──► users table (PostgreSQL)
-        │                                    │
-        │◄────── JWT access token + user ────┘
+Desktop LoginView
+   │
+   ├─ Enter clinic ──POST /api/auth/clinic-session──► API ──► built-in "clinic" Admin user
+   │                         │
+   │◄────── JWT (role Admin, username clinic) ───────┘
+   │
+   └─ Super sign-in ──POST /api/auth/login──► API ──► Super users
+                             │
+        │◄────── JWT (role Super) ───────────┘
         ▼
-SessionService (token in memory) ──► NavigationService ──► Admin portal | Super portal
+    SessionService (token in memory) ──► NavigationService ──► Admin portal | Super portal
 ```
 
-- Users sign in with **username + password**. Each user has one **role**: `Admin` or `Super`.
-- After sign-in, the desktop app opens the portal for that role. All portals share one shell; each role gets its own title and sidebar menu from `AppRoutes`.
-- Closing the app signs out (the token is kept in memory only).
+- The login screen is the landing page. **Enter clinic** opens the Admin portal with no password (one-PC / localhost install).
+- **Super** still signs in with username + password. The Users page manages Super accounts only.
+- The built-in Admin identity is username `clinic` (seeded at API startup with an unusable password hash). Audit fields and activity logs use `"clinic"` as the actor for clinic work.
+- Closing the app clears the in-memory session.
 
 ## Database: `users`
 
@@ -37,17 +44,18 @@ Migrations: `*_InitialUsers`, `*_AuditFieldsAndUserProfile`. Migrations are appl
 
 ASP.NET Core Identity `PasswordHasher` (format v3): **PBKDF2 with HMAC-SHA512, 100,000 iterations, a random 128-bit salt per password**.
 The salt and parameters are stored inside the hash string. If the hashing parameters are strengthened in a future version, hashes are upgraded automatically at the next successful sign-in.
-For non-Super sign-in, the maintenance-mode settings read overlaps the PBKDF2 work; a successful login then records `LastLoginAt` and the activity log in parallel.
-Unknown usernames take the same hashing time as wrong passwords, so response time does not reveal which usernames exist.
+Password login is Super-only. Unknown usernames (and Admin / clinic) take the same hashing time as wrong passwords, so response time does not reveal which usernames exist.
 
 ## API
 
 | Endpoint | Auth | Result |
 | --- | --- | --- |
-| `POST /api/auth/login` `{ username, password }` | Anonymous, max 10 requests/min per IP | `200 { accessToken, expiresAt, user }`, `400` empty fields, `401` invalid, `409 maintenance_mode` (non-Super while maintenance mode is on), `429` too many |
+| `POST /api/auth/login` `{ username, password }` | Anonymous, max 10 requests/min per IP | `200 { accessToken, expiresAt, user }` for Super only; `400` empty fields, `401` invalid (including Admin/clinic), `429` too many |
+| `GET /api/auth/clinic-access` | Anonymous | `200 { available }` — `false` while maintenance mode is on (login screen disables Enter clinic) |
+| `POST /api/auth/clinic-session` | Anonymous, loopback only (Testing allows null remote IP), same login rate limit | `200` Admin JWT for `clinic`; `403` non-local; `409 maintenance_mode`; `404` if clinic identity missing |
 
 Login protection (configuration keys under `RateLimit:`; the API answers like a wrong password, without logging, while blocked):
-- `LoginPermitLimit` (default 10): requests per minute per client IP, then `429`.
+- `LoginPermitLimit` (default 10): requests per minute per client IP, then `429` (also applied to `clinic-session`).
 - `LoginFailuresPerUser` (default 10) within `LoginFailureWindowMinutes` (default 5): failed sign-ins per username from any IP;
   further attempts get `401` even with the right password until the window ends. A successful sign-in clears the count.
   In memory, per API process.
@@ -55,10 +63,10 @@ Login protection (configuration keys under `RateLimit:`; the API answers like a 
 - Behind a reverse proxy set `ForwardedHeaders:Enabled` to `true` so the limits use the client address from `X-Forwarded-For`
   (only loopback proxies are trusted unless `KnownProxies` is configured).
 - `POST /api/system-errors/report` is anonymous: body capped at 128 KB, stored fields truncated.
-| `POST /api/auth/change-password` `{ currentPassword, newPassword }` | Bearer token | `200 { accessToken, expiresAt, user }` (old JWT invalidated), `400` (`wrong_password` on `CurrentPassword`, `min_length\|8`...) |
-| `GET /api/users?page=&pageSize=&search=` | Super | Paged list sorted by name; search matches the username or the normalized full name |
-| `GET /api/users/{id}` | Super | `200` details with audit fields and `version`, `404` |
-| `POST /api/users` `{ fullName, username, password, role }` | Super | `201`, `400`, `409 username_taken` (also for deleted users' usernames) |
+| `POST /api/auth/change-password` `{ currentPassword, newPassword }` | Bearer token (Super) | `200 { accessToken, expiresAt, user }` (old JWT invalidated), `400` (`wrong_password` on `CurrentPassword`, `min_length\|8`...), `404` for the clinic Admin |
+| `GET /api/users?page=&pageSize=&search=` | Super | Paged list of Super users only (clinic Admin hidden); search matches the username or the normalized full name |
+| `GET /api/users/{id}` | Super | `200` details with audit fields and `version`, `404` (including clinic / non-Super) |
+| `POST /api/users` `{ fullName, username, password, role }` | Super | `201` (role must be Super), `400`, `409 username_taken` (also for deleted users' usernames and for `clinic`) |
 | `PUT /api/users/{id}` `{ fullName, role, isActive, version }` | Super | `200`, `400`, `404`, `409 concurrency_conflict` or `own_account` |
 | `POST /api/users/{id}/reset-password` `{ newPassword }` | Super | `204`, `400`, `404`, `409 own_account` |
 | `DELETE /api/users/{id}` | Super | `204` (soft delete), `404`, `409 own_account` |
@@ -84,11 +92,12 @@ Login protection (configuration keys under `RateLimit:`; the API answers like a 
 - Every request re-checks the token's user (active flag, role and token version, cached until that user is updated, deleted or their password changes): a
   deactivated, deleted, re-roled or password-changed user gets `401` on the next request (the desktop then returns to the login screen),
   not only when the token expires. Changing your own password returns a fresh token so the current session stays signed in; other sessions with the old `tv` are rejected.
-- Maintenance mode (Super portal, Settings page): while on, only Super users can sign in; others get `409 maintenance_mode`
-  after a correct password (logged as `auth.sign_in_blocked`). Users already signed in keep working.
-- A Super cannot deactivate, demote, reset or delete their own account (`409 own_account`); they change their own password
+- Maintenance mode (Super portal, Settings page): while on, `GET /api/auth/clinic-access` returns `available: false` and
+  `POST /api/auth/clinic-session` returns `409 maintenance_mode` (logged as `auth.clinic_blocked`). Super password login
+  still works. Users already in a clinic session keep working until they leave.
+- A Super cannot deactivate, reset or delete their own account (`409 own_account`); they change their own password
   with `change-password`. Passwords: at least 8 characters.
-- Role policies for future endpoints: `[Authorize(Policy = AuthPolicies.AdminOnly)]`, `[Authorize(Policy = AuthPolicies.SuperOnly)]`.
+- Role policies: `[Authorize(Policy = AuthPolicies.AdminOnly)]`, `[Authorize(Policy = AuthPolicies.SuperOnly)]`.
 
 ## Configuration
 
@@ -98,36 +107,39 @@ Login protection (configuration keys under `RateLimit:`; the API answers like a 
 | `Jwt:Issuer`, `Jwt:Audience` | `appsettings.json` | |
 | `Seed:Users` | `appsettings.json` (install) / `appsettings.Development.json` (dev override) | Users created at startup only if that username was never used (passwords hashed) |
 
-### Development accounts
+### Built-in clinic identity
+
+Always seeded by `DatabaseInitializer` (not from `Seed:Users`): username `clinic`, role Admin, random unusable password.
+Used only by `POST /api/auth/clinic-session`.
+
+### Development Super account
 
 | Username | Password | Role |
 | --- | --- | --- |
 | `super@example.com` | `password` | Super |
-| `admin@example.com` | `password` | Admin |
 
-These come only from `appsettings.Development.json` and do not replace install seeds in a Production run.
+From `appsettings.Development.json`. Does not replace install seeds in a Production run.
 
-### Install accounts (Production / published API)
+### Install Super account (Production / published API)
 
 | Username | Password | Role |
 | --- | --- | --- |
 | `ali@etkan` | `ali@1234` | Super |
-| `ana_mostawsef` | `123456789` | Admin |
 
-Seeded once on first Production start from `appsettings.json`. Change these passwords after install. Development keeps using the accounts above and does not create these unless you run the API as Production against that database.
+Seeded once on first Production start from `appsettings.json` (`Seed:Users`, Super only). Change the password after install.
 
 ## Desktop
 
 | Piece | Responsibility |
 | --- | --- |
 | `Services/Api/ApiClient` | HTTP calls, maps errors (`Unreachable`, `Unauthorized`, `TooManyRequests`, ...). Knows nothing about tokens. API address: `ApiBaseUrl` in `%AppData%\Mostawsef\settings.json` (default `http://localhost:5270`). **Install decision (deploy-install Block 4):** one-PC clinics use plain `http` on localhost — traffic stays on the machine. Multi-PC / remote API is not the current product; if that changes, put the API behind HTTPS (certificate every desktop trusts) and set `ApiBaseUrl` to `https://…`. The login screen already warns when `ApiBaseUrl` is plain http to another machine (`Services/Local/ApiAddress`). Timeouts (`ServiceRegistration`): 3 s to connect, so a switched-off API PC shows `Unreachable` quickly, and 15 s for a whole request (applied by `ApiClient`, not `HttpClient.Timeout`). Whole-table work (backup export, delete a whole log, data reset) passes `ApiClient.LongRequestTimeout` (10 min) |
-| `Services/Api/AuthApi` | `LoginAsync`, `ChangePasswordAsync`, `LogoutAsync` (the signed-in user comes from the login response) |
+| `Services/Api/AuthApi` | `LoginAsync`, `GetClinicAccessAsync`, `OpenClinicSessionAsync`, `ChangePasswordAsync`, `LogoutAsync` |
 | `Services/Auth/AuthHeaderHandler` | `HttpClient` pipeline step: adds the session's bearer token to each request; a `401` for that token expires the session (a late `401` for an earlier session is ignored) |
 | `Services/Auth/SessionService` | Current user + token in memory; expiry uses `LoginResponse.ExpiresInSeconds` counted from receipt (so a wrong PC clock does not expire the session at once), and also when `AuthHeaderHandler` reports a rejected token |
 | `AppRoutes` (`Services/Navigation/RouteTable`) | Every screen in one table: its view, who may open it, and each role's portal (title + menu). DI, navigation, the shell and `ViewLocator` all read it |
 | `Services/Navigation/NavigationService` | Opens the login screen or the user's portal; the single access check (`CanAccess`, `CreatePage`) |
-| `ViewModels/Auth/LoginViewModel` + `Views/Auth/LoginView` | Sign-in form |
-| `ViewModels/Shell/PortalShellViewModel` + `Views/Shell/PortalShellView` | The one portal layout for every role: sidebar from the role's menu, top bar (user, `ui:PreferencesBar`), sign out |
+| `ViewModels/Auth/LoginViewModel` + `Views/Auth/LoginView` | Super sign-in form + Enter clinic (disabled while maintenance mode is on) |
+| `ViewModels/Shell/PortalShellViewModel` + `Views/Shell/PortalShellView` | Shared portal layout. Super: change password + confirmed sign-out. Clinic Admin: Back to sign-in only (no password change) |
 | `ViewModels/Shell/DashboardViewModel` + `Views/Shell/DashboardView` | Admin home: revenue, outstanding, order counts and graphs for a chosen period (other roles see an empty card until they get their own dashboard in `AppRoutes`) |
 
 ### Route protection

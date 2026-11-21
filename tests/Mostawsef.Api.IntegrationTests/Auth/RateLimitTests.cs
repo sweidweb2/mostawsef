@@ -15,11 +15,11 @@ public class RateLimitTests(ApiFactory factory)
 
         for (var i = 0; i < 3; i++)
         {
-            var allowed = await client.LoginAsync(TestUsers.Admin.Username, "wrong-password");
+            var allowed = await client.LoginAsync(TestUsers.Super.Username, "wrong-password");
             Assert.Equal(HttpStatusCode.Unauthorized, allowed.StatusCode);
         }
 
-        var blocked = await client.LoginAsync(TestUsers.Admin.Username, TestUsers.Admin.Password);
+        var blocked = await client.LoginAsync(TestUsers.Super.Username, TestUsers.Super.Password);
 
         Assert.Equal(HttpStatusCode.TooManyRequests, blocked.StatusCode);
     }

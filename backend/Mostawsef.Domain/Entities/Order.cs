@@ -99,18 +99,6 @@ public class Order : Entity
     /// <summary>Sets the chargeable total. Used by the one-time backfill of orders saved before our price existed.</summary>
     public void SetTotal(long total) => Total = total;
 
-    /// <summary>
-    /// Copies the saved total into <see cref="Addon"/> for orders created when the two were the same number.
-    /// Does not change <see cref="Total"/>, so an order already charged stays charged that amount.
-    /// </summary>
-    public void KeepSavedTotalAsAddon()
-    {
-        if (Addon == 0)
-        {
-            Addon = Total;
-        }
-    }
-
     /// <summary>A payment in the order currency (exchange rate 1).</summary>
     public Payment AddPayment(PaymentMethod method, long amount, DateTime paidAt, string? notes)
     {

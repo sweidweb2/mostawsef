@@ -85,13 +85,14 @@ public class LoginThrottleApiTests(ApiFactory factory)
         using var limited = factory.WithWebHostBuilder(b => b.UseSetting("RateLimit:LoginFailuresPerUser", "3"));
         var client = limited.CreateClient();
 
+        var target = $"{HttpClientExtensions.Unique("throttle")}@test.local";
         for (var i = 0; i < 3; i++)
         {
-            var failed = await client.LoginAsync(TestUsers.Admin.Username, "wrong-password");
+            var failed = await client.LoginAsync(target, "wrong-password");
             Assert.Equal(HttpStatusCode.Unauthorized, failed.StatusCode);
         }
 
-        var blocked = await client.LoginAsync(TestUsers.Admin.Username, TestUsers.Admin.Password);
+        var blocked = await client.LoginAsync(target, "Created#Pass1");
         Assert.Equal(HttpStatusCode.Unauthorized, blocked.StatusCode);
 
         // Another account is not affected.

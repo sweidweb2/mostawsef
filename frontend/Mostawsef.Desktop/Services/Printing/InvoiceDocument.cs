@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using Mostawsef.Contracts.Orders;
 using Mostawsef.Desktop.Converters;
 using QuestPDF.Fluent;
@@ -127,15 +126,19 @@ public sealed class InvoiceDocument(PrintContext context, OrderDetailsDto order)
     private void Totals(IContainer container) => container.AlignRight().Width(250).Column(column =>
     {
         column.Spacing(4);
-        var labs = order.Items.Sum(i => i.LabCost);
-        if (labs != 0)
+        // Legacy rows kept Total as the patient charge and only copied it into Addon; do not add labs again.
+        if (OrderPricing.TotalIncludesLabPrices(order))
         {
-            Amount(column, context.Text("Invoice.Labs"), labs);
-        }
+            var labs = OrderPricing.LabsTotal(order.Items);
+            if (labs != 0)
+            {
+                Amount(column, context.Text("Invoice.Labs"), labs);
+            }
 
-        if (order.Addon != 0)
-        {
-            Amount(column, context.Text("Invoice.Addon"), order.Addon);
+            if (OrderPricing.ShowsAddon(order))
+            {
+                Amount(column, context.Text("Invoice.Addon"), order.Addon);
+            }
         }
 
         column.Item().BorderTop(1).BorderColor(Colors.Grey.Lighten1).PaddingTop(4).Element(row =>

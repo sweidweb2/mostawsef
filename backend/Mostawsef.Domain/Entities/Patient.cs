@@ -12,7 +12,7 @@ public class Patient : SoftDeletableEntity
     public const int FullNameMaxLength = 100;
     public const int PhoneMaxLength = 30;
     public const int NotesMaxLength = 2000;
-    /// <summary>Name + phone, with leftover room from when a second phone was also searchable.</summary>
+    /// <summary>Name + phone (column still allows a second phone-length for older rows).</summary>
     public const int SearchTextMaxLength = FullNameMaxLength + PhoneMaxLength + PhoneMaxLength + 2;
 
     private Patient()
@@ -49,10 +49,11 @@ public class Patient : SoftDeletableEntity
         Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
         Gender = gender;
         DateOfBirth = dateOfBirth;
-        SearchText = BuildSearchText(searchName, phone);
+        SearchText = ComposeSearchText(searchName, phone);
     }
 
-    private static string BuildSearchText(string searchName, string phone)
+    /// <summary>Name and phone joined the same way <see cref="Update"/> stores <see cref="SearchText"/>.</summary>
+    public static string ComposeSearchText(string searchName, string phone)
     {
         var length = 0;
         if (!string.IsNullOrEmpty(searchName))

@@ -142,7 +142,7 @@ try {
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     }
 
-    $login = Invoke-Api POST "auth/login" @{ username = "admin@example.com"; password = "password" }
+    $login = Invoke-Api POST "auth/clinic-session" @{}
     $script:headers = @{ Authorization = "Bearer $($login.accessToken)" }
 
     $tests = @(Get-All "lab-tests" | Where-Object { $_.isActive })
@@ -195,9 +195,13 @@ try {
         $labCostTotal = 0L
         $items = @(foreach ($test in $chosen) { $labCostTotal += $test.labCost; @{ labTestId = $test.id } })
         $order = @{ items = $items }
-        # Our price: the lab costs plus a markup; it is the order total.
-        $total = [long]([Math]::Max(500, [Math]::Floor($labCostTotal * (1.3 + $random.NextDouble() * 0.7) / 500) * 500))
-        $order.addon = $total
+        # Addon is our price on top of lab costs; the patient total is labs + addon.
+        $addon = 0L
+        if ($labCostTotal -gt 0) {
+            $addon = [long]([Math]::Max(0, [Math]::Floor($labCostTotal * (0.3 + $random.NextDouble() * 0.7) / 500) * 500))
+            if ($addon -gt 0) { $order.addon = $addon }
+        }
+        $total = $labCostTotal + $addon
 
         $patient = Pick-Skewed $patients 1.5
         $order.patientId = $patient.id
@@ -257,7 +261,7 @@ select 'patients ' || (select count(*) from patients) || ', orders ' || (select 
   || ', from ' || (select to_char(min("CreatedAt"), 'YYYY-MM-DD') from orders) || ' to ' || (select to_char(max("CreatedAt"), 'YYYY-MM-DD') from orders)
 '@
     Write-Host "Done in $([int]$watch.Elapsed.TotalSeconds)s: $summary" -ForegroundColor Green
-    Write-Host "Sign in as admin@example.com / password." -ForegroundColor Green
+    Write-Host "Use Enter clinic on the login screen to see the data." -ForegroundColor Green
 }
 finally {
     if ($startedApi) {

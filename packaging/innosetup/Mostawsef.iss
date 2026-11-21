@@ -31,6 +31,7 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir={#MyOutputDir}
 OutputBaseFilename={#MyOutputBaseFilename}
+SetupIconFile=app.ico
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
@@ -55,8 +56,9 @@ Source: "{#MyStagingDir}\scripts\*"; DestDir: "{app}\scripts"; Flags: ignorevers
 Source: "{#MyStagingDir}\redist\*"; DestDir: "{app}\redist"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\Desktop\{#MyAppExeName}"; WorkingDir: "{app}\Desktop"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\Desktop\{#MyAppExeName}"; WorkingDir: "{app}\Desktop"; Tasks: desktopicon
+; IconFilename uses the published exe (ApplicationIcon is embedded in Mostawsef.Desktop.exe).
+Name: "{group}\{#MyAppName}"; Filename: "{app}\Desktop\{#MyAppExeName}"; WorkingDir: "{app}\Desktop"; IconFilename: "{app}\Desktop\{#MyAppExeName}"; IconIndex: 0
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\Desktop\{#MyAppExeName}"; WorkingDir: "{app}\Desktop"; IconFilename: "{app}\Desktop\{#MyAppExeName}"; IconIndex: 0; Tasks: desktopicon
 
 [Run]
 ; After files are in place: Postgres (if needed), DB, connection string, Windows service.

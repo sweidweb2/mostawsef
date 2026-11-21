@@ -40,7 +40,7 @@ Checklist to finish before the first real clinic installation. Each block is ind
 **Done**
 
 1. `ClinicLocalConfig` on Production first start writes a random `Jwt:Key` to `appsettings.Clinic.json` next to the API (gitignored). Development / Testing do not auto-create it.
-2. Install seed users in `appsettings.json` (created only if the username was never used): Super `ali@etkan` / `ali@1234`, Admin `ana_mostawsef` / `123456789`. Development still uses `appsettings.Development.json` example accounts only.
+2. Install seed users in `appsettings.json` (created only if the username was never used): Super `ali@etkan` / `ali@1234`. The built-in `clinic` Admin identity is always seeded by the API. Development still uses `appsettings.Development.json` for Super.
 3. Documented in `Docs/4-Business/auth.md`. Tests: `ClinicLocalConfigTests`, existing `JwtConfigurationTests` (empty/short key still fails in Testing).
 
 - [x] Implemented
@@ -133,7 +133,7 @@ Checklist to finish before the first real clinic installation. Each block is ind
 
 **Check on every publish/install build**
 
-1. `Seed:Users` is empty (no `admin@example.com` / `password`).
+1. `Seed:Users` is empty (no install Super account); the built-in `clinic` identity is still seeded by the API.
 2. `Jwt:Key` is not the Development key; it comes from first-run (Block 1) or a secure clinic-specific config, never from the repo.
 3. Connection string points at the clinic’s native PostgreSQL (not Docker `mostawsef_dev`).
 4. API runs as a Windows service (or equivalent always-on host), starts after PostgreSQL, and survives reboot.

@@ -46,7 +46,7 @@ public class SystemMaintenanceTests(ApiFactory factory)
         Assert.Equal(
             before.OrderStatuses.Single(s => s.Status == OrderStatuses.PartiallyPaid).Count + 1,
             after.OrderStatuses.Single(s => s.Status == OrderStatuses.PartiallyPaid).Count);
-        Assert.True(after.Users >= TestUsers.All.Length);
+        Assert.True(after.Users >= TestUsers.SeededLogins.Length + 1); // Super seed(s) + clinic identity
     }
 
     [Fact]

@@ -122,11 +122,10 @@ Install accounts (seeded once on first Production start):
 | Username | Password | Role |
 | --- | --- | --- |
 | `ali@etkan` | `ali@1234` | Super |
-| `ana_mostawsef` | `123456789` | Admin |
 
+- [ ] Use **Enter clinic** on the login screen (Admin portal, no password)
 - [ ] Sign in as Super → **change password**
-- [ ] Sign in as Admin → **change password**
-- [ ] Write the new passwords somewhere safe for the clinic owner (not in the repo)
+- [ ] Write the new Super password somewhere safe for the clinic owner (not in the repo)
 
 ### 7. Super Settings — backup folder
 

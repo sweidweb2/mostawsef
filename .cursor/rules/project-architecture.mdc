@@ -35,7 +35,7 @@ tests/Mostawsef.Desktop.Tests          view models, navigation, headless views
 - Modular monolith: organize by feature modules (`Application/Modules/<Feature>`), no microservices.
 - Keep SQLite as a possible fallback: no `jsonb`, arrays, `citext`, `EF.Functions.ILike` or raw SQL (also not in migrations); store money as integers (smallest unit).
   Index-only PostgreSQL features (e.g. `pg_trgm` GIN indexes on log/order `SearchText`) are allowed when the queries stay plain LINQ.
-- Auth: username/password users with roles `Admin` and `Super` (JWT); each role has its own desktop portal. Details: `Docs/4-Business/auth.md`.
+- Auth: passwordless Enter clinic (built-in `clinic` Admin JWT on localhost) plus Super username/password (JWT); each role has its own desktop portal. Details: `Docs/4-Business/auth.md`.
 - App-wide engines: activity logs (`IActivityLogger`) and system errors (`ISystemErrorLogger` / desktop `ErrorReporter`). Details: `Docs/4-Business/logging.md`.
 - Do not add business logic or business modules unless the user asks for them.
 - Working principles (simplicity, reuse, dependencies, never bypass layers, when to ask): `working-principles.mdc`.

@@ -216,19 +216,50 @@
                     <!-- Charge + first payment -->
                     <ui:Card Name="ReviewColumn" Classes="outlined" Padding="0" Title="{l:Tr NewOrder.Charge}">
                         <StackPanel Margin="{StaticResource PaddingCard}" Spacing="{StaticResource GapStack}">
-                            <ui:FormField Label="{l:Tr NewOrder.Addon}" Error="{l:FieldError {Binding Errors[Addon]}}"
-                                          HorizontalAlignment="Left" Width="260">
-                                <NumericUpDown Name="AddonBox"
-                                               Value="{Binding Addon}"
-                                               Minimum="0"
-                                               Maximum="{Binding MaxAddon}"
-                                               ClipValueToMinMax="True"
-                                               ShowButtonSpinner="False"
-                                               FormatString="0.00"
-                                               PlaceholderText="{l:Tr LabTests.Field.AmountPlaceholder}"
-                                               HorizontalAlignment="Stretch"
-                                               ToolTip.Tip="{l:Tr NewOrder.AddonHint}" />
-                            </ui:FormField>
+                            <ui:ResponsiveGrid MinColumnWidth="260" MaxColumns="2"
+                                               ColumnSpacing="{StaticResource GapGrid}" RowSpacing="{StaticResource GapGrid}">
+                                <ui:FormField Label="{l:Tr NewOrder.Addon}" Error="{l:FieldError {Binding Errors[Addon]}}"
+                                              HorizontalAlignment="Left" Width="260">
+                                    <NumericUpDown Name="AddonBox"
+                                                   Value="{Binding Addon}"
+                                                   Minimum="0"
+                                                   Maximum="{Binding MaxAddon}"
+                                                   ClipValueToMinMax="True"
+                                                   ShowButtonSpinner="False"
+                                                   FormatString="0.00"
+                                                   PlaceholderText="{l:Tr LabTests.Field.AmountPlaceholder}"
+                                                   HorizontalAlignment="Stretch"
+                                                   ToolTip.Tip="{l:Tr NewOrder.AddonHint}" />
+                                </ui:FormField>
+
+                                <Border Name="TotalsSummary" Classes="order-item" VerticalAlignment="Top">
+                                    <StackPanel Spacing="{StaticResource GapControls}">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource GapControls}">
+                                            <TextBlock Classes="muted" VerticalAlignment="Center" Text="{l:Tr NewOrder.Total}" />
+                                            <TextBlock Name="SummaryTotalText" Grid.Column="1" Classes="h3" VerticalAlignment="Center"
+                                                       Text="{l:Money {Binding Total}}" />
+                                        </Grid>
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource GapControls}">
+                                            <TextBlock Classes="muted" VerticalAlignment="Center" Text="{l:Tr NewOrder.Labs}" />
+                                            <TextBlock Name="SummaryLabsText" Grid.Column="1" Classes="strong" VerticalAlignment="Center"
+                                                       Text="{l:Money {Binding LabsTotal}}" />
+                                        </Grid>
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource GapControls}">
+                                            <TextBlock Classes="muted" VerticalAlignment="Center" Text="{l:Tr NewOrder.Addon}" />
+                                            <TextBlock Name="SummaryOurPriceText" Grid.Column="1" Classes="strong" VerticalAlignment="Center"
+                                                       Text="{l:Money {Binding OurPrice}}" />
+                                        </Grid>
+                                        <StackPanel Spacing="{StaticResource GapControls}" IsVisible="{Binding HasPayment}">
+                                            <ui:Divider />
+                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource GapControls}">
+                                                <TextBlock Classes="caption muted" VerticalAlignment="Center" Text="{l:Tr NewOrder.Remaining}" />
+                                                <TextBlock Name="SummaryRemainingText" Grid.Column="1" Classes="strong" VerticalAlignment="Center"
+                                                           Text="{l:Money {Binding Remaining}}" />
+                                            </Grid>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </ui:ResponsiveGrid>
 
                             <ui:Divider />
 

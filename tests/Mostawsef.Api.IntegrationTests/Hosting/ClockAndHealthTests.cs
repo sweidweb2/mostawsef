@@ -84,7 +84,7 @@ public class ClockAndHealthTests(ApiFactory factory)
         var zone = TimeZoneInfo.CreateCustomTimeZone("Test+2", TimeSpan.FromHours(2), "Test+2", "Test+2");
         using var frozen = Frozen(DateTimeOffset.Parse(signInAt, CultureInfo.InvariantCulture), zone);
 
-        var login = await frozen.CreateClient().LoginAsAsync(TestUsers.Admin);
+        var login = await frozen.CreateClient().OpenClinicSessionAsync();
 
         Assert.Equal(DateTimeOffset.Parse(expectedExpiry, CultureInfo.InvariantCulture).UtcDateTime, login.ExpiresAt.ToUniversalTime());
     }

@@ -14,10 +14,13 @@ public static class OrderRules
     /// <summary>Hard cap on tests per order (API + desktop).</summary>
     public const int MaxItems = 100;
 
-    /// <summary>10,000,000.00 in the clinic currency.</summary>
+    /// <summary>
+    /// 10,000,000.00 in the clinic currency. One payment cannot exceed this; an order whose total is
+    /// larger (labs plus addon) is settled with several payments.
+    /// </summary>
     public const long MaxPaymentAmount = 1_000_000_000;
 
-    /// <summary>Same ceiling as a payment: the clinic's charge for the order ("our price").</summary>
+    /// <summary>Same ceiling as a payment: our price on top of the lab costs.</summary>
     public const long MaxAddon = MaxPaymentAmount;
 }
 

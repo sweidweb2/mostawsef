@@ -56,8 +56,8 @@ public record CreateUserRequest
     public string Password { get; init; } = string.Empty;
 
     [Required(ErrorMessage = ErrorCodes.Required)]
-    [AllowedValues(Roles.Admin, Roles.Super, ErrorMessage = ErrorCodes.Invalid)]
-    public string Role { get; init; } = Roles.Admin;
+    [AllowedValues(Roles.Super, ErrorMessage = ErrorCodes.Invalid)]
+    public string Role { get; init; } = Roles.Super;
 }
 
 /// <summary>Version is the value from the list/details DTO; a stale one returns 409 concurrency_conflict.</summary>
@@ -68,8 +68,8 @@ public record UpdateUserRequest
     public string FullName { get; init; } = string.Empty;
 
     [Required(ErrorMessage = ErrorCodes.Required)]
-    [AllowedValues(Roles.Admin, Roles.Super, ErrorMessage = ErrorCodes.Invalid)]
-    public string Role { get; init; } = Roles.Admin;
+    [AllowedValues(Roles.Super, ErrorMessage = ErrorCodes.Invalid)]
+    public string Role { get; init; } = Roles.Super;
 
     public bool IsActive { get; init; } = true;
 

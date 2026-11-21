@@ -49,7 +49,7 @@ Table clinic_settings {
 Table system_settings {
   Id uuid [pk]
   BackupPath varchar(260) [note: 'folder for scheduled backups; null until Super sets it']
-  MaintenanceMode boolean [not null, note: 'while true, only Super users can sign in']
+  MaintenanceMode boolean [not null, note: 'while true, Enter clinic / clinic-session is blocked; Super can still sign in']
   CreatedAt timestamptz [not null]
   CreatedBy varchar(50)
   UpdatedAt timestamptz
@@ -214,7 +214,7 @@ Table orders {
   DiscountType DiscountType
   DiscountValue bigint [not null, default: 0, note: 'Percent: 0-100; Fixed: minor units']
   Total bigint [not null, note: 'patient charge: Addon plus the order items LabPrice snapshots']
-  Addon bigint [not null, default: 0, note: 'clinic charge on top of the lab prices (our price); existing rows were copied from Total']
+  Addon bigint [not null, default: 0, note: 'clinic charge on top of the lab prices (our price); legacy rows copied Total→Addon only when Total ≠ Σ LabPrice (new Addon=0 orders left alone)']
   TestsCount integer [not null, note: 'denormalized item count for the list page']
   Paid bigint [not null, note: 'denormalized payments minus refunds for the list page']
   Currency varchar(3) [not null]

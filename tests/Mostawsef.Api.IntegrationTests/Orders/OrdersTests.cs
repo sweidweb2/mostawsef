@@ -407,7 +407,7 @@ public class OrdersTests(ApiFactory factory)
         using var broken = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
             services.AddSingleton<INumberSequence>(new FixedNumber(takenNumber))));
         var client = broken.CreateClient();
-        client.WithBearer((await factory.CreateClient().LoginAsAsync(TestUsers.Admin)).AccessToken);
+        client.WithBearer((await factory.CreateClient().OpenClinicSessionAsync()).AccessToken);
         var request = new CreateOrderRequest { NewPatient = NewPatient(), Items = [new() { LabTestId = test.Id }] };
 
         var response = await client.PostAsJsonAsync(Url, request, Ct);

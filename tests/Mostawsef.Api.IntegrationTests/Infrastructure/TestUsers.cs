@@ -1,12 +1,17 @@
+using Mostawsef.Contracts.Auth;
+
 namespace Mostawsef.Api.IntegrationTests.Infrastructure;
 
 public record TestUser(string Username, string Password, string Role);
 
-/// <summary>Seeded into the test database at API startup.</summary>
+/// <summary>Seeded into the test database at API startup (Super via Seed:Users; clinic via DatabaseInitializer).</summary>
 public static class TestUsers
 {
-    public static readonly TestUser Admin = new("admin@test.local", "Admin#Pass1", "Admin");
-    public static readonly TestUser Super = new("super@test.local", "Super#Pass1", "Super");
+    /// <summary>Built-in clinic Admin identity — open a session with clinic-session, not password login.</summary>
+    public static readonly TestUser Admin = new(ClinicIdentity.Username, "", Roles.Admin);
 
-    public static readonly TestUser[] All = [Admin, Super];
+    public static readonly TestUser Super = new("super@test.local", "Super#Pass1", Roles.Super);
+
+    /// <summary>Password-seeded accounts only (clinic is created by the API initializer).</summary>
+    public static readonly TestUser[] SeededLogins = [Super];
 }

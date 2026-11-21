@@ -60,9 +60,13 @@
   <data name="Login.FeaturePatients" xml:space="preserve"><value>سجلات المرضى وطلبات التحاليل دائمًا في متناولك</value></data>
   <data name="Login.FeatureReports" xml:space="preserve"><value>متابعة المدفوعات ونتائج جاهزة للطباعة</value></data>
   <data name="Login.FeatureSecure" xml:space="preserve"><value>صلاحيات حسب الدور مع سجل كامل للنشاطات</value></data>
+  <data name="Login.EnterClinic" xml:space="preserve"><value>دخول العيادة</value></data>
+  <data name="Login.ClinicUnavailable" xml:space="preserve"><value>العيادة تحت الصيانة. سجّل الدخول كمسؤول النظام للمتابعة.</value></data>
+  <data name="Login.ClinicForbidden" xml:space="preserve"><value>دخول العيادة متاح فقط على هذا الجهاز.</value></data>
 
   <data name="Auth.Logout" xml:space="preserve"><value>تسجيل الخروج</value></data>
   <data name="Auth.LogoutConfirm" xml:space="preserve"><value>هل تريد تسجيل الخروج؟</value></data>
+  <data name="Auth.BackToSignIn" xml:space="preserve"><value>العودة لتسجيل الدخول</value></data>
 
   <data name="Portal.Admin" xml:space="preserve"><value>بوابة المسؤول</value></data>
   <data name="Portal.Super" xml:space="preserve"><value>بوابة المشرف العام</value></data>
@@ -162,6 +166,8 @@
   <data name="Action.auth.signed_in" xml:space="preserve"><value>تسجيل دخول</value></data>
   <data name="Action.auth.sign_in_failed" xml:space="preserve"><value>محاولة دخول فاشلة</value></data>
   <data name="Action.auth.sign_in_blocked" xml:space="preserve"><value>منع تسجيل الدخول (وضع الصيانة)</value></data>
+  <data name="Action.auth.clinic_opened" xml:space="preserve"><value>فتح بوابة العيادة</value></data>
+  <data name="Action.auth.clinic_blocked" xml:space="preserve"><value>منع دخول العيادة (وضع الصيانة)</value></data>
   <data name="Action.auth.signed_out" xml:space="preserve"><value>تسجيل خروج</value></data>
   <data name="Action.logs.activity_deleted" xml:space="preserve"><value>حذف سجلات نشاط</value></data>
   <data name="Action.logs.error_deleted" xml:space="preserve"><value>حذف سجل خطأ</value></data>

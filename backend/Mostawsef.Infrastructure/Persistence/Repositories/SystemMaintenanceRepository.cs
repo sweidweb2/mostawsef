@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Domain.Entities;
 using Mostawsef.Domain.Enums;
+using Mostawsef.Infrastructure.Persistence;
 using Mostawsef.Infrastructure.Persistence.Context;
 
 namespace Mostawsef.Infrastructure.Persistence.Repositories;
@@ -85,7 +86,11 @@ public class SystemMaintenanceRepository(AppDbContext db) : ISystemMaintenanceRe
             var labTests = await db.LabTests.IgnoreQueryFilters().ExecuteDeleteAsync(cancellationToken);
             var activityLogs = await db.ActivityLogs.ExecuteDeleteAsync(cancellationToken);
             var systemErrors = await db.SystemErrors.ExecuteDeleteAsync(cancellationToken);
-            await db.Set<NumberSequence>().ExecuteDeleteAsync(cancellationToken);
+            // Keep one-time data-backfill markers so a later restart does not re-copy Total into Addon on new orders.
+            await db.Set<NumberSequence>()
+                .Where(s => s.Name != OrderAddonBackfill.CompletionMarker
+                    && s.Name != PatientSearchTextRebuild.CompletionMarker)
+                .ExecuteDeleteAsync(cancellationToken);
 
             await transaction.CommitAsync(cancellationToken);
             db.ChangeTracker.Clear();

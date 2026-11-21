@@ -194,13 +194,20 @@ public class NewOrderPageTests : UiTestBase
         Assert.Equal(200m, page.MaxPayableAmount);
         Assert.Equal("200.00", Named<TextBlock>(window, "LabsText").Text);
         Assert.Equal("200.00", Named<TextBlock>(window, "TotalText").Text);
+        Assert.Equal("200.00", Named<TextBlock>(window, "SummaryLabsText").Text);
+        Assert.Equal("200.00", Named<TextBlock>(window, "SummaryTotalText").Text);
+        Assert.Equal("0.00", Named<TextBlock>(window, "SummaryOurPriceText").Text);
         Assert.False(Named<TextBlock>(window, "RemainingText").IsEffectivelyVisible);
+        Assert.False(Named<TextBlock>(window, "SummaryRemainingText").IsEffectivelyVisible);
 
         page.Addon = 5m;
         Dispatcher.UIThread.RunJobs();
 
+        Assert.Equal(500, page.OurPrice);
         Assert.Equal(20500, page.Total);
         Assert.Equal(205m, page.MaxPayableAmount);
+        Assert.Equal("5.00", Named<TextBlock>(window, "SummaryOurPriceText").Text);
+        Assert.Equal("205.00", Named<TextBlock>(window, "SummaryTotalText").Text);
 
         page.Addon = 200m;
         page.PaymentAmount = 50m;
@@ -209,8 +216,12 @@ public class NewOrderPageTests : UiTestBase
         Assert.Equal(40000, page.Total);
         Assert.Equal(400m, page.MaxPayableAmount);
         Assert.Equal("400.00", Named<TextBlock>(window, "TotalText").Text);
+        Assert.Equal("400.00", Named<TextBlock>(window, "SummaryTotalText").Text);
+        Assert.Equal("200.00", Named<TextBlock>(window, "SummaryOurPriceText").Text);
         Assert.Equal("350.00", Named<TextBlock>(window, "RemainingText").Text);
+        Assert.Equal("350.00", Named<TextBlock>(window, "SummaryRemainingText").Text);
         Assert.True(Named<TextBlock>(window, "RemainingText").IsEffectivelyVisible);
+        Assert.True(Named<TextBlock>(window, "SummaryRemainingText").IsEffectivelyVisible);
         Assert.Equal(400m, Named<NumericUpDown>(window, "PaymentAmountBox").Maximum);
     }
 
@@ -333,7 +344,8 @@ public class NewOrderPageTests : UiTestBase
     public async Task A_valid_order_is_sent_with_an_addon_then_its_details_open()
     {
         using var app = Admin();
-        var created = Details(Guid.NewGuid()) with { Total = 20500, Paid = 5000, Balance = 15500, Addon = 20500 };
+        // Labs (CBC+Sugar) 200.00 + our price 205.00 = 405.00; 50.00 paid.
+        var created = Details(Guid.NewGuid()) with { Total = 40500, Paid = 5000, Balance = 35500, Addon = 20500 };
         CreateOrderRequest? sent = null;
         app.Api.On(HttpMethod.Post, OrdersPath, request =>
         {
@@ -535,7 +547,7 @@ public class NewOrderPageTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task Our_price_has_its_own_row_above_the_first_payment_fields()
+    public async Task Our_price_sits_beside_the_totals_card_above_the_first_payment_fields()
     {
         using var app = Admin();
         var (_, page, window) = await ShowNewOrderAsync(app);
@@ -546,8 +558,11 @@ public class NewOrderPageTests : UiTestBase
         var addon = Named<NumericUpDown>(window, "AddonBox");
         var amount = Named<NumericUpDown>(window, "PaymentAmountBox");
         var method = Named<ComboBox>(window, "PaymentMethodBox");
+        var summary = Named<Border>(window, "TotalsSummary");
 
-        Assert.Null(addon.FindAncestorOfType<ResponsiveGrid>());
+        Assert.NotNull(addon.FindAncestorOfType<ResponsiveGrid>());
+        Assert.Same(addon.FindAncestorOfType<ResponsiveGrid>(), summary.FindAncestorOfType<ResponsiveGrid>());
+        Assert.NotSame(addon.FindAncestorOfType<ResponsiveGrid>(), amount.FindAncestorOfType<ResponsiveGrid>());
         Assert.Same(amount.FindAncestorOfType<ResponsiveGrid>(), method.FindAncestorOfType<ResponsiveGrid>());
         var addonY = addon.TranslatePoint(default, window)!.Value.Y;
         var amountY = amount.TranslatePoint(default, window)!.Value.Y;

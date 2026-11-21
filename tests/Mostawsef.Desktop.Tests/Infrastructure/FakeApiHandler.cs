@@ -20,6 +20,12 @@ public class FakeApiHandler : HttpMessageHandler
     public void RespondToLoginWith(string role, string username = "user@test.local") =>
         Respond = _ => Json(LoginResponseFor(role, username));
 
+    public void RespondToClinicAccess(bool available = true) =>
+        On(HttpMethod.Get, "/api/auth/clinic-access", _ => Json(new ClinicAccessResponse(available)));
+
+    public void RespondToClinicSession(string username = ClinicIdentity.Username) =>
+        On(HttpMethod.Post, "/api/auth/clinic-session", _ => Json(LoginResponseFor(Roles.Admin, username)));
+
     public void RespondWithStatus(HttpStatusCode status) => Respond = _ => new HttpResponseMessage(status);
 
     public void FailWithNetworkError() => Respond = _ => throw new HttpRequestException("Connection refused");
