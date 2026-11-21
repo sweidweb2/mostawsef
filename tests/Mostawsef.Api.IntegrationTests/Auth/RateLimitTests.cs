@@ -23,4 +23,27 @@ public class RateLimitTests(ApiFactory factory)
 
         Assert.Equal(HttpStatusCode.TooManyRequests, blocked.StatusCode);
     }
+
+    [Fact]
+    public async Task Exhausting_super_login_does_not_block_clinic_session()
+    {
+        using var limited = factory.WithWebHostBuilder(b =>
+        {
+            b.UseSetting("RateLimit:LoginPermitLimit", "3");
+            b.UseSetting("RateLimit:ClinicSessionPermitLimit", "10");
+        });
+        var client = limited.CreateClient();
+
+        for (var i = 0; i < 3; i++)
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized,
+                (await client.LoginAsync(TestUsers.Super.Username, "wrong-password")).StatusCode);
+        }
+
+        Assert.Equal(HttpStatusCode.TooManyRequests,
+            (await client.LoginAsync(TestUsers.Super.Username, TestUsers.Super.Password)).StatusCode);
+
+        var clinic = await client.OpenClinicSessionAsync();
+        Assert.False(string.IsNullOrWhiteSpace(clinic.AccessToken));
+    }
 }

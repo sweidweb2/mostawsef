@@ -15,6 +15,7 @@ public static class AuthPolicies
     public const string AdminOnly = nameof(AdminOnly);
     public const string SuperOnly = nameof(SuperOnly);
     public const string LoginRateLimit = "login";
+    public const string ClinicSessionRateLimit = "clinic-session";
     public const string ClientErrorRateLimit = "client-errors";
     public const string HealthRateLimit = "health";
 }
@@ -23,6 +24,7 @@ public static class AuthPolicies
 public static class RateLimitDefaults
 {
     public const int LoginPerMinute = 10;
+    public const int ClinicSessionPerMinute = 10;
     public const int ClientErrorPerMinute = 30;
     public const int HealthPerMinute = 120;
 }
@@ -70,6 +72,16 @@ public static class AuthExtensions
             {
                 var permitLimit = context.RequestServices.GetRequiredService<IConfiguration>()
                     .GetValue("RateLimit:LoginPermitLimit", RateLimitDefaults.LoginPerMinute);
+
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    _ => new FixedWindowRateLimiterOptions { PermitLimit = permitLimit, Window = TimeSpan.FromMinutes(1) });
+            });
+            // Separate counter from Super login so failed password attempts do not block Enter clinic on localhost.
+            options.AddPolicy(AuthPolicies.ClinicSessionRateLimit, context =>
+            {
+                var permitLimit = context.RequestServices.GetRequiredService<IConfiguration>()
+                    .GetValue("RateLimit:ClinicSessionPermitLimit", RateLimitDefaults.ClinicSessionPerMinute);
 
                 return RateLimitPartition.GetFixedWindowLimiter(
                     context.Connection.RemoteIpAddress?.ToString() ?? "unknown",

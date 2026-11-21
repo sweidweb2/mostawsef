@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Http;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -89,20 +91,21 @@ public class PortalShellViewTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public void Clinic_back_to_sign_in_returns_to_login_without_a_confirm()
+    public async Task Clinic_back_to_sign_in_returns_to_login_without_a_confirm()
     {
         using var app = new TestServices();
+        app.Api.On(HttpMethod.Post, "/api/auth/logout", _ => new HttpResponseMessage(HttpStatusCode.NoContent));
         var window = ShowPortal(app, Roles.Admin);
         var leave = window.GetVisualDescendants().OfType<NavMenuItem>().Single(i => i.Text == "Back to sign-in");
         var center = leave.TranslatePoint(new Point(leave.Bounds.Width / 2, leave.Bounds.Height / 2), window)!.Value;
 
         window.MouseDown(center, MouseButton.Left);
         window.MouseUp(center, MouseButton.Left);
-        Dispatcher.UIThread.RunJobs();
+        await UiWait.UntilAsync(() => !app.Session.IsAuthenticated);
 
         Assert.Empty(window.GetVisualDescendants().OfType<ConfirmDialog>());
-        Assert.False(app.Session.IsAuthenticated);
         Assert.IsType<LoginViewModel>(app.Navigation.CurrentPage);
+        Assert.NotEmpty(app.Api.RequestsTo(HttpMethod.Post, "/api/auth/logout"));
     }
 
     [AvaloniaTheory]

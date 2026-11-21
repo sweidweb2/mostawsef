@@ -150,6 +150,31 @@ public class LoginViewModelTests : UiTestBase
     }
 
     [AvaloniaFact]
+    public async Task Enter_clinic_re_enables_after_maintenance_ends_while_login_stays_open()
+    {
+        var previous = LoginViewModel.ClinicAccessPollInterval;
+        LoginViewModel.ClinicAccessPollInterval = TimeSpan.FromMilliseconds(50);
+        try
+        {
+            using var app = new TestServices();
+            var available = false;
+            app.Api.On(HttpMethod.Get, "/api/auth/clinic-access",
+                _ => FakeApiHandler.Json(new ClinicAccessResponse(available)));
+            var vm = app.Get<LoginViewModel>();
+            await UiWait.UntilAsync(() => !vm.IsClinicEntryAvailable);
+
+            available = true;
+            await UiWait.UntilAsync(() => vm.IsClinicEntryAvailable && vm.EnterClinicCommand.CanExecute(null));
+
+            Assert.False(vm.ShowClinicUnavailable);
+        }
+        finally
+        {
+            LoginViewModel.ClinicAccessPollInterval = previous;
+        }
+    }
+
+    [AvaloniaFact]
     public async Task Error_message_follows_the_selected_language()
     {
         using var app = new TestServices();

@@ -112,7 +112,9 @@ public static class DatabaseInitializer
             logger.LogInformation("Filled empty backup folder with default {BackupPath}", systemSettings.BackupPath);
         }
 
-        await EnsureClinicUserAsync(db, hasher, logger, cancellationToken);
+        var authCacheInvalidations = new List<Guid>();
+        authCacheInvalidations.AddRange(await EnsureClinicUserAsync(db, hasher, logger, cancellationToken));
+        authCacheInvalidations.AddRange(await RetireLegacyAdminAccountsAsync(db, hasher, logger, cancellationToken));
 
         foreach (var seed in seedUsers)
         {
@@ -145,30 +147,104 @@ public static class DatabaseInitializer
         {
             scope.ServiceProvider.GetService<ISystemSettingsCache>()?.Invalidate();
         }
+
+        // Clinic repair / legacy Admin retirement bump TokenVersion; drop cache so old JWTs die immediately.
+        if (authCacheInvalidations.Count > 0
+            && scope.ServiceProvider.GetService<IUserAuthCache>() is { } authCache)
+        {
+            foreach (var userId in authCacheInvalidations)
+            {
+                authCache.Invalidate(userId);
+            }
+        }
     }
 
     /// <summary>
     /// Built-in Admin identity for passwordless clinic entry. Password is a random unusable hash (no password login).
+    /// Repairs a soft-deleted, inactive, or wrong-role row that still owns the <c>clinic</c> username.
+    /// Returns user ids whose auth cache must be cleared after save.
     /// </summary>
-    private static async Task EnsureClinicUserAsync(
+    private static async Task<IReadOnlyList<Guid>> EnsureClinicUserAsync(
         AppDbContext db,
         IPasswordHasher hasher,
         ILogger logger,
         CancellationToken cancellationToken)
     {
         var username = ClinicIdentity.Username;
-        if (await db.Users.IgnoreQueryFilters().AnyAsync(u => u.Username == username, cancellationToken))
+        var existing = await db.Users.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Username == username, cancellationToken);
+
+        if (existing is null)
         {
-            return;
+            var fullName = ClinicIdentity.FullName;
+            db.Users.Add(new User(
+                username,
+                fullName,
+                SearchText.Normalize(fullName),
+                hasher.Hash(Guid.NewGuid().ToString("N")),
+                UserRole.Admin));
+            logger.LogInformation("Seeded clinic identity {Username}", username);
+            return [];
         }
 
-        var fullName = ClinicIdentity.FullName;
-        db.Users.Add(new User(
-            username,
-            fullName,
-            SearchText.Normalize(fullName),
-            hasher.Hash(Guid.NewGuid().ToString("N")),
-            UserRole.Admin));
-        logger.LogInformation("Seeded clinic identity {Username}", username);
+        var repaired = false;
+        if (existing.IsDeleted)
+        {
+            var entry = db.Entry(existing);
+            entry.Property(u => u.IsDeleted).CurrentValue = false;
+            entry.Property(u => u.DeletedAt).CurrentValue = null;
+            entry.Property(u => u.DeletedBy).CurrentValue = null;
+            repaired = true;
+        }
+
+        if (existing.Role != UserRole.Admin)
+        {
+            existing.ChangeRole(UserRole.Admin);
+            repaired = true;
+        }
+
+        if (!existing.IsActive)
+        {
+            existing.Activate();
+            repaired = true;
+        }
+
+        if (!repaired)
+        {
+            return [];
+        }
+
+        // Drop any password that might have existed on a wrong-role row; clinic never signs in with one.
+        existing.ChangePasswordHash(hasher.Hash(Guid.NewGuid().ToString("N")));
+        existing.Rename(ClinicIdentity.FullName, SearchText.Normalize(ClinicIdentity.FullName));
+        logger.LogInformation("Repaired clinic identity {Username}", username);
+        return [existing.Id];
+    }
+
+    /// <summary>
+    /// Password login is Super-only. Deactivate leftover Admin accounts (not the clinic identity) and
+    /// bump their token version so any still-valid JWT stops on the next request.
+    /// </summary>
+    private static async Task<IReadOnlyList<Guid>> RetireLegacyAdminAccountsAsync(
+        AppDbContext db,
+        IPasswordHasher hasher,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        var legacy = await db.Users.IgnoreQueryFilters()
+            .Where(u => u.Role == UserRole.Admin
+                && u.Username != ClinicIdentity.Username
+                && !u.IsDeleted
+                && u.IsActive)
+            .ToListAsync(cancellationToken);
+
+        foreach (var user in legacy)
+        {
+            user.Deactivate();
+            user.ChangePasswordHash(hasher.Hash(Guid.NewGuid().ToString("N")));
+            logger.LogInformation("Retired legacy Admin account {Username}", user.Username);
+        }
+
+        return legacy.Select(u => u.Id).ToList();
     }
 }

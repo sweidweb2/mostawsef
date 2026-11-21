@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Mostawsef.Contracts.Common;
@@ -12,9 +13,13 @@ namespace Mostawsef.Desktop.ViewModels.Auth;
 
 public partial class LoginViewModel : ViewModelBase
 {
+    /// <summary>How often to re-check clinic-access while Enter clinic is disabled for maintenance.</summary>
+    internal static TimeSpan ClinicAccessPollInterval { get; set; } = TimeSpan.FromSeconds(5);
+
     private readonly AuthApi _authApi;
     private readonly SessionService _session;
     private readonly NavigationService _navigation;
+    private readonly DispatcherTimer _clinicAccessPoll = new();
 
     public LoginViewModel(AuthApi authApi, SessionService session, NavigationService navigation, SettingsService settings)
     {
@@ -22,6 +27,7 @@ public partial class LoginViewModel : ViewModelBase
         _authApi = authApi;
         _session = session;
         _navigation = navigation;
+        _clinicAccessPoll.Tick += (_, _) => _ = RefreshClinicAccessAsync();
 
         if (session.LastSignOutReason == SignOutReason.Expired)
         {
@@ -79,6 +85,7 @@ public partial class LoginViewModel : ViewModelBase
             var result = await _authApi.LoginAsync(Username.Trim(), Password);
             if (result.IsSuccess)
             {
+                StopClinicAccessPoll();
                 _session.SignIn(result.Value!);
                 Password = string.Empty;
                 _navigation.NavigateToHome();
@@ -111,6 +118,7 @@ public partial class LoginViewModel : ViewModelBase
             var result = await _authApi.OpenClinicSessionAsync();
             if (result.IsSuccess)
             {
+                StopClinicAccessPoll();
                 _session.SignIn(result.Value!);
                 Password = string.Empty;
                 _navigation.NavigateToHome();
@@ -119,7 +127,7 @@ public partial class LoginViewModel : ViewModelBase
 
             if (result.Error == ApiError.Conflict && result.Problem?.Code == ErrorCodes.MaintenanceMode)
             {
-                IsClinicEntryAvailable = false;
+                SetClinicEntryAvailable(false);
                 ErrorKey = "Login.Maintenance";
                 return;
             }
@@ -143,8 +151,31 @@ public partial class LoginViewModel : ViewModelBase
         var result = await _authApi.GetClinicAccessAsync();
         if (result.IsSuccess)
         {
-            IsClinicEntryAvailable = result.Value!.Available;
+            SetClinicEntryAvailable(result.Value!.Available);
         }
         // Unreachable / other errors: leave the button enabled so a click surfaces Login.ServerUnreachable.
+    }
+
+    private void SetClinicEntryAvailable(bool available)
+    {
+        IsClinicEntryAvailable = available;
+        if (available)
+        {
+            StopClinicAccessPoll();
+            return;
+        }
+
+        if (_clinicAccessPoll.IsEnabled)
+        {
+            return;
+        }
+
+        _clinicAccessPoll.Interval = ClinicAccessPollInterval;
+        _clinicAccessPoll.Start();
+    }
+
+    private void StopClinicAccessPoll()
+    {
+        _clinicAccessPoll.Stop();
     }
 }

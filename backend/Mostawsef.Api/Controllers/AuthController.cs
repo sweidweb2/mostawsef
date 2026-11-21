@@ -35,7 +35,7 @@ public class AuthController(IAuthService auth, IHostEnvironment environment) : C
 
     [HttpPost("clinic-session")]
     [AllowAnonymous]
-    [EnableRateLimiting(AuthPolicies.LoginRateLimit)]
+    [EnableRateLimiting(AuthPolicies.ClinicSessionRateLimit)]
     [ProducesResponseType<LoginResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

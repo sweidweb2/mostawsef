@@ -415,6 +415,8 @@ public partial class PortalShellViewModel : ViewModelBase
     {
         if (!CanManageAccount)
         {
+            // Best-effort activity log; the token is discarded either way.
+            await _authApi.LogoutAsync();
             _session.SignOut();
             return;
         }

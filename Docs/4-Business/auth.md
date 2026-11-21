@@ -52,10 +52,11 @@ Password login is Super-only. Unknown usernames (and Admin / clinic) take the sa
 | --- | --- | --- |
 | `POST /api/auth/login` `{ username, password }` | Anonymous, max 10 requests/min per IP | `200 { accessToken, expiresAt, user }` for Super only; `400` empty fields, `401` invalid (including Admin/clinic), `429` too many |
 | `GET /api/auth/clinic-access` | Anonymous | `200 { available }` — `false` while maintenance mode is on (login screen disables Enter clinic) |
-| `POST /api/auth/clinic-session` | Anonymous, loopback only (Testing allows null remote IP), same login rate limit | `200` Admin JWT for `clinic`; `403` non-local; `409 maintenance_mode`; `404` if clinic identity missing |
+| `POST /api/auth/clinic-session` | Anonymous, loopback only (Testing allows null remote IP), own rate limit | `200` Admin JWT for `clinic`; `403` non-local; `409 maintenance_mode`; `404` if clinic identity missing (startup repairs a soft-deleted / wrong-role `clinic` row) |
 
 Login protection (configuration keys under `RateLimit:`; the API answers like a wrong password, without logging, while blocked):
-- `LoginPermitLimit` (default 10): requests per minute per client IP, then `429` (also applied to `clinic-session`).
+- `LoginPermitLimit` (default 10): Super password login requests per minute per client IP, then `429`.
+- `ClinicSessionPermitLimit` (default 10): Enter-clinic requests per minute per client IP, then `429` (separate from Super login so failed passwords do not block clinic entry on localhost).
 - `LoginFailuresPerUser` (default 10) within `LoginFailureWindowMinutes` (default 5): failed sign-ins per username from any IP;
   further attempts get `401` even with the right password until the window ends. A successful sign-in clears the count.
   In memory, per API process.
@@ -110,7 +111,8 @@ Login protection (configuration keys under `RateLimit:`; the API answers like a 
 ### Built-in clinic identity
 
 Always seeded by `DatabaseInitializer` (not from `Seed:Users`): username `clinic`, role Admin, random unusable password.
-Used only by `POST /api/auth/clinic-session`.
+Used only by `POST /api/auth/clinic-session`. Startup also repairs a soft-deleted, inactive, or wrong-role row that still
+owns the `clinic` username, and deactivates any leftover non-clinic Admin accounts (password login is Super-only) so their JWTs stop on the next request.
 
 ### Development Super account
 
@@ -138,8 +140,8 @@ Seeded once on first Production start from `appsettings.json` (`Seed:Users`, Sup
 | `Services/Auth/SessionService` | Current user + token in memory; expiry uses `LoginResponse.ExpiresInSeconds` counted from receipt (so a wrong PC clock does not expire the session at once), and also when `AuthHeaderHandler` reports a rejected token |
 | `AppRoutes` (`Services/Navigation/RouteTable`) | Every screen in one table: its view, who may open it, and each role's portal (title + menu). DI, navigation, the shell and `ViewLocator` all read it |
 | `Services/Navigation/NavigationService` | Opens the login screen or the user's portal; the single access check (`CanAccess`, `CreatePage`) |
-| `ViewModels/Auth/LoginViewModel` + `Views/Auth/LoginView` | Super sign-in form + Enter clinic (disabled while maintenance mode is on) |
-| `ViewModels/Shell/PortalShellViewModel` + `Views/Shell/PortalShellView` | Shared portal layout. Super: change password + confirmed sign-out. Clinic Admin: Back to sign-in only (no password change) |
+| `ViewModels/Auth/LoginViewModel` + `Views/Auth/LoginView` | Super sign-in form + Enter clinic (disabled while maintenance mode is on; re-checks clinic-access every few seconds until it is available again) |
+| `ViewModels/Shell/PortalShellViewModel` + `Views/Shell/PortalShellView` | Shared portal layout. Super: change password + confirmed sign-out. Clinic Admin: Back to sign-in only (no password change; still records `SignedOut` via logout) |
 | `ViewModels/Shell/DashboardViewModel` + `Views/Shell/DashboardView` | Admin home: revenue, outstanding, order counts and graphs for a chosen period (other roles see an empty card until they get their own dashboard in `AppRoutes`) |
 
 ### Route protection

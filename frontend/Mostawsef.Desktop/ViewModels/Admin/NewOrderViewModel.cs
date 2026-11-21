@@ -171,7 +171,19 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
     [ObservableProperty]
     public partial decimal? Addon { get; set; }
 
-    public long LabsTotal => OrderPricing.LabsTotal(SelectedTests.Select(d => d.Test.LabCost));
+    public long LabsTotal
+    {
+        get
+        {
+            long sum = 0;
+            foreach (var draft in SelectedTests)
+            {
+                sum += draft.Test.LabCost;
+            }
+
+            return sum;
+        }
+    }
 
     /// <summary>Our price in minor units (0 when the field is empty).</summary>
     public long OurPrice => Addon is { } price ? Money.ToMinor(price) : 0;
