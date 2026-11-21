@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Diagnostics;
 using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using Mostawsef.Desktop.Components;
@@ -24,6 +25,15 @@ public partial class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+
+        // Developer Tools walk the visual tree on every attach/detach. That showed up as multi-second
+        // Nav stalls + GC storms in Debug, so it is opt-in: set MOSTAWSEF_DEVTOOLS=1.
+#if DEBUG
+        if (string.Equals(Environment.GetEnvironmentVariable("MOSTAWSEF_DEVTOOLS"), "1", StringComparison.Ordinal))
+        {
+            this.AttachDeveloperTools();
+        }
+#endif
     }
 
     public override void OnFrameworkInitializationCompleted()

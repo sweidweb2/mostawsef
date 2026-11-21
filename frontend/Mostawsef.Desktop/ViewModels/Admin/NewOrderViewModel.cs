@@ -23,9 +23,9 @@ using Mostawsef.Desktop.ViewModels.Shell;
 namespace Mostawsef.Desktop.ViewModels.Admin;
 
 /// <summary>
-/// Admin portal sub-page: a new order in three steps (patient, tests, review). Saving sends one request;
-/// the API saves it all or nothing. Orders reuses one instance per portal visit; <see cref="BeginReuse"/>
-/// clears the form. The lab-test catalog loads only when the tests step is shown; it comes from the shared
+/// Admin portal sub-page: a new order on one page (patient, tests, charge and optional first payment).
+/// Saving sends one request; the API saves it all or nothing. Orders reuses one instance per portal visit;
+/// <see cref="BeginReuse"/> clears the form. The lab-test catalog loads with the page from the shared
 /// <see cref="LabTestCatalog"/> cache and is searched in memory.
 /// </summary>
 public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusablePage, IBreadcrumbPage
@@ -33,10 +33,6 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
     public string BreadcrumbKey => "NewOrder.Title";
 
     public string? BreadcrumbArg => null;
-
-    public const int PatientStep = 0;
-    public const int TestsStep = 1;
-    public const int ReviewStep = 2;
 
     private readonly OrdersApi _orders;
     private readonly PatientsApi _patients;
@@ -55,8 +51,6 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
     private int _loadedCatalogVersion;
     private string? _loadedPatientSearch;
     private OrderDetailsDto? _created;
-    private bool _patientIncomplete;
-    private bool _testsIncomplete;
 
     /// <summary>Called after a successful create so the orders list can insert the row without a full reload.</summary>
     public Action<OrderDetailsDto>? OnOrderCreated { get; set; }
@@ -94,54 +88,9 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
         };
         SelectedTests.CollectionChanged += (_, _) => NotifyTestsInputsChanged();
         Closed += OnClosed;
-        _patientStep = new NewOrderPatientStep(this);
-        _testsStep = new NewOrderTestsStep(this);
-        _reviewStep = new NewOrderReviewStep(this);
-        Steps =
-        [
-            new OrderStepItem(PatientStep, "1", "NewOrder.StepPatient", hasLineAfter: true),
-            new OrderStepItem(TestsStep, "2", "NewOrder.StepTests", hasLineAfter: true),
-            new OrderStepItem(ReviewStep, "3", "NewOrder.StepReview", hasLineAfter: false),
-        ];
-        RefreshStepContent();
-        RefreshStepStatuses();
 
         MarkClean();
     }
-
-    private readonly NewOrderPatientStep _patientStep;
-    private readonly NewOrderTestsStep _testsStep;
-    private readonly NewOrderReviewStep _reviewStep;
-
-    /// <summary>Patient, tests, review — one item each for the step indicator template.</summary>
-    public IReadOnlyList<OrderStepItem> Steps { get; }
-
-    /// <summary>First connector line (patient → tests).</summary>
-    public OrderStepItem PatientStepItem => Steps[PatientStep];
-
-    /// <summary>Second connector line (tests → review).</summary>
-    public OrderStepItem TestsStepItem => Steps[TestsStep];
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsPatientStep), nameof(IsTestsStep), nameof(IsReviewStep), nameof(CanGoBack), nameof(ShowNext), nameof(ShowSave))]
-    [NotifyCanExecuteChangedFor(nameof(PreviousStepCommand))]
-    public partial int SelectedStep { get; set; }
-
-    /// <summary>Active step marker for <c>CachedContentHost</c> (views are cached per step instance).</summary>
-    [ObservableProperty]
-    public partial object? StepContent { get; private set; }
-
-    public bool IsPatientStep => SelectedStep == PatientStep;
-
-    public bool IsTestsStep => SelectedStep == TestsStep;
-
-    public bool IsReviewStep => SelectedStep == ReviewStep;
-
-    public bool CanGoBack => !IsPreparing && SelectedStep > PatientStep;
-
-    public bool ShowNext => !IsPreparing && SelectedStep < ReviewStep;
-
-    public bool ShowSave => !IsPreparing && SelectedStep == ReviewStep;
 
     /// <summary>Patient step is filled (existing pick or new-patient required fields without errors).</summary>
     public bool IsPatientSatisfied =>
@@ -164,8 +113,6 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
 
     /// <summary>True while the page is resetting and loading the catalog after navigation.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowNext), nameof(ShowSave), nameof(CanGoBack))]
-    [NotifyCanExecuteChangedFor(nameof(PreviousStepCommand))]
     public partial bool IsPreparing { get; private set; }
 
     [ObservableProperty]
@@ -224,7 +171,21 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
     [ObservableProperty]
     public partial decimal? Addon { get; set; }
 
-    public long Total => Addon is { } price ? Money.ToMinor(price) : 0;
+    public long LabsTotal
+    {
+        get
+        {
+            long sum = 0;
+            foreach (var draft in SelectedTests)
+            {
+                sum += draft.Test.LabCost;
+            }
+
+            return sum;
+        }
+    }
+
+    public long Total => LabsTotal + (Addon is { } price ? Money.ToMinor(price) : 0);
 
     public decimal MaxPayableAmount => Money.ToMajor(Math.Min(Total, OrderRules.MaxPaymentAmount));
 
@@ -273,10 +234,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
 
         try
         {
-            if (SelectedStep == TestsStep)
-            {
-                await EnsureCatalogAsync();
-            }
+            await EnsureCatalogAsync();
         }
         finally
         {
@@ -304,7 +262,6 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
 
         _created = null;
         IsPreparing = true;
-        SelectedStep = PatientStep;
         IsNewPatient = false;
         SelectedPatient = null;
         PatientPick = null;
@@ -313,8 +270,6 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
         _loadedPatientSearch = null;
         IsLoadingPatients = false;
         PatientForm.Reset();
-        _patientIncomplete = false;
-        _testsIncomplete = false;
         SelectedTests.Clear();
         foreach (var item in _allCatalog ?? [])
         {
@@ -329,8 +284,6 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
         PaymentNotes = string.Empty;
         FormErrorKey = null;
         Errors.Clear();
-        RefreshStepContent();
-        RefreshStepStatuses();
         MarkClean();
         SaveCommand.NotifyCanExecuteChanged();
     }
@@ -350,12 +303,8 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
         }
 
         IsPreparing = false;
-        RefreshStepContent();
-        RefreshStepStatuses();
         SaveCommand.NotifyCanExecuteChanged();
     }
-
-    protected override bool CanSave() => base.CanSave() && IsReviewStep;
 
     protected override object BuildRequest() => new CreateOrderRequest
     {
@@ -375,7 +324,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
 
     /// <summary>
     /// The inputs of this form are not named like the request fields. Patient and test changes call RefreshDirty from
-    /// NotifyPatientInputsChanged / NotifyTestsInputsChanged; step, catalog and search changes never touch the request.
+    /// NotifyPatientInputsChanged / NotifyTestsInputsChanged; catalog and search changes never touch the request.
     /// </summary>
     protected override bool AffectsRequest(string propertyName) =>
         propertyName is nameof(Addon) or nameof(PaymentAmount) or nameof(PaymentMethod) or nameof(PaymentNotes);
@@ -412,8 +361,8 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
 
     protected override void ValidateMore(FormErrors errors)
     {
-        ApplyPatientStepErrors(errors);
-        ApplyTestsStepErrors(errors);
+        ApplyPatientErrors(errors);
+        ApplyTestsErrors(errors);
 
         foreach (var test in SelectedTests)
         {
@@ -442,10 +391,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
         if (errors.HasErrors)
         {
             FormErrorKey = "ErrorCode.validation";
-            JumpToErrorStep(errors);
         }
-
-        RefreshStepStatuses();
     }
 
     protected override bool TrySetFieldError(string field, string code)
@@ -456,7 +402,6 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
         }
 
         FormErrorKey = "ErrorCode.validation";
-        JumpToFieldStep(field);
         return true;
     }
 
@@ -519,48 +464,11 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
             case nameof(CatalogSearch):
                 ApplyCatalogSearch();
                 break;
-            case nameof(SelectedStep):
-                RefreshStepContent();
-                RefreshStepStatuses();
-                if (SelectedStep == TestsStep)
-                {
-                    _ = EnsureCatalogAsync();
-                }
-
-                SaveCommand.NotifyCanExecuteChanged();
-                break;
         }
     }
 
     [RelayCommand]
     private Task<bool> BackAsync() => _navigation.BackAsync();
-
-    [RelayCommand]
-    private void NextStep()
-    {
-        if (SelectedStep < ReviewStep)
-        {
-            MoveToStep(SelectedStep + 1);
-        }
-    }
-
-    [RelayCommand(CanExecute = nameof(CanGoBack))]
-    private void PreviousStep()
-    {
-        if (SelectedStep > PatientStep)
-        {
-            MoveToStep(SelectedStep - 1);
-        }
-    }
-
-    [RelayCommand]
-    private void GoToStep(object? step)
-    {
-        if (step is int index)
-        {
-            MoveToStep(index);
-        }
-    }
 
     partial void OnPatientPickChanged(PatientDto? value)
     {
@@ -782,7 +690,6 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
             Errors.Clear(nameof(CreateOrderRequest.PatientId));
         }
 
-        RefreshStepStatuses();
         SaveCommand.NotifyCanExecuteChanged();
         RefreshDirty();
     }
@@ -790,6 +697,10 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
     private void NotifyTestsInputsChanged()
     {
         OnPropertyChanged(nameof(HasSelectedTests));
+        OnPropertyChanged(nameof(LabsTotal));
+        OnPropertyChanged(nameof(Total));
+        OnPropertyChanged(nameof(MaxPayableAmount));
+        OnPropertyChanged(nameof(Remaining));
         OnPropertyChanged(nameof(IsTestsSatisfied));
         Errors.Clear(nameof(SelectedTests));
         if (IsTestsSatisfied)
@@ -797,7 +708,6 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
             Errors.Clear(nameof(CreateOrderRequest.Items));
         }
 
-        RefreshStepStatuses();
         SaveCommand.NotifyCanExecuteChanged();
         RefreshDirty();
     }
@@ -838,40 +748,13 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
         return list;
     }
 
-    private void MoveToStep(int step)
-    {
-        if (step is < PatientStep or > ReviewStep || step == SelectedStep)
-        {
-            return;
-        }
-
-        MarkLeavingStep(SelectedStep);
-        SelectedStep = step;
-    }
-
-    private void MarkLeavingStep(int step)
-    {
-        switch (step)
-        {
-            case PatientStep:
-                _patientIncomplete = true;
-                ApplyPatientStepErrors(Errors);
-                break;
-            case TestsStep:
-                _testsIncomplete = true;
-                ApplyTestsStepErrors(Errors);
-                break;
-        }
-    }
-
-    private void ApplyPatientStepErrors(FormErrors errors)
+    private void ApplyPatientErrors(FormErrors errors)
     {
         Errors.Clear(nameof(CreateOrderRequest.PatientId));
         if (IsNewPatient)
         {
             if (!PatientForm.ValidateInput())
             {
-                _patientIncomplete = true;
                 errors.Set(nameof(CreateOrderRequest.NewPatient), ErrorCodes.Validation);
             }
 
@@ -880,12 +763,11 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
 
         if (SelectedPatient is null)
         {
-            _patientIncomplete = true;
             errors.Set(nameof(CreateOrderRequest.PatientId), ErrorCodes.Required);
         }
     }
 
-    private void ApplyTestsStepErrors(FormErrors errors)
+    private void ApplyTestsErrors(FormErrors errors)
     {
         if (HasSelectedTests)
         {
@@ -893,72 +775,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
             return;
         }
 
-        _testsIncomplete = true;
         errors.Set(nameof(CreateOrderRequest.Items), ErrorCodes.Required);
-    }
-
-    private void RefreshStepStatuses()
-    {
-        var patient = StepStatus(_patientIncomplete, IsPatientSatisfied, IsPatientStep);
-        var tests = StepStatus(_testsIncomplete, IsTestsSatisfied, IsTestsStep);
-        var review = !IsReviewStep && IsPatientSatisfied && IsTestsSatisfied
-            ? OrderStepStatus.Complete
-            : OrderStepStatus.Number;
-
-        Steps[PatientStep].Update(IsPatientStep, patient, lineBeforeComplete: false, lineComplete: IsPatientSatisfied);
-        Steps[TestsStep].Update(IsTestsStep, tests, lineBeforeComplete: IsPatientSatisfied, lineComplete: IsTestsSatisfied);
-        Steps[ReviewStep].Update(IsReviewStep, review, lineBeforeComplete: IsTestsSatisfied, lineComplete: false);
-    }
-
-    private static OrderStepStatus StepStatus(bool incomplete, bool satisfied, bool current) =>
-        incomplete && !satisfied
-            ? OrderStepStatus.Missing
-            : satisfied && !current
-                ? OrderStepStatus.Complete
-                : OrderStepStatus.Number;
-
-    private void RefreshStepContent() =>
-        StepContent = IsPreparing
-            ? null
-            : SelectedStep switch
-            {
-                PatientStep => _patientStep,
-                TestsStep => _testsStep,
-                _ => _reviewStep,
-            };
-
-    private void JumpToErrorStep(FormErrors errors)
-    {
-        if (errors[nameof(CreateOrderRequest.NewPatient)] is not null
-            || errors[nameof(CreateOrderRequest.PatientId)] is not null)
-        {
-            SelectedStep = PatientStep;
-            return;
-        }
-
-        if (errors[nameof(CreateOrderRequest.Items)] is not null)
-        {
-            SelectedStep = TestsStep;
-        }
-    }
-
-    private void JumpToFieldStep(string field)
-    {
-        // Prefer the earliest step when several server field errors arrive together.
-        var step = field.StartsWith(nameof(CreateOrderRequest.NewPatient), StringComparison.OrdinalIgnoreCase)
-            || field.Equals(nameof(CreateOrderRequest.PatientId), StringComparison.OrdinalIgnoreCase)
-            ? PatientStep
-            : field.StartsWith(nameof(CreateOrderRequest.Items), StringComparison.OrdinalIgnoreCase)
-                ? TestsStep
-                : field.StartsWith(nameof(CreateOrderRequest.FirstPayment), StringComparison.OrdinalIgnoreCase)
-                    || field is nameof(PaymentAmount) or nameof(PaymentMethod) or nameof(PaymentNotes) or nameof(Addon)
-                    ? ReviewStep
-                    : SelectedStep;
-
-        if (step < SelectedStep)
-        {
-            SelectedStep = step;
-        }
     }
 
     private async void OnClosed(object? sender, bool saved)

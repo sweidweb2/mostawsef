@@ -40,7 +40,7 @@ public class PatientService(IPatientRepository patients, IActivityLogger activit
     {
         var patient = await patients.GetDetailsAsync(id, cancellationToken) ?? throw AppException.NotFound();
         return new PatientDto(
-            patient.Id, patient.FullName, patient.Phone, patient.GuardianPhone, patient.Notes, patient.IsInsured,
+            patient.Id, patient.FullName, patient.Phone, patient.Notes,
             patient.Gender.ToString(), patient.DateOfBirth, patient.CreatedAt, patient.UpdatedAt, patient.UpdatedBy, patient.Version);
     }
 
@@ -105,14 +105,14 @@ public class PatientService(IPatientRepository patients, IActivityLogger activit
             cancellationToken);
 
     private static PatientDto ToListDto(PatientListRow p) => new(
-        p.Id, p.FullName, p.Phone, p.GuardianPhone, Notes: null, p.IsInsured, p.Gender.ToString(), p.DateOfBirth,
+        p.Id, p.FullName, p.Phone, Notes: null, p.Gender.ToString(), p.DateOfBirth,
         p.CreatedAt, p.UpdatedAt, p.UpdatedBy, p.Version, p.HasUnpaidOrders);
 
     private static PatientDto ToExportDto(PatientExportRow p) => new(
-        p.Id, p.FullName, p.Phone, p.GuardianPhone, Notes: null, p.IsInsured, p.Gender.ToString(), p.DateOfBirth,
+        p.Id, p.FullName, p.Phone, Notes: null, p.Gender.ToString(), p.DateOfBirth,
         default, null, null, 0);
 
     private static PatientDto ToDto(Patient p) => new(
-        p.Id, p.FullName, p.Phone, p.GuardianPhone, p.Notes, p.IsInsured, p.Gender.ToString(), p.DateOfBirth,
+        p.Id, p.FullName, p.Phone, p.Notes, p.Gender.ToString(), p.DateOfBirth,
         p.CreatedAt, p.UpdatedAt, p.UpdatedBy, p.Version);
 }

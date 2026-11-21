@@ -22,26 +22,20 @@ namespace Mostawsef.Desktop.Tests.Orders;
 public class NewOrderPageTests : UiTestBase
 {
     [AvaloniaFact]
-    public async Task Opening_the_page_does_not_load_the_catalog_until_the_tests_step()
+    public async Task Opening_the_page_loads_the_catalog()
     {
         using var app = Admin();
         var (shell, page, window) = await ShowNewOrderAsync(app);
 
-        Assert.Empty(app.Api.RequestsTo(HttpMethod.Get, TestsPath));
-        Assert.Empty(page.Catalog);
-        Assert.Equal(NewOrderViewModel.PatientStep, page.SelectedStep);
-        Assert.Same(page, shell.CurrentPage);
-        Assert.False(page.IsPreparing);
-        Assert.False(Named<LoadingOverlay>(window, "PreparingOverlay").IsLoading);
-
-        page.SelectPatientCommand.Execute(Mona);
-        page.NextStepCommand.Execute(null);
-        await WaitUntil(() => page.SelectedStep == NewOrderViewModel.TestsStep && !page.IsCatalogLoading);
-
-        // One request for a consistent snapshot (no page walk); the inactive test is left out on the desktop.
         var catalog = Assert.Single(app.Api.RequestsTo(HttpMethod.Get, TestsPath));
         Assert.Equal($"{TestsPath}/all", catalog.RequestUri!.AbsolutePath);
         Assert.Equal([Cbc.Id, Sugar.Id], page.Catalog.Select(t => t.Test.Id));
+        Assert.Same(page, shell.CurrentPage);
+        Assert.False(page.IsPreparing);
+        Assert.False(Named<LoadingOverlay>(window, "PreparingOverlay").IsLoading);
+        Assert.True(Named<Card>(window, "PatientColumn").IsEffectivelyVisible);
+        Assert.True(Named<Card>(window, "CatalogColumn").IsEffectivelyVisible);
+        Assert.True(Named<Card>(window, "ReviewColumn").IsEffectivelyVisible);
     }
 
     [AvaloniaFact]
@@ -51,11 +45,9 @@ public class NewOrderPageTests : UiTestBase
         var (shell, orders, window) = await ShowOrdersPageAsync(app);
         await orders.NewOrderCommand.ExecuteAsync(null);
         var page = Assert.IsType<NewOrderViewModel>(shell.CurrentPage);
-        await WaitUntil(() => !page.IsPreparing && page.StepContent is not null);
+        await WaitUntil(() => !page.IsPreparing && !page.IsCatalogLoading);
 
         page.SelectPatientCommand.Execute(Mona);
-        page.NextStepCommand.Execute(null);
-        await WaitUntil(() => page.SelectedStep == NewOrderViewModel.TestsStep && !page.IsCatalogLoading);
         AddTests(page, Cbc);
         Assert.True(page.IsDirty);
 
@@ -67,10 +59,9 @@ public class NewOrderPageTests : UiTestBase
         Assert.Empty(page.Catalog);
 
         await orders.NewOrderCommand.ExecuteAsync(null);
-        await WaitUntil(() => !page.IsPreparing && page.StepContent is not null);
+        await WaitUntil(() => !page.IsPreparing && !page.IsCatalogLoading);
 
         Assert.Same(page, shell.CurrentPage);
-        Assert.Equal(NewOrderViewModel.PatientStep, page.SelectedStep);
         Assert.Null(page.SelectedPatient);
         Assert.Empty(page.SelectedTests);
         Assert.False(page.IsDirty);
@@ -94,7 +85,6 @@ public class NewOrderPageTests : UiTestBase
         Assert.Same(page.PatientForm, Named<ContentControl>(window, "NewPatientForm").Content);
         var fullName = window.GetVisualDescendants().OfType<Control>().Single(c => c.Name == "FullNameBox");
 
-        // Switching back only hides the form; switching again shows the same view instead of rebuilding it.
         page.ChooseExistingPatientCommand.Execute(null);
         Dispatcher.UIThread.RunJobs();
         Assert.False(Named<ContentControl>(window, "NewPatientForm").IsVisible);
@@ -107,40 +97,21 @@ public class NewOrderPageTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task Returning_to_the_tests_step_reuses_the_loaded_catalog()
-    {
-        using var app = Admin();
-        var (_, page, _) = await ShowNewOrderAsync(app);
-        await GoToTestsAsync(page);
-        AddTests(page, Cbc);
-
-        page.NextStepCommand.Execute(null);
-        Assert.Equal(NewOrderViewModel.ReviewStep, page.SelectedStep);
-        page.PreviousStepCommand.Execute(null);
-        await WaitUntil(() => page.SelectedStep == NewOrderViewModel.TestsStep);
-
-        Assert.Single(app.Api.RequestsTo(HttpMethod.Get, TestsPath));
-        Assert.Equal(2, page.Catalog.Count);
-    }
-
-    [AvaloniaFact]
     public async Task A_second_order_uses_the_cached_catalog()
     {
         using var app = Admin();
         var (shell, orders, window) = await ShowOrdersPageAsync(app);
         await orders.NewOrderCommand.ExecuteAsync(null);
         var page = Assert.IsType<NewOrderViewModel>(shell.CurrentPage);
-        await WaitUntil(() => !page.IsPreparing && page.StepContent is not null);
-        await GoToTestsAsync(page);
+        await WaitUntil(() => !page.IsPreparing && !page.IsCatalogLoading);
 
         var discard = page.BackCommand.ExecuteAsync(null);
         Dispatcher.UIThread.RunJobs();
-        window.GetVisualDescendants().OfType<ConfirmDialog>().Single().Close(true);
+        Assert.Empty(window.GetVisualDescendants().OfType<ConfirmDialog>());
         await discard;
         await WaitUntil(() => shell.CurrentPage == orders);
         await orders.NewOrderCommand.ExecuteAsync(null);
-        await WaitUntil(() => !page.IsPreparing && page.StepContent is not null);
-        await GoToTestsAsync(page);
+        await WaitUntil(() => !page.IsPreparing && !page.IsCatalogLoading);
 
         Assert.Single(app.Api.RequestsTo(HttpMethod.Get, TestsPath));
         Assert.Equal([Cbc.Id, Sugar.Id], page.Catalog.Select(t => t.Test.Id));
@@ -152,12 +123,10 @@ public class NewOrderPageTests : UiTestBase
     {
         using var app = Admin();
         var (_, page, _) = await ShowNewOrderAsync(app);
-        await GoToTestsAsync(page);
         Assert.Single(app.Api.RequestsTo(HttpMethod.Get, TestsPath));
 
         app.Get<LabTestCatalogVersion>().Invalidate();
-        page.PreviousStepCommand.Execute(null);
-        page.NextStepCommand.Execute(null);
+        await page.RetryCatalogCommand.ExecuteAsync(null);
         await WaitUntil(() => app.Api.RequestsTo(HttpMethod.Get, TestsPath).Count() == 2);
 
         Assert.Equal(2, app.Api.RequestsTo(HttpMethod.Get, TestsPath).Count());
@@ -168,7 +137,6 @@ public class NewOrderPageTests : UiTestBase
     {
         using var app = Admin();
         var (_, page, window) = await ShowNewOrderAsync(app);
-        await GoToTestsAsync(page);
 
         page.CatalogSearch = "سُكَّر";
         await WaitUntil(() => page.Catalog.Count == 1 && page.Catalog[0].Test.Id == Sugar.Id);
@@ -194,7 +162,6 @@ public class NewOrderPageTests : UiTestBase
     {
         using var app = Admin();
         var (_, page, window) = await ShowNewOrderAsync(app);
-        await GoToTestsAsync(page);
         var cbc = page.Catalog.Single(t => t.Test.Id == Cbc.Id);
 
         Card(window, Cbc.Id).Command!.Execute(cbc);
@@ -215,73 +182,57 @@ public class NewOrderPageTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task The_total_is_the_addon_only_and_caps_the_payment_live()
+    public async Task The_total_is_the_lab_costs_plus_our_price_and_caps_the_payment_live()
     {
         using var app = Admin();
         var (_, page, window) = await ShowNewOrderAsync(app);
-        await GoToReviewAsync(page, Cbc, Sugar);
+        FillReadyOrder(page, Cbc, Sugar);
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal(0, page.Total);
-        Assert.Equal(0m, page.MaxPayableAmount);
-        Assert.Equal("0.00", Named<TextBlock>(window, "TotalText").Text);
+        Assert.Equal(Cbc.LabCost + Sugar.LabCost, page.LabsTotal);
+        Assert.Equal(20000, page.Total);
+        Assert.Equal(200m, page.MaxPayableAmount);
+        Assert.Equal("200.00", Named<TextBlock>(window, "LabsText").Text);
+        Assert.Equal("200.00", Named<TextBlock>(window, "TotalText").Text);
         Assert.False(Named<TextBlock>(window, "RemainingText").IsEffectivelyVisible);
 
         page.Addon = 5m;
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal(500, page.Total);
-        Assert.Equal(5m, page.MaxPayableAmount);
+        Assert.Equal(20500, page.Total);
+        Assert.Equal(205m, page.MaxPayableAmount);
 
         page.Addon = 200m;
         page.PaymentAmount = 50m;
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal(20000, page.Total);
-        Assert.Equal(200m, page.MaxPayableAmount);
-        Assert.Equal("200.00", Named<TextBlock>(window, "TotalText").Text);
-        Assert.Equal("150.00", Named<TextBlock>(window, "RemainingText").Text);
+        Assert.Equal(40000, page.Total);
+        Assert.Equal(400m, page.MaxPayableAmount);
+        Assert.Equal("400.00", Named<TextBlock>(window, "TotalText").Text);
+        Assert.Equal("350.00", Named<TextBlock>(window, "RemainingText").Text);
         Assert.True(Named<TextBlock>(window, "RemainingText").IsEffectivelyVisible);
-        Assert.Equal(200m, Named<NumericUpDown>(window, "PaymentAmountBox").Maximum);
+        Assert.Equal(400m, Named<NumericUpDown>(window, "PaymentAmountBox").Maximum);
     }
 
     [AvaloniaFact]
-    public async Task Steps_are_free_to_move_but_create_needs_patient_and_tests()
+    public async Task Create_needs_patient_and_tests()
     {
         using var app = Admin();
         var (_, page, _) = await ShowNewOrderAsync(app);
 
-        Assert.False(page.SaveCommand.CanExecute(null));
-        Assert.True(page.NextStepCommand.CanExecute(null));
-
-        page.NextStepCommand.Execute(null);
-        Assert.Equal(NewOrderViewModel.TestsStep, page.SelectedStep);
-        Assert.Equal(OrderStepStatus.Missing, page.PatientStepItem.Status);
-        Assert.Equal(ErrorCodes.Required, page.Errors[nameof(CreateOrderRequest.PatientId)]);
-
-        page.GoToStepCommand.Execute(NewOrderViewModel.ReviewStep);
-        Assert.Equal(NewOrderViewModel.ReviewStep, page.SelectedStep);
-        Assert.Equal(OrderStepStatus.Missing, page.TestsStepItem.Status);
-        Assert.Equal(ErrorCodes.Required, page.Errors[nameof(CreateOrderRequest.Items)]);
         Assert.True(page.SaveCommand.CanExecute(null));
 
         await page.SaveCommand.ExecuteAsync(null);
         Dispatcher.UIThread.RunJobs();
         Assert.Equal("ErrorCode.validation", page.FormErrorKey);
-        Assert.Equal(NewOrderViewModel.PatientStep, page.SelectedStep);
-        Assert.Equal(OrderStepStatus.Missing, page.PatientStepItem.Status);
+        Assert.Equal(ErrorCodes.Required, page.Errors[nameof(CreateOrderRequest.PatientId)]);
+        Assert.Equal(ErrorCodes.Required, page.Errors[nameof(CreateOrderRequest.Items)]);
         Assert.Empty(app.Api.RequestsTo(HttpMethod.Post, OrdersPath));
 
         page.SelectPatientCommand.Execute(Mona);
-        Assert.Equal(OrderStepStatus.Number, page.PatientStepItem.Status);
         Assert.True(page.IsPatientSatisfied);
-        page.GoToStepCommand.Execute(NewOrderViewModel.TestsStep);
-        await WaitUntil(() => page.SelectedStep == NewOrderViewModel.TestsStep && !page.IsCatalogLoading);
         AddTests(page, Cbc);
         Assert.True(page.IsTestsSatisfied);
-        Assert.NotEqual(OrderStepStatus.Missing, page.TestsStepItem.Status);
-        page.NextStepCommand.Execute(null);
-        Assert.Equal(NewOrderViewModel.ReviewStep, page.SelectedStep);
         Assert.True(page.SaveCommand.CanExecute(null));
     }
 
@@ -365,19 +316,15 @@ public class NewOrderPageTests : UiTestBase
         page.PatientForm.FullName = "Omar";
         page.PatientForm.Phone = "call me";
         page.PatientForm.Gender = Genders.Male;
-        await GoToTestsAsync(page);
         AddTests(page, Sugar);
-        page.NextStepCommand.Execute(null);
-        await WaitUntil(() => page.SelectedStep == NewOrderViewModel.ReviewStep);
         page.Addon = 50m;
-        page.PaymentAmount = 60m;
+        page.PaymentAmount = 110m;
 
         await page.SaveCommand.ExecuteAsync(null);
         Dispatcher.UIThread.RunJobs();
 
         Assert.Equal(ErrorCodes.Invalid, page.PatientForm.Errors[nameof(PatientFormViewModel.Phone)]);
         Assert.Equal(ErrorCodes.ExceedsTotal, page.Errors[nameof(page.PaymentAmount)]);
-        Assert.Equal(NewOrderViewModel.PatientStep, page.SelectedStep);
         Assert.Equal("Some fields need attention.", Named<Alert>(window, "FormError").Text);
         Assert.Empty(app.Api.RequestsTo(HttpMethod.Post, OrdersPath));
     }
@@ -398,7 +345,7 @@ public class NewOrderPageTests : UiTestBase
         page.PatientForm.FullName = "  Omar Khaled ";
         page.PatientForm.Phone = " 0111 ";
         page.PatientForm.Gender = Genders.Male;
-        await GoToReviewAsync(page, Cbc, Sugar);
+        FillReadyOrder(page, Cbc, Sugar);
         page.Addon = 205m;
         page.PaymentAmount = 50m;
         page.PaymentMethod = PaymentMethods.Card;
@@ -442,7 +389,7 @@ public class NewOrderPageTests : UiTestBase
         page.PatientForm.FullName = "Omar";
         page.PatientForm.Phone = "0111";
         page.PatientForm.Gender = Genders.Male;
-        await GoToReviewAsync(page, Cbc, Sugar);
+        FillReadyOrder(page, Cbc, Sugar);
         page.Addon = 200m;
         page.PaymentAmount = 10m;
 
@@ -454,7 +401,6 @@ public class NewOrderPageTests : UiTestBase
         Assert.Equal(ErrorCodes.Inactive, page.SelectedTests[1].Errors[nameof(CreateOrderItemRequest.LabTestId)]);
         Assert.Equal(ErrorCodes.ExceedsTotal, page.Errors[nameof(page.PaymentAmount)]);
         Assert.Equal("ErrorCode.validation", page.FormErrorKey);
-        Assert.Equal(NewOrderViewModel.PatientStep, page.SelectedStep);
         Assert.Contains("Some fields need attention.", Texts(window));
     }
 
@@ -474,7 +420,7 @@ public class NewOrderPageTests : UiTestBase
             app.Api.On(HttpMethod.Post, OrdersPath, _ => throw new HttpRequestException("Connection refused"));
         }
 
-        await GoToReviewAsync(page, Cbc);
+        FillReadyOrder(page, Cbc);
 
         await page.SaveCommand.ExecuteAsync(null);
 
@@ -486,7 +432,6 @@ public class NewOrderPageTests : UiTestBase
     {
         using var app = Admin();
         var (shell, page, window) = await ShowNewOrderAsync(app);
-        await GoToTestsAsync(page);
         AddTests(page, Cbc);
         Assert.True(page.IsDirty);
 
@@ -509,7 +454,6 @@ public class NewOrderPageTests : UiTestBase
         using var app = Admin();
         var (shell, page, window) = await ShowNewOrderAsync(app);
         var orders = shell.SelectedMenuIndex;
-        await GoToTestsAsync(page);
         AddTests(page, Cbc);
 
         shell.SelectedMenuIndex = 0;
@@ -535,9 +479,6 @@ public class NewOrderPageTests : UiTestBase
         using var app = Admin();
         var (shell, page, window) = await ShowNewOrderAsync(app);
 
-        // Moving between steps and searching the catalog are not changes (picking a patient would be one).
-        page.NextStepCommand.Execute(null);
-        await WaitUntil(() => page.SelectedStep == NewOrderViewModel.TestsStep && !page.IsCatalogLoading);
         page.CatalogSearch = "cbc";
 
         await page.BackCommand.ExecuteAsync(null);
@@ -549,69 +490,48 @@ public class NewOrderPageTests : UiTestBase
     }
 
     [AvaloniaTheory]
-    [InlineData(AppLanguage.English, "Patient", "Tests", "Review")]
-    [InlineData(AppLanguage.Arabic, "المريض", "التحاليل", "المراجعة")]
-    public async Task The_step_indicator_renders_in_both_languages(
-        AppLanguage language, string patient, string tests, string review)
+    [InlineData(AppLanguage.English, "Patient", "Selected tests (0)", "Lab tests", "Charge and payment", "Create order")]
+    [InlineData(AppLanguage.Arabic, "المريض", "التحاليل المختارة (0)", "التحاليل", "السعر والدفع", "إنشاء الطلب")]
+    public async Task The_single_page_sections_render_in_both_languages(
+        AppLanguage language, string patient, string selected, string catalog, string charge, string create)
     {
         using var app = Admin(language);
-        var (_, page, window) = await ShowNewOrderAsync(app);
+        var (_, _, window) = await ShowNewOrderAsync(app);
         Dispatcher.UIThread.RunJobs();
 
         var texts = Texts(window);
         Assert.Contains(patient, texts);
-        Assert.Contains(tests, texts);
-        Assert.Contains(review, texts);
-        Assert.NotNull(window);
-        Assert.True(Named<CachedContentHost>(window, "StepHost").IsEffectivelyVisible);
+        Assert.Contains(selected, texts);
+        Assert.Contains(catalog, texts);
+        Assert.Contains(charge, texts);
+        Assert.Contains(create, texts);
         Assert.True(Named<Card>(window, "PatientColumn").IsEffectivelyVisible);
-        Assert.Equal(NewOrderViewModel.PatientStep, page.SelectedStep);
-
-        var steps = Named<Grid>(window, "StepIndicator");
-        var nodes = steps.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("step-node")).ToList();
-        Assert.Equal(3, nodes.Count);
-        Assert.All(nodes, node => Assert.True(node.IsEffectivelyVisible));
-        // Four half-lines (two connectors); first has no left, last has no right.
-        Assert.Equal(4, steps.GetVisualDescendants().OfType<Border>().Count(
-            b => b.Classes.Contains("step-line") && b.IsVisible));
-        Assert.Equal(3, steps.GetVisualDescendants().OfType<Border>().Count(b => b.Classes.Contains("step-circle")));
+        Assert.True(Named<Card>(window, "TestsColumn").IsEffectivelyVisible);
+        Assert.True(Named<Card>(window, "ReviewColumn").IsEffectivelyVisible);
+        Assert.True(Named<Button>(window, "CreateButton").IsEffectivelyVisible);
     }
 
     [AvaloniaFact]
-    public async Task At_the_minimum_window_size_only_the_active_step_is_visible()
+    public async Task At_the_minimum_window_size_all_sections_stay_reachable()
     {
         using var app = Admin();
-        var (_, page, window) = await ShowNewOrderAsync(app, width: 720, height: 520);
+        var (_, _, window) = await ShowNewOrderAsync(app, width: 720, height: 520);
         Dispatcher.UIThread.RunJobs();
 
         Assert.True(Named<Card>(window, "PatientColumn").IsEffectivelyVisible);
-        Assert.DoesNotContain(
-            window.GetVisualDescendants().OfType<Card>(),
-            c => c.Name is "TestsColumn" or "CatalogColumn" or "ReviewColumn" && c.IsEffectivelyVisible);
-        Assert.True(Named<Button>(window, "NextStepButton").IsEffectivelyVisible);
-        Assert.False(Named<Button>(window, "CreateButton").IsEffectivelyVisible);
-
-        await GoToTestsAsync(page);
-        Dispatcher.UIThread.RunJobs();
-
-        Assert.False(Named<Card>(window, "PatientColumn").IsEffectivelyVisible);
-        Assert.True(Named<Card>(window, "CatalogColumn").IsEffectivelyVisible);
-        Assert.True(Named<Button>(window, "NextStepButton").IsEffectivelyVisible);
+        Assert.True(Named<Button>(window, "CreateButton").IsEffectivelyVisible);
+        Assert.True(Named<Card>(window, "ReviewColumn").IsEffectivelyVisible);
     }
 
-    private static async Task GoToTestsAsync(NewOrderViewModel page)
+    [AvaloniaFact]
+    public async Task The_test_lists_are_capped_so_a_long_catalog_does_not_push_charge_away()
     {
-        if (!page.HasPatient)
-        {
-            page.SelectPatientCommand.Execute(Mona);
-        }
+        using var app = Admin();
+        var (_, _, window) = await ShowNewOrderAsync(app);
+        Dispatcher.UIThread.RunJobs();
 
-        if (page.SelectedStep < NewOrderViewModel.TestsStep)
-        {
-            page.NextStepCommand.Execute(null);
-        }
-
-        await WaitUntil(() => page.SelectedStep == NewOrderViewModel.TestsStep && !page.IsCatalogLoading);
+        Assert.Equal(360, Named<ItemsControl>(window, "CatalogList").MaxHeight);
+        Assert.Equal(360, Named<ItemsControl>(window, "SelectedTestsList").MaxHeight);
     }
 
     [AvaloniaFact]
@@ -619,7 +539,7 @@ public class NewOrderPageTests : UiTestBase
     {
         using var app = Admin();
         var (_, page, window) = await ShowNewOrderAsync(app);
-        await GoToReviewAsync(page, Cbc);
+        FillReadyOrder(page, Cbc);
         Dispatcher.UIThread.RunJobs();
         window.UpdateLayout();
 
@@ -627,7 +547,6 @@ public class NewOrderPageTests : UiTestBase
         var amount = Named<NumericUpDown>(window, "PaymentAmountBox");
         var method = Named<ComboBox>(window, "PaymentMethodBox");
 
-        // Not in the grid of the first payment, and above it (not beside it).
         Assert.Null(addon.FindAncestorOfType<ResponsiveGrid>());
         Assert.Same(amount.FindAncestorOfType<ResponsiveGrid>(), method.FindAncestorOfType<ResponsiveGrid>());
         var addonY = addon.TranslatePoint(default, window)!.Value.Y;
@@ -635,12 +554,14 @@ public class NewOrderPageTests : UiTestBase
         Assert.True(addonY + addon.Bounds.Height <= amountY, $"our price at {addonY}, first payment at {amountY}");
     }
 
-    private static async Task GoToReviewAsync(NewOrderViewModel page, params Contracts.LabTests.LabTestDto[] tests)
+    private static void FillReadyOrder(NewOrderViewModel page, params Contracts.LabTests.LabTestDto[] tests)
     {
-        await GoToTestsAsync(page);
+        if (!page.HasPatient)
+        {
+            page.SelectPatientCommand.Execute(Mona);
+        }
+
         AddTests(page, tests);
-        page.NextStepCommand.Execute(null);
-        await WaitUntil(() => page.SelectedStep == NewOrderViewModel.ReviewStep);
     }
 
     private static void AddTests(NewOrderViewModel page, params Contracts.LabTests.LabTestDto[] tests)

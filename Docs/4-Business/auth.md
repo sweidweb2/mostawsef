@@ -74,8 +74,8 @@ Login protection (configuration keys under `RateLimit:`; the API answers like a 
 | `DELETE /api/lab-tests/{id}` | Admin | `204`, `404` |
 | `GET /api/patients?page=&pageSize=&search=` | Admin | Paged list sorted by SearchName; search matches SearchText (name/phones; trigram, min 3 letters/digits or 400) |
 | `GET /api/patients/all` | Admin | Every patient for print/export (notes omitted) |
-| `GET /api/patients/{id}` | Admin | `200 { id, fullName, phone, guardianPhone, notes, isInsured, gender, dateOfBirth, ..., version }`, `404` |
-| `POST /api/patients` `{ fullName, phone, guardianPhone, notes, isInsured, gender, dateOfBirth }` | Admin | `201`, `400` (`invalid` phone, gender or date of birth outside 1900-01-01..today) |
+| `GET /api/patients/{id}` | Admin | `200 { id, fullName, phone, notes, gender, dateOfBirth, ..., version }`, `404` |
+| `POST /api/patients` `{ fullName, phone, notes, gender, dateOfBirth }` | Admin | `201`, `400` (`invalid` phone, gender or date of birth outside 1900-01-01..today) |
 | `PUT /api/patients/{id}` `{ ...same, version }` | Admin | `200`, `400`, `404`, `409 concurrency_conflict` |
 | `DELETE /api/patients/{id}` | Admin | `204` (soft delete), `404` |
 | `GET /api/health` | Anonymous | `200 { status, database, apiVersion }`, `503` when the database is down |

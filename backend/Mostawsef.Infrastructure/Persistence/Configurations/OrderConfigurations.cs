@@ -20,6 +20,7 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(o => o.DiscountType).HasConversion<string>().HasMaxLength(10);
         builder.Property(o => o.DiscountValue).IsRequired();
         builder.Property(o => o.Total).IsRequired();
+        builder.Property(o => o.Addon).IsRequired();
         builder.Property(o => o.TestsCount).IsRequired();
         builder.Property(o => o.Paid).IsRequired();
         builder.Property(o => o.Currency).HasMaxLength(Order.CurrencyMaxLength).IsRequired();

@@ -135,9 +135,7 @@ function New-PatientRequest {
     @{
         fullName      = "$first $(Pick $maleNames) $(Pick $familyNames)"
         phone         = $phone
-        guardianPhone = if ($age -lt 16) { New-Phone } else { $null }
         notes         = if ($random.Next(4) -eq 0) { Pick $allNotes } else { $null }
-        isInsured     = $random.Next(4) -eq 0
         gender        = $gender
         dateOfBirth   = if ($random.Next(10) -eq 0) { $null } else { $birth.ToString("yyyy-MM-dd") }
     }
@@ -174,21 +172,18 @@ for ($i = 0; $i -lt $Orders; $i++) {
         $total = [long]([Math]::Max(500, [Math]::Floor($labCostTotal * (1.3 + $random.NextDouble() * 0.7) / 500) * 500))
         $order.addon = $total
     }
-    $insured = $false
     if ($random.Next(10) -eq 0) {
         $order.newPatient = New-PatientRequest
-        $insured = $order.newPatient.isInsured
     }
     else {
         $patient = Pick $patients
         $order.patientId = $patient.id
-        $insured = $patient.isInsured
     }
 
     $roll = $random.Next(100)
     if ($total -gt 0 -and $roll -ge 30) {
         $amount = if ($roll -lt 55) { [long]([Math]::Max(100, [Math]::Floor($total * (0.2 + $random.NextDouble() * 0.6) / 100) * 100)) } else { $total }
-        $method = if ($insured -and $random.Next(2) -eq 0) { "Insurance" } else { Pick @("Cash", "Cash", "Cash", "Cash", "Card", "Card", "Transfer") }
+        $method = Pick @("Cash", "Cash", "Cash", "Cash", "Card", "Card", "Transfer", "Insurance")
         $order.firstPayment = @{ amount = [Math]::Min($amount, $total); method = $method; notes = $null }
     }
 

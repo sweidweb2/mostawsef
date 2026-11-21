@@ -165,9 +165,7 @@ try {
         @{
             fullName      = "$first $(Pick $maleNames) $(Pick $familyNames)"
             phone         = New-Phone
-            guardianPhone = if ($age -lt 16) { New-Phone } else { $null }
             notes         = if ($random.Next(4) -eq 0) { Pick $allNotes } else { $null }
-            isInsured     = $random.Next(4) -eq 0
             gender        = $gender
             dateOfBirth   = if ($random.Next(10) -eq 0) { $null } else { $birth.ToString("yyyy-MM-dd") }
         }
@@ -177,7 +175,7 @@ try {
     $step = [Math]::Max(25, [int]($config.Patients / 10))
     for ($i = 1; $i -le $config.Patients; $i++) {
         $created = Invoke-Api POST "patients" (New-PatientRequest)
-        [void]$patients.Add(@{ id = $created.id; insured = [bool]$created.isInsured })
+        [void]$patients.Add(@{ id = $created.id })
         if ($i % $step -eq 0 -and $i -lt $config.Patients) { Write-Progress-Line "patients" $i $config.Patients $watch }
     }
     Write-Host "  patients: $($patients.Count) created"
@@ -207,7 +205,7 @@ try {
         $roll = $random.Next(100)
         if ($total -gt 0 -and $roll -ge 30) {
             $amount = if ($roll -lt 55) { [long]([Math]::Max(100, [Math]::Floor($total * (0.2 + $random.NextDouble() * 0.6) / 100) * 100)) } else { $total }
-            $method = if ($patient.insured -and $random.Next(2) -eq 0) { "Insurance" } else { Pick @("Cash", "Cash", "Cash", "Cash", "Card", "Card", "Transfer") }
+            $method = Pick @("Cash", "Cash", "Cash", "Cash", "Card", "Card", "Transfer", "Insurance")
             $order.firstPayment = @{ amount = [Math]::Min($amount, $total); method = $method; notes = $null }
         }
 

@@ -5,13 +5,14 @@ namespace Mostawsef.Domain.Entities;
 
 /// <summary>
 /// A person the clinic serves. Deleted patients are kept (soft delete) so their past orders stay readable.
-/// The caller passes the search name and phones already normalized with Contracts SearchText.
+/// The caller passes the search name and phone already normalized with Contracts SearchText.
 /// </summary>
 public class Patient : SoftDeletableEntity
 {
     public const int FullNameMaxLength = 100;
     public const int PhoneMaxLength = 30;
     public const int NotesMaxLength = 2000;
+    /// <summary>Name + phone, with leftover room from when a second phone was also searchable.</summary>
     public const int SearchTextMaxLength = FullNameMaxLength + PhoneMaxLength + PhoneMaxLength + 2;
 
     private Patient()
@@ -19,45 +20,39 @@ public class Patient : SoftDeletableEntity
     }
 
     public Patient(
-        string fullName, string searchName, string phone, string? guardianPhone, string? notes, bool isInsured, Gender gender, DateOnly? dateOfBirth) =>
-        Update(fullName, searchName, phone, guardianPhone, notes, isInsured, gender, dateOfBirth);
+        string fullName, string searchName, string phone, string? notes, Gender gender, DateOnly? dateOfBirth) =>
+        Update(fullName, searchName, phone, notes, gender, dateOfBirth);
 
     public string FullName { get; private set; } = string.Empty;
 
     /// <summary>FullName normalized for search.</summary>
     public string SearchName { get; private set; } = string.Empty;
 
-    /// <summary>Latin digits, single spaces, trimmed: "٠١٠  ١٢٣" and "010 123" are stored and searched the same way. Not unique: siblings share a guardian's phone.</summary>
+    /// <summary>Latin digits, single spaces, trimmed: "٠١٠  ١٢٣" and "010 123" are stored and searched the same way. Not unique: siblings often share a phone.</summary>
     public string Phone { get; private set; } = string.Empty;
 
-    public string? GuardianPhone { get; private set; }
-
-    /// <summary>SearchName, phone and guardian phone joined for list search.</summary>
+    /// <summary>SearchName and phone joined for list search.</summary>
     public string SearchText { get; private set; } = string.Empty;
 
     public string? Notes { get; private set; }
-
-    public bool IsInsured { get; private set; }
 
     public Gender Gender { get; private set; }
 
     public DateOnly? DateOfBirth { get; private set; }
 
     public void Update(
-        string fullName, string searchName, string phone, string? guardianPhone, string? notes, bool isInsured, Gender gender, DateOnly? dateOfBirth)
+        string fullName, string searchName, string phone, string? notes, Gender gender, DateOnly? dateOfBirth)
     {
         FullName = fullName.Trim();
         SearchName = searchName;
         Phone = phone;
-        GuardianPhone = string.IsNullOrEmpty(guardianPhone) ? null : guardianPhone;
         Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();
-        IsInsured = isInsured;
         Gender = gender;
         DateOfBirth = dateOfBirth;
-        SearchText = BuildSearchText(searchName, phone, GuardianPhone);
+        SearchText = BuildSearchText(searchName, phone);
     }
 
-    private static string BuildSearchText(string searchName, string phone, string? guardianPhone)
+    private static string BuildSearchText(string searchName, string phone)
     {
         var length = 0;
         if (!string.IsNullOrEmpty(searchName))
@@ -70,22 +65,16 @@ public class Patient : SoftDeletableEntity
             length += length > 0 ? 1 + phone.Length : phone.Length;
         }
 
-        if (!string.IsNullOrEmpty(guardianPhone))
-        {
-            length += length > 0 ? 1 + guardianPhone.Length : guardianPhone.Length;
-        }
-
         if (length == 0)
         {
             return string.Empty;
         }
 
-        return string.Create(length, (searchName, phone, guardianPhone), static (span, state) =>
+        return string.Create(length, (searchName, phone), static (span, state) =>
         {
             var i = 0;
             Append(ref i, span, state.searchName);
             Append(ref i, span, state.phone);
-            Append(ref i, span, state.guardianPhone);
         });
 
         static void Append(ref int i, Span<char> span, string? part)

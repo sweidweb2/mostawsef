@@ -9,8 +9,6 @@ public record PatientListRow(
     Guid Id,
     string FullName,
     string Phone,
-    string? GuardianPhone,
-    bool IsInsured,
     Gender Gender,
     DateOnly? DateOfBirth,
     DateTime CreatedAt,
@@ -24,8 +22,6 @@ public record PatientExportRow(
     Guid Id,
     string FullName,
     string Phone,
-    string? GuardianPhone,
-    bool IsInsured,
     Gender Gender,
     DateOnly? DateOfBirth);
 
@@ -37,9 +33,7 @@ public record PatientDetailsRow(
     Guid Id,
     string FullName,
     string Phone,
-    string? GuardianPhone,
     string? Notes,
-    bool IsInsured,
     Gender Gender,
     DateOnly? DateOfBirth,
     DateTime CreatedAt,

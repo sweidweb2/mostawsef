@@ -28,9 +28,7 @@ public partial class PatientFormViewModel : FormViewModel
         {
             FullName = existing.FullName;
             Phone = existing.Phone;
-            GuardianPhone = existing.GuardianPhone ?? string.Empty;
             Notes = existing.Notes ?? string.Empty;
-            IsInsured = existing.IsInsured;
             Gender = existing.Gender;
             DateOfBirth = existing.DateOfBirth;
         }
@@ -52,13 +50,7 @@ public partial class PatientFormViewModel : FormViewModel
     public partial string Phone { get; set; } = string.Empty;
 
     [ObservableProperty]
-    public partial string GuardianPhone { get; set; } = string.Empty;
-
-    [ObservableProperty]
     public partial string Notes { get; set; } = string.Empty;
-
-    [ObservableProperty]
-    public partial bool IsInsured { get; set; }
 
     [ObservableProperty]
     public partial string Gender { get; set; } = string.Empty;
@@ -78,9 +70,7 @@ public partial class PatientFormViewModel : FormViewModel
     {
         FullName = string.Empty;
         Phone = string.Empty;
-        GuardianPhone = string.Empty;
         Notes = string.Empty;
-        IsInsured = false;
         Gender = string.Empty;
         DateOfBirth = null;
         Errors.Clear();
@@ -94,9 +84,7 @@ public partial class PatientFormViewModel : FormViewModel
         {
             FullName = FullName.Trim(),
             Phone = Phone.Trim(),
-            GuardianPhone = Blank(GuardianPhone),
             Notes = Blank(Notes),
-            IsInsured = IsInsured,
             Gender = Gender,
             DateOfBirth = DateOfBirth,
         };
@@ -107,9 +95,7 @@ public partial class PatientFormViewModel : FormViewModel
             {
                 FullName = request.FullName,
                 Phone = request.Phone,
-                GuardianPhone = request.GuardianPhone,
                 Notes = request.Notes,
-                IsInsured = request.IsInsured,
                 Gender = request.Gender,
                 DateOfBirth = request.DateOfBirth,
                 Version = _existing.Version,

@@ -44,7 +44,7 @@ public class OrdersTests(ApiFactory factory)
         Assert.EndsWith($"{Url}/{order!.Id}", response.Headers.Location!.ToString());
         Assert.Matches(@"^ORD-\d{6,}$", order.Number);
         Assert.Equal((patient.Id, patient.FullName, patient.Phone), (order.PatientId, order.PatientName, order.PatientPhone));
-        Assert.Equal((OrderStatuses.Pending, currency, 3000L, 0L, 3000L, 3000L),
+        Assert.Equal((OrderStatuses.Pending, currency, 14000L, 0L, 14000L, 3000L),
             (order.Status, order.Currency, order.Total, order.Paid, order.Balance, order.Addon));
         Assert.Equal(TestUsers.Admin.Username, order.CreatedBy);
         Assert.Equal(
@@ -57,7 +57,8 @@ public class OrdersTests(ApiFactory factory)
         var labPrices = await db.OrderItems
             .Where(i => i.OrderId == order.Id).OrderByDescending(i => i.LabPrice).Select(i => i.LabPrice).ToListAsync(Ct);
         Assert.Equal([9000L, 2000L], labPrices);
-        Assert.Equal(3000L, await db.Orders.Where(o => o.Id == order.Id).Select(o => o.Total).SingleAsync(Ct));
+        var saved = await db.Orders.Where(o => o.Id == order.Id).Select(o => new { o.Total, o.Addon }).SingleAsync(Ct);
+        Assert.Equal((14000L, 3000L), (saved.Total, saved.Addon));
     }
 
     [Theory]
@@ -67,7 +68,7 @@ public class OrdersTests(ApiFactory factory)
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var patient = await CreatePatientAsync(admin);
-        var test = await CreateTestAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 0);
 
         var order = await CreateOrderAsync(admin, new CreateOrderRequest
         {
@@ -114,7 +115,7 @@ public class OrdersTests(ApiFactory factory)
         Assert.Equal(
             (details.Number, details.PatientName, details.PatientPhone, details.Items.Count, details.Total, details.Paid, details.Status),
             (listed.Number, listed.PatientName, listed.PatientPhone, listed.TestsCount, listed.Total, listed.Paid, listed.Status));
-        Assert.Equal((3000L, 3000L), (details.Total, details.Addon));
+        Assert.Equal((7500L, 3000L), (details.Total, details.Addon));
         Assert.Equal(first.LabCost + second.LabCost + third.LabCost, details.Items.Sum(i => i.LabCost));
     }
 
@@ -123,7 +124,7 @@ public class OrdersTests(ApiFactory factory)
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var patient = await CreatePatientAsync(admin);
-        var test = await CreateTestAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 0);
         var order = await CreateOrderAsync(admin, new CreateOrderRequest
         {
             PatientId = patient.Id,
@@ -141,7 +142,7 @@ public class OrdersTests(ApiFactory factory)
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var patient = await CreatePatientAsync(admin);
-        var test = await CreateTestAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 4000);
         var order = await CreateOrderAsync(admin, new CreateOrderRequest
         {
             PatientId = patient.Id,
@@ -152,7 +153,7 @@ public class OrdersTests(ApiFactory factory)
         {
             Code = test.Code,
             Name = $"Renamed {test.Code}",
-            LabCost = test.LabCost,
+            LabCost = 11000,
             IsActive = true,
             Version = test.Version,
         }, Ct);
@@ -160,14 +161,15 @@ public class OrdersTests(ApiFactory factory)
 
         var details = await admin.GetJsonAsync<OrderDetailsDto>($"{Url}/{order.Id}");
         var item = Assert.Single(details.Items);
-        Assert.Equal((test.Code, test.Name), (item.Code, item.Name));
+        Assert.Equal((test.Code, test.Name, 4000L), (item.Code, item.Name, item.LabCost));
+        Assert.Equal(4000L, details.Total);
     }
 
     [Fact]
     public async Task A_new_patient_is_created_with_the_order_and_both_actions_are_logged()
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
-        var test = await CreateTestAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 0);
         var name = $"New Patient {Guid.NewGuid():N}";
 
         var order = await CreateOrderAsync(admin, new CreateOrderRequest
@@ -274,7 +276,7 @@ public class OrdersTests(ApiFactory factory)
     public async Task The_patient_must_be_either_existing_or_new(bool both, string code)
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
-        var test = await CreateTestAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 0);
         var patient = await CreatePatientAsync(admin);
 
         var problem = await ProblemResponse.ReadAsync(await admin.PostAsJsonAsync(Url, new CreateOrderRequest
@@ -292,7 +294,7 @@ public class OrdersTests(ApiFactory factory)
     public async Task A_deleted_or_unknown_patient_returns_400_not_found()
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
-        var test = await CreateTestAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 0);
         var deleted = await CreatePatientAsync(admin);
         (await admin.DeleteAsync($"api/patients/{deleted.Id}", Ct)).EnsureSuccessStatusCode();
 
@@ -330,7 +332,7 @@ public class OrdersTests(ApiFactory factory)
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var patient = await CreatePatientAsync(admin);
-        var test = await CreateTestAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 0);
 
         var problem = await ProblemResponse.ReadAsync(await admin.PostAsJsonAsync(Url, ForPatient(patient.Id, test.Id) with
         {
@@ -346,7 +348,7 @@ public class OrdersTests(ApiFactory factory)
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var patient = await CreatePatientAsync(admin);
-        var test = await CreateTestAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 0);
 
         var order = await CreateOrderAsync(admin, new CreateOrderRequest
         {
@@ -396,7 +398,7 @@ public class OrdersTests(ApiFactory factory)
     public async Task A_failure_while_saving_rolls_back_the_new_patient_too()
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
-        var test = await CreateTestAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 0);
         var patient = await CreatePatientAsync(admin);
         var taken = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id));
         var takenNumber = long.Parse(taken.Number["ORD-".Length..], System.Globalization.CultureInfo.InvariantCulture);
@@ -445,7 +447,7 @@ public class OrdersTests(ApiFactory factory)
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var token = $"Statusfilter{Guid.NewGuid():N}";
         var patient = await CreatePatientAsync(admin, fullName: token);
-        var test = await CreateTestAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 0);
         var unpaid = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id));
         var partly = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id) with { FirstPayment = new() { Amount = 100, Method = PaymentMethods.Cash } });
         var paid = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id) with { FirstPayment = new() { Amount = 10000, Method = PaymentMethods.Cash } });
@@ -473,7 +475,7 @@ public class OrdersTests(ApiFactory factory)
         var none = await CreatePatientAsync(admin, fullName: token + " none");
         var settled = await CreatePatientAsync(admin, fullName: token + " settled");
         var owing = await CreatePatientAsync(admin, fullName: token + " owing");
-        var test = await CreateTestAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 0);
         await CreateOrderAsync(admin, ForPatient(settled.Id, test.Id) with { FirstPayment = new() { Amount = 10000, Method = PaymentMethods.Cash } });
         var open = await CreateOrderAsync(admin, ForPatient(owing.Id, test.Id) with { FirstPayment = new() { Amount = 100, Method = PaymentMethods.Cash } });
 
@@ -544,7 +546,7 @@ public class OrdersTests(ApiFactory factory)
         var url = $"{Url}/dashboard?from={today:yyyy-MM-dd}&to={today:yyyy-MM-dd}";
         var before = await admin.GetJsonAsync<OrderDashboardDto>(url);
         var patient = await CreatePatientAsync(admin);
-        var test = await CreateTestAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 500);
 
         await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id) with
         {
@@ -556,7 +558,7 @@ public class OrdersTests(ApiFactory factory)
 
         Assert.False(string.IsNullOrWhiteSpace(after.Currency));
         Assert.Equal(before.Revenue + 2000, after.Revenue);
-        Assert.Equal(before.Outstanding + 3000, after.Outstanding);
+        Assert.Equal(before.Outstanding + 3500, after.Outstanding);
         Assert.Equal(after.Revenue, after.RevenuePoints.Sum(p => p.Amount));
         Assert.Equal(1, after.Stats.PartiallyPaid - before.Stats.PartiallyPaid);
     }
@@ -566,7 +568,7 @@ public class OrdersTests(ApiFactory factory)
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var patient = await CreatePatientAsync(admin);
-        var test = await CreateTestAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 0);
         await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id));
 
         var wide = await admin.GetJsonAsync<OrderDashboardDto>($"{Url}/dashboard?from=2000-01-01&to=2999-12-31");
@@ -590,7 +592,7 @@ public class OrdersTests(ApiFactory factory)
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var first = await CreatePatientAsync(admin);
         var second = await CreatePatientAsync(admin);
-        var test = await CreateTestAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 0);
         var a1 = await CreateOrderAsync(admin, ForPatient(first.Id, test.Id));
         var a2 = await CreateOrderAsync(admin, ForPatient(first.Id, test.Id));
         var b1 = await CreateOrderAsync(admin, ForPatient(second.Id, test.Id));
@@ -608,7 +610,7 @@ public class OrdersTests(ApiFactory factory)
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var patient = await CreatePatientAsync(admin);
-        var test = await CreateTestAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 0);
         var order = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id) with
         {
             FirstPayment = new() { Amount = 2500, Method = PaymentMethods.Cash },
@@ -632,7 +634,7 @@ public class OrdersTests(ApiFactory factory)
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var patient = await CreatePatientAsync(admin);
-        var test = await CreateTestAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 0);
         var order = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id) with
         {
             FirstPayment = new() { Amount = 4000, Method = PaymentMethods.Cash },
@@ -683,7 +685,7 @@ public class OrdersTests(ApiFactory factory)
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var patient = await CreatePatientAsync(admin);
-        var test = await CreateTestAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 0);
         var order = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id) with
         {
             FirstPayment = new() { Amount = 4000, Method = PaymentMethods.Cash, Notes = "first" },
@@ -715,7 +717,7 @@ public class OrdersTests(ApiFactory factory)
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var patient = await CreatePatientAsync(admin);
-        var test = await CreateTestAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 0);
         var order = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id) with
         {
             FirstPayment = new() { Amount = 2500, Method = PaymentMethods.Cash },
@@ -746,7 +748,7 @@ public class OrdersTests(ApiFactory factory)
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var patient = await CreatePatientAsync(admin);
-        var test = await CreateTestAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 0);
         var order = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id) with
         {
             FirstPayment = new() { Amount = 1000, Method = PaymentMethods.Cash },
@@ -787,7 +789,7 @@ public class OrdersTests(ApiFactory factory)
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var patient = await CreatePatientAsync(admin);
-        var test = await CreateTestAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 0);
         var older = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id));
         var newer = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id));
 
@@ -860,7 +862,7 @@ public class OrdersTests(ApiFactory factory)
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var patient = await CreatePatientAsync(admin);
-        var test = await CreateTestAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 0);
         await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id));
 
         var problem = await ProblemResponse.ReadAsync(await admin.DeleteAsync($"api/patients/{patient.Id}", Ct));

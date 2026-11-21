@@ -27,9 +27,7 @@ public class PatientsTests(ApiFactory factory)
         {
             FullName = $"  {name} ",
             Phone = " ٠١٠  ١٢٣٤ ٥٦٧٨ ",
-            GuardianPhone = "  ",
             Notes = "  Allergic to penicillin ",
-            IsInsured = true,
             Gender = Genders.Female,
             DateOfBirth = new DateOnly(2015, 3, 9),
         }, Ct);
@@ -39,9 +37,7 @@ public class PatientsTests(ApiFactory factory)
         Assert.EndsWith($"{Url}/{created!.Id}", response.Headers.Location!.ToString());
         Assert.Equal(name, created.FullName);
         Assert.Equal("010 1234 5678", created.Phone);
-        Assert.Null(created.GuardianPhone);
         Assert.Equal("Allergic to penicillin", created.Notes);
-        Assert.True(created.IsInsured);
         Assert.Equal((Genders.Female, new DateOnly(2015, 3, 9)), (created.Gender, created.DateOfBirth));
         Assert.Equal(0, created.Version);
         var reread = await admin.GetJsonAsync<PatientDto>($"{Url}/{created.Id}");
@@ -57,7 +53,6 @@ public class PatientsTests(ApiFactory factory)
         {
             FullName = " ",
             Phone = "call me",
-            GuardianPhone = new string('1', 31),
             Notes = new string('n', 2001),
             Gender = "Other",
         }, Ct));
@@ -65,7 +60,6 @@ public class PatientsTests(ApiFactory factory)
         Assert.Equal(HttpStatusCode.BadRequest, problem.Status);
         Assert.Equal([ErrorCodes.Required], problem.Errors["FullName"]);
         Assert.Equal([ErrorCodes.Invalid], problem.Errors["Phone"]);
-        Assert.Equal([$"max_length|{PatientRules.PhoneMaxLength}"], problem.Errors["GuardianPhone"]);
         Assert.Equal([$"max_length|{PatientRules.NotesMaxLength}"], problem.Errors["Notes"]);
         Assert.Equal([ErrorCodes.Invalid], problem.Errors["Gender"]);
     }
@@ -138,15 +132,15 @@ public class PatientsTests(ApiFactory factory)
 
         var response = await admin.PutAsJsonAsync($"{Url}/{patient.Id}", new UpdatePatientRequest
         {
-            FullName = "Renamed", Phone = "0111", GuardianPhone = "0122", Notes = "New note", IsInsured = true,
+            FullName = "Renamed", Phone = "0111", Notes = "New note",
             Gender = Genders.Female, DateOfBirth = new DateOnly(1990, 1, 1), Version = patient.Version,
         }, Ct);
         var updated = await response.Content.ReadFromJsonAsync<PatientDto>(Ct);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(
-            ("Renamed", "0111", "0122", "New note", true, Genders.Female, (DateOnly?)new DateOnly(1990, 1, 1)),
-            (updated!.FullName, updated.Phone, updated.GuardianPhone, updated.Notes, updated.IsInsured, updated.Gender, updated.DateOfBirth));
+            ("Renamed", "0111", "New note", Genders.Female, (DateOnly?)new DateOnly(1990, 1, 1)),
+            (updated!.FullName, updated.Phone, updated.Notes, updated.Gender, updated.DateOfBirth));
         Assert.Equal(patient.Version + 1, updated.Version);
         Assert.Equal(TestUsers.Admin.Username, updated.UpdatedBy);
     }
@@ -213,17 +207,16 @@ public class PatientsTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task Search_matches_the_phone_and_the_guardian_phone_in_any_digits()
+    public async Task Search_matches_the_phone_in_any_digits()
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var digits = Random.Shared.NextInt64(100_000_000, 999_999_999).ToString(System.Globalization.CultureInfo.InvariantCulture);
         var byPhone = await CreateAsync(admin, phone: "01" + digits);
-        var byGuardian = await CreateAsync(admin, guardianPhone: "02" + digits);
         var arabicDigits = string.Concat(digits.Select(d => (char)('\u0660' + (d - '0'))));
 
         var page = await admin.GetJsonAsync<PagedResult<PatientDto>>($"{Url}?search={Uri.EscapeDataString(arabicDigits)}");
 
-        Assert.Equal(new[] { byGuardian.Id, byPhone.Id }.Order(), page.Items.Select(p => p.Id).Order());
+        Assert.Contains(page.Items, p => p.Id == byPhone.Id);
 
         await using var scope = factory.Services.CreateAsyncScope();
         var searchText = await scope.ServiceProvider.GetRequiredService<AppDbContext>().Patients
@@ -299,15 +292,15 @@ public class PatientsTests(ApiFactory factory)
 
     private static UpdatePatientRequest Update(CreatePatientRequest request, int version) => new()
     {
-        FullName = request.FullName, Phone = request.Phone, GuardianPhone = request.GuardianPhone, Notes = request.Notes,
-        IsInsured = request.IsInsured, Gender = request.Gender, DateOfBirth = request.DateOfBirth, Version = version,
+        FullName = request.FullName, Phone = request.Phone, Notes = request.Notes,
+        Gender = request.Gender, DateOfBirth = request.DateOfBirth, Version = version,
     };
 
-    private static async Task<PatientDto> CreateAsync(HttpClient admin, string? fullName = null, string? phone = null, string? guardianPhone = null)
+    private static async Task<PatientDto> CreateAsync(HttpClient admin, string? fullName = null, string? phone = null)
     {
         var response = await admin.PostAsJsonAsync(Url, Valid() with
         {
-            FullName = fullName ?? $"Patient {Guid.NewGuid():N}", Phone = phone ?? "01000000000", GuardianPhone = guardianPhone,
+            FullName = fullName ?? $"Patient {Guid.NewGuid():N}", Phone = phone ?? "01000000000",
         }, Ct);
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<PatientDto>(Ct))!;

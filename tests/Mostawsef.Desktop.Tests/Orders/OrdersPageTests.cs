@@ -198,15 +198,12 @@ public class OrdersPageTests : UiTestBase
 
         await orders.NewOrderCommand.ExecuteAsync(null);
         var page = Assert.IsType<NewOrderViewModel>(shell.CurrentPage);
+        await WaitUntil(() => !page.IsPreparing && !page.IsCatalogLoading);
         page.ChooseNewPatientCommand.Execute(null);
         page.PatientForm.FullName = "Omar";
         page.PatientForm.Phone = "0111";
         page.PatientForm.Gender = Genders.Male;
-        page.NextStepCommand.Execute(null);
-        await WaitUntil(() => page.SelectedStep == NewOrderViewModel.TestsStep && !page.IsCatalogLoading);
         page.AddTestCommand.Execute(page.Catalog.Single(t => t.Test.Id == Cbc.Id));
-        page.NextStepCommand.Execute(null);
-        await WaitUntil(() => page.SelectedStep == NewOrderViewModel.ReviewStep);
         await page.SaveCommand.ExecuteAsync(null);
         Assert.IsType<OrderDetailsViewModel>(shell.CurrentPage);
 

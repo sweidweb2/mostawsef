@@ -320,20 +320,14 @@
   <data name="PatientDetails.NoOrders" xml:space="preserve"><value>لا توجد طلبات لهذا المريض بعد.</value></data>
   <data name="Patients.Col.FullName" xml:space="preserve"><value>الاسم الكامل</value></data>
   <data name="Patients.Col.Phone" xml:space="preserve"><value>الهاتف</value></data>
-  <data name="Patients.Col.GuardianPhone" xml:space="preserve"><value>هاتف ولي الأمر</value></data>
   <data name="Patients.Col.Gender" xml:space="preserve"><value>النوع</value></data>
   <data name="Patients.Col.DateOfBirth" xml:space="preserve"><value>تاريخ الميلاد</value></data>
-  <data name="Patients.Col.Insured" xml:space="preserve"><value>التأمين</value></data>
   <data name="Patients.Col.Notes" xml:space="preserve"><value>ملاحظات</value></data>
-  <data name="Patients.Insured" xml:space="preserve"><value>مؤمَّن عليه</value></data>
-  <data name="Patients.NotInsured" xml:space="preserve"><value>غير مؤمَّن</value></data>
   <data name="Patients.Field.FullNamePlaceholder" xml:space="preserve"><value>مثال: منى عادل حسن</value></data>
   <data name="Patients.Field.PhonePlaceholder" xml:space="preserve"><value>مثال: 010 1234 5678</value></data>
-  <data name="Patients.Field.GuardianPhonePlaceholder" xml:space="preserve"><value>اختياري، مثل رقم أحد الوالدين</value></data>
   <data name="Patients.Field.GenderPlaceholder" xml:space="preserve"><value>اختر...</value></data>
   <data name="Patients.Field.DateOfBirthPlaceholder" xml:space="preserve"><value>اختياري</value></data>
   <data name="Patients.Field.NotesPlaceholder" xml:space="preserve"><value>الحساسية، الأمراض المزمنة، أي شيء يجب أن يعرفه الفريق</value></data>
-  <data name="Patients.Field.IsInsured" xml:space="preserve"><value>المريض مؤمَّن عليه</value></data>
   <data name="Patients.Saved" xml:space="preserve"><value>تم حفظ المريض.</value></data>
   <data name="Patients.Deleted" xml:space="preserve"><value>تم حذف المريض.</value></data>
   <data name="Patients.DeleteConfirm" xml:space="preserve"><value>حذف المريض "{0}"؟</value></data>
@@ -364,12 +358,7 @@
   <data name="PaymentMethod.Insurance" xml:space="preserve"><value>تأمين</value></data>
   <data name="NewOrder.Title" xml:space="preserve"><value>طلب جديد</value></data>
   <data name="NewOrder.Patient" xml:space="preserve"><value>المريض</value></data>
-  <data name="NewOrder.StepPatient" xml:space="preserve"><value>المريض</value></data>
-  <data name="NewOrder.StepTests" xml:space="preserve"><value>التحاليل</value></data>
-  <data name="NewOrder.StepReview" xml:space="preserve"><value>المراجعة</value></data>
-  <data name="NewOrder.Next" xml:space="preserve"><value>التالي</value></data>
-  <data name="NewOrder.Previous" xml:space="preserve"><value>رجوع</value></data>
-  <data name="NewOrder.Review" xml:space="preserve"><value>المراجعة</value></data>
+  <data name="NewOrder.Charge" xml:space="preserve"><value>السعر والدفع</value></data>
   <data name="NewOrder.SelectedTestsCount" xml:space="preserve"><value>التحاليل المختارة ({0})</value></data>
   <data name="NewOrder.Catalog" xml:space="preserve"><value>التحاليل</value></data>
   <data name="NewOrder.ExistingPatient" xml:space="preserve"><value>مريض مسجل</value></data>
@@ -385,9 +374,10 @@
   <data name="NewOrder.PaymentNotesPlaceholder" xml:space="preserve"><value>اختياري، مثل رقم الإيصال</value></data>
   <data name="NewOrder.RemoveTest" xml:space="preserve"><value>إزالة</value></data>
   <data name="NewOrder.Addon" xml:space="preserve"><value>سعرنا</value></data>
-  <data name="NewOrder.AddonHint" xml:space="preserve"><value>ما تتقاضاه العيادة لهذا الطلب. اتركه فارغاً إن لم يكن هناك مبلغ.</value></data>
+  <data name="NewOrder.AddonHint" xml:space="preserve"><value>ما تضيفه العيادة فوق تكلفة المعمل. اتركه فارغاً إن لم يكن هناك مبلغ.</value></data>
   <data name="NewOrder.NoTests" xml:space="preserve"><value>لا توجد تحاليل بعد</value></data>
   <data name="NewOrder.NoTestsHint" xml:space="preserve"><value>اضغط على تحليل من القائمة لإضافته.</value></data>
+  <data name="NewOrder.Labs" xml:space="preserve"><value>تكاليف المعمل</value></data>
   <data name="NewOrder.Total" xml:space="preserve"><value>الإجمالي</value></data>
   <data name="NewOrder.Remaining" xml:space="preserve"><value>المتبقي بعد الدفعة:</value></data>
   <data name="NewOrder.Create" xml:space="preserve"><value>إنشاء الطلب</value></data>
@@ -420,6 +410,7 @@
   <data name="Invoice.Title" xml:space="preserve"><value>فاتورة</value></data>
   <data name="Invoice.BilledTo" xml:space="preserve"><value>الفاتورة إلى</value></data>
   <data name="Invoice.Details" xml:space="preserve"><value>تفاصيل الفاتورة</value></data>
+  <data name="Invoice.Labs" xml:space="preserve"><value>تكاليف المعمل</value></data>
   <data name="Invoice.Addon" xml:space="preserve"><value>سعرنا</value></data>
   <data name="Invoice.BalanceDue" xml:space="preserve"><value>المبلغ المتبقي</value></data>
   <data name="Invoice.RefundDue" xml:space="preserve"><value>مبلغ مستحق الاسترداد</value></data>

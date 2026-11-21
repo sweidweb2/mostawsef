@@ -29,10 +29,10 @@ public static class PatientSearchTextBackfill
             var batch = await query.OrderBy(p => p.Id).Take(BatchSize).ToListAsync(cancellationToken);
             foreach (var patient in batch)
             {
-                // Update rebuilds SearchText from the normalized name and phones already on the row.
+                // Update rebuilds SearchText from the normalized name and phone already on the row.
                 patient.Update(
-                    patient.FullName, patient.SearchName, patient.Phone, patient.GuardianPhone,
-                    patient.Notes, patient.IsInsured, patient.Gender, patient.DateOfBirth);
+                    patient.FullName, patient.SearchName, patient.Phone,
+                    patient.Notes, patient.Gender, patient.DateOfBirth);
             }
 
             await db.SaveChangesAsync(cancellationToken);

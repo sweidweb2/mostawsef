@@ -58,6 +58,8 @@
     <x:Double x:Key="DialogMaxWidthLg">800</x:Double>
     <x:Double x:Key="ContentMaxWidth">1440</x:Double>
     <x:Double x:Key="FormMaxWidth">960</x:Double>
+    <!-- New order: selected tests + catalog scroll inside this height so charge stays reachable. -->
+    <x:Double x:Key="NewOrderListMaxHeight">360</x:Double>
 
     <!-- Window -->
     <x:Double x:Key="WindowMinWidth">720</x:Double>

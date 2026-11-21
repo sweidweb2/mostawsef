@@ -29,10 +29,10 @@ internal static class OrderPages
     public static readonly LabTestDto Retired = new(Guid.NewGuid(), "OLD", "Retired test", 1000, false, DateTime.UtcNow, null, null, 0);
 
     public static readonly PatientDto Mona = new(
-        Guid.NewGuid(), "Mona Adel", "010 1234 5678", null, null, false, Genders.Female, null, DateTime.UtcNow, null, null, 0);
+        Guid.NewGuid(), "Mona Adel", "010 1234 5678", null, Genders.Female, null, DateTime.UtcNow, null, null, 0);
 
     public static readonly PatientDto Omar = new(
-        Guid.NewGuid(), "عمر خالد", "011 2222 3333", null, null, false, Genders.Male, null, DateTime.UtcNow, null, null, 0);
+        Guid.NewGuid(), "عمر خالد", "011 2222 3333", null, Genders.Male, null, DateTime.UtcNow, null, null, 0);
 
     public static readonly OrderListItemDto PartlyPaid = new(
         Guid.NewGuid(), "ORD-000007", DateTime.UtcNow, Mona.FullName, Mona.Phone, 2, 20000, 5000, OrderStatuses.PartiallyPaid);
@@ -69,8 +69,7 @@ internal static class OrderPages
         {
             patients = patients.Where(p =>
                 SearchText.Normalize(p.FullName).Contains(term, StringComparison.Ordinal)
-                || SearchText.Normalize(p.Phone).Contains(term, StringComparison.Ordinal)
-                || SearchText.Normalize(p.GuardianPhone).Contains(term, StringComparison.Ordinal));
+                || SearchText.Normalize(p.Phone).Contains(term, StringComparison.Ordinal));
         }
 
         var items = patients.ToList();
@@ -124,18 +123,14 @@ internal static class OrderPages
         return (shell, orders, window);
     }
 
-    /// <summary>New order opened from the Orders page on the patient step (catalog preloads while preparing).</summary>
+    /// <summary>New order opened from the Orders page (catalog loads while preparing).</summary>
     public static async Task<(PortalShellViewModel Shell, NewOrderViewModel Page, Window Window)> ShowNewOrderAsync(
         TestServices app, double width = 1280, double height = 800)
     {
         var (shell, orders, window) = await ShowOrdersPageAsync(app, width, height);
         await orders.NewOrderCommand.ExecuteAsync(null);
         var page = Assert.IsType<NewOrderViewModel>(shell.CurrentPage);
-        await WaitUntil(() =>
-            page.SelectedStep == NewOrderViewModel.PatientStep
-            && !page.IsPreparing
-            && !page.IsLoadingPatients
-            && page.StepContent is not null);
+        await WaitUntil(() => !page.IsPreparing && !page.IsCatalogLoading && !page.IsLoadingPatients);
         return (shell, page, window);
     }
 

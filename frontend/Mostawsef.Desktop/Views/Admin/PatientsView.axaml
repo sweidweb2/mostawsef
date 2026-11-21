@@ -113,14 +113,6 @@
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
-                            <DataGridTemplateColumn Header="{l:Tr Patients.Col.GuardianPhone}" Width="140">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate x:DataType="patients:PatientDto">
-                                        <TextBlock Margin="12,0" VerticalAlignment="Center" Classes="muted" FlowDirection="LeftToRight" HorizontalAlignment="Left"
-                                                   TextTrimming="CharacterEllipsis" Text="{Binding GuardianPhone}" />
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
                             <DataGridTemplateColumn Header="{l:Tr Patients.Col.Gender}" Width="90">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate x:DataType="patients:PatientDto">
@@ -131,16 +123,6 @@
                             <DataGridTextColumn x:DataType="patients:PatientDto" Header="{l:Tr Patients.Col.DateOfBirth}" Width="120"
                                                Binding="{Binding DateOfBirth, Converter={x:Static conv:ValueConverters.ShortDate}}"
                                                IsReadOnly="True" />
-                            <DataGridTemplateColumn Header="{l:Tr Patients.Col.Insured}" Width="110">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate x:DataType="patients:PatientDto">
-                                        <Panel Margin="12,0" VerticalAlignment="Center">
-                                            <ui:Badge Kind="Info" Text="{l:Tr Patients.Insured}" IsVisible="{Binding IsInsured}" />
-                                            <ui:Badge Text="{l:Tr Patients.NotInsured}" IsVisible="{Binding !IsInsured}" />
-                                        </Panel>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
                             <DataGridTemplateColumn Header="{l:Tr Common.Actions}" Width="100">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate x:DataType="patients:PatientDto">
@@ -200,7 +182,6 @@
                                         <DockPanel>
                                             <WrapPanel DockPanel.Dock="Bottom" ItemSpacing="{StaticResource Space1}" LineSpacing="{StaticResource Space1}">
                                                 <ui:Badge Text="{l:TrKey {Binding Gender}, Prefix=Gender.}" />
-                                                <ui:Badge Kind="Info" Text="{l:Tr Patients.Insured}" IsVisible="{Binding IsInsured}" />
                                             </WrapPanel>
                                             <StackPanel Spacing="{StaticResource Space2}" VerticalAlignment="Center">
                                                 <StackPanel Orientation="Horizontal" Spacing="{StaticResource Space2}">

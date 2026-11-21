@@ -30,9 +30,7 @@ public record PatientDto(
     Guid Id,
     string FullName,
     string Phone,
-    string? GuardianPhone,
     string? Notes,
-    bool IsInsured,
     string Gender,
     DateOnly? DateOfBirth,
     DateTime CreatedAt,
@@ -57,14 +55,8 @@ public record CreatePatientRequest
     [RegularExpression(PatientRules.PhonePattern, ErrorMessage = ErrorCodes.Invalid)]
     public string Phone { get; init; } = string.Empty;
 
-    [MaxLength(PatientRules.PhoneMaxLength, ErrorMessage = ErrorCodes.MaxLength)]
-    [RegularExpression(PatientRules.PhonePattern, ErrorMessage = ErrorCodes.Invalid)]
-    public string? GuardianPhone { get; init; }
-
     [MaxLength(PatientRules.NotesMaxLength, ErrorMessage = ErrorCodes.MaxLength)]
     public string? Notes { get; init; }
-
-    public bool IsInsured { get; init; }
 
     [Required(ErrorMessage = ErrorCodes.Required)]
     [AllowedValues(Genders.Male, Genders.Female, ErrorMessage = ErrorCodes.Invalid)]

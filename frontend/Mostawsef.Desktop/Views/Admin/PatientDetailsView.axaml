@@ -17,7 +17,6 @@
                     <ui:DetailsView>
                         <ui:DetailsItem Label="{l:Tr Patients.Col.FullName}" Value="{Binding Patient.FullName, FallbackValue=''}" />
                         <ui:DetailsItem Label="{l:Tr Patients.Col.Phone}" Value="{Binding Patient.Phone, FallbackValue=''}" />
-                        <ui:DetailsItem Label="{l:Tr Patients.Col.GuardianPhone}" Value="{Binding Patient.GuardianPhone, FallbackValue=''}" />
                         <ui:DetailsItem Label="{l:Tr Patients.Col.Gender}" Value="{l:TrKey {Binding Patient.Gender}, Prefix=Gender.}" />
                         <ui:DetailsItem Label="{l:Tr Patients.Col.DateOfBirth}"
                                         Value="{Binding Patient.DateOfBirth, Converter={x:Static conv:ValueConverters.ShortDate}, FallbackValue=''}" />

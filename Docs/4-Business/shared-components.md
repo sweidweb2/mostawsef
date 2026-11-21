@@ -32,7 +32,7 @@ Usage namespace: `xmlns:ui="using:Mostawsef.Desktop.Components"`.
 | Divider | Built | `ui:Divider` (optional `Text`, `Orientation`) |
 | ResponsiveGrid (layout helper) | Built | `ui:ResponsiveGrid` (auto 1-4 columns) |
 | PageHost (shell content area) | Built | `ui:PageHost Page="{Binding CurrentPage}"`: shows a page view model's view; caches views and toggles `IsVisible` (keeps DataGrids mounted) |
-| CachedContentHost | Built | Like ContentControl but caches each content's view and toggles `IsVisible` (New Order steps) |
+| CachedContentHost | Removed | Was for New Order steps; the page is one screen now. Restore from git if a wizard needs it. |
 
 ## Forms
 

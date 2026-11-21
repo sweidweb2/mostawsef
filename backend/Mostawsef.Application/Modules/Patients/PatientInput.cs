@@ -11,13 +11,13 @@ internal static class PatientInput
 {
     public static Patient Create(CreatePatientRequest request) =>
         new(
-            request.FullName, SearchText.Normalize(request.FullName), SearchText.Normalize(request.Phone), SearchText.Normalize(request.GuardianPhone),
-            request.Notes, request.IsInsured, ParseGender(request.Gender), request.DateOfBirth);
+            request.FullName, SearchText.Normalize(request.FullName), SearchText.Normalize(request.Phone),
+            request.Notes, ParseGender(request.Gender), request.DateOfBirth);
 
     public static void Apply(Patient patient, CreatePatientRequest request) =>
         patient.Update(
-            request.FullName, SearchText.Normalize(request.FullName), SearchText.Normalize(request.Phone), SearchText.Normalize(request.GuardianPhone),
-            request.Notes, request.IsInsured, ParseGender(request.Gender), request.DateOfBirth);
+            request.FullName, SearchText.Normalize(request.FullName), SearchText.Normalize(request.Phone),
+            request.Notes, ParseGender(request.Gender), request.DateOfBirth);
 
     /// <summary>Between PatientRules.MinDateOfBirth and today (server local date); else 400 "invalid" on <paramref name="field"/>.</summary>
     public static void EnsureValidDateOfBirth(DateOnly? dateOfBirth, TimeProvider time, string field)

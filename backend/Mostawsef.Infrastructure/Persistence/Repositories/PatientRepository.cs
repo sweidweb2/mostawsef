@@ -16,7 +16,7 @@ public class PatientRepository(AppDbContext db) : IPatientRepository
         db.Patients.AsNoTracking()
             .Where(p => p.Id == id)
             .Select(p => new PatientDetailsRow(
-                p.Id, p.FullName, p.Phone, p.GuardianPhone, p.Notes, p.IsInsured, p.Gender, p.DateOfBirth,
+                p.Id, p.FullName, p.Phone, p.Notes, p.Gender, p.DateOfBirth,
                 p.CreatedAt, p.UpdatedAt, p.UpdatedBy, p.Version))
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -44,7 +44,7 @@ public class PatientRepository(AppDbContext db) : IPatientRepository
             .OrderBy(p => p.SearchName)
             .ThenBy(p => p.Id)
             .Select(p => new PatientListRow(
-                p.Id, p.FullName, p.Phone, p.GuardianPhone, p.IsInsured, p.Gender, p.DateOfBirth,
+                p.Id, p.FullName, p.Phone, p.Gender, p.DateOfBirth,
                 p.CreatedAt, p.UpdatedAt, p.UpdatedBy, p.Version,
                 includeUnpaid
                     ? db.Orders.Any(o => o.PatientId == p.Id
@@ -60,7 +60,7 @@ public class PatientRepository(AppDbContext db) : IPatientRepository
             .ThenBy(p => p.Id)
             .Take(PageQuery.MaxExportRows)
             .Select(p => new PatientExportRow(
-                p.Id, p.FullName, p.Phone, p.GuardianPhone, p.IsInsured, p.Gender, p.DateOfBirth))
+                p.Id, p.FullName, p.Phone, p.Gender, p.DateOfBirth))
             .ToListAsync(cancellationToken);
 
     public void Add(Patient patient) => db.Patients.Add(patient);

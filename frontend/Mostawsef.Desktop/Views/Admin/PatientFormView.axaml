@@ -25,13 +25,6 @@
                          FlowDirection="LeftToRight"
                          PlaceholderText="{l:Tr Patients.Field.PhonePlaceholder}" />
             </ui:FormField>
-            <ui:FormField Label="{l:Tr Patients.Col.GuardianPhone}" Error="{l:FieldError {Binding Errors[GuardianPhone]}}">
-                <TextBox Name="GuardianPhoneBox"
-                         Text="{Binding GuardianPhone}"
-                         MaxLength="{x:Static rules:PatientRules.PhoneMaxLength}"
-                         FlowDirection="LeftToRight"
-                         PlaceholderText="{l:Tr Patients.Field.GuardianPhonePlaceholder}" />
-            </ui:FormField>
 
             <ui:FormField Label="{l:Tr Patients.Col.Gender}" IsRequired="True" Error="{l:FieldError {Binding Errors[Gender]}}">
                 <ComboBox Name="GenderBox"
@@ -54,8 +47,6 @@
                                     PlaceholderText="{l:Tr Patients.Field.DateOfBirthPlaceholder}"
                                     HorizontalAlignment="Stretch" />
             </ui:FormField>
-
-            <CheckBox Name="IsInsuredBox" ui:ResponsiveGrid.ColumnSpan="0" Content="{l:Tr Patients.Field.IsInsured}" IsChecked="{Binding IsInsured}" />
 
             <ui:FormField ui:ResponsiveGrid.ColumnSpan="0" Label="{l:Tr Patients.Col.Notes}" Error="{l:FieldError {Binding Errors[Notes]}}">
                 <TextBox Name="NotesBox"

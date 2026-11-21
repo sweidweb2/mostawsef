@@ -63,6 +63,12 @@ public static class DatabaseInitializer
             logger.LogInformation("Filled SearchText on {Count} existing patients", patients);
         }
 
+        if (pending.Contains(PatientSearchTextRebuild.Migration))
+        {
+            var rebuilt = await PatientSearchTextRebuild.RunAsync(db, cancellationToken);
+            logger.LogInformation("Rebuilt SearchText on {Count} patients after dropping guardian phone", rebuilt);
+        }
+
         if (pending.Contains(OrderListAggregatesBackfill.Migration))
         {
             var aggregates = await OrderListAggregatesBackfill.RunAsync(db, cancellationToken);
@@ -73,6 +79,12 @@ public static class DatabaseInitializer
         {
             var snapshots = await OrderItemSnapshotBackfill.RunAsync(db, cancellationToken);
             logger.LogInformation("Filled lab-test snapshots on {Count} existing order items", snapshots);
+        }
+
+        if (pending.Contains(OrderAddonBackfill.Migration))
+        {
+            var addons = await OrderAddonBackfill.RunAsync(db, cancellationToken);
+            logger.LogInformation("Copied the saved total into Addon on {Count} existing orders", addons);
         }
 
         if (!await db.Set<ClinicSettings>().AnyAsync(cancellationToken))

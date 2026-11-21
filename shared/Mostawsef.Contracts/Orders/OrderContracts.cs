@@ -101,7 +101,7 @@ public static class PaymentTypes
 /// <param name="Method">One of <see cref="PaymentMethods"/>.</param>
 public record OrderPaymentDto(Guid Id, DateTime PaidAt, string Type, string Method, long Amount, string? Notes);
 
-/// <param name="Addon">What the clinic charged for the order ("our price"); equals <see cref="OrderDetailsDto.Total"/>.</param>
+/// <param name="Addon">What the clinic added on top of the lab prices ("our price"). The patient total is this plus those prices.</param>
 public record OrderDetailsDto(
     Guid Id,
     string Number,
@@ -134,7 +134,7 @@ public record CreateOrderRequest
     [MaxLength(OrderRules.MaxItems, ErrorMessage = ErrorCodes.MaxLength)]
     public IReadOnlyList<CreateOrderItemRequest> Items { get; init; } = [];
 
-    /// <summary>What the clinic charges for the order ("our price"); null or 0 means a free order.</summary>
+    /// <summary>What the clinic adds on top of the tests' lab costs ("our price"); null or 0 means no extra charge.</summary>
     [Range(0, OrderRules.MaxAddon, ErrorMessage = ErrorCodes.Range)]
     public long? Addon { get; init; }
 

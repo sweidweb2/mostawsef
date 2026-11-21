@@ -25,11 +25,11 @@ public class PatientsPageTests : UiTestBase
     private const string PatientsPath = "/api/patients";
 
     private static readonly PatientDto Mona = new(
-        Guid.NewGuid(), "Mona Adel", "010 1234 5678", "012 0000 0000", "Allergic to penicillin", true, Genders.Female,
+        Guid.NewGuid(), "Mona Adel", "010 1234 5678", "Allergic to penicillin", Genders.Female,
         new DateOnly(2015, 3, 9), DateTime.UtcNow, null, null, 4);
 
     private static readonly PatientDto Omar = new(
-        Guid.NewGuid(), "عمر خالد", "011 2222 3333", null, null, false, Genders.Male, null, DateTime.UtcNow, null, null, 0);
+        Guid.NewGuid(), "عمر خالد", "011 2222 3333", null, Genders.Male, null, DateTime.UtcNow, null, null, 0);
 
     [AvaloniaFact]
     public void Only_admins_can_open_the_patients_page()
@@ -45,7 +45,7 @@ public class PatientsPageTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task The_table_lists_each_patient_with_phones_gender_insurance_and_row_actions()
+    public async Task The_table_lists_each_patient_with_phone_gender_and_row_actions()
     {
         using var app = AdminWithPatients(Mona, Omar);
 
@@ -56,14 +56,10 @@ public class PatientsPageTests : UiTestBase
         var texts = Texts(window);
         Assert.Contains("Mona Adel", texts);
         Assert.Contains("010 1234 5678", texts);
-        Assert.Contains("012 0000 0000", texts);
         Assert.Contains("Female", texts);
         Assert.Contains("Male", texts);
         Assert.Contains(new DateOnly(2015, 3, 9).ToString("d", app.Localization.Culture), texts);
         Assert.Contains("2 patients", texts);
-        var badges = window.GetVisualDescendants().OfType<Badge>().Where(b => b.IsEffectivelyVisible).Select(b => b.Text).ToList();
-        Assert.Contains("Insured", badges);
-        Assert.Contains("Not insured", badges);
         Assert.Equal(2, RowButtons(Table(window)).Count(b => b.Command == page.EditCommand));
         Assert.Equal(2, RowButtons(Table(window)).Count(b => b.Command == page.DeleteCommand));
     }
@@ -106,7 +102,6 @@ public class PatientsPageTests : UiTestBase
         var monaTexts = cards[0].GetVisualDescendants().OfType<TextBlock>().Where(t => t.IsEffectivelyVisible).Select(t => t.Text).ToList();
         Assert.Contains("010 1234 5678", monaTexts);
         Assert.Contains("Female", monaTexts);
-        Assert.Contains("Insured", monaTexts);
         Assert.DoesNotContain("Allergic to penicillin", monaTexts);
         Assert.Contains("selected", Named<Button>(window, "GridViewButton").Classes);
 
@@ -137,18 +132,17 @@ public class PatientsPageTests : UiTestBase
         Dispatcher.UIThread.RunJobs();
         var form = CurrentForm(window);
         Assert.Equal(
-            (Mona.FullName, Mona.Phone, Mona.GuardianPhone, Mona.Notes, true, Genders.Female, Mona.DateOfBirth),
-            (form.FullName, form.Phone, form.GuardianPhone, form.Notes, form.IsInsured, form.Gender, form.DateOfBirth));
+            (Mona.FullName, Mona.Phone, Mona.Notes, Genders.Female, Mona.DateOfBirth),
+            (form.FullName, form.Phone, form.Notes, form.Gender, form.DateOfBirth));
         Assert.Equal("Edit patient", window.GetVisualDescendants().OfType<Modal>().Single().Title);
 
-        form.GuardianPhone = "  ";
-        form.IsInsured = false;
+        form.Notes = "  Updated note ";
         await form.SaveCommand.ExecuteAsync(null);
         Dispatcher.UIThread.RunJobs();
 
         Assert.Equal(new UpdatePatientRequest
         {
-            FullName = Mona.FullName, Phone = Mona.Phone, GuardianPhone = null, Notes = Mona.Notes, IsInsured = false,
+            FullName = Mona.FullName, Phone = Mona.Phone, Notes = "Updated note",
             Gender = Genders.Female, DateOfBirth = Mona.DateOfBirth, Version = Mona.Version,
         }, sent);
         Assert.Single(app.Api.RequestsTo(HttpMethod.Get, $"{PatientsPath}/{Mona.Id}")); // the full record (with notes) is loaded once for the form
@@ -183,7 +177,6 @@ public class PatientsPageTests : UiTestBase
         {
             FullName = new string('n', PatientRules.FullNameMaxLength + 1),
             Phone = "call me",
-            GuardianPhone = new string('1', PatientRules.PhoneMaxLength + 1),
             Notes = new string('x', PatientRules.NotesMaxLength + 1),
             Gender = Genders.Male,
             DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddDays(1),
@@ -193,7 +186,6 @@ public class PatientsPageTests : UiTestBase
 
         Assert.Equal($"max_length|{PatientRules.FullNameMaxLength}", form.Errors[nameof(form.FullName)]);
         Assert.Equal(ErrorCodes.Invalid, form.Errors[nameof(form.Phone)]);
-        Assert.Equal($"max_length|{PatientRules.PhoneMaxLength}", form.Errors[nameof(form.GuardianPhone)]);
         Assert.Equal($"max_length|{PatientRules.NotesMaxLength}", form.Errors[nameof(form.Notes)]);
         Assert.Equal(ErrorCodes.Invalid, form.Errors[nameof(form.DateOfBirth)]);
 
@@ -231,7 +223,7 @@ public class PatientsPageTests : UiTestBase
 
         Assert.Equal(new CreatePatientRequest
         {
-            FullName = "Omar Khaled", Phone = "011 2222 3333", GuardianPhone = null, Notes = null, IsInsured = false,
+            FullName = "Omar Khaled", Phone = "011 2222 3333", Notes = null,
             Gender = Genders.Male, DateOfBirth = new DateOnly(1990, 5, 17),
         }, sent);
         Assert.Equal(listRequests, app.Api.RequestsTo(HttpMethod.Get, PatientsPath).Count());
@@ -248,7 +240,6 @@ public class PatientsPageTests : UiTestBase
 
         Assert.Equal(("e.g. Mona Adel Hassan", PatientRules.FullNameMaxLength), Box(window, "FullNameBox"));
         Assert.Equal(("e.g. 010 1234 5678", PatientRules.PhoneMaxLength), Box(window, "PhoneBox"));
-        Assert.Equal(("Optional, e.g. a parent's number", PatientRules.PhoneMaxLength), Box(window, "GuardianPhoneBox"));
         Assert.Equal(PatientRules.NotesMaxLength, Named<TextBox>(window, "NotesBox").MaxLength);
         Assert.Equal("Choose...", Named<ComboBox>(window, "GenderBox").PlaceholderText);
         var date = Named<CalendarDatePicker>(window, "DateOfBirthBox");
@@ -370,7 +361,6 @@ public class PatientsPageTests : UiTestBase
         var texts = Texts(window);
         Assert.Contains("المرضى", texts);
         Assert.Contains("أنثى", texts);
-        Assert.Contains("غير مؤمَّن", window.GetVisualDescendants().OfType<Badge>().Where(b => b.IsEffectivelyVisible).Select(b => b.Text));
 
         page.ShowGridCommand.Execute(null);
         Dispatcher.UIThread.RunJobs();
@@ -412,12 +402,11 @@ public class PatientsPageTests : UiTestBase
         var (omarForm, secondView) = await OpenAsync(() => page.EditCommand.ExecuteAsync(Omar));
         Assert.Same(firstView, secondView);
         Assert.False(omarForm.IsDirty);
-        Assert.Equal((Omar.FullName, Omar.Phone, Genders.Male, (DateOnly?)null, false),
-            (omarForm.FullName, omarForm.Phone, omarForm.Gender, omarForm.DateOfBirth, omarForm.IsInsured));
+        Assert.Equal((Omar.FullName, Omar.Phone, Genders.Male, (DateOnly?)null),
+            (omarForm.FullName, omarForm.Phone, omarForm.Gender, omarForm.DateOfBirth));
         Assert.Equal(Omar.FullName, Named<TextBox>(window, "FullNameBox").Text);
         Assert.Equal(Genders.Male, Named<ComboBox>(window, "GenderBox").SelectedItem);
         Assert.Null(Named<CalendarDatePicker>(window, "DateOfBirthBox").SelectedDate);
-        Assert.False(Named<CheckBox>(window, "IsInsuredBox").IsChecked);
         Assert.Equal(Genders.Female, monaForm.Gender);
         await CancelAsync(omarForm);
 

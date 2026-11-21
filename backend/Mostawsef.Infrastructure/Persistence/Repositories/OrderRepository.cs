@@ -25,7 +25,7 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
                 o.Total,
                 o.Paid,
                 o.Total - o.Paid,
-                o.Total,
+                o.Addon,
                 o.Items.Select(i => new OrderItemRow(
                     i.LabTestId,
                     i.LabTestCode,

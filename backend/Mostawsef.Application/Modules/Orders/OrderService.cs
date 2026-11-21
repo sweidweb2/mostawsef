@@ -211,7 +211,7 @@ public class OrderService(
         }
 
         var currencyCode = await currencyTask;
-        var total = TotalOf(request); // validated before a number is taken, so a refused order never burns one
+        var addon = AddonOf(request, lines); // validated before a number is taken, so a refused order never burns one
         var order = new Order(
             DocumentNumber.Format(NumberPrefix, await numbers.NextAsync(NumberSequence, cancellationToken)),
             patient.Id,
@@ -219,7 +219,7 @@ public class OrderService(
             patient.SearchName,
             patient.Phone,
             currencyCode);
-        Fill(order, request, lines, total);
+        Fill(order, request, lines, addon);
 
         if (newPatient is not null)
         {
@@ -233,21 +233,24 @@ public class OrderService(
         return ToDetails(order);
     }
 
-    /// <summary>The order total is the clinic's charge ("our price"). A first payment over it is refused.</summary>
-    private static long TotalOf(CreateOrderRequest request)
+    /// <summary>
+    /// Our price, after refusing a first payment above the patient total (our price plus the tests' lab costs).
+    /// </summary>
+    private static long AddonOf(CreateOrderRequest request, IReadOnlyList<LabTest> lines)
     {
-        var total = request.Addon ?? 0;
+        var addon = request.Addon ?? 0;
+        var total = addon + lines.Sum(t => t.LabCost);
         if (request.FirstPayment?.Amount > total)
         {
             throw AppException.Validation(
                 $"{nameof(CreateOrderRequest.FirstPayment)}.{nameof(CreateFirstPaymentRequest.Amount)}", ErrorCodes.ExceedsTotal);
         }
 
-        return total;
+        return addon;
     }
 
     /// <summary>Adds the items, total and first payment to a new order.</summary>
-    private void Fill(Order order, CreateOrderRequest request, IReadOnlyList<LabTest> lines, long total)
+    private void Fill(Order order, CreateOrderRequest request, IReadOnlyList<LabTest> lines, long addon)
     {
         var payment = request.FirstPayment;
         order.SetSearchText(SearchText.Key(order.PatientSearchName, order.PatientPhone, order.Number));
@@ -256,7 +259,7 @@ public class OrderService(
             order.AddItem(test);
         }
 
-        order.SetTotal(total);
+        order.SetCharges(addon);
         if (payment is not null)
         {
             order.AddPayment(Enum.Parse<PaymentMethod>(payment.Method), payment.Amount!.Value, time.GetUtcNow().UtcDateTime, payment.Notes);

@@ -18,7 +18,7 @@ Each one below was found by measurement and fixed. Do not reintroduce it; if a c
 2. **Toggling a part of the UI by swapping `Content` between null and a view model.** Every switch destroyed and rebuilt
    the whole sub-view (35-110 ms each for the new-patient form). Instead: build on first use, then bind `IsVisible`.
 3. **Building a view on every open of something that opens often** (form dialogs: 53-140 ms per open). Instead: reuse
-   one idle view per type with a new DataContext (`DialogService`), or keep it cached (`PageHost`, `CachedContentHost`).
+   one idle view per type with a new DataContext (`DialogService`), or keep it cached (`PageHost`).
 4. **Setting `view.DataContext = null` to detach a view you want to reuse.** A local null blocks inheriting the next
    DataContext, so the reused view showed empty fields. Instead: `view.ClearValue(StyledElement.DataContextProperty)`.
 5. **Reflection bindings.** `new ReflectionBinding(path)`, or a markup extension that takes a property path as a string,

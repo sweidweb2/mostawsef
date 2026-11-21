@@ -127,6 +127,12 @@ public sealed class InvoiceDocument(PrintContext context, OrderDetailsDto order)
     private void Totals(IContainer container) => container.AlignRight().Width(250).Column(column =>
     {
         column.Spacing(4);
+        var labs = order.Items.Sum(i => i.LabCost);
+        if (labs != 0)
+        {
+            Amount(column, context.Text("Invoice.Labs"), labs);
+        }
+
         if (order.Addon != 0)
         {
             Amount(column, context.Text("Invoice.Addon"), order.Addon);

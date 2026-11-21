@@ -61,8 +61,11 @@ public class Order : Entity
     /// <summary>Not used yet: stays 0.</summary>
     public long DiscountValue { get; private set; }
 
-    /// <summary>What the patient is charged for the whole order (minor units).</summary>
+    /// <summary>What the patient is charged: our price plus the lab prices copied onto the items (minor units).</summary>
     public long Total { get; private set; }
+
+    /// <summary>What the clinic adds on top of the lab prices (minor units). Stored apart from <see cref="Total"/>.</summary>
+    public long Addon { get; private set; }
 
     /// <summary>How many tests are on the order. Kept in sync by <see cref="AddItem"/> for the list page.</summary>
     public int TestsCount { get; private set; }
@@ -78,9 +81,6 @@ public class Order : Entity
 
     public IReadOnlyList<Payment> Payments => _payments;
 
-    /// <summary>What the clinic charges for this order (same as <see cref="Total"/>; set when the order is created).</summary>
-    public long Addon => Total;
-
     public long Balance => Total - Paid;
 
     public void AddItem(LabTest test)
@@ -89,8 +89,27 @@ public class Order : Entity
         TestsCount = _items.Count;
     }
 
-    /// <summary>Sets the chargeable total. Call after the items are added.</summary>
+    /// <summary>Sets our price and the patient total from the items already added. Call after <see cref="AddItem"/>.</summary>
+    public void SetCharges(long addon)
+    {
+        Addon = addon;
+        Total = addon + _items.Sum(i => i.LabPrice);
+    }
+
+    /// <summary>Sets the chargeable total. Used by the one-time backfill of orders saved before our price existed.</summary>
     public void SetTotal(long total) => Total = total;
+
+    /// <summary>
+    /// Copies the saved total into <see cref="Addon"/> for orders created when the two were the same number.
+    /// Does not change <see cref="Total"/>, so an order already charged stays charged that amount.
+    /// </summary>
+    public void KeepSavedTotalAsAddon()
+    {
+        if (Addon == 0)
+        {
+            Addon = Total;
+        }
+    }
 
     /// <summary>A payment in the order currency (exchange rate 1).</summary>
     public Payment AddPayment(PaymentMethod method, long amount, DateTime paidAt, string? notes)

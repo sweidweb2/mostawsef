@@ -43,9 +43,9 @@ public class PrintServiceTests : UiTestBase
         var print = app.Get<PrintService>();
         PatientDto[] patients =
         [
-            new(Guid.NewGuid(), "منى عادل / Mona Adel", "010 1234 5678", "012 0000 0000", "Private note", true, Genders.Female,
+            new(Guid.NewGuid(), "منى عادل / Mona Adel", "010 1234 5678", "Private note", Genders.Female,
                 new DateOnly(2015, 3, 9), DateTime.UtcNow, null, null, 0),
-            new(Guid.NewGuid(), "Omar Khaled", "011 2222 3333", null, null, false, Genders.Male, null, DateTime.UtcNow, null, null, 0),
+            new(Guid.NewGuid(), "Omar Khaled", "011 2222 3333", null, Genders.Male, null, DateTime.UtcNow, null, null, 0),
         ];
 
         var pdf = print.Render(new PatientsDocument(print.CreateContext(), patients));

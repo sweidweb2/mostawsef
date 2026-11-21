@@ -164,10 +164,8 @@ Table patients {
   FullName varchar(100) [not null]
   SearchName varchar(100) [not null, note: 'FullName normalized for search']
   Phone varchar(30) [not null, note: 'normalized: Latin digits, single spaces']
-  GuardianPhone varchar(30)
-  SearchText varchar(162) [not null, note: 'SearchName + phones, normalized; list search']
+  SearchText varchar(162) [not null, note: 'SearchName + phone, normalized; list search']
   Notes varchar(2000) [note: 'medical data: never logged or exported; omitted from list DTOs']
-  IsInsured boolean [not null, default: false]
   Gender Gender [not null, note: 'stored as varchar(10)']
   DateOfBirth date [note: 'between 1900-01-01 and today']
   CreatedAt timestamptz [not null]
@@ -180,12 +178,12 @@ Table patients {
   DeletedBy varchar(50)
 
   Indexes {
-    Phone [note: 'not unique: siblings share a guardian phone']
+    Phone [note: 'not unique: siblings often share a phone']
     SearchName
     SearchText [type: gin, note: 'gin_trgm_ops']
   }
 
-  Note: 'Implemented (migration AddPatients; SearchText on AddPatientSearchText). List order is SearchName; list search is LIKE on SearchText (trigram; min 3 letters/digits).'
+  Note: 'Implemented (migration AddPatients; SearchText on AddPatientSearchText; GuardianPhone/IsInsured dropped). List order is SearchName; list search is LIKE on SearchText (trigram; min 3 letters/digits).'
 }
 
 Table lab_tests {
@@ -215,7 +213,8 @@ Table orders {
   Status OrderStatus [not null, default: 'Pending', note: 'Paid/PartiallyPaid derived from payments']
   DiscountType DiscountType
   DiscountValue bigint [not null, default: 0, note: 'Percent: 0-100; Fixed: minor units']
-  Total bigint [not null, note: 'clinic charge for the order (our price); equals CreateOrderRequest.Addon / OrderDetailsDto.Addon']
+  Total bigint [not null, note: 'patient charge: Addon plus the order items LabPrice snapshots']
+  Addon bigint [not null, default: 0, note: 'clinic charge on top of the lab prices (our price); existing rows were copied from Total']
   TestsCount integer [not null, note: 'denormalized item count for the list page']
   Paid bigint [not null, note: 'denormalized payments minus refunds for the list page']
   Currency varchar(3) [not null]
@@ -234,7 +233,7 @@ Table orders {
     SearchText [type: gin, note: 'gin_trgm_ops']
   }
 
-  Note: 'Implemented (migration AddOrders; Total renamed from OurPrice after AddOrderOurPrice; SearchText on AddOrderSearchText; TestsCount/Paid on AddOrderListAggregates). List search is LIKE on SearchText (trigram; min 3 letters/digits). List reads TestsCount and Paid from the row. Total is the clinic our-price (Addon); Discounts not used yet (DiscountValue 0).'
+  Note: 'Implemented (migration AddOrders; Total renamed from OurPrice after AddOrderOurPrice; SearchText on AddOrderSearchText; TestsCount/Paid on AddOrderListAggregates; Addon on AddOrderAddon). List search is LIKE on SearchText (trigram; min 3 letters/digits). List reads TestsCount and Paid from the row. Total is Addon plus the snapshotted lab prices. Discounts not used yet (DiscountValue 0).'
 }
 
 Table order_items {
