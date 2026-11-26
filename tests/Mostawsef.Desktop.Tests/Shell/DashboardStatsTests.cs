@@ -174,6 +174,23 @@ public class DashboardStatsTests : UiTestBase
     }
 
     [AvaloniaFact]
+    public async Task Coming_back_soon_reuses_the_figures_and_refresh_always_reloads()
+    {
+        using var app = new TestServices();
+        app.SignInAs(Roles.Admin);
+        app.Api.OnGet(DashboardPath, Sample());
+        var page = app.Get<DashboardViewModel>();
+
+        await page.ActivateAsync();
+        page.Deactivate();
+        await page.ActivateAsync();
+        Assert.Single(app.Api.RequestsTo(HttpMethod.Get, DashboardPath));
+
+        await page.RefreshCommand.ExecuteAsync(null);
+        Assert.Equal(2, app.Api.RequestsTo(HttpMethod.Get, DashboardPath).Count());
+    }
+
+    [AvaloniaFact]
     public async Task A_failed_load_shows_the_error_state_and_refresh_loads_again()
     {
         using var app = new TestServices();

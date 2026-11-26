@@ -12,8 +12,11 @@ public interface ILabTestService
 {
     Task<PagedResult<LabTestDto>> GetPageAsync(PageQuery query, bool? active, CancellationToken cancellationToken);
 
-    /// <summary>Up to <see cref="PageQuery.MaxExportRows"/> tests for print/export.</summary>
-    Task<IReadOnlyList<LabTestDto>> ListAllAsync(CancellationToken cancellationToken);
+    /// <summary>
+    /// Up to <see cref="PageQuery.MaxExportRows"/> tests for print/export.
+    /// When <paramref name="active"/> is set, only that IsActive value is returned.
+    /// </summary>
+    Task<IReadOnlyList<LabTestDto>> ListAllAsync(bool? active, CancellationToken cancellationToken);
 
     Task<LabTestDto> GetAsync(Guid id, CancellationToken cancellationToken);
 
@@ -40,8 +43,8 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
         return new PagedResult<LabTestDto>(items.Select(t => ToListDto(t)).ToList(), query.SafePage, query.SafePageSize, total);
     }
 
-    public async Task<IReadOnlyList<LabTestDto>> ListAllAsync(CancellationToken cancellationToken) =>
-        (await tests.ListAllAsync(cancellationToken)).Select(ToExportDto).ToList();
+    public async Task<IReadOnlyList<LabTestDto>> ListAllAsync(bool? active, CancellationToken cancellationToken) =>
+        (await tests.ListAllAsync(active, cancellationToken)).Select(ToExportDto).ToList();
 
     public async Task<LabTestDto> GetAsync(Guid id, CancellationToken cancellationToken) =>
         ToListDto(await tests.GetRowByIdAsync(id, cancellationToken) ?? throw AppException.NotFound());
@@ -121,14 +124,9 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
                 continue;
             }
 
-            if (!LabTestImportFile.TryParsePrice(priceText, out var labCost))
+            if (!LabTestImportFile.TryParsePrice(priceText, out var labCost, out var priceError))
             {
-                // Out-of-range majors still parse as a number but fail TryParsePrice's MaxAmount check —
-                // report range when the shape is numeric-looking and the value is too high.
-                var reason = LooksLikeNumber(priceText) && OverMax(priceText)
-                    ? $"range|0|{LabTestRules.MaxAmount}"
-                    : ErrorCodes.Invalid;
-                Skip(skips, row.RowNumber, name, reason);
+                Skip(skips, row.RowNumber, name, priceError);
                 continue;
             }
 
@@ -144,7 +142,7 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
 
         var existingNames = await tests.FindExistingSearchNamesAsync(
             candidates.Select(c => c.SearchName).ToList(), cancellationToken);
-        var accepted = new List<(string Name, string SearchName, long LabCost)>(candidates.Count);
+        var accepted = new List<(int Row, string Name, string SearchName, long LabCost)>(candidates.Count);
         foreach (var candidate in candidates)
         {
             if (existingNames.Contains(candidate.SearchName))
@@ -153,7 +151,7 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
                 continue;
             }
 
-            accepted.Add((candidate.Name, candidate.SearchName, candidate.LabCost));
+            accepted.Add(candidate);
         }
 
         if (accepted.Count == 0)
@@ -161,25 +159,71 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
             return new ImportLabTestsResult(0, skips.Count, TakeSkipDetails(skips));
         }
 
-        var codes = await AllocateCodesAsync(accepted.Count, cancellationToken);
-        var entities = new List<LabTest>(accepted.Count);
-        for (var i = 0; i < accepted.Count; i++)
-        {
-            var row = accepted[i];
-            entities.Add(new LabTest(codes[i], row.Name, row.SearchName, row.LabCost));
-        }
-
-        tests.AddRange(entities);
-        await tests.SaveChangesAsync(cancellationToken);
+        var imported = await SaveImportAsync(accepted, skips, cancellationToken);
 
         await activity.LogAsync(
             new ActivityEntry(ActivityActions.LabTestsImported, ActivityModules.LabTests, "Imported lab tests")
             {
-                Details = new { Imported = entities.Count, Skipped = skips.Count },
+                Details = new { Imported = imported, Skipped = skips.Count },
             },
             cancellationToken);
 
-        return new ImportLabTestsResult(entities.Count, skips.Count, TakeSkipDetails(skips));
+        return new ImportLabTestsResult(imported, skips.Count, TakeSkipDetails(skips));
+    }
+
+    /// <summary>
+    /// Inserts accepted rows; on a unique-index race, moves conflicting names into skips and retries the rest.
+    /// </summary>
+    private async Task<int> SaveImportAsync(
+        List<(int Row, string Name, string SearchName, long LabCost)> accepted,
+        List<ImportLabTestSkipDto> skips,
+        CancellationToken cancellationToken)
+    {
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            if (accepted.Count == 0)
+            {
+                return 0;
+            }
+
+            var codes = await AllocateCodesAsync(accepted.Count, cancellationToken);
+            var entities = new List<LabTest>(accepted.Count);
+            for (var i = 0; i < accepted.Count; i++)
+            {
+                var row = accepted[i];
+                entities.Add(new LabTest(codes[i], row.Name, row.SearchName, row.LabCost));
+            }
+
+            tests.AddRange(entities);
+            try
+            {
+                await tests.SaveChangesAsync(cancellationToken);
+                return entities.Count;
+            }
+            catch (AppException ex) when (ex.Kind == AppErrorKind.Conflict && ex.Code == ErrorCodes.Taken)
+            {
+                tests.DiscardChanges();
+                var taken = await tests.FindExistingSearchNamesAsync(
+                    accepted.Select(a => a.SearchName).ToList(), cancellationToken);
+                var remaining = new List<(int Row, string Name, string SearchName, long LabCost)>(accepted.Count);
+                foreach (var row in accepted)
+                {
+                    if (taken.Contains(row.SearchName))
+                    {
+                        Skip(skips, row.Row, row.Name, ErrorCodes.Taken);
+                    }
+                    else
+                    {
+                        remaining.Add(row);
+                    }
+                }
+
+                // Name still free → likely a generated-code collision; retry with new codes.
+                accepted = remaining;
+            }
+        }
+
+        throw AppException.Conflict(ErrorCodes.Taken);
     }
 
     private async Task<IReadOnlyList<string>> AllocateCodesAsync(int count, CancellationToken cancellationToken)
@@ -240,47 +284,6 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
         skips.Count <= LabTestRules.MaxImportSkipDetails
             ? skips
             : skips.Take(LabTestRules.MaxImportSkipDetails).ToList();
-
-    private static bool LooksLikeNumber(string priceText)
-    {
-        foreach (var c in priceText)
-        {
-            if (c is >= '0' and <= '9' or '.' or ',' or '$' or ' ' or '-' or '+')
-            {
-                continue;
-            }
-
-            return false;
-        }
-
-        return priceText.Any(char.IsDigit);
-    }
-
-    private static bool OverMax(string priceText)
-    {
-        // Strip the same way as TryParsePrice, but allow values above MaxAmount.
-        var span = priceText.AsSpan().Trim();
-        while (span.Length > 0 && span[0] is '$')
-        {
-            span = span[1..].TrimStart();
-        }
-
-        Span<char> cleaned = stackalloc char[span.Length];
-        var n = 0;
-        foreach (var c in span)
-        {
-            if (c is ',' or ' ')
-            {
-                continue;
-            }
-
-            cleaned[n++] = c;
-        }
-
-        return decimal.TryParse(cleaned[..n], System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowDecimalPoint,
-                   System.Globalization.CultureInfo.InvariantCulture, out var major)
-               && Money.ToMinor(major) > LabTestRules.MaxAmount;
-    }
 
     private async Task<LabTest> FindAsync(Guid id, CancellationToken cancellationToken) =>
         await tests.GetByIdAsync(id, cancellationToken) ?? throw AppException.NotFound();

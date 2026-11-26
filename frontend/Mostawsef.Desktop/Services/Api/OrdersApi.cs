@@ -33,8 +33,9 @@ public class OrdersApi(ApiClient api)
         Guid orderId, Guid paymentId, UpdatePaymentRequest request, CancellationToken cancellationToken = default) =>
         api.PutAsync<UpdatePaymentRequest, OrderDetailsDto>($"api/orders/{orderId}/payments/{paymentId}", request, cancellationToken);
 
-    public Task<ApiResult<OrderDetailsDto>> DeletePaymentAsync(Guid orderId, Guid paymentId, CancellationToken cancellationToken = default) =>
-        api.DeleteAsync<OrderDetailsDto>($"api/orders/{orderId}/payments/{paymentId}", cancellationToken);
+    public Task<ApiResult<OrderDetailsDto>> DeletePaymentAsync(
+        Guid orderId, Guid paymentId, int version, CancellationToken cancellationToken = default) =>
+        api.DeleteAsync<OrderDetailsDto>($"api/orders/{orderId}/payments/{paymentId}?version={version}", cancellationToken);
 
     public Task<ApiResult<OrderDetailsDto>> CreateOrderAsync(CreateOrderRequest request, CancellationToken cancellationToken = default) =>
         api.PostAsync<CreateOrderRequest, OrderDetailsDto>("api/orders", request, cancellationToken);

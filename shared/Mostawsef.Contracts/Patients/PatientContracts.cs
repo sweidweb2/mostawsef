@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Mostawsef.Contracts.Common;
+using Mostawsef.Contracts.Orders;
 
 namespace Mostawsef.Contracts.Patients;
 
@@ -71,3 +72,9 @@ public record UpdatePatientRequest : CreatePatientRequest
 {
     public int Version { get; init; }
 }
+
+/// <summary>
+/// Patient details page: the full patient (with notes) and their newest orders in one response
+/// (up to <see cref="PageQuery.MaxPageSize"/>, newest first).
+/// </summary>
+public record PatientDetailsDto(PatientDto Patient, IReadOnlyList<OrderListItemDto> Orders);

@@ -45,6 +45,7 @@ namespace Mostawsef.Contracts.Common;
 [JsonSerializable(typeof(PagedResult<LabTestDto>))]
 [JsonSerializable(typeof(IReadOnlyList<LabTestDto>))]
 [JsonSerializable(typeof(PatientDto))]
+[JsonSerializable(typeof(PatientDetailsDto))]
 [JsonSerializable(typeof(CreatePatientRequest))]
 [JsonSerializable(typeof(UpdatePatientRequest))]
 [JsonSerializable(typeof(PagedResult<PatientDto>))]

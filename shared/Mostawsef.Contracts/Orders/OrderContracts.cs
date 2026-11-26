@@ -105,6 +105,7 @@ public static class PaymentTypes
 public record OrderPaymentDto(Guid Id, DateTime PaidAt, string Type, string Method, long Amount, string? Notes);
 
 /// <param name="Addon">What the clinic added on top of the lab prices ("our price"). The patient total is this plus those prices.</param>
+/// <param name="Version">Concurrency token; payment add/edit/delete must send the value last loaded.</param>
 public record OrderDetailsDto(
     Guid Id,
     string Number,
@@ -120,7 +121,8 @@ public record OrderDetailsDto(
     long Balance,
     long Addon,
     IReadOnlyList<OrderItemDto> Items,
-    IReadOnlyList<OrderPaymentDto> Payments);
+    IReadOnlyList<OrderPaymentDto> Payments,
+    int Version);
 
 /// <summary>
 /// A new order. Exactly one of <see cref="PatientId"/> (an existing patient) and <see cref="NewPatient"/> (created with the order).
@@ -151,7 +153,10 @@ public record CreateOrderItemRequest
     public Guid? LabTestId { get; init; }
 }
 
-/// <summary>An additional payment on an existing order, in the order currency. At most what the order still owes.</summary>
+/// <summary>
+/// An additional payment on an existing order, in the order currency. At most what the order still owes.
+/// <see cref="Version"/> is the order's Version from the last details load; a stale one returns 409 concurrency_conflict.
+/// </summary>
 public record AddPaymentRequest
 {
     [Required(ErrorMessage = ErrorCodes.Required)]
@@ -164,9 +169,15 @@ public record AddPaymentRequest
 
     [MaxLength(OrderRules.PaymentNotesMaxLength, ErrorMessage = ErrorCodes.MaxLength)]
     public string? Notes { get; init; }
+
+    /// <summary>Order Version from the details the client last loaded.</summary>
+    public int Version { get; init; }
 }
 
-/// <summary>Edits an existing payment; for a Payment-type row the amount may be at most the balance plus that row's current amount.</summary>
+/// <summary>
+/// Edits an existing payment; for a Payment-type row the amount may be at most the balance plus that row's current amount.
+/// <see cref="Version"/> is the order's Version from the last details load; a stale one returns 409 concurrency_conflict.
+/// </summary>
 public record UpdatePaymentRequest
 {
     [Required(ErrorMessage = ErrorCodes.Required)]
@@ -179,6 +190,9 @@ public record UpdatePaymentRequest
 
     [MaxLength(OrderRules.PaymentNotesMaxLength, ErrorMessage = ErrorCodes.MaxLength)]
     public string? Notes { get; init; }
+
+    /// <summary>Order Version from the details the client last loaded.</summary>
+    public int Version { get; init; }
 }
 
 /// <summary>Paid in the clinic currency when the order is created.</summary>

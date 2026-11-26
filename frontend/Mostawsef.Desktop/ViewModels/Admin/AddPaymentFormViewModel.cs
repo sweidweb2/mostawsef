@@ -14,12 +14,13 @@ namespace Mostawsef.Desktop.ViewModels.Admin;
 
 /// <summary>
 /// Add or edit a payment on an existing order. A new payment cannot exceed the balance; an edit cannot exceed
-/// the balance plus that payment's current amount.
+/// the balance plus that payment's current amount. Sends the order's Version so a concurrent payment change is refused.
 /// </summary>
 public partial class AddPaymentFormViewModel : FormViewModel
 {
     private readonly OrdersApi _orders;
     private readonly Guid _orderId;
+    private readonly int _orderVersion;
     private readonly long _maxMinor;
     private readonly Guid? _paymentId;
 
@@ -30,11 +31,13 @@ public partial class AddPaymentFormViewModel : FormViewModel
         LocalizationService localization,
         Guid orderId,
         long balance,
+        int orderVersion,
         OrderPaymentDto? existing = null)
         : base(dialogs, localization)
     {
         _orders = orders;
         _orderId = orderId;
+        _orderVersion = orderVersion;
         _paymentId = existing?.Id;
         var room = existing is null ? balance : balance + existing.Amount;
         _maxMinor = Math.Min(room, OrderRules.MaxPaymentAmount);
@@ -70,8 +73,8 @@ public partial class AddPaymentFormViewModel : FormViewModel
 
     protected override object BuildRequest() =>
         _paymentId is not null
-            ? OrderPaymentMapping.ToUpdate(Amount, Method, Notes)
-            : OrderPaymentMapping.ToAdd(Amount, Method, Notes);
+            ? OrderPaymentMapping.ToUpdate(Amount, Method, Notes, _orderVersion)
+            : OrderPaymentMapping.ToAdd(Amount, Method, Notes, _orderVersion);
 
     protected override void ValidateMore(FormErrors errors)
     {

@@ -53,10 +53,23 @@ public partial class UsersViewModel(UsersApi users, IDialogService dialogs, IToa
             return;
         }
 
-        if (await dialogs.ShowFormAsync(new UserFormViewModel(users, dialogs, Localization, item), Localization.Get("Users.EditTitle")))
+        var form = new UserFormViewModel(users, dialogs, Localization, item);
+        if (await dialogs.ShowFormAsync(form, Localization.Get("Users.EditTitle")))
         {
             Toasts.Success(Localization.Get("Users.Saved"));
-            await ReloadAsync(includeTotal: false);
+            if (form.SavedValue is UserDetailsDto saved)
+            {
+                ReplaceSorted(
+                    new UserListItemDto(
+                        saved.Id, saved.Username, saved.FullName, saved.Role, saved.IsActive,
+                        saved.LastLoginAt, saved.CreatedAt, saved.Version),
+                    u => u.Id,
+                    CompareByName);
+            }
+            else
+            {
+                await ReloadAsync(includeTotal: false);
+            }
         }
     }
 

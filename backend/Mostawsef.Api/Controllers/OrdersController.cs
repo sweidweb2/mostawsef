@@ -35,6 +35,7 @@ public class OrdersController(IOrderService orders) : ControllerBase
     [ProducesResponseType<OrderDetailsDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public Task<OrderDetailsDto> AddPayment(Guid id, AddPaymentRequest request, CancellationToken cancellationToken) =>
         orders.AddPaymentAsync(id, request, cancellationToken);
 
@@ -42,6 +43,7 @@ public class OrdersController(IOrderService orders) : ControllerBase
     [ProducesResponseType<OrderDetailsDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public Task<OrderDetailsDto> UpdatePayment(
         Guid id, Guid paymentId, UpdatePaymentRequest request, CancellationToken cancellationToken) =>
         orders.UpdatePaymentAsync(id, paymentId, request, cancellationToken);
@@ -49,8 +51,10 @@ public class OrdersController(IOrderService orders) : ControllerBase
     [HttpDelete("{id:guid}/payments/{paymentId:guid}")]
     [ProducesResponseType<OrderDetailsDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public Task<OrderDetailsDto> DeletePayment(Guid id, Guid paymentId, CancellationToken cancellationToken) =>
-        orders.DeletePaymentAsync(id, paymentId, cancellationToken);
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public Task<OrderDetailsDto> DeletePayment(
+        Guid id, Guid paymentId, [FromQuery] int version, CancellationToken cancellationToken) =>
+        orders.DeletePaymentAsync(id, paymentId, version, cancellationToken);
 
     [HttpPost]
     [ProducesResponseType<OrderDetailsDto>(StatusCodes.Status201Created)]

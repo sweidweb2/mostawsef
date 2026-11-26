@@ -47,7 +47,8 @@ internal static class OrderPages
         id, "ORD-000007", DateTime.UtcNow, "admin@test.local", Mona.Id, Mona.FullName, Mona.Phone, OrderStatuses.PartiallyPaid,
         Currencies.Egp, 25000, 5000, 20000, 5000L,
         [new OrderItemDto(Cbc.Id, Cbc.Code, Cbc.Name, Cbc.LabCost), new OrderItemDto(Sugar.Id, Sugar.Code, Sugar.Name, Sugar.LabCost)],
-        [new OrderPaymentDto(PaymentId, DateTime.UtcNow, PaymentTypes.Payment, PaymentMethods.Cash, 5000, "Receipt 12")]);
+        [new OrderPaymentDto(PaymentId, DateTime.UtcNow, PaymentTypes.Payment, PaymentMethods.Cash, 5000, "Receipt 12")],
+        Version: 0);
 
     /// <summary>Signed in as Admin; the server knows two orders and a catalog of two active tests and one inactive.</summary>
     public static TestServices Admin(AppLanguage language = AppLanguage.English)

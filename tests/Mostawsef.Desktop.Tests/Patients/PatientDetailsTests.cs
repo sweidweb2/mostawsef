@@ -31,7 +31,10 @@ public class PatientDetailsTests : UiTestBase
         app.Api.OnGet(PatientsPath, new PagedResult<PatientDto>([Mona, Omar], 1, 40, 2));
         app.Api.OnGet($"{PatientsPath}/{Mona.Id}", Mona with { Notes = MonaNotes });
         app.Api.OnGet($"{PatientsPath}/{Omar.Id}", Omar);
-        app.Api.OnGet(OrdersPath, new PagedResult<OrderListItemDto>(orders, 1, 100, orders.Length));
+        app.Api.OnGet(
+            $"{PatientsPath}/{Mona.Id}/details",
+            new PatientDetailsDto(Mona with { Notes = MonaNotes }, orders));
+        app.Api.OnGet($"{PatientsPath}/{Omar.Id}/details", new PatientDetailsDto(Omar, []));
         app.Api.OnGet($"{OrdersPath}/{Unpaid.Id}", Details(Unpaid.Id));
 
         app.Navigation.NavigateToHome();
@@ -66,7 +69,7 @@ public class PatientDetailsTests : UiTestBase
         Dispatcher.UIThread.RunJobs();
 
         Assert.Equal(Mona.Id, details.Patient!.Id);
-        Assert.Contains($"patientId={Mona.Id}", app.Api.RequestsTo(HttpMethod.Get, OrdersPath).Last().RequestUri!.Query);
+        Assert.Single(app.Api.RequestsTo(HttpMethod.Get, $"{PatientsPath}/{Mona.Id}/details"));
         var cards = window.GetVisualDescendants().OfType<Card>().Where(c => c.DataContext is OrderListItemDto).ToList();
         Assert.Equal([PartlyPaid.Number, Unpaid.Number], cards.Select(c => c.Title));
         Assert.Equal(Mona.FullName, Named<TextBlock>(window, "BreadcrumbSubPage").Text);
@@ -137,11 +140,21 @@ public class PatientDetailsTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task An_unexpected_failure_loading_the_orders_shows_the_error_state_and_the_page_keeps_working()
+    public async Task An_unexpected_failure_loading_the_details_shows_the_error_state_and_the_page_keeps_working()
     {
         using var app = new TestServices();
-        app.Api.On(HttpMethod.Get, OrdersPath, _ => throw new InvalidOperationException("boom"));
-        var (shell, patients, _) = await ShowPatientsAsync(app);
+        app.SignInAs(Roles.Admin);
+        app.Api.OnGet(PatientsPath, new PagedResult<PatientDto>([Mona, Omar], 1, 40, 2));
+        // No success stub for Mona's details: the throw must be the only match (equal-length routes keep registration order).
+        app.Api.On(HttpMethod.Get, $"{PatientsPath}/{Mona.Id}/details", _ => throw new InvalidOperationException("boom"));
+        app.Api.OnGet($"{PatientsPath}/{Omar.Id}/details", new PatientDetailsDto(Omar, []));
+
+        app.Navigation.NavigateToHome();
+        var shell = Assert.IsType<PortalShellViewModel>(app.Navigation.CurrentPage);
+        app.Show(shell);
+        shell.SelectedMenuIndex = shell.MenuItems.ToList().FindIndex(p => p.PageType == typeof(PatientsViewModel));
+        var patients = Assert.IsType<PatientsViewModel>(shell.CurrentPage);
+        await WaitUntil(() => !patients.IsLoading);
 
         await patients.OpenCommand.ExecuteAsync(Mona);
         var details = Assert.IsType<PatientDetailsViewModel>(shell.CurrentPage);
@@ -149,7 +162,7 @@ public class PatientDetailsTests : UiTestBase
 
         Assert.True(details.HasLoadError);
         Assert.False(details.IsEmpty);
-        Assert.Equal(Mona.FullName, details.Patient!.FullName); // the patient still shows
+        Assert.Equal(Mona.FullName, details.Patient!.FullName); // the list row's patient still shows
     }
 
     [AvaloniaFact]

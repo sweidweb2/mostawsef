@@ -33,8 +33,11 @@ public interface ILabTestRepository
     /// <summary>Tracked test plus whether any order item references it. Null test when missing.</summary>
     Task<(LabTest? Test, bool IsUsed)> GetWithUsageAsync(Guid id, CancellationToken cancellationToken);
 
-    /// <summary>The tests with these ids that exist (tracked, so order items can reference them).</summary>
+    /// <summary>The tests with these ids that exist (no tracking; order items copy snapshots only).</summary>
     Task<IReadOnlyList<LabTest>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
+
+    /// <summary>How many of <paramref name="ids"/> are still active (for a last-moment create check).</summary>
+    Task<int> CountActiveAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
 
     /// <summary>
     /// Whether another test (not <paramref name="exceptId"/>) already has this code and/or SearchName.
@@ -54,14 +57,20 @@ public interface ILabTestRepository
     /// <summary>Ordered by SearchName then Code (unique indexes). Search is a prefix on SearchName or Code. <paramref name="active"/> filters IsActive when set.</summary>
     Task<(IReadOnlyList<LabTestListRow> Items, int Total)> GetPageAsync(PageQuery query, bool? active, CancellationToken cancellationToken);
 
-    /// <summary>Up to <see cref="PageQuery.MaxExportRows"/> tests for print/export (no audit).</summary>
-    Task<IReadOnlyList<LabTestExportRow>> ListAllAsync(CancellationToken cancellationToken);
+    /// <summary>
+    /// Up to <see cref="PageQuery.MaxExportRows"/> tests for print/export (no audit).
+    /// When <paramref name="active"/> is set, only that IsActive value is returned (New Order catalog uses true).
+    /// </summary>
+    Task<IReadOnlyList<LabTestExportRow>> ListAllAsync(bool? active, CancellationToken cancellationToken);
 
     void Add(LabTest test);
 
     void AddRange(IEnumerable<LabTest> tests);
 
     void Remove(LabTest test);
+
+    /// <summary>Drops tracked entities so an import can retry after a unique-index race.</summary>
+    void DiscardChanges();
 
     /// <summary>Throws AppException (409 concurrency_conflict) if the test changed since it was loaded.</summary>
     Task SaveChangesAsync(CancellationToken cancellationToken);

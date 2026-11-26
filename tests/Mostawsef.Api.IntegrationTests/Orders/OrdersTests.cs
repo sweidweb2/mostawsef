@@ -641,7 +641,10 @@ public class OrdersTests(ApiFactory factory)
         });
 
         var problem = await ProblemResponse.ReadAsync(
-            await admin.PostAsJsonAsync($"{Url}/{order.Id}/payments", new AddPaymentRequest { Amount = 6001, Method = PaymentMethods.Cash }, Ct));
+            await admin.PostAsJsonAsync(
+                $"{Url}/{order.Id}/payments",
+                new AddPaymentRequest { Amount = 6001, Method = PaymentMethods.Cash, Version = order.Version },
+                Ct));
 
         Assert.Equal(HttpStatusCode.BadRequest, problem.Status);
         Assert.Equal([ErrorCodes.ExceedsBalance], problem.Errors["Amount"]);
@@ -649,7 +652,10 @@ public class OrdersTests(ApiFactory factory)
 
         var settled = await PayAsync(admin, order.Id, new() { Amount = 6000, Method = PaymentMethods.Cash });
         var again = await ProblemResponse.ReadAsync(
-            await admin.PostAsJsonAsync($"{Url}/{order.Id}/payments", new AddPaymentRequest { Amount = 1, Method = PaymentMethods.Cash }, Ct));
+            await admin.PostAsJsonAsync(
+                $"{Url}/{order.Id}/payments",
+                new AddPaymentRequest { Amount = 1, Method = PaymentMethods.Cash, Version = settled.Version },
+                Ct));
         Assert.Equal(OrderStatuses.Paid, settled.Status);
         Assert.Equal([ErrorCodes.ExceedsBalance], again.Errors["Amount"]);
     }
@@ -675,7 +681,8 @@ public class OrdersTests(ApiFactory factory)
 
     private static async Task<OrderDetailsDto> PayAsync(HttpClient admin, Guid orderId, AddPaymentRequest request)
     {
-        var response = await admin.PostAsJsonAsync($"{Url}/{orderId}/payments", request, Ct);
+        var current = await admin.GetJsonAsync<OrderDetailsDto>($"{Url}/{orderId}");
+        var response = await admin.PostAsJsonAsync($"{Url}/{orderId}/payments", request with { Version = current.Version }, Ct);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         return (await response.Content.ReadFromJsonAsync<OrderDetailsDto>(Ct))!;
     }
@@ -694,7 +701,7 @@ public class OrdersTests(ApiFactory factory)
 
         var response = await admin.PutAsJsonAsync(
             $"{Url}/{order.Id}/payments/{paymentId}",
-            new UpdatePaymentRequest { Amount = 10000, Method = PaymentMethods.Card, Notes = " settled " },
+            new UpdatePaymentRequest { Amount = 10000, Method = PaymentMethods.Card, Notes = " settled ", Version = order.Version },
             Ct);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var updated = (await response.Content.ReadFromJsonAsync<OrderDetailsDto>(Ct))!;
@@ -706,7 +713,7 @@ public class OrdersTests(ApiFactory factory)
 
         var over = await ProblemResponse.ReadAsync(await admin.PutAsJsonAsync(
             $"{Url}/{order.Id}/payments/{paymentId}",
-            new UpdatePaymentRequest { Amount = 10001, Method = PaymentMethods.Cash },
+            new UpdatePaymentRequest { Amount = 10001, Method = PaymentMethods.Cash, Version = updated.Version },
             Ct));
         Assert.Equal(HttpStatusCode.BadRequest, over.Status);
         Assert.Equal([ErrorCodes.ExceedsBalance], over.Errors["Amount"]);
@@ -726,14 +733,14 @@ public class OrdersTests(ApiFactory factory)
         var firstId = second.Payments[0].Id;
         var secondId = second.Payments[1].Id;
 
-        var afterDelete = await admin.DeleteAsync($"{Url}/{order.Id}/payments/{firstId}", Ct);
+        var afterDelete = await admin.DeleteAsync($"{Url}/{order.Id}/payments/{firstId}?version={second.Version}", Ct);
         Assert.Equal(HttpStatusCode.OK, afterDelete.StatusCode);
         var remaining = (await afterDelete.Content.ReadFromJsonAsync<OrderDetailsDto>(Ct))!;
 
         Assert.Equal((OrderStatuses.PartiallyPaid, 3000L, 7000L), (remaining.Status, remaining.Paid, remaining.Balance));
         Assert.Equal([secondId], remaining.Payments.Select(p => p.Id).ToList());
 
-        var cleared = await admin.DeleteAsync($"{Url}/{order.Id}/payments/{secondId}", Ct);
+        var cleared = await admin.DeleteAsync($"{Url}/{order.Id}/payments/{secondId}?version={remaining.Version}", Ct);
         Assert.Equal(HttpStatusCode.OK, cleared.StatusCode);
         var unpaid = (await cleared.Content.ReadFromJsonAsync<OrderDetailsDto>(Ct))!;
         Assert.Equal((OrderStatuses.Pending, 0L, 10000L), (unpaid.Status, unpaid.Paid, unpaid.Balance));
@@ -741,6 +748,38 @@ public class OrdersTests(ApiFactory factory)
 
         var listed = (await admin.GetJsonAsync<PagedResult<OrderListItemDto>>($"{Url}?search={order.Number}")).Items.Single();
         Assert.Equal((0L, OrderStatuses.Pending), (listed.Paid, listed.Status));
+    }
+
+    [Fact]
+    public async Task A_stale_order_version_on_payment_returns_409_concurrency_conflict()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var patient = await CreatePatientAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 0);
+        var order = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id) with
+        {
+            FirstPayment = new() { Amount = 1000, Method = PaymentMethods.Cash },
+        });
+        var paymentId = order.Payments.Single().Id;
+        var stale = order.Version;
+
+        await PayAsync(admin, order.Id, new() { Amount = 500, Method = PaymentMethods.Cash });
+
+        var add = await ProblemResponse.ReadAsync(await admin.PostAsJsonAsync(
+            $"{Url}/{order.Id}/payments",
+            new AddPaymentRequest { Amount = 100, Method = PaymentMethods.Cash, Version = stale },
+            Ct));
+        Assert.Equal((HttpStatusCode.Conflict, ErrorCodes.ConcurrencyConflict), (add.Status, add.Code));
+
+        var update = await ProblemResponse.ReadAsync(await admin.PutAsJsonAsync(
+            $"{Url}/{order.Id}/payments/{paymentId}",
+            new UpdatePaymentRequest { Amount = 200, Method = PaymentMethods.Cash, Version = stale },
+            Ct));
+        Assert.Equal((HttpStatusCode.Conflict, ErrorCodes.ConcurrencyConflict), (update.Status, update.Code));
+
+        var delete = await ProblemResponse.ReadAsync(await admin.DeleteAsync(
+            $"{Url}/{order.Id}/payments/{paymentId}?version={stale}", Ct));
+        Assert.Equal((HttpStatusCode.Conflict, ErrorCodes.ConcurrencyConflict), (delete.Status, delete.Code));
     }
 
     [Fact]
@@ -757,21 +796,21 @@ public class OrdersTests(ApiFactory factory)
 
         var missingPayment = await ProblemResponse.ReadAsync(await admin.PutAsJsonAsync(
             $"{Url}/{order.Id}/payments/{Guid.NewGuid()}",
-            new UpdatePaymentRequest { Amount = 500, Method = PaymentMethods.Cash },
+            new UpdatePaymentRequest { Amount = 500, Method = PaymentMethods.Cash, Version = order.Version },
             Ct));
         Assert.Equal((HttpStatusCode.NotFound, ErrorCodes.NotFound), (missingPayment.Status, missingPayment.Code));
 
         var missingOrder = await ProblemResponse.ReadAsync(await admin.DeleteAsync(
-            $"{Url}/{Guid.NewGuid()}/payments/{paymentId}", Ct));
+            $"{Url}/{Guid.NewGuid()}/payments/{paymentId}?version=0", Ct));
         Assert.Equal((HttpStatusCode.NotFound, ErrorCodes.NotFound), (missingOrder.Status, missingOrder.Code));
 
         var super = await factory.CreateClientAsAsync(TestUsers.Super);
         Assert.Equal(HttpStatusCode.Forbidden, (await super.PutAsJsonAsync(
             $"{Url}/{order.Id}/payments/{paymentId}",
-            new UpdatePaymentRequest { Amount = 500, Method = PaymentMethods.Cash },
+            new UpdatePaymentRequest { Amount = 500, Method = PaymentMethods.Cash, Version = order.Version },
             Ct)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await super.DeleteAsync(
-            $"{Url}/{order.Id}/payments/{paymentId}", Ct)).StatusCode);
+            $"{Url}/{order.Id}/payments/{paymentId}?version={order.Version}", Ct)).StatusCode);
     }
 
     [Fact]

@@ -37,7 +37,8 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
                     p.Type,
                     p.Method,
                     p.Amount,
-                    p.Notes)).ToList()))
+                    p.Notes)).ToList(),
+                o.Version))
             .FirstOrDefaultAsync(cancellationToken);
 
     public async Task<(IReadOnlyList<OrderListRow> Items, int Total)> GetPageAsync(

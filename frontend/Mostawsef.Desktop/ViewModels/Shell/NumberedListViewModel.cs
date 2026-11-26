@@ -76,6 +76,48 @@ public abstract partial class NumberedListViewModel<TItem> : ListPageViewModelBa
         BumpTotalAfterInsert();
     }
 
+    /// <summary>
+    /// Replaces an edited row already on the current page, keeping list sort order, without a reload.
+    /// Marks stale when a search is active or the row is not on this page (or sorts off it after the edit).
+    /// </summary>
+    protected void ReplaceSorted(TItem item, Func<TItem, Guid> idOf, Comparison<TItem> compare)
+    {
+        if (!IsLoaded || HasActiveFilter)
+        {
+            MarkStale();
+            return;
+        }
+
+        for (var i = 0; i < Items.Count; i++)
+        {
+            if (idOf(Items[i]) != idOf(item))
+            {
+                continue;
+            }
+
+            LoadError = null;
+            Items.RemoveAt(i);
+            var index = 0;
+            while (index < Items.Count && compare(Items[index], item) <= 0)
+            {
+                index++;
+            }
+
+            if (index >= PageSize)
+            {
+                MarkStale();
+                OnPropertyChanged(nameof(IsEmpty));
+                return;
+            }
+
+            Items.Insert(index, item);
+            OnPropertyChanged(nameof(IsEmpty));
+            return;
+        }
+
+        MarkStale();
+    }
+
     /// <summary>True while a search (or a subclass's own filter) may hide a new row; override to add filters.</summary>
     protected virtual bool HasActiveFilter => !string.IsNullOrWhiteSpace(_appliedSearch);
 

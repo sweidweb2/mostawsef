@@ -140,11 +140,22 @@ public partial class PatientsViewModel : NumberedListViewModel<PatientDto>
             return;
         }
 
-        if (await _dialogs.ShowFormAsync(
-                new PatientFormViewModel(_patients, _dialogs, Localization, loaded.Value!), Localization.Get("Patients.EditTitle"), 640))
+        var form = new PatientFormViewModel(_patients, _dialogs, Localization, loaded.Value!);
+        if (await _dialogs.ShowFormAsync(form, Localization.Get("Patients.EditTitle"), 640))
         {
             Toasts.Success(Localization.Get("Patients.Saved"));
-            await ReloadAsync(includeTotal: false);
+            if (form.SavedValue is PatientDto saved)
+            {
+                // List rows leave notes out; keep the unpaid flag from the row that was edited.
+                ReplaceSorted(
+                    saved with { Notes = null, HasUnpaidOrders = item.HasUnpaidOrders },
+                    p => p.Id,
+                    CompareByName);
+            }
+            else
+            {
+                await ReloadAsync(includeTotal: false);
+            }
         }
     }
 

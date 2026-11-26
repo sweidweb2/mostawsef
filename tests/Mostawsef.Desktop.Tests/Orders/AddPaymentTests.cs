@@ -108,7 +108,7 @@ public class AddPaymentTests : UiTestBase
         await form.SaveCommand.ExecuteAsync(null);
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal(new AddPaymentRequest { Amount = 20000, Method = PaymentMethods.Card }, sent);
+        Assert.Equal(new AddPaymentRequest { Amount = 20000, Method = PaymentMethods.Card, Version = 0 }, sent);
         Assert.Empty(window.GetVisualDescendants().OfType<Modal>());
         Assert.Equal(OrderStatuses.Paid, details.Order!.Status);
         Assert.Equal(2, details.Order.Payments.Count);
@@ -162,7 +162,7 @@ public class AddPaymentTests : UiTestBase
         await form.SaveCommand.ExecuteAsync(null);
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal(new UpdatePaymentRequest { Amount = 25000, Method = PaymentMethods.Card, Notes = "Full" }, sent);
+        Assert.Equal(new UpdatePaymentRequest { Amount = 25000, Method = PaymentMethods.Card, Notes = "Full", Version = 0 }, sent);
         Assert.Empty(window.GetVisualDescendants().OfType<Modal>());
         Assert.Equal(OrderStatuses.Paid, details.Order!.Status);
         Assert.False(details.CanAddPayment);

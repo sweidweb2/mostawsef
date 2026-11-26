@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,13 +19,19 @@ namespace Mostawsef.Desktop.ViewModels.Shell;
 /// <summary>
 /// Home page of every portal: the welcome line and, for Admin, the money and orders of a chosen period
 /// (<see cref="DashboardPageViewModel.Filter"/>): revenue and outstanding balance, how many orders are paid, partly
-/// paid or unpaid, orders and revenue per hour/day/month and the most ordered tests. One request per load; showing
-/// the page again reloads, so new orders appear.
+/// paid or unpaid, orders and revenue per hour/day/month and the most ordered tests. Coming back to the page reloads
+/// only when the figures are older than <see cref="StaleAfter"/> (Refresh and a new period always reload).
 /// Shared by all roles until one needs its own dashboard; then give that role a separate view model + view in AppRoutes.
 /// </summary>
 public partial class DashboardViewModel(SessionService session, OrdersApi orders, ErrorReporter errors)
     : DashboardPageViewModel(errors), ILoadablePage
 {
+    /// <summary>How old the shown figures may get before showing the page loads them again.</summary>
+    public static readonly TimeSpan StaleAfter = TimeSpan.FromMinutes(1);
+
+    /// <summary>Stopwatch timestamp of the last successful load; 0 = never.</summary>
+    private long _loadedAt;
+
     public string UserName => session.CurrentUser?.Username ?? string.Empty;
 
     /// <summary>Only Admin sees (and may load) the order statistics.</summary>
@@ -87,8 +94,10 @@ public partial class DashboardViewModel(SessionService session, OrdersApi orders
 
     public bool HasTopTests => TopTests is { Count: > 0 };
 
-    /// <summary>Loads the chosen period every time the page is shown, so new orders appear.</summary>
-    public Task ActivateAsync() => ShowOrderStats ? LoadAsync() : Task.CompletedTask;
+    public Task ActivateAsync() =>
+        !ShowOrderStats || (Dashboard is not null && _loadedAt != 0 && Stopwatch.GetElapsedTime(_loadedAt) < StaleAfter)
+            ? Task.CompletedTask
+            : LoadAsync();
 
     protected override async Task<DashboardRangeDto?> FetchAsync(DateOnly from, DateOnly to, CancellationToken cancellationToken)
     {
@@ -100,6 +109,7 @@ public partial class DashboardViewModel(SessionService session, OrdersApi orders
         }
 
         Dashboard = result.Value;
+        _loadedAt = Stopwatch.GetTimestamp();
         return result.Value!.Range;
     }
 

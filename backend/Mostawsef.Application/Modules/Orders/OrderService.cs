@@ -33,7 +33,7 @@ public interface IOrderService
     Task<OrderDetailsDto> UpdatePaymentAsync(Guid id, Guid paymentId, UpdatePaymentRequest request, CancellationToken cancellationToken);
 
     /// <summary>Deletes a payment and recalculates Paid and status; returns the updated order.</summary>
-    Task<OrderDetailsDto> DeletePaymentAsync(Guid id, Guid paymentId, CancellationToken cancellationToken);
+    Task<OrderDetailsDto> DeletePaymentAsync(Guid id, Guid paymentId, int version, CancellationToken cancellationToken);
 
     /// <summary>Creates the patient (if new), the order, its items and the first payment in one transaction.</summary>
     Task<OrderDetailsDto> CreateAsync(CreateOrderRequest request, CancellationToken cancellationToken);
@@ -112,6 +112,7 @@ public class OrderService(
     public async Task<OrderDetailsDto> AddPaymentAsync(Guid id, AddPaymentRequest request, CancellationToken cancellationToken)
     {
         var order = await orders.GetForPaymentAsync(id, cancellationToken) ?? throw AppException.NotFound();
+        EnsureCurrentVersion(order, request.Version);
         var amount = request.Amount!.Value;
         if (amount > order.Balance)
         {
@@ -139,6 +140,7 @@ public class OrderService(
         Guid id, Guid paymentId, UpdatePaymentRequest request, CancellationToken cancellationToken)
     {
         var order = await orders.GetForPaymentAsync(id, cancellationToken) ?? throw AppException.NotFound();
+        EnsureCurrentVersion(order, request.Version);
         var payment = order.Payments.FirstOrDefault(p => p.Id == paymentId) ?? throw AppException.NotFound();
         var amount = request.Amount!.Value;
         if (payment.Type == PaymentType.Payment && amount > order.Balance + payment.Amount)
@@ -162,9 +164,10 @@ public class OrderService(
         return ToDetails(order);
     }
 
-    public async Task<OrderDetailsDto> DeletePaymentAsync(Guid id, Guid paymentId, CancellationToken cancellationToken)
+    public async Task<OrderDetailsDto> DeletePaymentAsync(Guid id, Guid paymentId, int version, CancellationToken cancellationToken)
     {
         var order = await orders.GetForPaymentAsync(id, cancellationToken) ?? throw AppException.NotFound();
+        EnsureCurrentVersion(order, version);
         var payment = order.Payments.FirstOrDefault(p => p.Id == paymentId) ?? throw AppException.NotFound();
         var amount = payment.Amount;
         var method = payment.Method;
@@ -224,6 +227,13 @@ public class OrderService(
         if (newPatient is not null)
         {
             patients.Add(newPatient);
+        }
+
+        // Last-moment check: a test deactivated after LoadTestsAsync must not land on a new order.
+        var lineIds = lines.Select(t => t.Id).Distinct().ToList();
+        if (await tests.CountActiveAsync(lineIds, cancellationToken) != lineIds.Count)
+        {
+            throw AppException.Conflict(ErrorCodes.Inactive);
         }
 
         orders.Add(order);
@@ -360,16 +370,26 @@ public class OrderService(
     private static string ItemField(int index) =>
         string.Create(CultureInfo.InvariantCulture, $"{nameof(CreateOrderRequest.Items)}[{index}].{nameof(CreateOrderItemRequest.LabTestId)}");
 
+    private static void EnsureCurrentVersion(Order order, int version)
+    {
+        if (order.Version != version)
+        {
+            throw AppException.Conflict(ErrorCodes.ConcurrencyConflict);
+        }
+    }
+
     private static OrderDetailsDto ToDetails(OrderDetailsRow o) => new(
         o.Id, o.Number, o.CreatedAt, o.CreatedBy, o.PatientId, o.PatientName, o.PatientPhone, o.Status.ToString(), o.Currency,
         o.Total, o.Paid, o.Balance, o.Addon,
         o.Items.Select(i => new OrderItemDto(i.LabTestId, i.Code, i.Name, i.LabCost)).ToList(),
-        o.Payments.Select(p => new OrderPaymentDto(p.Id, p.PaidAt, p.Type.ToString(), p.Method.ToString(), p.Amount, p.Notes)).ToList());
+        o.Payments.Select(p => new OrderPaymentDto(p.Id, p.PaidAt, p.Type.ToString(), p.Method.ToString(), p.Amount, p.Notes)).ToList(),
+        o.Version);
 
     private static OrderDetailsDto ToDetails(Order o) => new(
         o.Id, o.Number, o.CreatedAt, o.CreatedBy, o.PatientId, o.PatientName, o.PatientPhone, o.Status.ToString(), o.Currency,
         o.Total, o.Paid, o.Balance, o.Addon,
         o.Items.Select(i => new OrderItemDto(i.LabTestId, i.LabTestCode, i.LabTestName, i.LabPrice)).ToList(),
         o.Payments.OrderBy(p => p.PaidAt).ThenBy(p => p.Id)
-            .Select(p => new OrderPaymentDto(p.Id, p.PaidAt, p.Type.ToString(), p.Method.ToString(), p.Amount, p.Notes)).ToList());
+            .Select(p => new OrderPaymentDto(p.Id, p.PaidAt, p.Type.ToString(), p.Method.ToString(), p.Amount, p.Notes)).ToList(),
+        o.Version);
 }

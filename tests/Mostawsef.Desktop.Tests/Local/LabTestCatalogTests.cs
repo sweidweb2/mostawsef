@@ -13,21 +13,21 @@ public class LabTestCatalogTests : UiTestBase
     private const string CatalogPath = "/api/lab-tests/all";
 
     private static readonly LabTestDto Cbc = new(Guid.NewGuid(), "CBC", "Complete blood count", 15000, true, default, null, null, 0);
-    private static readonly LabTestDto Old = new(Guid.NewGuid(), "OLD", "Retired", 1000, false, default, null, null, 0);
 
     [AvaloniaFact]
-    public async Task The_catalog_is_one_request_keeps_active_tests_and_is_reused()
+    public async Task The_catalog_is_one_request_of_active_tests_and_is_reused()
     {
         using var app = new TestServices();
         app.SignInAs(Roles.Admin);
-        app.Api.OnGet(CatalogPath, (IReadOnlyList<LabTestDto>)[Cbc, Old]);
+        app.Api.OnGet(CatalogPath, (IReadOnlyList<LabTestDto>)[Cbc]);
         var catalog = app.Get<LabTestCatalog>();
 
         var first = await catalog.GetAsync(CancellationToken.None);
         await catalog.GetAsync(CancellationToken.None);
 
         Assert.Equal([Cbc.Id], first.Value!.Select(t => t.Id));
-        Assert.Single(app.Api.RequestsTo(HttpMethod.Get, CatalogPath));
+        var request = Assert.Single(app.Api.RequestsTo(HttpMethod.Get, CatalogPath));
+        Assert.Equal("?active=true", request.RequestUri!.Query);
     }
 
     [AvaloniaFact]

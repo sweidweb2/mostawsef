@@ -151,7 +151,7 @@ public partial class OrderDetailsViewModel(
             return;
         }
 
-        var form = new AddPaymentFormViewModel(orders, dialogs, localization, order.Id, order.Balance);
+        var form = new AddPaymentFormViewModel(orders, dialogs, localization, order.Id, order.Balance, order.Version);
         if (await dialogs.ShowFormAsync(form, localization.Get("OrderDetails.AddPaymentTitle")) && form.SavedValue is OrderDetailsDto updated)
         {
             ApplyOrder(updated, "OrderDetails.PaymentAdded");
@@ -166,7 +166,7 @@ public partial class OrderDetailsViewModel(
             return;
         }
 
-        var form = new AddPaymentFormViewModel(orders, dialogs, localization, order.Id, order.Balance, payment);
+        var form = new AddPaymentFormViewModel(orders, dialogs, localization, order.Id, order.Balance, order.Version, payment);
         if (await dialogs.ShowFormAsync(form, localization.Get("OrderDetails.EditPaymentTitle")) && form.SavedValue is OrderDetailsDto updated)
         {
             ApplyOrder(updated, "OrderDetails.PaymentUpdated");
@@ -185,7 +185,7 @@ public partial class OrderDetailsViewModel(
             return;
         }
 
-        var result = await orders.DeletePaymentAsync(order.Id, payment.Id);
+        var result = await orders.DeletePaymentAsync(order.Id, payment.Id, order.Version);
         if (!result.IsSuccess)
         {
             var code = result.Problem?.Code;

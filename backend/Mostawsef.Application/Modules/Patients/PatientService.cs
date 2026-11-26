@@ -1,6 +1,7 @@
 using Mostawsef.Application.Common;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Contracts.Common;
+using Mostawsef.Contracts.Orders;
 using Mostawsef.Contracts.Patients;
 using Mostawsef.Domain.Entities;
 
@@ -17,6 +18,9 @@ public interface IPatientService
 
     Task<PatientDto> GetAsync(Guid id, CancellationToken cancellationToken);
 
+    /// <summary>Full patient plus newest orders (one round-trip for the details page).</summary>
+    Task<PatientDetailsDto> GetDetailsAsync(Guid id, CancellationToken cancellationToken);
+
     Task<PatientDto> CreateAsync(CreatePatientRequest request, CancellationToken cancellationToken);
 
     Task<PatientDto> UpdateAsync(Guid id, UpdatePatientRequest request, CancellationToken cancellationToken);
@@ -24,7 +28,7 @@ public interface IPatientService
     Task DeleteAsync(Guid id, CancellationToken cancellationToken);
 }
 
-public class PatientService(IPatientRepository patients, IActivityLogger activity, TimeProvider time) : IPatientService
+public class PatientService(IPatientRepository patients, IOrderRepository orders, IActivityLogger activity, TimeProvider time) : IPatientService
 {
     public async Task<PagedResult<PatientDto>> GetPageAsync(PageQuery query, bool includeUnpaid, CancellationToken cancellationToken)
     {
@@ -42,6 +46,18 @@ public class PatientService(IPatientRepository patients, IActivityLogger activit
         return new PatientDto(
             patient.Id, patient.FullName, patient.Phone, patient.Notes,
             patient.Gender.ToString(), patient.DateOfBirth, patient.CreatedAt, patient.UpdatedAt, patient.UpdatedBy, patient.Version);
+    }
+
+    public async Task<PatientDetailsDto> GetDetailsAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var patient = await GetAsync(id, cancellationToken);
+        var page = new PageQuery(Page: 1, PageSize: PageQuery.MaxPageSize, IncludeTotal: false);
+        var (items, _) = await orders.GetPageAsync(page, new OrderListFilter(Status: null, PatientId: id), cancellationToken);
+        var recent = items
+            .Select(o => new OrderListItemDto(
+                o.Id, o.Number, o.CreatedAt, o.PatientName, o.PatientPhone, o.TestsCount, o.Total, o.Paid, o.Status.ToString()))
+            .ToList();
+        return new PatientDetailsDto(patient, recent);
     }
 
     public async Task<PatientDto> CreateAsync(CreatePatientRequest request, CancellationToken cancellationToken)

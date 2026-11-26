@@ -22,6 +22,10 @@ public class PatientsApi(ApiClient api)
     public Task<ApiResult<PatientDto>> GetPatientAsync(Guid id, CancellationToken cancellationToken = default) =>
         api.GetAsync<PatientDto>($"api/patients/{id}", cancellationToken);
 
+    /// <summary>Full patient plus newest orders (patient details page).</summary>
+    public Task<ApiResult<PatientDetailsDto>> GetPatientDetailsAsync(Guid id, CancellationToken cancellationToken = default) =>
+        api.GetAsync<PatientDetailsDto>($"api/patients/{id}/details", cancellationToken);
+
     /// <summary>One page of patients matching <paramref name="search"/> for the new-order autocomplete.</summary>
     public Task<ApiResult<PagedResult<PatientDto>>> SearchPatientsAsync(
         string? search, CancellationToken cancellationToken = default) =>

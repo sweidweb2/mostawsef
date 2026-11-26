@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 using Mostawsef.Application.Common;
@@ -11,12 +12,11 @@ internal readonly record struct LabTestImportRawRow(int RowNumber, string? Name,
 
 /// <summary>
 /// Reads and writes the lab-test import CSV with BCL only: Name + Price ($0.08 style).
-/// Stops after <see cref="LabTestRules.ImportEmptyStopRows"/> empty rows past the last filled row.
+/// Accepts comma or semicolon separators. Stops after <see cref="LabTestRules.ImportEmptyStopRows"/>
+/// empty rows past the last filled row.
 /// </summary>
 internal static class LabTestImportFile
 {
-    private const int MaxFileBytes = 2 * 1024 * 1024;
-
     public static (byte[] Content, string FileName, string ContentType) BuildTemplate()
     {
         // BOM so Excel keeps Arabic names readable; sample row shows the $ price shape.
@@ -31,7 +31,7 @@ internal static class LabTestImportFile
 
     public static List<LabTestImportRawRow> ReadRows(Stream stream, string? fileName)
     {
-        if (stream.CanSeek && stream.Length > MaxFileBytes)
+        if (stream.CanSeek && stream.Length > LabTestRules.MaxImportBytes)
         {
             throw AppException.Validation("File", ErrorCodes.TooLarge);
         }
@@ -49,7 +49,7 @@ internal static class LabTestImportFile
             throw AppException.Validation("File", ErrorCodes.Required);
         }
 
-        if (buffer.Length > MaxFileBytes)
+        if (buffer.Length > LabTestRules.MaxImportBytes)
         {
             throw AppException.Validation("File", ErrorCodes.TooLarge);
         }
@@ -58,16 +58,49 @@ internal static class LabTestImportFile
         return ReadCsv(buffer);
     }
 
-    /// <summary>Parses a sheet price like "$0.08", "2.00", or "$1,234.50" into minor units.</summary>
-    public static bool TryParsePrice(string? text, out long minorUnits)
+    /// <summary>
+    /// Parses a sheet price like "$0.08", "2.00", "$1,234.50", "12,50", or "1.234,50" into minor units.
+    /// Arabic-Indic digits are accepted. On failure, <paramref name="errorCode"/> is <c>invalid</c> or <c>range|…</c>.
+    /// </summary>
+    public static bool TryParsePrice(
+        string? text,
+        out long minorUnits,
+        [NotNullWhen(false)] out string? errorCode)
     {
         minorUnits = 0;
+        errorCode = null;
+        if (!TryParseMajor(text, out var major) || major < 0)
+        {
+            errorCode = ErrorCodes.Invalid;
+            return false;
+        }
+
+        minorUnits = Money.ToMinor(major);
+        if (minorUnits > LabTestRules.MaxAmount)
+        {
+            errorCode = $"range|0|{LabTestRules.MaxAmount}";
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool TryParseMajor(string? text, out decimal major)
+    {
+        major = 0;
         if (string.IsNullOrWhiteSpace(text))
         {
             return false;
         }
 
-        var span = text.AsSpan().Trim();
+        Span<char> buffer = stackalloc char[text.Length];
+        var length = 0;
+        foreach (var c in text.AsSpan().Trim())
+        {
+            buffer[length++] = MapPriceChar(c);
+        }
+
+        var span = buffer[..length].Trim();
         while (span.Length > 0 && (span[0] is '$' or '€' or '£' or '¤'))
         {
             span = span[1..].TrimStart();
@@ -83,40 +116,99 @@ internal static class LabTestImportFile
             return false;
         }
 
-        // Drop thousands separators; keep a single decimal point (US / template style).
-        Span<char> cleaned = stackalloc char[span.Length];
-        var n = 0;
-        foreach (var c in span)
+        var lastSep = -1;
+        for (var i = span.Length - 1; i >= 0; i--)
         {
-            if (c is ',' or ' ' or '\u00A0')
+            if (span[i] is '.' or ',')
             {
-                continue;
+                lastSep = i;
+                break;
+            }
+        }
+
+        Span<char> cleaned = stackalloc char[span.Length + 1];
+        var n = 0;
+        if (lastSep < 0)
+        {
+            if (!CopyDigitsAndSign(span, cleaned, ref n))
+            {
+                return false;
+            }
+        }
+        else
+        {
+            var integer = span[..lastSep];
+            var fractional = span[(lastSep + 1)..];
+            if (fractional.Length == 0)
+            {
+                return false;
             }
 
-            cleaned[n++] = c;
+            var sep = span[lastSep];
+            var onlyOneSep = integer.IndexOfAny('.', ',') < 0;
+            // "1,234" (comma + exactly 3 digits, non-zero integer) is thousands; "12,50" and "0,080" stay decimals.
+            // A lone '.' is always a decimal ("0.080"), including three fraction digits.
+            var thousandsOnly = onlyOneSep
+                && sep == ','
+                && fractional.Length == 3
+                && !IntegerIsZero(integer);
+            if (thousandsOnly)
+            {
+                if (!CopyDigitsAndSign(span, cleaned, ref n, skipSeparators: true))
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                if (fractional.Length > 6)
+                {
+                    return false;
+                }
+
+                if (integer.Length > 0)
+                {
+                    if (!CopyDigitsAndSign(integer, cleaned, ref n, skipSeparators: true))
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    cleaned[n++] = '0';
+                }
+
+                cleaned[n++] = '.';
+                foreach (var c in fractional)
+                {
+                    if (c is < '0' or > '9')
+                    {
+                        return false;
+                    }
+
+                    cleaned[n++] = c;
+                }
+            }
         }
 
-        if (!decimal.TryParse(cleaned[..n], NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint,
-                CultureInfo.InvariantCulture, out var major)
-            || major < 0)
-        {
-            return false;
-        }
-
-        minorUnits = Money.ToMinor(major);
-        return minorUnits <= LabTestRules.MaxAmount;
+        return decimal.TryParse(
+            cleaned[..n],
+            NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint,
+            CultureInfo.InvariantCulture,
+            out major);
     }
 
+    /// <summary>True only when both cells look like column titles (avoids dropping a first test named "Test").</summary>
     public static bool IsHeaderRow(string? name, string? price)
     {
         var n = (name ?? string.Empty).Trim();
         var p = (price ?? string.Empty).Trim();
-        if (n.Length == 0 && p.Length == 0)
+        if (n.Length == 0 || p.Length == 0)
         {
             return false;
         }
 
-        return LooksLikeNameHeader(n) || LooksLikePriceHeader(p);
+        return LooksLikeNameHeader(n) && LooksLikePriceHeader(p);
     }
 
     private static bool LooksLikeNameHeader(string value) =>
@@ -142,11 +234,13 @@ internal static class LabTestImportFile
         var rowNumber = 0;
         var consecutiveEmpty = 0;
         var seenData = false;
+        char? delimiter = null;
         string? line;
         while ((line = reader.ReadLine()) is not null)
         {
             rowNumber++;
-            var (name, price) = ParseCsvLine(line);
+            delimiter ??= DetectDelimiter(line);
+            var (name, price) = ParseCsvLine(line, delimiter.Value);
             if (!seenData && IsHeaderRow(name, price))
             {
                 continue;
@@ -180,7 +274,40 @@ internal static class LabTestImportFile
         return rows;
     }
 
-    private static (string? Name, string? Price) ParseCsvLine(string line)
+    /// <summary>Prefer ';' when the line has more semicolons than commas (Excel locale CSV).</summary>
+    private static char DetectDelimiter(string line)
+    {
+        var commas = 0;
+        var semis = 0;
+        var inQuotes = false;
+        foreach (var c in line)
+        {
+            if (c == '"')
+            {
+                inQuotes = !inQuotes;
+                continue;
+            }
+
+            if (inQuotes)
+            {
+                continue;
+            }
+
+            switch (c)
+            {
+                case ',':
+                    commas++;
+                    break;
+                case ';':
+                    semis++;
+                    break;
+            }
+        }
+
+        return semis > commas ? ';' : ',';
+    }
+
+    private static (string? Name, string? Price) ParseCsvLine(string line, char delimiter)
     {
         var fields = new List<string>(2);
         var current = new StringBuilder();
@@ -210,18 +337,18 @@ internal static class LabTestImportFile
                 continue;
             }
 
-            switch (c)
+            if (c == '"')
             {
-                case '"':
-                    inQuotes = true;
-                    break;
-                case ',':
-                    fields.Add(current.ToString());
-                    current.Clear();
-                    break;
-                default:
-                    current.Append(c);
-                    break;
+                inQuotes = true;
+            }
+            else if (c == delimiter)
+            {
+                fields.Add(current.ToString());
+                current.Clear();
+            }
+            else
+            {
+                current.Append(c);
             }
         }
 
@@ -229,6 +356,74 @@ internal static class LabTestImportFile
         return (
             fields.Count > 0 ? fields[0].Trim() : null,
             fields.Count > 1 ? fields[1].Trim() : null);
+    }
+
+    private static bool IntegerIsZero(ReadOnlySpan<char> integer)
+    {
+        var sawDigit = false;
+        foreach (var c in integer)
+        {
+            if (c is '.' or ',' or ' ' or '+' or '-')
+            {
+                continue;
+            }
+
+            if (c is < '0' or > '9' || c != '0')
+            {
+                return false;
+            }
+
+            sawDigit = true;
+        }
+
+        return sawDigit;
+    }
+
+    private static char MapPriceChar(char c) => c switch
+    {
+        >= '\u0660' and <= '\u0669' => (char)('0' + (c - '\u0660')),
+        >= '\u06F0' and <= '\u06F9' => (char)('0' + (c - '\u06F0')),
+        '\u00A0' => ' ',
+        _ => c,
+    };
+
+    private static bool CopyDigitsAndSign(ReadOnlySpan<char> span, Span<char> destination, ref int n, bool skipSeparators = false)
+    {
+        var started = false;
+        foreach (var c in span)
+        {
+            if (!started && c is ' ' or '\t')
+            {
+                continue;
+            }
+
+            if (!started && c is '+' or '-')
+            {
+                destination[n++] = c;
+                started = true;
+                continue;
+            }
+
+            if (c is ' ' or '\t')
+            {
+                continue;
+            }
+
+            if (skipSeparators && c is '.' or ',')
+            {
+                continue;
+            }
+
+            if (c is < '0' or > '9')
+            {
+                return false;
+            }
+
+            destination[n++] = c;
+            started = true;
+        }
+
+        return n > 0 && destination[n - 1] is >= '0' and <= '9';
     }
 
     private static bool IsBlank(string? value) => string.IsNullOrWhiteSpace(value);

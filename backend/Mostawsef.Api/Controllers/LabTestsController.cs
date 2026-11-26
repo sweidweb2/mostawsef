@@ -21,10 +21,10 @@ public class LabTestsController(ILabTestService tests) : ControllerBase
         CancellationToken cancellationToken) =>
         tests.GetPageAsync(query, active, cancellationToken);
 
-    /// <summary>Every test for print/export.</summary>
+    /// <summary>Every test for print/export; pass <c>active=true</c> for the New Order catalog only.</summary>
     [HttpGet("all")]
-    public Task<IReadOnlyList<LabTestDto>> All(CancellationToken cancellationToken) =>
-        tests.ListAllAsync(cancellationToken);
+    public Task<IReadOnlyList<LabTestDto>> All([FromQuery] bool? active, CancellationToken cancellationToken) =>
+        tests.ListAllAsync(active, cancellationToken);
 
     /// <summary>CSV template (Name, Price) for the import.</summary>
     [HttpGet("import-template")]
@@ -54,7 +54,8 @@ public class LabTestsController(ILabTestService tests) : ControllerBase
     /// Imports Name + Price ($0.08 style) from CSV. Codes are generated. Bad and duplicate-name rows are skipped.
     /// </summary>
     [HttpPost("import")]
-    [RequestSizeLimit(LabTestRules.MaxImportBytes)]
+    // Headroom above MaxImportBytes so multipart framing does not trip before our file.Length check.
+    [RequestSizeLimit(LabTestRules.MaxImportBytes + (256 * 1024))]
     [ProducesResponseType<ImportLabTestsResult>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ImportLabTestsResult> Import(IFormFile? file, CancellationToken cancellationToken)
@@ -63,6 +64,11 @@ public class LabTestsController(ILabTestService tests) : ControllerBase
         {
             // Same shape as other validation failures (problem with ErrorCodes.Required on File).
             throw AppException.Validation("File", ErrorCodes.Required);
+        }
+
+        if (file.Length > LabTestRules.MaxImportBytes)
+        {
+            throw AppException.Validation("File", ErrorCodes.TooLarge);
         }
 
         await using var stream = file.OpenReadStream();

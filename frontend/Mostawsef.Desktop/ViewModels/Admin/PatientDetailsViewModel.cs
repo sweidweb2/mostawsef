@@ -17,8 +17,9 @@ namespace Mostawsef.Desktop.ViewModels.Admin;
 /// <summary>
 /// Admin portal sub-page: one patient's details and their orders as cards (newest first, up to
 /// <see cref="OrdersShown"/>); a card opens that order's details. Call <see cref="Show"/> before it opens.
+/// One HTTP call loads the full patient and the order cards.
 /// </summary>
-public partial class PatientDetailsViewModel(OrdersApi orders, PatientsApi patients, NavigationService navigation, ErrorReporter errors)
+public partial class PatientDetailsViewModel(PatientsApi patients, NavigationService navigation, ErrorReporter errors)
     : ViewModelBase, ILoadablePage, IReusablePage, IBreadcrumbPage
 {
     /// <summary>The most orders shown (the API's largest page).</summary>
@@ -104,24 +105,6 @@ public partial class PatientDetailsViewModel(OrdersApi orders, PatientsApi patie
             : Task.CompletedTask;
     }
 
-    /// <summary>The full patient record, or null when the request failed or was cancelled (the list row's data stays); never throws.</summary>
-    private async Task<ApiResult<PatientDto>?> TryGetPatientAsync(Guid id, CancellationToken cancellationToken)
-    {
-        try
-        {
-            return await patients.GetPatientAsync(id, cancellationToken);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            errors.Report(ex, context: "Loading the full patient record");
-            return null;
-        }
-        catch (OperationCanceledException)
-        {
-            return null;
-        }
-    }
-
     private async Task LoadAsync()
     {
         if (Patient is not { } patient)
@@ -134,15 +117,19 @@ public partial class PatientDetailsViewModel(OrdersApi orders, PatientsApi patie
         IsLoading = true;
         try
         {
-            var full = TryGetPatientAsync(patient.Id, cancellation.Token);
-            var result = await orders.GetOrdersAsync(
-                1, OrdersShown, search: null, includeTotal: false, status: null, patientId: patient.Id, cancellationToken: cancellation.Token);
+            var result = await patients.GetPatientDetailsAsync(patient.Id, cancellation.Token);
             cancellation.Token.ThrowIfCancellationRequested();
 
             Orders.Clear();
             if (result.IsSuccess)
             {
-                foreach (var order in result.Value!.Items)
+                var details = result.Value!;
+                if (Patient?.Id == patient.Id)
+                {
+                    Patient = details.Patient;
+                }
+
+                foreach (var order in details.Orders)
                 {
                     Orders.Add(order);
                 }
@@ -150,12 +137,6 @@ public partial class PatientDetailsViewModel(OrdersApi orders, PatientsApi patie
 
             LoadError = result.IsSuccess ? null : result.Error;
             IsTruncated = result.IsSuccess && Orders.Count >= OrdersShown;
-
-            // The list row has no notes; the full record fills them in. A failure keeps what the list had.
-            if (await full is { IsSuccess: true, Value: { } loaded } && Patient?.Id == patient.Id)
-            {
-                Patient = loaded;
-            }
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
         {

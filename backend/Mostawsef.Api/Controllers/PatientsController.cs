@@ -28,6 +28,13 @@ public class PatientsController(IPatientService patients) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public Task<PatientDto> Get(Guid id, CancellationToken cancellationToken) => patients.GetAsync(id, cancellationToken);
 
+    /// <summary>Full patient (with notes) and newest orders for the details page.</summary>
+    [HttpGet("{id:guid}/details")]
+    [ProducesResponseType<PatientDetailsDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<PatientDetailsDto> Details(Guid id, CancellationToken cancellationToken) =>
+        patients.GetDetailsAsync(id, cancellationToken);
+
     [HttpPost]
     [ProducesResponseType<PatientDto>(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

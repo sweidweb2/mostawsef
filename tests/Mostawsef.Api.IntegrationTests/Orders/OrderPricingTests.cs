@@ -44,5 +44,6 @@ public class OrderPricingTests
             total,
             addon,
             [new OrderItemDto(Guid.NewGuid(), "T1", "Test", labCost)],
-            []);
+            [],
+            Version: 0);
 }

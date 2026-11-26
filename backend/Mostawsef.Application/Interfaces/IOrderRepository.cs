@@ -32,7 +32,8 @@ public record OrderDetailsRow(
     long Balance,
     long Addon,
     IReadOnlyList<OrderItemRow> Items,
-    IReadOnlyList<OrderPaymentRow> Payments);
+    IReadOnlyList<OrderPaymentRow> Payments,
+    int Version);
 
 public record OrderItemRow(Guid LabTestId, string Code, string Name, long LabCost);
 

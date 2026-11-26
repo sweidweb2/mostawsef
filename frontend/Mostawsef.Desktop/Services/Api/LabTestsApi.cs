@@ -24,28 +24,11 @@ public class LabTestsApi(ApiClient api)
             cancellationToken);
 
     /// <summary>
-    /// Active tests for the new-order catalog, sorted by name. One request (the same list as print/export, filtered
-    /// here) so the catalog is a consistent snapshot: walking pages could skip or repeat a test edited in between.
+    /// Active tests for the new-order catalog, sorted by name. One request of active rows only so inactive catalog
+    /// entries are not downloaded; walking pages could skip or repeat a test edited in between.
     /// </summary>
-    public async Task<ApiResult<IReadOnlyList<LabTestDto>>> GetActiveCatalogAsync(CancellationToken cancellationToken = default)
-    {
-        var result = await GetAllTestsAsync(cancellationToken);
-        if (!result.IsSuccess)
-        {
-            return result;
-        }
-
-        var active = new List<LabTestDto>(result.Value!.Count);
-        foreach (var test in result.Value)
-        {
-            if (test.IsActive)
-            {
-                active.Add(test);
-            }
-        }
-
-        return ApiResult<IReadOnlyList<LabTestDto>>.Ok(active);
-    }
+    public Task<ApiResult<IReadOnlyList<LabTestDto>>> GetActiveCatalogAsync(CancellationToken cancellationToken = default) =>
+        api.GetAsync<IReadOnlyList<LabTestDto>>("api/lab-tests/all?active=true", cancellationToken);
 
     /// <summary>Every test, sorted by name.</summary>
     public Task<ApiResult<IReadOnlyList<LabTestDto>>> GetAllTestsAsync(CancellationToken cancellationToken = default) =>

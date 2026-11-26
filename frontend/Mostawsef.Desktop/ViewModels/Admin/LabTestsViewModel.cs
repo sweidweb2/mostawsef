@@ -98,11 +98,19 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
             return;
         }
 
-        if (await _dialogs.ShowFormAsync(new LabTestFormViewModel(_tests, _dialogs, Localization, item), Localization.Get("LabTests.EditTitle")))
+        var form = new LabTestFormViewModel(_tests, _dialogs, Localization, item);
+        if (await _dialogs.ShowFormAsync(form, Localization.Get("LabTests.EditTitle")))
         {
             Toasts.Success(Localization.Get("LabTests.Saved"));
             _catalogVersion.Invalidate();
-            await ReloadAsync(includeTotal: false);
+            if (form.SavedValue is LabTestDto saved)
+            {
+                ReplaceSorted(saved, t => t.Id, CompareByName);
+            }
+            else
+            {
+                await ReloadAsync(includeTotal: false);
+            }
         }
     }
 

@@ -76,9 +76,11 @@ Login protection (configuration keys under `RateLimit:`; the API answers like a 
 | `GET /api/system-settings` | Super | `200 { backupPath, maintenanceMode, version, updatedAt, updatedBy }` |
 | `PUT /api/system-settings` `{ backupPath, maintenanceMode, version }` | Super | `200`, `400` (`max_length\|260`), `409 concurrency_conflict` |
 | `GET /api/lab-tests?page=&pageSize=&search=` | Admin | Paged list sorted by name; search (cut to 100 characters) matches the normalized name or the code |
-| `GET /api/lab-tests/all` | Admin | Every test for print/export |
+| `GET /api/lab-tests/all` | Admin | Every test for print/export; `?active=true` for the New Order catalog |
+| `GET /api/lab-tests/import-template` | Admin | CSV template (`Name,Price` + sample row) |
 | `GET /api/lab-tests/{id}` | Admin | `200 { id, code, name, labCost, isActive, ..., version }`, `404` |
 | `POST /api/lab-tests` `{ code, name, labCost }` | Admin | `201`, `400` (`max_length\|20`/`\|150`, `range\|0\|100000000` for a lab cost outside 0 to 1,000,000.00), `409 taken` on `Code` or `Name` |
+| `POST /api/lab-tests/import` multipart `file` | Admin | CSV Name+Price; codes generated; bad/duplicate rows skipped; `200 { imported, skipped, skips }`, `400` (`required` / `invalid` / `too_large`) |
 | `PUT /api/lab-tests/{id}` `{ code, name, labCost, isActive, version }` | Admin | `200`, `400`, `404`, `409 taken` or `concurrency_conflict` |
 | `DELETE /api/lab-tests/{id}` | Admin | `204`, `404` |
 | `GET /api/patients?page=&pageSize=&search=` | Admin | Paged list sorted by SearchName; search matches SearchText (name/phones; trigram, min 3 letters/digits or 400) |

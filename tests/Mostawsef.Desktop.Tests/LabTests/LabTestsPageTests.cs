@@ -288,7 +288,10 @@ public class LabTestsPageTests : UiTestBase
         app.Api.On(HttpMethod.Put, $"{TestsPath}/{Cbc.Id}", request =>
         {
             sent = request.Content!.ReadFromJsonAsync<UpdateLabTestRequest>().GetAwaiter().GetResult();
-            return FakeApiHandler.Json(Cbc with { LabCost = sent!.LabCost!.Value, Version = 3 });
+            return FakeApiHandler.Json(Cbc with
+            {
+                LabCost = sent!.LabCost!.Value, IsActive = sent.IsActive, Version = 3,
+            });
         });
         var (page, window) = await ShowPage(app);
         page.ShowGridCommand.Execute(null);
@@ -313,8 +316,8 @@ public class LabTestsPageTests : UiTestBase
             new UpdateLabTestRequest { Code = "CBC", Name = "Complete blood count", LabCost = 12025, IsActive = false, Version = Cbc.Version },
             sent);
         Assert.Empty(window.GetVisualDescendants().OfType<Modal>());
-        var reload = Assert.Single(app.Api.RequestsTo(HttpMethod.Get, TestsPath).Skip(listRequests));
-        Assert.Contains("includeTotal=false", reload.RequestUri!.Query, StringComparison.Ordinal);
+        Assert.Equal(listRequests, app.Api.RequestsTo(HttpMethod.Get, TestsPath).Count()); // edit patches the row; no list reload
+        Assert.Equal((12025L, false, 3), (page.Items.Single().LabCost, page.Items.Single().IsActive, page.Items.Single().Version));
         Assert.Contains("Lab test saved.", Toasts(window));
     }
 

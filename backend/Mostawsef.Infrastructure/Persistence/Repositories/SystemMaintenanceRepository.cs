@@ -11,10 +11,16 @@ public class SystemMaintenanceRepository(AppDbContext db) : ISystemMaintenanceRe
 {
     public async Task<DashboardTotals> GetTotalsAsync(CancellationToken cancellationToken)
     {
-        var users = await db.Users.CountAsync(cancellationToken);
-        var activeUsers = await db.Users.CountAsync(u => u.IsActive, cancellationToken);
-        var labTests = await db.LabTests.CountAsync(cancellationToken);
-        return new DashboardTotals(users, activeUsers, labTests);
+        // One statement with three COUNT subqueries (same shape as log stats); empty Users yields zeros.
+        var users = db.Users.AsNoTracking();
+        var tests = db.LabTests.AsNoTracking();
+        return await users
+            .Select(_ => new DashboardTotals(
+                users.Count(),
+                users.Count(u => u.IsActive),
+                tests.Count()))
+            .FirstOrDefaultAsync(cancellationToken)
+            ?? new DashboardTotals(0, 0, 0);
     }
 
     public Task<long> GetOutstandingAsync(DateTime sinceUtc, DateTime untilUtc, CancellationToken cancellationToken) =>

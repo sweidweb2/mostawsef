@@ -11,7 +11,7 @@ public class OrderItem : Entity
 
     internal OrderItem(LabTest test)
     {
-        LabTest = test;
+        // Snapshot only: leave LabTest null so create can load catalog rows with AsNoTracking.
         LabTestId = test.Id;
         LabTestCode = test.Code;
         LabTestName = test.Name;

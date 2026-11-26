@@ -28,7 +28,12 @@ public class LabTestRepository(AppDbContext db) : ILabTestRepository
     }
 
     public async Task<IReadOnlyList<LabTest>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken) =>
-        await db.LabTests.Where(t => ids.Contains(t.Id)).ToListAsync(cancellationToken);
+        await db.LabTests.AsNoTracking().Where(t => ids.Contains(t.Id)).ToListAsync(cancellationToken);
+
+    public Task<int> CountActiveAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken) =>
+        ids.Count == 0
+            ? Task.FromResult(0)
+            : db.LabTests.AsNoTracking().CountAsync(t => ids.Contains(t.Id) && t.IsActive, cancellationToken);
 
     public async Task<(bool CodeTaken, bool NameTaken)> FindDuplicatesAsync(
         string code, string searchName, Guid? exceptId, CancellationToken cancellationToken)
@@ -95,19 +100,29 @@ public class LabTestRepository(AppDbContext db) : ILabTestRepository
         return await rows.ToPageAsync(tests, query, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<LabTestExportRow>> ListAllAsync(CancellationToken cancellationToken) =>
-        await db.LabTests.AsNoTracking()
+    public async Task<IReadOnlyList<LabTestExportRow>> ListAllAsync(bool? active, CancellationToken cancellationToken)
+    {
+        var tests = db.LabTests.AsNoTracking();
+        if (active is { } isActive)
+        {
+            tests = tests.Where(t => t.IsActive == isActive);
+        }
+
+        return await tests
             .OrderBy(t => t.SearchName)
             .ThenBy(t => t.Code)
             .Take(PageQuery.MaxExportRows)
             .Select(t => new LabTestExportRow(t.Id, t.Code, t.Name, t.LabCost, t.IsActive))
             .ToListAsync(cancellationToken);
+    }
 
     public void Add(LabTest test) => db.LabTests.Add(test);
 
     public void AddRange(IEnumerable<LabTest> tests) => db.LabTests.AddRange(tests);
 
     public void Remove(LabTest test) => db.LabTests.Remove(test);
+
+    public void DiscardChanges() => db.ChangeTracker.Clear();
 
     public Task SaveChangesAsync(CancellationToken cancellationToken) => db.SaveChangesAsync(cancellationToken);
 }

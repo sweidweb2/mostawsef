@@ -4,7 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Mostawsef.Api.IntegrationTests.Infrastructure;
 using Mostawsef.Contracts.Common;
+using Mostawsef.Contracts.LabTests;
 using Mostawsef.Contracts.Logs;
+using Mostawsef.Contracts.Orders;
 using Mostawsef.Contracts.Patients;
 using Mostawsef.Infrastructure.Persistence.Context;
 
@@ -89,6 +91,7 @@ public class PatientsTests(ApiFactory factory)
     [Theory]
     [InlineData("GET", Url)]
     [InlineData("GET", Url + "/{id}")]
+    [InlineData("GET", Url + "/{id}/details")]
     [InlineData("POST", Url)]
     [InlineData("PUT", Url + "/{id}")]
     [InlineData("DELETE", Url + "/{id}")]
@@ -114,6 +117,7 @@ public class PatientsTests(ApiFactory factory)
         var responses = new[]
         {
             await admin.GetAsync(url, Ct),
+            await admin.GetAsync($"{url}/details", Ct),
             await admin.PutAsJsonAsync(url, Update(Valid(), 0), Ct),
             await admin.DeleteAsync(url, Ct),
         };
@@ -122,6 +126,31 @@ public class PatientsTests(ApiFactory factory)
         {
             Assert.Equal(ErrorCodes.NotFound, (await ProblemResponse.ReadAsync(response)).Code);
         }
+    }
+
+    [Fact]
+    public async Task Details_returns_the_patient_and_their_newest_orders()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var patient = await CreateAsync(admin);
+        var test = await admin.PostAsJsonAsync("api/lab-tests", new CreateLabTestRequest
+        {
+            Code = $"P{Guid.NewGuid():N}"[..8], Name = $"Details test {Guid.NewGuid():N}", LabCost = 1000,
+        }, Ct);
+        test.EnsureSuccessStatusCode();
+        var labTest = await test.Content.ReadFromJsonAsync<LabTestDto>(Ct);
+        var order = await admin.PostAsJsonAsync("api/orders", new CreateOrderRequest
+        {
+            PatientId = patient.Id,
+            Items = [new() { LabTestId = labTest!.Id }],
+        }, Ct);
+        order.EnsureSuccessStatusCode();
+        var created = await order.Content.ReadFromJsonAsync<OrderDetailsDto>(Ct);
+
+        var details = await admin.GetJsonAsync<PatientDetailsDto>($"{Url}/{patient.Id}/details");
+
+        Assert.Equal(patient.Id, details.Patient.Id);
+        Assert.Equal(created!.Id, Assert.Single(details.Orders).Id);
     }
 
     [Fact]
