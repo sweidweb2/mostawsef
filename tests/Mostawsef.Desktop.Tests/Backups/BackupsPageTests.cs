@@ -216,7 +216,7 @@ public class BackupsPageTests : UiTestBase
         Dispatcher.UIThread.RunJobs();
 
         Assert.False(System.IO.File.Exists(app.PickedSavePath));
-        Assert.Contains(app.Localization.Get("ErrorCode.validation"), Toasts(window));
+        Assert.Contains(app.Localization.Get("ErrorCode.invalid"), Toasts(window));
         Assert.Empty(page.Items);
         Assert.False(page.IsExporting);
     }

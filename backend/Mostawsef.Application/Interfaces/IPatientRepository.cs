@@ -62,10 +62,20 @@ public interface IPatientRepository
     /// <summary>True if any order belongs to the patient (whatever its status).</summary>
     Task<bool> HasOrdersAsync(Guid id, CancellationToken cancellationToken);
 
+    /// <summary>Newest orders for the patient details page (no second module dependency in the service).</summary>
+    Task<IReadOnlyList<OrderListRow>> ListRecentOrdersAsync(Guid patientId, int take, CancellationToken cancellationToken);
+
     void Add(Patient patient);
 
     /// <summary>Soft delete, applied on save.</summary>
     void Remove(Patient patient);
+
+    /// <summary>
+    /// Soft-deletes <paramref name="patient"/> only when they still have no orders, inside a serializable
+    /// transaction so a concurrent new order cannot sneak in between the check and the delete.
+    /// Throws 404 when missing, 409 <c>patient_has_orders</c> when an order exists.
+    /// </summary>
+    Task SoftDeleteIfNoOrdersAsync(Patient patient, CancellationToken cancellationToken);
 
     /// <summary>Throws AppException (409 concurrency_conflict) if the patient changed since it was loaded.</summary>
     Task SaveChangesAsync(CancellationToken cancellationToken);

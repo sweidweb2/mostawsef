@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
-using System.Text;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -175,7 +174,7 @@ public class LabTestsPageTests : UiTestBase
         app.SignInAs(Roles.Admin);
         app.Api.OnGet(TestsPath, new PagedResult<LabTestDto>([Cbc], 1, 40, 1));
         app.Api.On(HttpMethod.Post, $"{TestsPath}/import", _ =>
-            FakeApiHandler.Json(new ImportLabTestsResult(2, 1, [new ImportLabTestSkipDto(3, "Dup", ErrorCodes.Taken)])));
+            FakeApiHandler.Json(new ImportLabTestsResult(2, 1)));
         var (page, window) = await ShowPage(app);
         var importFile = Path.Combine(app.DownloadsFolder, "tests.csv");
         Directory.CreateDirectory(app.DownloadsFolder);
@@ -209,16 +208,77 @@ public class LabTestsPageTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task Download_template_saves_the_csv_where_the_user_chose()
+    public async Task Import_too_large_from_the_api_toasts_the_file_size_error()
     {
         using var app = new TestServices();
         app.SignInAs(Roles.Admin);
         app.Api.OnGet(TestsPath, new PagedResult<LabTestDto>([Cbc], 1, 40, 1));
-        app.Api.On(HttpMethod.Get, $"{TestsPath}/import-template", _ =>
-            new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new ByteArrayContent(Encoding.UTF8.GetBytes("Name,Price\r\n")),
-            });
+        app.Api.On(HttpMethod.Post, $"{TestsPath}/import", _ =>
+            FakeApiHandler.Problem(HttpStatusCode.BadRequest, ErrorCodes.Validation, ("File", ErrorCodes.TooLarge)));
+        var (page, window) = await ShowPage(app);
+        var importFile = Path.Combine(app.DownloadsFolder, "too-large.csv");
+        Directory.CreateDirectory(app.DownloadsFolder);
+        await File.WriteAllTextAsync(importFile, "Name,Price\nA,$1.00\n");
+        app.PickedOpenPath = importFile;
+
+        await page.ImportCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Contains(app.Localization.Get("ErrorCode.too_large"), Toasts(window));
+        Assert.DoesNotContain("Some fields need attention.", Toasts(window));
+        Assert.False(page.IsImporting);
+    }
+
+    [AvaloniaFact]
+    public async Task Import_rejects_an_oversized_local_file_without_uploading()
+    {
+        using var app = new TestServices();
+        app.SignInAs(Roles.Admin);
+        app.Api.OnGet(TestsPath, new PagedResult<LabTestDto>([Cbc], 1, 40, 1));
+        var (page, window) = await ShowPage(app);
+        var importFile = Path.Combine(app.DownloadsFolder, "huge.csv");
+        Directory.CreateDirectory(app.DownloadsFolder);
+        await using (var stream = File.Create(importFile))
+        {
+            stream.SetLength(LabTestRules.MaxImportBytes + 1);
+        }
+
+        app.PickedOpenPath = importFile;
+
+        await page.ImportCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Empty(app.Api.RequestsTo(HttpMethod.Post, $"{TestsPath}/import"));
+        Assert.Contains(app.Localization.Get("ErrorCode.too_large"), Toasts(window));
+        Assert.False(page.IsImporting);
+    }
+
+    [AvaloniaFact]
+    public async Task Import_while_the_server_is_down_says_so()
+    {
+        using var app = new TestServices();
+        app.SignInAs(Roles.Admin);
+        app.Api.OnGet(TestsPath, new PagedResult<LabTestDto>([Cbc], 1, 40, 1));
+        app.Api.On(HttpMethod.Post, $"{TestsPath}/import", _ => throw new HttpRequestException("Connection refused"));
+        var (page, window) = await ShowPage(app);
+        var importFile = Path.Combine(app.DownloadsFolder, "offline.csv");
+        Directory.CreateDirectory(app.DownloadsFolder);
+        await File.WriteAllTextAsync(importFile, "Name,Price\nA,$1.00\n");
+        app.PickedOpenPath = importFile;
+
+        await page.ImportCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Contains(app.Localization.Get("Login.ServerUnreachable"), Toasts(window));
+        Assert.False(page.IsImporting);
+    }
+
+    [AvaloniaFact]
+    public async Task Download_template_writes_the_csv_where_the_user_chose()
+    {
+        using var app = new TestServices();
+        app.SignInAs(Roles.Admin);
+        app.Api.OnGet(TestsPath, new PagedResult<LabTestDto>([Cbc], 1, 40, 1));
         var (page, window) = await ShowPage(app);
         Directory.CreateDirectory(app.DownloadsFolder);
         app.PickedSavePath = Path.Combine(app.DownloadsFolder, "template.csv");
@@ -226,9 +286,12 @@ public class LabTestsPageTests : UiTestBase
         await page.DownloadTemplateCommand.ExecuteAsync(null);
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal(["lab-tests-import-template.csv"], app.SaveSuggestions);
-        Assert.Single(app.Api.RequestsTo(HttpMethod.Get, $"{TestsPath}/import-template"));
+        Assert.Equal([LabTestImportCsv.FileName], app.SaveSuggestions);
+        Assert.Empty(app.Api.RequestsTo(HttpMethod.Get, $"{TestsPath}/import-template"));
         Assert.True(File.Exists(app.PickedSavePath));
+        var text = await File.ReadAllTextAsync(app.PickedSavePath);
+        Assert.Contains("Name,Price", text);
+        Assert.Contains("$12.00", text);
         Assert.Contains(app.PickedSavePath, Toasts(window).Single()!);
     }
 

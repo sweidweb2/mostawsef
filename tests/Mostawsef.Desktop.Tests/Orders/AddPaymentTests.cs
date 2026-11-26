@@ -198,7 +198,8 @@ public class AddPaymentTests : UiTestBase
         await delete;
         Dispatcher.UIThread.RunJobs();
 
-        Assert.Single(app.Api.RequestsTo(HttpMethod.Delete, $"{OrdersPath}/{PartlyPaid.Id}/payments/{PaymentId}"));
+        var deleted = Assert.Single(app.Api.RequestsTo(HttpMethod.Delete, $"{OrdersPath}/{PartlyPaid.Id}/payments/{PaymentId}"));
+        Assert.Equal("?version=0", deleted.RequestUri!.Query);
         Assert.Equal(OrderStatuses.Pending, details.Order!.Status);
         Assert.Empty(details.Order.Payments);
         Assert.True(details.CanAddPayment);

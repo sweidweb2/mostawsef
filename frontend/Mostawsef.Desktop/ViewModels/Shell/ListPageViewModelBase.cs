@@ -188,19 +188,54 @@ public abstract partial class ListPageViewModelBase<TItem> : ViewModelBase, ILoa
         }
     }
 
-    /// <summary>Toast for a failed action: the API's error code when it has a text, otherwise a generic message.</summary>
+    /// <summary>
+    /// Toast for a failed action: network → unreachable; otherwise the first field error code (e.g. import
+    /// <c>too_large</c>), then the problem <c>code</c>, then a generic message.
+    /// </summary>
     protected void ShowError(IApiResult result)
     {
-        var code = result.Problem?.Code;
+        if (result.Error == ApiError.Unreachable)
+        {
+            Toasts.Error(Localization.Get("Login.ServerUnreachable"));
+            return;
+        }
+
+        var code = FirstActionErrorCode(result.Problem);
         var codeKey = code is null ? null : "ErrorCode." + code;
         Toasts.Error(Localization.Get(
-            result.Error == ApiError.Unreachable ? "Login.ServerUnreachable"
-            : codeKey is not null && Localization.Get(codeKey) != codeKey ? codeKey
+            codeKey is not null && Localization.Get(codeKey) != codeKey ? codeKey
             : "Error.RequestFailed"));
     }
 
     protected void ShowError(ApiError error) =>
         Toasts.Error(Localization.Get(error == ApiError.Unreachable ? "Login.ServerUnreachable" : "Error.RequestFailed"));
+
+    /// <summary>
+    /// Prefer a field-level ErrorCodes value (strip <c>|args</c>) so validation problems like File/too_large toast the
+    /// specific text instead of the generic "validation" umbrella.
+    /// </summary>
+    private static string? FirstActionErrorCode(ApiProblem? problem)
+    {
+        if (problem is null)
+        {
+            return null;
+        }
+
+        foreach (var codes in problem.FieldErrors.Values)
+        {
+            if (codes.Length == 0 || string.IsNullOrEmpty(codes[0]))
+            {
+                continue;
+            }
+
+            var code = codes[0];
+            var cut = code.IndexOf(ErrorCodes.ArgumentSeparator);
+            return cut < 0 ? code : code[..cut];
+        }
+
+        // Umbrella "validation" alone has no useful toast text beyond the generic request-failed fallback.
+        return problem.Code is null or ErrorCodes.Validation ? null : problem.Code;
+    }
 }
 
 /// <summary>A count shown as "at least": 10000 formats as "10,000+" (with the culture of the text it is formatted into).</summary>

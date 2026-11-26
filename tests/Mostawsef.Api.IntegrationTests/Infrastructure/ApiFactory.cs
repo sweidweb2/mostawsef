@@ -107,6 +107,12 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         return login.AccessToken;
     }
 
+    /// <summary>
+    /// Drops cached Admin/Super JWTs. Call after a test bumps a seeded user's <c>TokenVersion</c>
+    /// (e.g. clinic identity repair) so later tests do not reuse a rejected token.
+    /// </summary>
+    public void InvalidateSeededAccessTokens() => _seededTokens.Clear();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Testing");

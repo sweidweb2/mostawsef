@@ -26,15 +26,6 @@ public class LabTestsController(ILabTestService tests) : ControllerBase
     public Task<IReadOnlyList<LabTestDto>> All([FromQuery] bool? active, CancellationToken cancellationToken) =>
         tests.ListAllAsync(active, cancellationToken);
 
-    /// <summary>CSV template (Name, Price) for the import.</summary>
-    [HttpGet("import-template")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public IActionResult ImportTemplate()
-    {
-        var file = tests.GetImportTemplate();
-        return File(file.Content, file.ContentType, file.FileName);
-    }
-
     [HttpGet("{id:guid}")]
     [ProducesResponseType<LabTestDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

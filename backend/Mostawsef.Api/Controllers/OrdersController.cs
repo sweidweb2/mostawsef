@@ -53,7 +53,7 @@ public class OrdersController(IOrderService orders) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public Task<OrderDetailsDto> DeletePayment(
-        Guid id, Guid paymentId, [FromQuery] int version, CancellationToken cancellationToken) =>
+        Guid id, Guid paymentId, [FromQuery] int? version, CancellationToken cancellationToken) =>
         orders.DeletePaymentAsync(id, paymentId, version, cancellationToken);
 
     [HttpPost]

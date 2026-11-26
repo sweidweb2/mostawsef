@@ -28,7 +28,7 @@ public interface IPatientService
     Task DeleteAsync(Guid id, CancellationToken cancellationToken);
 }
 
-public class PatientService(IPatientRepository patients, IOrderRepository orders, IActivityLogger activity, TimeProvider time) : IPatientService
+public class PatientService(IPatientRepository patients, IActivityLogger activity, TimeProvider time) : IPatientService
 {
     public async Task<PagedResult<PatientDto>> GetPageAsync(PageQuery query, bool includeUnpaid, CancellationToken cancellationToken)
     {
@@ -51,9 +51,7 @@ public class PatientService(IPatientRepository patients, IOrderRepository orders
     public async Task<PatientDetailsDto> GetDetailsAsync(Guid id, CancellationToken cancellationToken)
     {
         var patient = await GetAsync(id, cancellationToken);
-        var page = new PageQuery(Page: 1, PageSize: PageQuery.MaxPageSize, IncludeTotal: false);
-        var (items, _) = await orders.GetPageAsync(page, new OrderListFilter(Status: null, PatientId: id), cancellationToken);
-        var recent = items
+        var recent = (await patients.ListRecentOrdersAsync(id, PageQuery.MaxPageSize, cancellationToken))
             .Select(o => new OrderListItemDto(
                 o.Id, o.Number, o.CreatedAt, o.PatientName, o.PatientPhone, o.TestsCount, o.Total, o.Paid, o.Status.ToString()))
             .ToList();
@@ -93,15 +91,17 @@ public class PatientService(IPatientRepository patients, IOrderRepository orders
     {
         var patient = await FindAsync(id, cancellationToken);
 
-        // A soft delete never trips the foreign key, so the rule is checked here: orders (and money owed) keep their patient.
-        if (await patients.HasOrdersAsync(id, cancellationToken))
+        // Soft delete never trips the FK, so the no-orders rule is enforced in a serializable transaction
+        // (a concurrent create cannot sneak an order in between the check and the delete).
+        try
+        {
+            await patients.SoftDeleteIfNoOrdersAsync(patient, cancellationToken);
+        }
+        catch (AppException ex) when (ex.Code == ErrorCodes.PatientHasOrders)
         {
             await LogAsync(ActivityActions.PatientDeleteRefused, "Refused to delete a patient who has orders", patient, cancellationToken);
-            throw AppException.Conflict(ErrorCodes.PatientHasOrders);
+            throw;
         }
-
-        patients.Remove(patient);
-        await patients.SaveChangesAsync(cancellationToken);
 
         await LogAsync(ActivityActions.PatientDeleted, "Deleted a patient", patient, cancellationToken);
     }

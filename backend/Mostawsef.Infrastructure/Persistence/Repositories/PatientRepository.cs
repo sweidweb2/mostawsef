@@ -1,4 +1,6 @@
+using System.Data;
 using Microsoft.EntityFrameworkCore;
+using Mostawsef.Application.Common;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Domain.Entities;
@@ -22,6 +24,25 @@ public class PatientRepository(AppDbContext db) : IPatientRepository
 
     public Task<bool> HasOrdersAsync(Guid id, CancellationToken cancellationToken) =>
         db.Orders.AnyAsync(o => o.PatientId == id, cancellationToken);
+
+    public async Task<IReadOnlyList<OrderListRow>> ListRecentOrdersAsync(
+        Guid patientId, int take, CancellationToken cancellationToken) =>
+        await db.Orders.AsNoTracking()
+            .Where(o => o.PatientId == patientId)
+            .OrderByDescending(o => o.CreatedAt)
+            .ThenByDescending(o => o.Id)
+            .Take(take)
+            .Select(o => new OrderListRow(
+                o.Id,
+                o.Number,
+                o.CreatedAt,
+                o.PatientName,
+                o.PatientPhone,
+                o.TestsCount,
+                o.Total,
+                o.Paid,
+                o.Status))
+            .ToListAsync(cancellationToken);
 
     public Task<OrderPatientRow?> GetOrderPatientAsync(Guid id, CancellationToken cancellationToken) =>
         db.Patients.AsNoTracking()
@@ -66,6 +87,24 @@ public class PatientRepository(AppDbContext db) : IPatientRepository
     public void Add(Patient patient) => db.Patients.Add(patient);
 
     public void Remove(Patient patient) => db.Patients.Remove(patient);
+
+    public Task SoftDeleteIfNoOrdersAsync(Patient patient, CancellationToken cancellationToken)
+    {
+        var strategy = db.Database.CreateExecutionStrategy();
+        return strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+            // Same context as FindAsync: re-check orders under Serializable so a concurrent create cannot land between the check and the soft delete.
+            if (await db.Orders.AnyAsync(o => o.PatientId == patient.Id, cancellationToken))
+            {
+                throw AppException.Conflict(ErrorCodes.PatientHasOrders);
+            }
+
+            db.Patients.Remove(patient);
+            await db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        });
+    }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken) => db.SaveChangesAsync(cancellationToken);
 }

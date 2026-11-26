@@ -137,7 +137,6 @@ public class LabTestsTests(ApiFactory factory)
     [Theory]
     [InlineData("GET", Url)]
     [InlineData("GET", Url + "/{id}")]
-    [InlineData("GET", Url + "/import-template")]
     [InlineData("POST", Url)]
     [InlineData("POST", Url + "/import")]
     [InlineData("PUT", Url + "/{id}")]
@@ -209,8 +208,6 @@ public class LabTestsTests(ApiFactory factory)
         // good + first Dup + afterGap (second Dup / existing / bad / over-max / after-gap rows are skipped).
         Assert.Equal(3, result!.Imported);
         Assert.True(result.Skipped >= 6);
-        Assert.Contains(result.Skips, s => s.Reason == $"range|0|{LabTestRules.MaxAmount}");
-        Assert.Contains(result.Skips, s => s.Reason == ErrorCodes.Invalid);
         var page = await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?search={Uri.EscapeDataString(good)}&pageSize=100");
         Assert.Contains(page.Items, t => t.Name == good && t.LabCost == 200);
         page = await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?search={Uri.EscapeDataString(duplicateInFile)}&pageSize=100");
@@ -229,13 +226,8 @@ public class LabTestsTests(ApiFactory factory)
     public async Task Import_from_csv_template_round_trips_the_sample_row()
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
-        var template = await admin.GetAsync($"{Url}/import-template", Ct);
-        template.EnsureSuccessStatusCode();
-        var bytes = await template.Content.ReadAsByteArrayAsync(Ct);
 
-        using var form = new MultipartFormDataContent();
-        form.Add(new ByteArrayContent(bytes), "file", "lab-tests-import-template.csv");
-        var response = await admin.PostAsync($"{Url}/import", form, Ct);
+        var response = await admin.PostAsync($"{Url}/import", ImportFile(LabTestImportCsv.Content, LabTestImportCsv.FileName), Ct);
         var result = await response.Content.ReadFromJsonAsync<ImportLabTestsResult>(Ct);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -271,38 +263,18 @@ public class LabTestsTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task Import_parses_semicolon_csv_with_comma_decimals()
+    public async Task Import_parses_quoted_us_thousands_prices()
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
-        var name = $"EU {Guid.NewGuid():N}";
-        var csv = $"Name;Price\r\n{name};12,50\r\n";
+        var us = $"US {Guid.NewGuid():N}";
+        var csv = $"Name,Price\r\n\"{us}\",\"$1,234.50\"\r\n";
 
         var response = await admin.PostAsync($"{Url}/import", ImportFile(csv), Ct);
         var result = await response.Content.ReadFromJsonAsync<ImportLabTestsResult>(Ct);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal((1, 0), (result!.Imported, result.Skipped));
-        var page = await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?search={Uri.EscapeDataString(name)}");
-        Assert.Equal(1250, Assert.Single(page.Items).LabCost);
-    }
-
-    [Fact]
-    public async Task Import_parses_thousands_and_mixed_separators()
-    {
-        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
-        var us = $"US {Guid.NewGuid():N}";
-        var eu = $"Mixed {Guid.NewGuid():N}";
-        // Quote prices that contain commas so the CSV splitter keeps them in one field.
-        var csv = $"Name,Price\r\n\"{us}\",\"$1,234.50\"\r\n\"{eu}\",\"1.234,50\"\r\n";
-
-        var response = await admin.PostAsync($"{Url}/import", ImportFile(csv), Ct);
-        var result = await response.Content.ReadFromJsonAsync<ImportLabTestsResult>(Ct);
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal(2, result!.Imported);
         var page = await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?search={Uri.EscapeDataString(us)}");
-        Assert.Equal(123_450, Assert.Single(page.Items).LabCost);
-        page = await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?search={Uri.EscapeDataString(eu)}");
         Assert.Equal(123_450, Assert.Single(page.Items).LabCost);
     }
 
@@ -328,19 +300,6 @@ public class LabTestsTests(ApiFactory factory)
         Assert.Equal(1, results.Sum(r => r!.Skipped));
         var page = await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?search={Uri.EscapeDataString(name)}");
         Assert.Single(page.Items);
-    }
-
-    [Fact]
-    public async Task Import_template_csv_has_name_and_price_headers()
-    {
-        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
-
-        var response = await admin.GetAsync($"{Url}/import-template", Ct);
-        var text = Encoding.UTF8.GetString(await response.Content.ReadAsByteArrayAsync(Ct));
-
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains("Name,Price", text);
-        Assert.Contains("$12.00", text);
     }
 
     [Fact]

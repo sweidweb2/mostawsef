@@ -40,8 +40,6 @@ namespace Mostawsef.Contracts.Common;
 [JsonSerializable(typeof(CreateLabTestRequest))]
 [JsonSerializable(typeof(UpdateLabTestRequest))]
 [JsonSerializable(typeof(ImportLabTestsResult))]
-[JsonSerializable(typeof(ImportLabTestSkipDto))]
-[JsonSerializable(typeof(IReadOnlyList<ImportLabTestSkipDto>))]
 [JsonSerializable(typeof(PagedResult<LabTestDto>))]
 [JsonSerializable(typeof(IReadOnlyList<LabTestDto>))]
 [JsonSerializable(typeof(PatientDto))]

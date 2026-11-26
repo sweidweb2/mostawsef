@@ -666,16 +666,26 @@ public class OrdersTests(ApiFactory factory)
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
 
         var invalid = await ProblemResponse.ReadAsync(
-            await admin.PostAsJsonAsync($"{Url}/{Guid.NewGuid()}/payments", new AddPaymentRequest { Amount = 0, Method = "Gold" }, Ct));
+            await admin.PostAsJsonAsync($"{Url}/{Guid.NewGuid()}/payments", new AddPaymentRequest { Amount = 0, Method = "Gold", Version = 0 }, Ct));
         Assert.Equal(HttpStatusCode.BadRequest, invalid.Status);
 
-        var missing = await ProblemResponse.ReadAsync(
+        var omittedVersion = await ProblemResponse.ReadAsync(
             await admin.PostAsJsonAsync($"{Url}/{Guid.NewGuid()}/payments", new AddPaymentRequest { Amount = 100, Method = PaymentMethods.Cash }, Ct));
+        Assert.Equal(HttpStatusCode.BadRequest, omittedVersion.Status);
+        Assert.Equal([ErrorCodes.Required], omittedVersion.Errors["Version"]);
+
+        var missing = await ProblemResponse.ReadAsync(
+            await admin.PostAsJsonAsync(
+                $"{Url}/{Guid.NewGuid()}/payments",
+                new AddPaymentRequest { Amount = 100, Method = PaymentMethods.Cash, Version = 0 },
+                Ct));
         Assert.Equal((HttpStatusCode.NotFound, ErrorCodes.NotFound), (missing.Status, missing.Code));
 
         var super = await factory.CreateClientAsAsync(TestUsers.Super);
         var forbidden = await super.PostAsJsonAsync(
-            $"{Url}/{Guid.NewGuid()}/payments", new AddPaymentRequest { Amount = 100, Method = PaymentMethods.Cash }, Ct);
+            $"{Url}/{Guid.NewGuid()}/payments",
+            new AddPaymentRequest { Amount = 100, Method = PaymentMethods.Cash, Version = 0 },
+            Ct);
         Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
     }
 
@@ -780,6 +790,11 @@ public class OrdersTests(ApiFactory factory)
         var delete = await ProblemResponse.ReadAsync(await admin.DeleteAsync(
             $"{Url}/{order.Id}/payments/{paymentId}?version={stale}", Ct));
         Assert.Equal((HttpStatusCode.Conflict, ErrorCodes.ConcurrencyConflict), (delete.Status, delete.Code));
+
+        var omitted = await ProblemResponse.ReadAsync(await admin.DeleteAsync(
+            $"{Url}/{order.Id}/payments/{paymentId}", Ct));
+        Assert.Equal(HttpStatusCode.BadRequest, omitted.Status);
+        Assert.Equal([ErrorCodes.Required], omitted.Errors["Version"]);
     }
 
     [Fact]

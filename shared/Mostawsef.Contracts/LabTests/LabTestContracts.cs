@@ -20,9 +20,15 @@ public static class LabTestRules
 
     /// <summary>After the last filled row, this many empty rows in a row ends the file.</summary>
     public const int ImportEmptyStopRows = 10;
+}
 
-    /// <summary>How many skip details the import result keeps (the counts stay exact).</summary>
-    public const int MaxImportSkipDetails = 50;
+/// <summary>CSV the Admin portal writes locally for import (Name + $ price; codes are generated on upload).</summary>
+public static class LabTestImportCsv
+{
+    public const string FileName = "lab-tests-import-template.csv";
+
+    /// <summary>Body without a BOM; writers should prepend UTF-8 BOM so Excel keeps Arabic names.</summary>
+    public const string Content = "Name,Price\r\nComplete blood count,$12.00\r\n";
 }
 
 public record LabTestDto(
@@ -71,11 +77,5 @@ public record UpdateLabTestRequest
     public int Version { get; init; }
 }
 
-/// <summary>One bad or duplicate row the import left out. <see cref="Reason"/> is an ErrorCodes value.</summary>
-public record ImportLabTestSkipDto(int Row, string? Name, string Reason);
-
 /// <summary>Result of posting a Name/Price CSV to the lab-tests import endpoint.</summary>
-public record ImportLabTestsResult(
-    int Imported,
-    int Skipped,
-    IReadOnlyList<ImportLabTestSkipDto> Skips);
+public record ImportLabTestsResult(int Imported, int Skipped);

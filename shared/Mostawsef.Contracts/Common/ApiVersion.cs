@@ -6,7 +6,7 @@ namespace Mostawsef.Contracts.Common;
 /// </summary>
 public static class ApiVersion
 {
-    public const int Current = 8;
+    public const int Current = 9;
 }
 
 /// <summary>GET /api/health.</summary>

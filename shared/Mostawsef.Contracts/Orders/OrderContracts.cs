@@ -170,8 +170,9 @@ public record AddPaymentRequest
     [MaxLength(OrderRules.PaymentNotesMaxLength, ErrorMessage = ErrorCodes.MaxLength)]
     public string? Notes { get; init; }
 
-    /// <summary>Order Version from the details the client last loaded.</summary>
-    public int Version { get; init; }
+    /// <summary>Order Version from the details the client last loaded; omitted → 400 required.</summary>
+    [Required(ErrorMessage = ErrorCodes.Required)]
+    public int? Version { get; init; }
 }
 
 /// <summary>
@@ -191,8 +192,9 @@ public record UpdatePaymentRequest
     [MaxLength(OrderRules.PaymentNotesMaxLength, ErrorMessage = ErrorCodes.MaxLength)]
     public string? Notes { get; init; }
 
-    /// <summary>Order Version from the details the client last loaded.</summary>
-    public int Version { get; init; }
+    /// <summary>Order Version from the details the client last loaded; omitted → 400 required.</summary>
+    [Required(ErrorMessage = ErrorCodes.Required)]
+    public int? Version { get; init; }
 }
 
 /// <summary>Paid in the clinic currency when the order is created.</summary>

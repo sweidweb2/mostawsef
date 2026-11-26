@@ -30,6 +30,7 @@ public class ClinicIdentityRepairTests(ApiFactory factory)
         }
 
         await factory.Services.InitializeDatabaseAsync([], Ct);
+        factory.InvalidateSeededAccessTokens();
 
         var login = await factory.CreateClient().OpenClinicSessionAsync();
         Assert.Equal(ClinicIdentity.Username, login.User.Username);
@@ -50,6 +51,7 @@ public class ClinicIdentityRepairTests(ApiFactory factory)
         }
 
         await factory.Services.InitializeDatabaseAsync([], Ct);
+        factory.InvalidateSeededAccessTokens();
 
         var login = await factory.CreateClient().OpenClinicSessionAsync();
         Assert.Equal(Roles.Admin, login.User.Role);
@@ -83,6 +85,7 @@ public class ClinicIdentityRepairTests(ApiFactory factory)
         }
 
         await factory.Services.InitializeDatabaseAsync([], Ct);
+        factory.InvalidateSeededAccessTokens();
 
         await using (var scope = factory.Services.CreateAsyncScope())
         {

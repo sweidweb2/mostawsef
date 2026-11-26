@@ -33,7 +33,7 @@ public interface IOrderService
     Task<OrderDetailsDto> UpdatePaymentAsync(Guid id, Guid paymentId, UpdatePaymentRequest request, CancellationToken cancellationToken);
 
     /// <summary>Deletes a payment and recalculates Paid and status; returns the updated order.</summary>
-    Task<OrderDetailsDto> DeletePaymentAsync(Guid id, Guid paymentId, int version, CancellationToken cancellationToken);
+    Task<OrderDetailsDto> DeletePaymentAsync(Guid id, Guid paymentId, int? version, CancellationToken cancellationToken);
 
     /// <summary>Creates the patient (if new), the order, its items and the first payment in one transaction.</summary>
     Task<OrderDetailsDto> CreateAsync(CreateOrderRequest request, CancellationToken cancellationToken);
@@ -112,7 +112,7 @@ public class OrderService(
     public async Task<OrderDetailsDto> AddPaymentAsync(Guid id, AddPaymentRequest request, CancellationToken cancellationToken)
     {
         var order = await orders.GetForPaymentAsync(id, cancellationToken) ?? throw AppException.NotFound();
-        EnsureCurrentVersion(order, request.Version);
+        EnsureCurrentVersion(order, request.Version, nameof(AddPaymentRequest.Version));
         var amount = request.Amount!.Value;
         if (amount > order.Balance)
         {
@@ -140,7 +140,7 @@ public class OrderService(
         Guid id, Guid paymentId, UpdatePaymentRequest request, CancellationToken cancellationToken)
     {
         var order = await orders.GetForPaymentAsync(id, cancellationToken) ?? throw AppException.NotFound();
-        EnsureCurrentVersion(order, request.Version);
+        EnsureCurrentVersion(order, request.Version, nameof(UpdatePaymentRequest.Version));
         var payment = order.Payments.FirstOrDefault(p => p.Id == paymentId) ?? throw AppException.NotFound();
         var amount = request.Amount!.Value;
         if (payment.Type == PaymentType.Payment && amount > order.Balance + payment.Amount)
@@ -164,10 +164,10 @@ public class OrderService(
         return ToDetails(order);
     }
 
-    public async Task<OrderDetailsDto> DeletePaymentAsync(Guid id, Guid paymentId, int version, CancellationToken cancellationToken)
+    public async Task<OrderDetailsDto> DeletePaymentAsync(Guid id, Guid paymentId, int? version, CancellationToken cancellationToken)
     {
         var order = await orders.GetForPaymentAsync(id, cancellationToken) ?? throw AppException.NotFound();
-        EnsureCurrentVersion(order, version);
+        EnsureCurrentVersion(order, version, "Version");
         var payment = order.Payments.FirstOrDefault(p => p.Id == paymentId) ?? throw AppException.NotFound();
         var amount = payment.Amount;
         var method = payment.Method;
@@ -229,11 +229,16 @@ public class OrderService(
             patients.Add(newPatient);
         }
 
-        // Last-moment check: a test deactivated after LoadTestsAsync must not land on a new order.
+        // Last-moment checks: deactivated tests or a soft-deleted patient must not land on a new order.
         var lineIds = lines.Select(t => t.Id).Distinct().ToList();
         if (await tests.CountActiveAsync(lineIds, cancellationToken) != lineIds.Count)
         {
             throw AppException.Conflict(ErrorCodes.Inactive);
+        }
+
+        if (newPatient is null && await patients.GetOrderPatientAsync(patient.Id, cancellationToken) is null)
+        {
+            throw AppException.Validation(nameof(CreateOrderRequest.PatientId), ErrorCodes.NotFound);
         }
 
         orders.Add(order);
@@ -370,9 +375,14 @@ public class OrderService(
     private static string ItemField(int index) =>
         string.Create(CultureInfo.InvariantCulture, $"{nameof(CreateOrderRequest.Items)}[{index}].{nameof(CreateOrderItemRequest.LabTestId)}");
 
-    private static void EnsureCurrentVersion(Order order, int version)
+    private static void EnsureCurrentVersion(Order order, int? version, string field)
     {
-        if (order.Version != version)
+        if (version is null)
+        {
+            throw AppException.Validation(field, ErrorCodes.Required);
+        }
+
+        if (order.Version != version.Value)
         {
             throw AppException.Conflict(ErrorCodes.ConcurrencyConflict);
         }

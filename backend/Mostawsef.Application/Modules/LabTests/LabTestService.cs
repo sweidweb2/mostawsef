@@ -28,9 +28,6 @@ public interface ILabTestService
 
     /// <summary>Imports Name/Price rows from a CSV stream; skips bad and duplicate-name rows.</summary>
     Task<ImportLabTestsResult> ImportAsync(Stream stream, string? fileName, CancellationToken cancellationToken);
-
-    /// <summary>CSV template with Name and Price columns (and one sample row).</summary>
-    (byte[] Content, string FileName, string ContentType) GetImportTemplate();
 }
 
 public class LabTestService(ILabTestRepository tests, IActivityLogger activity) : ILabTestService
@@ -98,13 +95,10 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
         await LogAsync(ActivityActions.LabTestDeleted, "Deleted a lab test", test, cancellationToken);
     }
 
-    public (byte[] Content, string FileName, string ContentType) GetImportTemplate() =>
-        LabTestImportFile.BuildTemplate();
-
     public async Task<ImportLabTestsResult> ImportAsync(Stream stream, string? fileName, CancellationToken cancellationToken)
     {
         var rawRows = LabTestImportFile.ReadRows(stream, fileName);
-        var skips = new List<ImportLabTestSkipDto>();
+        var skipped = 0;
         var candidates = new List<(int Row, string Name, string SearchName, long LabCost)>(rawRows.Count);
         var namesInFile = new HashSet<string>(StringComparer.Ordinal);
 
@@ -112,28 +106,18 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
         {
             var name = row.Name?.Trim() ?? string.Empty;
             var priceText = row.PriceText?.Trim() ?? string.Empty;
-            if (name.Length == 0 || priceText.Length == 0)
+            if (name.Length == 0 || priceText.Length == 0
+                || name.Length > LabTestRules.NameMaxLength
+                || !LabTestImportFile.TryParsePrice(priceText, out var labCost))
             {
-                Skip(skips, row.RowNumber, name.Length == 0 ? null : name, ErrorCodes.Required);
-                continue;
-            }
-
-            if (name.Length > LabTestRules.NameMaxLength)
-            {
-                Skip(skips, row.RowNumber, name, $"max_length|{LabTestRules.NameMaxLength}");
-                continue;
-            }
-
-            if (!LabTestImportFile.TryParsePrice(priceText, out var labCost, out var priceError))
-            {
-                Skip(skips, row.RowNumber, name, priceError);
+                skipped++;
                 continue;
             }
 
             var searchName = SearchText.Normalize(name);
             if (!namesInFile.Add(searchName))
             {
-                Skip(skips, row.RowNumber, name, ErrorCodes.Taken);
+                skipped++;
                 continue;
             }
 
@@ -147,7 +131,7 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
         {
             if (existingNames.Contains(candidate.SearchName))
             {
-                Skip(skips, candidate.Row, candidate.Name, ErrorCodes.Taken);
+                skipped++;
                 continue;
             }
 
@@ -156,27 +140,27 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
 
         if (accepted.Count == 0)
         {
-            return new ImportLabTestsResult(0, skips.Count, TakeSkipDetails(skips));
+            return new ImportLabTestsResult(0, skipped);
         }
 
-        var imported = await SaveImportAsync(accepted, skips, cancellationToken);
+        var imported = await SaveImportAsync(accepted, () => skipped++, cancellationToken);
 
         await activity.LogAsync(
             new ActivityEntry(ActivityActions.LabTestsImported, ActivityModules.LabTests, "Imported lab tests")
             {
-                Details = new { Imported = imported, Skipped = skips.Count },
+                Details = new { Imported = imported, Skipped = skipped },
             },
             cancellationToken);
 
-        return new ImportLabTestsResult(imported, skips.Count, TakeSkipDetails(skips));
+        return new ImportLabTestsResult(imported, skipped);
     }
 
     /// <summary>
-    /// Inserts accepted rows; on a unique-index race, moves conflicting names into skips and retries the rest.
+    /// Inserts accepted rows; on a unique-index race, counts conflicting names as skipped and retries the rest.
     /// </summary>
     private async Task<int> SaveImportAsync(
         List<(int Row, string Name, string SearchName, long LabCost)> accepted,
-        List<ImportLabTestSkipDto> skips,
+        Action onSkipped,
         CancellationToken cancellationToken)
     {
         for (var attempt = 0; attempt < 3; attempt++)
@@ -210,7 +194,7 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
                 {
                     if (taken.Contains(row.SearchName))
                     {
-                        Skip(skips, row.Row, row.Name, ErrorCodes.Taken);
+                        onSkipped();
                     }
                     else
                     {
@@ -276,14 +260,6 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
 
         return new string(chars);
     }
-
-    private static void Skip(List<ImportLabTestSkipDto> skips, int row, string? name, string reason) =>
-        skips.Add(new ImportLabTestSkipDto(row, name, reason));
-
-    private static List<ImportLabTestSkipDto> TakeSkipDetails(List<ImportLabTestSkipDto> skips) =>
-        skips.Count <= LabTestRules.MaxImportSkipDetails
-            ? skips
-            : skips.Take(LabTestRules.MaxImportSkipDetails).ToList();
 
     private async Task<LabTest> FindAsync(Guid id, CancellationToken cancellationToken) =>
         await tests.GetByIdAsync(id, cancellationToken) ?? throw AppException.NotFound();

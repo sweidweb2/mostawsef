@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -144,6 +146,7 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ExportCommand))]
     [NotifyCanExecuteChangedFor(nameof(ImportCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DownloadTemplateCommand))]
     public partial bool IsExporting { get; private set; }
 
     private bool CanExport() => !IsExporting && !IsImporting;
@@ -212,7 +215,7 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
 
     private bool CanImport() => !IsImporting && !IsExporting;
 
-    private bool CanDownloadTemplate() => !IsImporting;
+    private bool CanDownloadTemplate() => !IsImporting && !IsExporting;
 
     /// <summary>Picks a CSV Name+Price file, uploads it, reloads the list, and toasts the counts.</summary>
     [RelayCommand(CanExecute = nameof(CanImport))]
@@ -232,6 +235,22 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
 
         if (path is null)
         {
+            return;
+        }
+
+        // Avoid reading a huge file into memory for multipart before the API can reject it.
+        try
+        {
+            if (new FileInfo(path).Length > LabTestRules.MaxImportBytes)
+            {
+                Toasts.Error(Localization.Get("ErrorCode.too_large"));
+                return;
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            _errors.Report(ex, context: "Checking the lab tests import file size");
+            Toasts.Error(Localization.Get("LabTests.ImportFailed"));
             return;
         }
 
@@ -277,14 +296,14 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
         }
     }
 
-    /// <summary>Downloads the CSV import template (Excel opens it) to a path the user chooses.</summary>
+    /// <summary>Writes the CSV import template (Excel opens it) to a path the user chooses — no API call.</summary>
     [RelayCommand(CanExecute = nameof(CanDownloadTemplate))]
     private async Task DownloadTemplateAsync()
     {
         string? path;
         try
         {
-            path = await _pickSavePath("lab-tests-import-template.csv", Localization.Get("LabTests.TemplateSaveTitle"));
+            path = await _pickSavePath(LabTestImportCsv.FileName, Localization.Get("LabTests.TemplateSaveTitle"));
         }
         catch (Exception ex)
         {
@@ -301,22 +320,17 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
         IsImporting = true;
         try
         {
-            if (await ReadAsync(ct => _tests.DownloadImportTemplateAsync(path, ct)) is not { } result)
-            {
-                return;
-            }
-
-            if (!result.IsSuccess)
-            {
-                ShowError(result);
-                return;
-            }
-
+            var bom = Encoding.UTF8.GetPreamble();
+            var body = Encoding.UTF8.GetBytes(LabTestImportCsv.Content);
+            var bytes = new byte[bom.Length + body.Length];
+            bom.CopyTo(bytes, 0);
+            body.CopyTo(bytes, bom.Length);
+            await File.WriteAllBytesAsync(path, bytes);
             Toasts.Success(Localization.Format("LabTests.TemplateSaved", path));
         }
         catch (Exception ex)
         {
-            _errors.Report(ex, context: "Downloading the lab tests import template");
+            _errors.Report(ex, context: "Writing the lab tests import template");
             Toasts.Error(Localization.Get("LabTests.ImportFailed"));
         }
         finally
