@@ -1,5 +1,7 @@
 using System.Net;
+using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -164,6 +166,70 @@ public class LabTestsPageTests : UiTestBase
         Assert.Equal(["lab-tests.pdf"], app.SaveSuggestions);
         Assert.Empty(app.Api.RequestsTo(HttpMethod.Get, $"{TestsPath}/all"));
         Assert.Empty(app.OpenedFiles);
+    }
+
+    [AvaloniaFact]
+    public async Task Import_uploads_the_chosen_file_reloads_and_toasts_the_counts()
+    {
+        using var app = new TestServices();
+        app.SignInAs(Roles.Admin);
+        app.Api.OnGet(TestsPath, new PagedResult<LabTestDto>([Cbc], 1, 40, 1));
+        app.Api.On(HttpMethod.Post, $"{TestsPath}/import", _ =>
+            FakeApiHandler.Json(new ImportLabTestsResult(2, 1, [new ImportLabTestSkipDto(3, "Dup", ErrorCodes.Taken)])));
+        var (page, window) = await ShowPage(app);
+        var importFile = Path.Combine(app.DownloadsFolder, "tests.csv");
+        Directory.CreateDirectory(app.DownloadsFolder);
+        await File.WriteAllTextAsync(importFile, "Name,Price\nA,$1.00\n");
+        app.PickedOpenPath = importFile;
+        var listRequests = app.Api.RequestsTo(HttpMethod.Get, TestsPath).Count();
+
+        await page.ImportCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(["Import lab tests"], app.OpenPickerTitles);
+        Assert.Single(app.Api.RequestsTo(HttpMethod.Post, $"{TestsPath}/import"));
+        Assert.True(app.Api.RequestsTo(HttpMethod.Get, TestsPath).Count() > listRequests);
+        Assert.Contains("Imported 2 tests. Skipped 1 rows.", Toasts(window));
+        Assert.False(page.IsImporting);
+    }
+
+    [AvaloniaFact]
+    public async Task Cancelling_the_import_file_dialog_uploads_nothing()
+    {
+        using var app = new TestServices();
+        app.SignInAs(Roles.Admin);
+        app.Api.OnGet(TestsPath, new PagedResult<LabTestDto>([Cbc], 1, 40, 1));
+        var (page, _) = await ShowPage(app);
+        app.PickedOpenPath = null;
+
+        await page.ImportCommand.ExecuteAsync(null);
+
+        Assert.Equal(["Import lab tests"], app.OpenPickerTitles);
+        Assert.Empty(app.Api.RequestsTo(HttpMethod.Post, $"{TestsPath}/import"));
+    }
+
+    [AvaloniaFact]
+    public async Task Download_template_saves_the_csv_where_the_user_chose()
+    {
+        using var app = new TestServices();
+        app.SignInAs(Roles.Admin);
+        app.Api.OnGet(TestsPath, new PagedResult<LabTestDto>([Cbc], 1, 40, 1));
+        app.Api.On(HttpMethod.Get, $"{TestsPath}/import-template", _ =>
+            new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(Encoding.UTF8.GetBytes("Name,Price\r\n")),
+            });
+        var (page, window) = await ShowPage(app);
+        Directory.CreateDirectory(app.DownloadsFolder);
+        app.PickedSavePath = Path.Combine(app.DownloadsFolder, "template.csv");
+
+        await page.DownloadTemplateCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(["lab-tests-import-template.csv"], app.SaveSuggestions);
+        Assert.Single(app.Api.RequestsTo(HttpMethod.Get, $"{TestsPath}/import-template"));
+        Assert.True(File.Exists(app.PickedSavePath));
+        Assert.Contains(app.PickedSavePath, Toasts(window).Single()!);
     }
 
     [AvaloniaFact]

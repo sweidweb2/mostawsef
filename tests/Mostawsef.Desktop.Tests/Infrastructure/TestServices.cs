@@ -33,6 +33,7 @@ public sealed class TestServices : IDisposable
                 SettingsFilePath = SettingsFile,
                 OpenFile = OpenedFiles.Add,
                 PickSavePath = PickSavePath,
+                PickOpenPath = PickOpenPath,
                 PickFolderPath = PickFolderPath,
             })
             .BuildServiceProvider();
@@ -57,6 +58,12 @@ public sealed class TestServices : IDisposable
     /// <summary>The file names the app suggested in the "Save as" dialog.</summary>
     public List<string> SaveSuggestions { get; } = [];
 
+    /// <summary>What the "Open file" dialog answers: a full path, or null for Cancel (the default).</summary>
+    public string? PickedOpenPath { get; set; }
+
+    /// <summary>Titles shown in the open-file dialog.</summary>
+    public List<string> OpenPickerTitles { get; } = [];
+
     /// <summary>What the folder dialog answers: a full path, or null for Cancel (the default).</summary>
     public string? PickedFolderPath { get; set; }
 
@@ -67,6 +74,12 @@ public sealed class TestServices : IDisposable
     {
         SaveSuggestions.Add(suggestedFileName);
         return Task.FromResult(PickedSavePath);
+    }
+
+    private Task<string?> PickOpenPath(string title, IReadOnlyList<string> extensions)
+    {
+        OpenPickerTitles.Add(title);
+        return Task.FromResult(PickedOpenPath);
     }
 
     private Task<string?> PickFolderPath(string title)

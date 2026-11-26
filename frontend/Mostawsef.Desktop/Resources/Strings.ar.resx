@@ -182,6 +182,7 @@
   <data name="Action.lab_tests.created" xml:space="preserve"><value>إضافة تحليل</value></data>
   <data name="Action.lab_tests.updated" xml:space="preserve"><value>تعديل تحليل</value></data>
   <data name="Action.lab_tests.deleted" xml:space="preserve"><value>حذف تحليل</value></data>
+  <data name="Action.lab_tests.imported" xml:space="preserve"><value>استيراد تحاليل</value></data>
   <data name="Action.patients.created" xml:space="preserve"><value>إضافة مريض</value></data>
   <data name="Action.patients.updated" xml:space="preserve"><value>تعديل مريض</value></data>
   <data name="Action.patients.deleted" xml:space="preserve"><value>حذف مريض</value></data>
@@ -297,6 +298,17 @@
   <data name="LabTests.Inactive" xml:space="preserve"><value>غير متاح</value></data>
   <data name="LabTests.SearchPlaceholder" xml:space="preserve"><value>ابحث باسم التحليل أو الكود...</value></data>
   <data name="LabTests.ExportHint" xml:space="preserve"><value>تصدير كل التحاليل كملف PDF</value></data>
+  <data name="LabTests.Import" xml:space="preserve"><value>استيراد</value></data>
+  <data name="LabTests.ImportTitle" xml:space="preserve"><value>استيراد التحاليل</value></data>
+  <data name="LabTests.ImportHint" xml:space="preserve"><value>استيراد الاسم والسعر من ملف CSV. تُنشأ الأكواد تلقائياً. تُتخطى الصفوف غير الصالحة.</value></data>
+  <data name="LabTests.ImportDone" xml:space="preserve"><value>تم استيراد {0} تحليل. تُخطي {1} صف.</value></data>
+  <data name="LabTests.ImportNone" xml:space="preserve"><value>لم يُستورد أي تحليل. تُخطي {0} صف.</value></data>
+  <data name="LabTests.ImportEmpty" xml:space="preserve"><value>لا توجد تحاليل في الملف.</value></data>
+  <data name="LabTests.ImportFailed" xml:space="preserve"><value>تعذر استيراد التحاليل.</value></data>
+  <data name="LabTests.Template" xml:space="preserve"><value>نموذج</value></data>
+  <data name="LabTests.TemplateHint" xml:space="preserve"><value>تنزيل نموذج CSV بعمودي الاسم والسعر</value></data>
+  <data name="LabTests.TemplateSaveTitle" xml:space="preserve"><value>حفظ نموذج الاستيراد</value></data>
+  <data name="LabTests.TemplateSaved" xml:space="preserve"><value>تم حفظ النموذج في {0}</value></data>
   <data name="LabTests.Field.NamePlaceholder" xml:space="preserve"><value>مثال: صورة دم كاملة</value></data>
   <data name="LabTests.Field.CodePlaceholder" xml:space="preserve"><value>مثال: CBC</value></data>
   <data name="LabTests.Field.AmountPlaceholder" xml:space="preserve"><value>0.00</value></data>
@@ -428,6 +440,7 @@
   <data name="Action.orders.created" xml:space="preserve"><value>إنشاء طلب</value></data>
   <data name="ErrorCode.patient_has_orders" xml:space="preserve"><value>لهذا المريض طلبات، لذا لا يمكن حذفه.</value></data>
   <data name="ErrorCode.in_use" xml:space="preserve"><value>هذا التحليل مستخدم في طلبات، لذا لا يمكن حذفه. أوقف تفعيله بدلاً من ذلك.</value></data>
+  <data name="ErrorCode.too_large" xml:space="preserve"><value>هذا الملف كبير جداً.</value></data>
   <data name="ErrorCode.inactive" xml:space="preserve"><value>هذا التحليل لم يعد متاحاً.</value></data>
   <data name="ErrorCode.duplicate" xml:space="preserve"><value>هذا التحليل موجود بالفعل في الطلب.</value></data>
   <data name="ErrorCode.exceeds_total" xml:space="preserve"><value>لا يمكن أن تزيد الدفعة عن إجمالي الطلب.</value></data>

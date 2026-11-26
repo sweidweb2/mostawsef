@@ -84,6 +84,33 @@ public class ApiClient(Lazy<HttpClient> http, PerformanceMonitor perf, TimeSpan?
             LongRequestTimeout,
             cancellationToken);
 
+    /// <summary>
+    /// POSTs a local file as multipart form field <paramref name="formField"/> and reads a JSON body.
+    /// Uses <see cref="LongRequestTimeout"/> for catalog-sized imports.
+    /// </summary>
+    public Task<ApiResult<TResponse>> PostFileAsync<TResponse>(
+        string path,
+        string filePath,
+        string formField = "file",
+        CancellationToken cancellationToken = default) =>
+        SendAsync(
+            "POST",
+            path,
+            token => PostMultipartFileAsync(path, filePath, formField, token),
+            ReadJson<TResponse>,
+            LongRequestTimeout,
+            cancellationToken);
+
+    private async Task<HttpResponseMessage> PostMultipartFileAsync(
+        string path, string filePath, string formField, CancellationToken cancellationToken)
+    {
+        // Import files are capped at 2 MB on the API; reading into memory keeps ownership simple for multipart.
+        var bytes = await File.ReadAllBytesAsync(filePath, cancellationToken);
+        using var content = new MultipartFormDataContent();
+        content.Add(new ByteArrayContent(bytes), formField, Path.GetFileName(filePath));
+        return await Http.PostAsync(path, content, cancellationToken);
+    }
+
     private static async Task<ApiResult<bool>> SaveToFileAsync(HttpResponseMessage response, string destinationPath, CancellationToken cancellationToken)
     {
         var partPath = destinationPath + ".part";

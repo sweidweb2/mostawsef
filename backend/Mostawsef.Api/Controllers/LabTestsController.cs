@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Mostawsef.Api.Extensions;
+using Mostawsef.Application.Common;
 using Mostawsef.Application.Modules.LabTests;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.LabTests;
@@ -25,6 +26,15 @@ public class LabTestsController(ILabTestService tests) : ControllerBase
     public Task<IReadOnlyList<LabTestDto>> All(CancellationToken cancellationToken) =>
         tests.ListAllAsync(cancellationToken);
 
+    /// <summary>CSV template (Name, Price) for the import.</summary>
+    [HttpGet("import-template")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public IActionResult ImportTemplate()
+    {
+        var file = tests.GetImportTemplate();
+        return File(file.Content, file.ContentType, file.FileName);
+    }
+
     [HttpGet("{id:guid}")]
     [ProducesResponseType<LabTestDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -38,6 +48,25 @@ public class LabTestsController(ILabTestService tests) : ControllerBase
     {
         var test = await tests.CreateAsync(request, cancellationToken);
         return CreatedAtAction(nameof(Get), new { id = test.Id }, test);
+    }
+
+    /// <summary>
+    /// Imports Name + Price ($0.08 style) from CSV. Codes are generated. Bad and duplicate-name rows are skipped.
+    /// </summary>
+    [HttpPost("import")]
+    [RequestSizeLimit(LabTestRules.MaxImportBytes)]
+    [ProducesResponseType<ImportLabTestsResult>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ImportLabTestsResult> Import(IFormFile? file, CancellationToken cancellationToken)
+    {
+        if (file is null || file.Length == 0)
+        {
+            // Same shape as other validation failures (problem with ErrorCodes.Required on File).
+            throw AppException.Validation("File", ErrorCodes.Required);
+        }
+
+        await using var stream = file.OpenReadStream();
+        return await tests.ImportAsync(stream, file.FileName, cancellationToken);
     }
 
     [HttpPut("{id:guid}")]

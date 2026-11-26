@@ -43,6 +43,14 @@ public interface ILabTestRepository
     Task<(bool CodeTaken, bool NameTaken)> FindDuplicatesAsync(
         string code, string searchName, Guid? exceptId, CancellationToken cancellationToken);
 
+    /// <summary>SearchNames that already exist (for import skip checks). Empty input returns an empty set.</summary>
+    Task<HashSet<string>> FindExistingSearchNamesAsync(
+        IReadOnlyCollection<string> searchNames, CancellationToken cancellationToken);
+
+    /// <summary>Codes that already exist (for import code generation). Empty input returns an empty set.</summary>
+    Task<HashSet<string>> FindExistingCodesAsync(
+        IReadOnlyCollection<string> codes, CancellationToken cancellationToken);
+
     /// <summary>Ordered by SearchName then Code (unique indexes). Search is a prefix on SearchName or Code. <paramref name="active"/> filters IsActive when set.</summary>
     Task<(IReadOnlyList<LabTestListRow> Items, int Total)> GetPageAsync(PageQuery query, bool? active, CancellationToken cancellationToken);
 
@@ -50,6 +58,8 @@ public interface ILabTestRepository
     Task<IReadOnlyList<LabTestExportRow>> ListAllAsync(CancellationToken cancellationToken);
 
     void Add(LabTest test);
+
+    void AddRange(IEnumerable<LabTest> tests);
 
     void Remove(LabTest test);
 

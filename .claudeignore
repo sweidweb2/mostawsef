@@ -1,0 +1,47 @@
+# Not source of truth for coding: build output, caches, test output, dumps, secrets.
+# Keep source, Docs/, scripts/, packaging/ and .claude/.cursor rules readable.
+
+# .NET build output
+**/bin/
+**/obj/
+artifacts/
+publish/
+*.binlog
+*.pdb
+*.nupkg
+*.snupkg
+
+# Test results and coverage
+**/TestResults/
+coverage*/
+coverage*.json
+coverage*.xml
+coverage*.info
+*.coverage
+*.coveragexml
+
+# IDE / tool caches
+.vs/
+.idea/
+.history/
+.localhistory/
+.vshistory/
+node_modules/
+
+# Logs and dumps
+*.log
+logs/
+*.stackdump
+backups/
+*.sql.gz
+
+# Installer outputs
+*.exe
+*.msi
+*.zip
+
+# Local secrets
+.env
+.env.*
+**/appsettings.Clinic.json
+*.pfx

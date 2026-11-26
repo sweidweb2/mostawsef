@@ -40,6 +40,36 @@ public class LabTestRepository(AppDbContext db) : ILabTestRepository
         return (hits.Exists(h => h.CodeHit), hits.Exists(h => h.NameHit));
     }
 
+    public async Task<HashSet<string>> FindExistingSearchNamesAsync(
+        IReadOnlyCollection<string> searchNames, CancellationToken cancellationToken)
+    {
+        if (searchNames.Count == 0)
+        {
+            return [];
+        }
+
+        var hits = await db.LabTests.AsNoTracking()
+            .Where(t => searchNames.Contains(t.SearchName))
+            .Select(t => t.SearchName)
+            .ToListAsync(cancellationToken);
+        return hits.ToHashSet(StringComparer.Ordinal);
+    }
+
+    public async Task<HashSet<string>> FindExistingCodesAsync(
+        IReadOnlyCollection<string> codes, CancellationToken cancellationToken)
+    {
+        if (codes.Count == 0)
+        {
+            return [];
+        }
+
+        var hits = await db.LabTests.AsNoTracking()
+            .Where(t => codes.Contains(t.Code))
+            .Select(t => t.Code)
+            .ToListAsync(cancellationToken);
+        return hits.ToHashSet(StringComparer.Ordinal);
+    }
+
     public async Task<(IReadOnlyList<LabTestListRow> Items, int Total)> GetPageAsync(PageQuery query, bool? active, CancellationToken cancellationToken)
     {
         var tests = db.LabTests.AsNoTracking();
@@ -74,6 +104,8 @@ public class LabTestRepository(AppDbContext db) : ILabTestRepository
             .ToListAsync(cancellationToken);
 
     public void Add(LabTest test) => db.LabTests.Add(test);
+
+    public void AddRange(IEnumerable<LabTest> tests) => db.LabTests.AddRange(tests);
 
     public void Remove(LabTest test) => db.LabTests.Remove(test);
 

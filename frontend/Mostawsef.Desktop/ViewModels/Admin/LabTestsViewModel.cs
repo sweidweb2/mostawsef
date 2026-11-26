@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -16,17 +17,20 @@ namespace Mostawsef.Desktop.ViewModels.Admin;
 
 /// <summary>
 /// Admin portal: the lab test catalog as a table or a grid of cards, with search and paging; add, edit, delete,
-/// and export of the whole catalog as a PDF.
+/// CSV import (with template download), and export of the whole catalog as a PDF.
 /// </summary>
 public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
 {
     public const int TestsPerPage = 40;
+
+    private static readonly IReadOnlyList<string> ImportExtensions = ["csv"];
 
     private readonly LabTestsApi _tests;
     private readonly LabTestCatalogVersion _catalogVersion;
     private readonly IDialogService _dialogs;
     private readonly PrintService _print;
     private readonly SavePathPicker _pickSavePath;
+    private readonly OpenPathPicker _pickOpenPath;
     private readonly ErrorReporter _errors;
 
     public LabTestsViewModel(
@@ -37,6 +41,7 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
         LocalizationService localization,
         PrintService print,
         SavePathPicker pickSavePath,
+        OpenPathPicker pickOpenPath,
         ErrorReporter errors)
         : base(toasts, localization, errors)
     {
@@ -45,6 +50,7 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
         _dialogs = dialogs;
         _print = print;
         _pickSavePath = pickSavePath;
+        _pickOpenPath = pickOpenPath;
         _errors = errors;
         PageSize = TestsPerPage;
     }
@@ -129,9 +135,10 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
     /// <summary>True while the export is fetching and writing the PDF (its button shows a spinner).</summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ExportCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ImportCommand))]
     public partial bool IsExporting { get; private set; }
 
-    private bool CanExport() => !IsExporting;
+    private bool CanExport() => !IsExporting && !IsImporting;
 
     /// <summary>Asks where to save, then writes up to <see cref="PageQuery.MaxExportRows"/> tests there as a PDF.</summary>
     [RelayCommand(CanExecute = nameof(CanExport))]
@@ -185,6 +192,128 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
         finally
         {
             IsExporting = false;
+        }
+    }
+
+    /// <summary>True while an import file is uploading (its button shows a spinner).</summary>
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ImportCommand))]
+    [NotifyCanExecuteChangedFor(nameof(DownloadTemplateCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ExportCommand))]
+    public partial bool IsImporting { get; private set; }
+
+    private bool CanImport() => !IsImporting && !IsExporting;
+
+    private bool CanDownloadTemplate() => !IsImporting;
+
+    /// <summary>Picks a CSV Name+Price file, uploads it, reloads the list, and toasts the counts.</summary>
+    [RelayCommand(CanExecute = nameof(CanImport))]
+    private async Task ImportAsync()
+    {
+        string? path;
+        try
+        {
+            path = await _pickOpenPath(Localization.Get("LabTests.ImportTitle"), ImportExtensions);
+        }
+        catch (Exception ex)
+        {
+            _errors.Report(ex, context: "Choosing a lab tests import file");
+            Toasts.Error(Localization.Get("LabTests.ImportFailed"));
+            return;
+        }
+
+        if (path is null)
+        {
+            return;
+        }
+
+        IsImporting = true;
+        try
+        {
+            if (await ReadAsync(ct => _tests.ImportTestsAsync(path, ct)) is not { } result)
+            {
+                return;
+            }
+
+            if (!result.IsSuccess)
+            {
+                ShowError(result);
+                return;
+            }
+
+            var imported = result.Value!;
+            _catalogVersion.Invalidate();
+            await ReloadAsync();
+
+            if (imported.Imported > 0)
+            {
+                Toasts.Success(Localization.Format("LabTests.ImportDone", imported.Imported, imported.Skipped));
+            }
+            else if (imported.Skipped > 0)
+            {
+                Toasts.Show(Localization.Format("LabTests.ImportNone", imported.Skipped), kind: ToastKind.Warning);
+            }
+            else
+            {
+                Toasts.Show(Localization.Get("LabTests.ImportEmpty"), kind: ToastKind.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            _errors.Report(ex, context: "Importing lab tests");
+            Toasts.Error(Localization.Get("LabTests.ImportFailed"));
+        }
+        finally
+        {
+            IsImporting = false;
+        }
+    }
+
+    /// <summary>Downloads the CSV import template (Excel opens it) to a path the user chooses.</summary>
+    [RelayCommand(CanExecute = nameof(CanDownloadTemplate))]
+    private async Task DownloadTemplateAsync()
+    {
+        string? path;
+        try
+        {
+            path = await _pickSavePath("lab-tests-import-template.csv", Localization.Get("LabTests.TemplateSaveTitle"));
+        }
+        catch (Exception ex)
+        {
+            _errors.Report(ex, context: "Choosing where to save the lab tests import template");
+            Toasts.Error(Localization.Get("LabTests.ImportFailed"));
+            return;
+        }
+
+        if (path is null)
+        {
+            return;
+        }
+
+        IsImporting = true;
+        try
+        {
+            if (await ReadAsync(ct => _tests.DownloadImportTemplateAsync(path, ct)) is not { } result)
+            {
+                return;
+            }
+
+            if (!result.IsSuccess)
+            {
+                ShowError(result);
+                return;
+            }
+
+            Toasts.Success(Localization.Format("LabTests.TemplateSaved", path));
+        }
+        catch (Exception ex)
+        {
+            _errors.Report(ex, context: "Downloading the lab tests import template");
+            Toasts.Error(Localization.Get("LabTests.ImportFailed"));
+        }
+        finally
+        {
+            IsImporting = false;
         }
     }
 

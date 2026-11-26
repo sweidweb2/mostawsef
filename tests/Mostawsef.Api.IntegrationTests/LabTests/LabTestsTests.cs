@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
 using Mostawsef.Api.IntegrationTests.Infrastructure;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.LabTests;
@@ -136,7 +137,9 @@ public class LabTestsTests(ApiFactory factory)
     [Theory]
     [InlineData("GET", Url)]
     [InlineData("GET", Url + "/{id}")]
+    [InlineData("GET", Url + "/import-template")]
     [InlineData("POST", Url)]
+    [InlineData("POST", Url + "/import")]
     [InlineData("PUT", Url + "/{id}")]
     [InlineData("DELETE", Url + "/{id}")]
     public async Task Super_gets_403_on_every_lab_test_endpoint(string method, string url)
@@ -144,12 +147,123 @@ public class LabTestsTests(ApiFactory factory)
         var super = await factory.CreateClientAsAsync(TestUsers.Super);
         var request = new HttpRequestMessage(new HttpMethod(method), url.Replace("{id}", Guid.NewGuid().ToString()))
         {
-            Content = method is "POST" or "PUT" ? JsonContent.Create(new { }) : null,
+            Content = method is "POST" or "PUT"
+                ? (url.EndsWith("/import", StringComparison.Ordinal)
+                    ? ImportFile("Name,Price\r\nA,$1.00\r\n")
+                    : JsonContent.Create(new { }))
+                : null,
         };
 
         var response = await super.SendAsync(request, Ct);
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Import_creates_tests_from_csv_with_dollar_prices_and_generates_codes()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var name = $"Import CBC {Guid.NewGuid():N}";
+
+        var response = await admin.PostAsync($"{Url}/import", ImportFile($"Name,Price\r\n{name},$0.08\r\n"), Ct);
+        var result = await response.Content.ReadFromJsonAsync<ImportLabTestsResult>(Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal((1, 0), (result!.Imported, result.Skipped));
+        var page = await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?search={Uri.EscapeDataString(name)}");
+        var created = Assert.Single(page.Items);
+        Assert.Equal(8, created.LabCost);
+        Assert.Equal(8, created.Code.Length);
+        Assert.Matches("^[A-Z0-9]+$", created.Code);
+    }
+
+    [Fact]
+    public async Task Import_skips_bad_duplicate_and_existing_names_and_stops_after_ten_empty_rows()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var existing = await CreateAsync(admin, name: $"Already {Guid.NewGuid():N}");
+        var good = $"Good {Guid.NewGuid():N}";
+        var duplicateInFile = $"Dup {Guid.NewGuid():N}";
+        var afterGap = $"After gap {Guid.NewGuid():N}";
+        var csv =
+            "Name,Price\r\n" +
+            $"{good},$2.00\r\n" +
+            $"{duplicateInFile},$1.00\r\n" +
+            $"{duplicateInFile},$3.00\r\n" +
+            $"{existing.Name},$4.00\r\n" +
+            ",$5.00\r\n" +
+            "Missing price,\r\n" +
+            $"Bad price {Guid.NewGuid():N},not-a-price\r\n" +
+            $"{afterGap},$1.24\r\n" +
+            string.Concat(Enumerable.Repeat(",\r\n", LabTestRules.ImportEmptyStopRows)) +
+            $"Should not import {Guid.NewGuid():N},$9.00\r\n";
+
+        var response = await admin.PostAsync($"{Url}/import", ImportFile(csv), Ct);
+        var result = await response.Content.ReadFromJsonAsync<ImportLabTestsResult>(Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(2, result!.Imported);
+        Assert.True(result.Skipped >= 5);
+        var page = await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?search={Uri.EscapeDataString(good)}&pageSize=100");
+        Assert.Contains(page.Items, t => t.Name == good && t.LabCost == 200);
+        Assert.Contains(page.Items, t => t.Name == afterGap && t.LabCost == 124);
+        Assert.DoesNotContain(page.Items, t => t.Name.StartsWith("Should not import", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Import_from_xlsx_template_round_trips_the_sample_row()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var template = await admin.GetAsync($"{Url}/import-template?format=xlsx", Ct);
+        template.EnsureSuccessStatusCode();
+        var bytes = await template.Content.ReadAsByteArrayAsync(Ct);
+
+        using var form = new MultipartFormDataContent();
+        form.Add(new ByteArrayContent(bytes), "file", "lab-tests-import-template.xlsx");
+        var response = await admin.PostAsync($"{Url}/import", form, Ct);
+        var result = await response.Content.ReadFromJsonAsync<ImportLabTestsResult>(Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(1, result!.Imported);
+        var page = await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?search=Complete%20blood%20count&pageSize=100");
+        Assert.Contains(page.Items, t => t.Name == "Complete blood count" && t.LabCost == 1200);
+    }
+
+    [Fact]
+    public async Task Import_template_csv_has_name_and_price_headers()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+
+        var response = await admin.GetAsync($"{Url}/import-template?format=csv", Ct);
+        var text = Encoding.UTF8.GetString(await response.Content.ReadAsByteArrayAsync(Ct));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("Name,Price", text);
+        Assert.Contains("$12.00", text);
+    }
+
+    [Fact]
+    public async Task Import_without_a_file_returns_400()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+
+        var problem = await ProblemResponse.ReadAsync(await admin.PostAsync($"{Url}/import", new MultipartFormDataContent(), Ct));
+
+        Assert.Equal(HttpStatusCode.BadRequest, problem.Status);
+        Assert.Equal(ErrorCodes.Validation, problem.Code);
+        Assert.Equal([ErrorCodes.Required], problem.Errors["File"]);
+    }
+
+    [Fact]
+    public async Task Import_is_recorded_in_the_activity_log()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var name = $"Logged import {Guid.NewGuid():N}";
+        (await admin.PostAsync($"{Url}/import", ImportFile($"Name,Price\r\n{name},$1.00\r\n"), Ct)).EnsureSuccessStatusCode();
+
+        var super = await factory.CreateClientAsAsync(TestUsers.Super);
+        var page = await super.GetJsonAsync<CursorPage<ActivityLogListItemDto>>("api/activity-logs?search=lab_tests.imported&pageSize=50");
+        Assert.Contains(page.Items, i => i.Action == "lab_tests.imported");
     }
 
     [Fact]
@@ -342,6 +456,13 @@ public class LabTestsTests(ApiFactory factory)
     }
 
     private static string UniqueCode() => $"T{Guid.NewGuid():N}"[..12].ToUpperInvariant();
+
+    private static MultipartFormDataContent ImportFile(string csv, string fileName = "tests.csv")
+    {
+        var form = new MultipartFormDataContent();
+        form.Add(new ByteArrayContent(Encoding.UTF8.GetBytes(csv)), "file", fileName);
+        return form;
+    }
 
     private static async Task<LabTestDto> CreateAsync(HttpClient admin, string? name = null)
     {

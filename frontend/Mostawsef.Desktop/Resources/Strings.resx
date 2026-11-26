@@ -183,6 +183,7 @@
   <data name="Action.lab_tests.created" xml:space="preserve"><value>Added a lab test</value></data>
   <data name="Action.lab_tests.updated" xml:space="preserve"><value>Updated a lab test</value></data>
   <data name="Action.lab_tests.deleted" xml:space="preserve"><value>Deleted a lab test</value></data>
+  <data name="Action.lab_tests.imported" xml:space="preserve"><value>Imported lab tests</value></data>
   <data name="Action.patients.created" xml:space="preserve"><value>Added a patient</value></data>
   <data name="Action.patients.updated" xml:space="preserve"><value>Updated a patient</value></data>
   <data name="Action.patients.deleted" xml:space="preserve"><value>Deleted a patient</value></data>
@@ -298,6 +299,17 @@
   <data name="LabTests.Inactive" xml:space="preserve"><value>Unavailable</value></data>
   <data name="LabTests.SearchPlaceholder" xml:space="preserve"><value>Search by test name or code...</value></data>
   <data name="LabTests.ExportHint" xml:space="preserve"><value>Export all tests as a PDF</value></data>
+  <data name="LabTests.Import" xml:space="preserve"><value>Import</value></data>
+  <data name="LabTests.ImportTitle" xml:space="preserve"><value>Import lab tests</value></data>
+  <data name="LabTests.ImportHint" xml:space="preserve"><value>Import Name and Price from a CSV file. Codes are created automatically. Bad rows are skipped.</value></data>
+  <data name="LabTests.ImportDone" xml:space="preserve"><value>Imported {0} tests. Skipped {1} rows.</value></data>
+  <data name="LabTests.ImportNone" xml:space="preserve"><value>No tests imported. Skipped {0} rows.</value></data>
+  <data name="LabTests.ImportEmpty" xml:space="preserve"><value>No tests found in the file.</value></data>
+  <data name="LabTests.ImportFailed" xml:space="preserve"><value>Could not import the lab tests.</value></data>
+  <data name="LabTests.Template" xml:space="preserve"><value>Template</value></data>
+  <data name="LabTests.TemplateHint" xml:space="preserve"><value>Download a CSV template with Name and Price columns</value></data>
+  <data name="LabTests.TemplateSaveTitle" xml:space="preserve"><value>Save import template</value></data>
+  <data name="LabTests.TemplateSaved" xml:space="preserve"><value>Template saved to {0}</value></data>
   <data name="LabTests.Field.NamePlaceholder" xml:space="preserve"><value>e.g. Complete blood count</value></data>
   <data name="LabTests.Field.CodePlaceholder" xml:space="preserve"><value>e.g. CBC</value></data>
   <data name="LabTests.Field.AmountPlaceholder" xml:space="preserve"><value>0.00</value></data>
@@ -429,6 +441,7 @@
   <data name="Action.orders.created" xml:space="preserve"><value>Order created</value></data>
   <data name="ErrorCode.patient_has_orders" xml:space="preserve"><value>This patient has orders, so they can't be deleted.</value></data>
   <data name="ErrorCode.in_use" xml:space="preserve"><value>This test is used by orders, so it can't be deleted. Deactivate it instead.</value></data>
+  <data name="ErrorCode.too_large" xml:space="preserve"><value>This file is too large.</value></data>
   <data name="ErrorCode.inactive" xml:space="preserve"><value>This test is no longer offered.</value></data>
   <data name="ErrorCode.duplicate" xml:space="preserve"><value>This test is already in the order.</value></data>
   <data name="ErrorCode.exceeds_total" xml:space="preserve"><value>The payment can't be more than the order total.</value></data>

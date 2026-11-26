@@ -59,4 +59,13 @@ public class LabTestsApi(ApiClient api)
 
     public Task<ApiResult<bool>> DeleteTestAsync(Guid id, CancellationToken cancellationToken = default) =>
         api.DeleteAsync($"api/lab-tests/{id}", cancellationToken);
+
+    /// <summary>Uploads a CSV Name/Price file; the server generates codes and skips bad rows.</summary>
+    public Task<ApiResult<ImportLabTestsResult>> ImportTestsAsync(string filePath, CancellationToken cancellationToken = default) =>
+        api.PostFileAsync<ImportLabTestsResult>("api/lab-tests/import", filePath, cancellationToken: cancellationToken);
+
+    /// <summary>Downloads the CSV import template to <paramref name="destinationPath"/>.</summary>
+    public Task<ApiResult<bool>> DownloadImportTemplateAsync(
+        string destinationPath, CancellationToken cancellationToken = default) =>
+        api.DownloadAsync("api/lab-tests/import-template", destinationPath, cancellationToken);
 }

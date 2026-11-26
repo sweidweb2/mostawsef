@@ -19,6 +19,19 @@
                                 <TextBlock Text="{l:Tr Common.Refresh}" />
                             </StackPanel>
                         </Button>
+                        <Button Name="TemplateButton" Classes="secondary" Command="{Binding DownloadTemplateCommand}" ToolTip.Tip="{l:Tr LabTests.TemplateHint}">
+                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
+                                <PathIcon Data="{StaticResource IconDocument}" />
+                                <TextBlock Text="{l:Tr LabTests.Template}" />
+                            </StackPanel>
+                        </Button>
+                        <Button Name="ImportButton" Classes="secondary" Command="{Binding ImportCommand}" ToolTip.Tip="{l:Tr LabTests.ImportHint}">
+                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
+                                <PathIcon Data="{StaticResource IconUpload}" IsVisible="{Binding !IsImporting}" />
+                                <ui:Spinner Width="16" Height="16" IsVisible="{Binding IsImporting}" />
+                                <TextBlock Text="{l:Tr LabTests.Import}" />
+                            </StackPanel>
+                        </Button>
                         <Button Name="ExportButton" Classes="secondary" Command="{Binding ExportCommand}" ToolTip.Tip="{l:Tr LabTests.ExportHint}">
                             <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
                                 <PathIcon Data="{StaticResource IconDownload}" IsVisible="{Binding !IsExporting}" />

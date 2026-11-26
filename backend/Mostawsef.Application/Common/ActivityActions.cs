@@ -46,6 +46,7 @@ public static class ActivityActions
     public const string LabTestCreated = "lab_tests.created";
     public const string LabTestUpdated = "lab_tests.updated";
     public const string LabTestDeleted = "lab_tests.deleted";
+    public const string LabTestsImported = "lab_tests.imported";
 
     public const string PatientCreated = "patients.created";
     public const string PatientUpdated = "patients.updated";

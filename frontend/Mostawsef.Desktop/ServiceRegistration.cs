@@ -26,6 +26,9 @@ public class DesktopServiceOptions
     /// <summary>Asks where to save an exported file; the default shows the system "Save as" dialog.</summary>
     public SavePathPicker? PickSavePath { get; init; }
 
+    /// <summary>Asks the user to pick an existing file; the default shows the system open dialog.</summary>
+    public OpenPathPicker? PickOpenPath { get; init; }
+
     /// <summary>Asks for a folder (backup path); the default shows the system folder dialog.</summary>
     public FolderPathPicker? PickFolderPath { get; init; }
 }
@@ -103,6 +106,7 @@ public static class ServiceRegistration
             sp.GetRequiredService<PerformanceMonitor>()));
 
         services.AddSingleton<SavePathPicker>(options.PickSavePath ?? SaveFilePicker.PickAsync);
+        services.AddSingleton<OpenPathPicker>(options.PickOpenPath ?? OpenFilePicker.PickAsync);
         services.AddSingleton<FolderPathPicker>(options.PickFolderPath ?? FolderPicker.PickAsync);
         services.AddSingleton(sp => new InvoiceService(
             sp.GetRequiredService<OrdersApi>(),
