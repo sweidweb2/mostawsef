@@ -1,6 +1,6 @@
 # Release playbook (ship a new Mostawsef version)
 
-**Start here** for day-to-day releases. Deeper detail: [`02-decisions.md`](02-decisions.md) · [`03-data-safety.md`](03-data-safety.md) · [`04-smoke-checklist.md`](04-smoke-checklist.md) · [`Docs/commands.md`](../commands.md)
+**Start here** for day-to-day releases. Concept (book): [`00-concept.md`](00-concept.md) · [`02-decisions.md`](02-decisions.md) · [`03-data-safety.md`](03-data-safety.md) · [`04-smoke-checklist.md`](04-smoke-checklist.md) · [`Docs/commands.md`](../commands.md)
 
 ---
 

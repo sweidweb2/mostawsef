@@ -1,7 +1,7 @@
 # Automating install — locked decisions
 
 Pattern A: CI Release + in-app notify + silent update Setup.  
-Day-to-day ship: [`01-release-playbook.md`](01-release-playbook.md) · edge status: [`05-edge-cases.md`](05-edge-cases.md)
+Concept (book): [`00-concept.md`](00-concept.md) · day-to-day: [`01-release-playbook.md`](01-release-playbook.md) · edge status: [`05-edge-cases.md`](05-edge-cases.md)
 
 | Id | Topic | Decision |
 | --- | --- | --- |

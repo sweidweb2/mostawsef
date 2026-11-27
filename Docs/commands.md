@@ -241,6 +241,7 @@ Data safety notes (backups before major updates): `Docs/7-automating install/03-
 
 ### Publish a GitHub Release (CI)
 
+Concept (book summary): [`Docs/7-automating install/00-concept.md`](7-automating%20install/00-concept.md).  
 Full ship checklist (backup note, USB, rollback): [`Docs/7-automating install/01-release-playbook.md`](7-automating%20install/01-release-playbook.md).
 
 ```powershell
