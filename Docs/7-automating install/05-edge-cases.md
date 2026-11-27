@@ -7,7 +7,7 @@ Update this when update behavior changes. Decisions: [`02-decisions.md`](02-deci
 | CI | Missing Setup / `latest.json` | **Handled** — release job throws; `fail_on_unmatched_files` |
 | CI | Bad `latest.json` fields / sha mismatch | **Handled** — validation in `release.yml` |
 | CI | Tiny/corrupt Setup artifact | **Handled** — size + sha check |
-| CI | Duplicate tag / republish | **Handled** — Release fails if `v{Version}` already exists; bump `Directory.Build.props` and merge again |
+| CI | Duplicate tag / republish | **Handled** — next version is latest tag + patch; collision fails the job; use workflow_dispatch override for minor/major |
 | CI | Inno missing on runner | **Handled** — choco install Inno in workflow |
 | CI | Public Releases | **Accepted** — Phase 0 |
 | Feed | Offline / timeout / 404 / HTML | **Handled** — quiet, no banner |

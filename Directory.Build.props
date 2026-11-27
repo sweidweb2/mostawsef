@@ -7,7 +7,7 @@
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <!-- Product semver (Setup + Desktop + API). Override on publish: -p:Version=1.2.0 (build-setup.ps1). -->
+    <!-- Product semver (Setup + Desktop + API). Release CI auto patch-bumps this on merge to main. -->
     <Version>1.0.1</Version>
     <!-- A newly published vulnerability in a package must not suddenly break the build: it stays a warning. -->
     <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>

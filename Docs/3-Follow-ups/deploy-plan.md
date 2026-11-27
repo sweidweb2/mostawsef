@@ -208,7 +208,7 @@ Until Phase 6 exists, you *could* install a friendly first client this same way 
 
 1. Inno Setup (`packaging/innosetup/Mostawsef.iss`) + `build-setup.ps1` / `install-clinic.ps1`
 2. Full Setup (Postgres bundled) and **update** Setup (`-UpdateOnly`)
-3. GitHub Release CI on merge to `main` (version from `Directory.Build.props`) + `latest.json` feed
+3. GitHub Release CI on merge to `main` (auto patch bump) + `latest.json` feed
 4. In-app **Update now** (download → silent Setup → relaunch)
 5. Upgrade preserves Postgres data + `appsettings.Clinic.json` / connection string
 
