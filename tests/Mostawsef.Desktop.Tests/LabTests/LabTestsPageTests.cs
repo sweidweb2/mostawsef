@@ -174,7 +174,7 @@ public class LabTestsPageTests : UiTestBase
         app.SignInAs(Roles.Admin);
         app.Api.OnGet(TestsPath, new PagedResult<LabTestDto>([Cbc], 1, 40, 1));
         app.Api.On(HttpMethod.Post, $"{TestsPath}/import", _ =>
-            FakeApiHandler.Json(new ImportLabTestsResult(2, 1)));
+            FakeApiHandler.Json(new ImportLabTestsResult(2, 1, 1)));
         var (page, window) = await ShowPage(app);
         var importFile = Path.Combine(app.DownloadsFolder, "tests.csv");
         Directory.CreateDirectory(app.DownloadsFolder);
@@ -188,7 +188,7 @@ public class LabTestsPageTests : UiTestBase
         Assert.Equal(["Import lab tests"], app.OpenPickerTitles);
         Assert.Single(app.Api.RequestsTo(HttpMethod.Post, $"{TestsPath}/import"));
         Assert.True(app.Api.RequestsTo(HttpMethod.Get, TestsPath).Count() > listRequests);
-        Assert.Contains("Imported 2 tests. Skipped 1 rows.", Toasts(window));
+        Assert.Contains("Imported 2 tests. Updated 1. Skipped 1 rows.", Toasts(window));
         Assert.False(page.IsImporting);
     }
 
@@ -312,8 +312,9 @@ public class LabTestsPageTests : UiTestBase
 
         var running = page.ExportCommand.ExecuteAsync(null);
         Dispatcher.UIThread.RunJobs();
-        var button = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "ExportButton");
+        var button = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "MoreActionsButton");
         Assert.True(page.IsExporting);
+        Assert.True(page.IsBusy);
         Assert.False(page.ExportCommand.CanExecute(null));
         Assert.Contains(button.GetVisualDescendants().OfType<Mostawsef.Desktop.Components.Spinner>(), s => s.IsEffectivelyVisible);
 
@@ -321,8 +322,32 @@ public class LabTestsPageTests : UiTestBase
         await running;
         Dispatcher.UIThread.RunJobs();
         Assert.False(page.IsExporting);
+        Assert.False(page.IsBusy);
         Assert.DoesNotContain(button.GetVisualDescendants().OfType<Mostawsef.Desktop.Components.Spinner>(), s => s.IsEffectivelyVisible);
         Assert.True(File.Exists(app.PickedSavePath));
+    }
+
+    [AvaloniaFact]
+    public async Task The_page_header_keeps_add_and_refresh_with_other_actions_in_the_settings_menu()
+    {
+        using var app = AdminWithTests(Cbc);
+        var (page, window) = await ShowPage(app);
+
+        Assert.NotNull(Named<Button>(window, "RefreshButton"));
+        Assert.NotNull(Named<Button>(window, "AddTestButton"));
+        var more = Named<Button>(window, "MoreActionsButton");
+        var flyout = Assert.IsType<MenuFlyout>(more.Flyout);
+        Assert.Null(window.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.Name == "ImportButton"));
+        Assert.Null(window.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.Name == "ExportButton"));
+        Assert.Null(window.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.Name == "TemplateButton"));
+
+        flyout.ShowAt(more);
+        Dispatcher.UIThread.RunJobs();
+        var items = flyout.Items.OfType<MenuItem>().ToDictionary(i => i.Name!);
+        Assert.Equal(["ExportMenuItem", "ImportMenuItem", "TemplateMenuItem"], items.Keys.Order(StringComparer.Ordinal));
+        Assert.Equal(page.DownloadTemplateCommand, items["TemplateMenuItem"].Command);
+        Assert.Equal(page.ImportCommand, items["ImportMenuItem"].Command);
+        Assert.Equal(page.ExportCommand, items["ExportMenuItem"].Command);
     }
 
     [AvaloniaFact]

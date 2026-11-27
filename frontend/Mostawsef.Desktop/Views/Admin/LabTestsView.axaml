@@ -13,30 +13,10 @@
             <ui:PageHeader Title="{l:Tr Nav.LabTests}" Subtitle="{l:Tr LabTests.Subtitle}">
                 <ui:PageHeader.Actions>
                     <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
-                        <Button Classes="secondary" Command="{Binding RefreshCommand}">
+                        <Button Name="RefreshButton" Classes="secondary" Command="{Binding RefreshCommand}">
                             <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
                                 <PathIcon Data="{StaticResource IconRefresh}" />
                                 <TextBlock Text="{l:Tr Common.Refresh}" />
-                            </StackPanel>
-                        </Button>
-                        <Button Name="TemplateButton" Classes="secondary" Command="{Binding DownloadTemplateCommand}" ToolTip.Tip="{l:Tr LabTests.TemplateHint}">
-                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
-                                <PathIcon Data="{StaticResource IconDocument}" />
-                                <TextBlock Text="{l:Tr LabTests.Template}" />
-                            </StackPanel>
-                        </Button>
-                        <Button Name="ImportButton" Classes="secondary" Command="{Binding ImportCommand}" ToolTip.Tip="{l:Tr LabTests.ImportHint}">
-                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
-                                <PathIcon Data="{StaticResource IconUpload}" IsVisible="{Binding !IsImporting}" />
-                                <ui:Spinner Width="16" Height="16" IsVisible="{Binding IsImporting}" />
-                                <TextBlock Text="{l:Tr LabTests.Import}" />
-                            </StackPanel>
-                        </Button>
-                        <Button Name="ExportButton" Classes="secondary" Command="{Binding ExportCommand}" ToolTip.Tip="{l:Tr LabTests.ExportHint}">
-                            <StackPanel Orientation="Horizontal" Spacing="{StaticResource GapControls}">
-                                <PathIcon Data="{StaticResource IconDownload}" IsVisible="{Binding !IsExporting}" />
-                                <ui:Spinner Width="16" Height="16" IsVisible="{Binding IsExporting}" />
-                                <TextBlock Text="{l:Tr Common.Export}" />
                             </StackPanel>
                         </Button>
                         <Button Name="AddTestButton" Classes="primary" Command="{Binding AddCommand}">
@@ -44,6 +24,40 @@
                                 <PathIcon Data="{StaticResource IconPlus}" />
                                 <TextBlock Text="{l:Tr LabTests.Add}" />
                             </StackPanel>
+                        </Button>
+                        <Button Name="MoreActionsButton" Classes="secondary icon" ToolTip.Tip="{l:Tr Common.Actions}">
+                            <Button.Flyout>
+                                <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                    <MenuItem Name="TemplateMenuItem"
+                                              Header="{l:Tr LabTests.Template}"
+                                              Command="{Binding DownloadTemplateCommand}"
+                                              ToolTip.Tip="{l:Tr LabTests.TemplateHint}">
+                                        <MenuItem.Icon>
+                                            <PathIcon Data="{StaticResource IconDocument}" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem Name="ImportMenuItem"
+                                              Header="{l:Tr LabTests.Import}"
+                                              Command="{Binding ImportCommand}"
+                                              ToolTip.Tip="{l:Tr LabTests.ImportHint}">
+                                        <MenuItem.Icon>
+                                            <PathIcon Data="{StaticResource IconUpload}" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem Name="ExportMenuItem"
+                                              Header="{l:Tr Common.Export}"
+                                              Command="{Binding ExportCommand}"
+                                              ToolTip.Tip="{l:Tr LabTests.ExportHint}">
+                                        <MenuItem.Icon>
+                                            <PathIcon Data="{StaticResource IconDownload}" />
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                </MenuFlyout>
+                            </Button.Flyout>
+                            <Panel>
+                                <PathIcon Data="{StaticResource IconSettings}" IsVisible="{Binding !IsBusy}" />
+                                <ui:Spinner Width="{StaticResource IconSizeSm}" Height="{StaticResource IconSizeSm}" IsVisible="{Binding IsBusy}" />
+                            </Panel>
                         </Button>
                     </StackPanel>
                 </ui:PageHeader.Actions>

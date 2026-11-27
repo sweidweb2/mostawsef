@@ -60,6 +60,19 @@ public class LabTestRepository(AppDbContext db) : ILabTestRepository
         return hits.ToHashSet(StringComparer.Ordinal);
     }
 
+    public async Task<IReadOnlyList<LabTest>> GetTrackedBySearchNamesAsync(
+        IReadOnlyCollection<string> searchNames, CancellationToken cancellationToken)
+    {
+        if (searchNames.Count == 0)
+        {
+            return [];
+        }
+
+        return await db.LabTests
+            .Where(t => searchNames.Contains(t.SearchName))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<HashSet<string>> FindExistingCodesAsync(
         IReadOnlyCollection<string> codes, CancellationToken cancellationToken)
     {

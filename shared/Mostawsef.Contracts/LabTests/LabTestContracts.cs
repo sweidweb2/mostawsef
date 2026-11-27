@@ -77,5 +77,8 @@ public record UpdateLabTestRequest
     public int Version { get; init; }
 }
 
-/// <summary>Result of posting a Name/Price CSV to the lab-tests import endpoint.</summary>
-public record ImportLabTestsResult(int Imported, int Skipped);
+/// <summary>Result of posting a Name/Price CSV or Excel file to the lab-tests import endpoint.</summary>
+/// <param name="Imported">New tests created.</param>
+/// <param name="Updated">Existing tests whose price (and display name) were overwritten by a matching name.</param>
+/// <param name="Skipped">Bad rows and duplicate names later in the same file.</param>
+public record ImportLabTestsResult(int Imported, int Updated, int Skipped);

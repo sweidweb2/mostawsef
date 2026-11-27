@@ -19,13 +19,13 @@ namespace Mostawsef.Desktop.ViewModels.Admin;
 
 /// <summary>
 /// Admin portal: the lab test catalog as a table or a grid of cards, with search and paging; add, edit, delete,
-/// CSV import (with template download), and export of the whole catalog as a PDF.
+/// CSV/Excel import (with template download), and export of the whole catalog as a PDF.
 /// </summary>
 public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
 {
     public const int TestsPerPage = 40;
 
-    private static readonly IReadOnlyList<string> ImportExtensions = ["csv"];
+    private static readonly IReadOnlyList<string> ImportExtensions = ["csv", "xlsx"];
 
     private readonly LabTestsApi _tests;
     private readonly LabTestCatalogVersion _catalogVersion;
@@ -142,8 +142,9 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
         await ReloadAsync();
     }
 
-    /// <summary>True while the export is fetching and writing the PDF (its button shows a spinner).</summary>
+    /// <summary>True while the export is fetching and writing the PDF (the settings menu button shows a spinner).</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsBusy))]
     [NotifyCanExecuteChangedFor(nameof(ExportCommand))]
     [NotifyCanExecuteChangedFor(nameof(ImportCommand))]
     [NotifyCanExecuteChangedFor(nameof(DownloadTemplateCommand))]
@@ -206,18 +207,22 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
         }
     }
 
-    /// <summary>True while an import file is uploading (its button shows a spinner).</summary>
+    /// <summary>True while an import file is uploading (the settings menu button shows a spinner).</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsBusy))]
     [NotifyCanExecuteChangedFor(nameof(ImportCommand))]
     [NotifyCanExecuteChangedFor(nameof(DownloadTemplateCommand))]
     [NotifyCanExecuteChangedFor(nameof(ExportCommand))]
     public partial bool IsImporting { get; private set; }
 
+    /// <summary>True while import or export work is in flight (settings button spinner).</summary>
+    public bool IsBusy => IsImporting || IsExporting;
+
     private bool CanImport() => !IsImporting && !IsExporting;
 
     private bool CanDownloadTemplate() => !IsImporting && !IsExporting;
 
-    /// <summary>Picks a CSV Name+Price file, uploads it, reloads the list, and toasts the counts.</summary>
+    /// <summary>Picks a CSV or Excel Name+Price file, uploads it, reloads the list, and toasts the counts.</summary>
     [RelayCommand(CanExecute = nameof(CanImport))]
     private async Task ImportAsync()
     {
@@ -272,9 +277,10 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
             _catalogVersion.Invalidate();
             await ReloadAsync();
 
-            if (imported.Imported > 0)
+            if (imported.Imported > 0 || imported.Updated > 0)
             {
-                Toasts.Success(Localization.Format("LabTests.ImportDone", imported.Imported, imported.Skipped));
+                Toasts.Success(Localization.Format(
+                    "LabTests.ImportDone", imported.Imported, imported.Updated, imported.Skipped));
             }
             else if (imported.Skipped > 0)
             {

@@ -26,7 +26,10 @@ public interface ILabTestService
 
     Task DeleteAsync(Guid id, CancellationToken cancellationToken);
 
-    /// <summary>Imports Name/Price rows from a CSV stream; skips bad and duplicate-name rows.</summary>
+    /// <summary>
+    /// Imports Name/Price rows from a CSV or Excel stream. Matching names update the existing lab cost
+    /// (code and active stay); bad rows and later duplicates in the same file are skipped.
+    /// </summary>
     Task<ImportLabTestsResult> ImportAsync(Stream stream, string? fileName, CancellationToken cancellationToken);
 }
 
@@ -34,6 +37,7 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
 {
     private const string CodeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private const int GeneratedCodeLength = 8;
+
     public async Task<PagedResult<LabTestDto>> GetPageAsync(PageQuery query, bool? active, CancellationToken cancellationToken)
     {
         var (items, total) = await tests.GetPageAsync(query, active, cancellationToken);
@@ -124,50 +128,68 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
             candidates.Add((row.RowNumber, name, searchName, labCost));
         }
 
-        var existingNames = await tests.FindExistingSearchNamesAsync(
+        var existing = await tests.GetTrackedBySearchNamesAsync(
             candidates.Select(c => c.SearchName).ToList(), cancellationToken);
-        var accepted = new List<(int Row, string Name, string SearchName, long LabCost)>(candidates.Count);
+        var bySearchName = existing.ToDictionary(t => t.SearchName, StringComparer.Ordinal);
+
+        var toCreate = new List<(int Row, string Name, string SearchName, long LabCost)>(candidates.Count);
+        var updated = 0;
         foreach (var candidate in candidates)
         {
-            if (existingNames.Contains(candidate.SearchName))
+            if (bySearchName.TryGetValue(candidate.SearchName, out var test))
             {
-                skipped++;
-                continue;
+                ApplyImportUpdate(test, candidate.Name, candidate.SearchName, candidate.LabCost);
+                updated++;
             }
-
-            accepted.Add(candidate);
+            else
+            {
+                toCreate.Add(candidate);
+            }
         }
 
-        if (accepted.Count == 0)
+        if (updated > 0)
         {
-            return new ImportLabTestsResult(0, skipped);
+            await tests.SaveChangesAsync(cancellationToken);
         }
 
-        var imported = await SaveImportAsync(accepted, () => skipped++, cancellationToken);
+        var imported = 0;
+        if (toCreate.Count > 0)
+        {
+            imported = await SaveImportAsync(
+                toCreate,
+                onUpdated: count => updated += count,
+                cancellationToken);
+        }
+
+        if (imported == 0 && updated == 0)
+        {
+            return new ImportLabTestsResult(0, 0, skipped);
+        }
 
         await activity.LogAsync(
             new ActivityEntry(ActivityActions.LabTestsImported, ActivityModules.LabTests, "Imported lab tests")
             {
-                Details = new { Imported = imported, Skipped = skipped },
+                Details = new { Imported = imported, Updated = updated, Skipped = skipped },
             },
             cancellationToken);
 
-        return new ImportLabTestsResult(imported, skipped);
+        return new ImportLabTestsResult(imported, updated, skipped);
     }
 
     /// <summary>
-    /// Inserts accepted rows; on a unique-index race, counts conflicting names as skipped and retries the rest.
+    /// Inserts new rows. On a unique-index race for a name, updates that existing test instead; code collisions retry.
     /// </summary>
     private async Task<int> SaveImportAsync(
         List<(int Row, string Name, string SearchName, long LabCost)> accepted,
-        Action onSkipped,
+        Action<int> onUpdated,
         CancellationToken cancellationToken)
     {
+        var created = 0;
         for (var attempt = 0; attempt < 3; attempt++)
         {
             if (accepted.Count == 0)
             {
-                return 0;
+                return created;
             }
 
             var codes = await AllocateCodesAsync(accepted.Count, cancellationToken);
@@ -182,33 +204,45 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
             try
             {
                 await tests.SaveChangesAsync(cancellationToken);
-                return entities.Count;
+                return created + entities.Count;
             }
             catch (AppException ex) when (ex.Kind == AppErrorKind.Conflict && ex.Code == ErrorCodes.Taken)
             {
                 tests.DiscardChanges();
-                var taken = await tests.FindExistingSearchNamesAsync(
+                var taken = await tests.GetTrackedBySearchNamesAsync(
                     accepted.Select(a => a.SearchName).ToList(), cancellationToken);
+                var bySearchName = taken.ToDictionary(t => t.SearchName, StringComparer.Ordinal);
                 var remaining = new List<(int Row, string Name, string SearchName, long LabCost)>(accepted.Count);
+                var racedUpdates = 0;
                 foreach (var row in accepted)
                 {
-                    if (taken.Contains(row.SearchName))
+                    if (bySearchName.TryGetValue(row.SearchName, out var test))
                     {
-                        onSkipped();
+                        ApplyImportUpdate(test, row.Name, row.SearchName, row.LabCost);
+                        racedUpdates++;
                     }
                     else
                     {
+                        // Name still free → likely a generated-code collision; retry with new codes.
                         remaining.Add(row);
                     }
                 }
 
-                // Name still free → likely a generated-code collision; retry with new codes.
+                if (racedUpdates > 0)
+                {
+                    await tests.SaveChangesAsync(cancellationToken);
+                    onUpdated(racedUpdates);
+                }
+
                 accepted = remaining;
             }
         }
 
         throw AppException.Conflict(ErrorCodes.Taken);
     }
+
+    private static void ApplyImportUpdate(LabTest test, string name, string searchName, long labCost) =>
+        test.Update(test.Code, name, searchName, labCost, test.IsActive);
 
     private async Task<IReadOnlyList<string>> AllocateCodesAsync(int count, CancellationToken cancellationToken)
     {

@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
+using ClosedXML.Excel;
 using Mostawsef.Api.IntegrationTests.Infrastructure;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.LabTests;
@@ -168,7 +170,7 @@ public class LabTestsTests(ApiFactory factory)
         var result = await response.Content.ReadFromJsonAsync<ImportLabTestsResult>(Ct);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal((1, 0), (result!.Imported, result.Skipped));
+        Assert.Equal((1, 0, 0), (result!.Imported, result.Updated, result.Skipped));
         var page = await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?search={Uri.EscapeDataString(name)}");
         var created = Assert.Single(page.Items);
         Assert.Equal(8, created.LabCost);
@@ -177,7 +179,7 @@ public class LabTestsTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task Import_skips_bad_duplicate_and_existing_names_and_stops_after_ten_empty_rows()
+    public async Task Import_updates_existing_names_skips_bad_and_duplicate_in_file_rows_and_stops_after_ten_empty_rows()
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         var existing = await CreateAsync(admin, name: $"Already {Guid.NewGuid():N}");
@@ -205,15 +207,18 @@ public class LabTestsTests(ApiFactory factory)
         var result = await response.Content.ReadFromJsonAsync<ImportLabTestsResult>(Ct);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        // good + first Dup + afterGap (second Dup / existing / bad / over-max / after-gap rows are skipped).
-        Assert.Equal(3, result!.Imported);
-        Assert.True(result.Skipped >= 6);
+        // good + first Dup + afterGap created; existing name updated; second Dup / bad / over-max skipped.
+        Assert.Equal((3, 1), (result!.Imported, result.Updated));
+        Assert.True(result.Skipped >= 5);
         var page = await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?search={Uri.EscapeDataString(good)}&pageSize=100");
         Assert.Contains(page.Items, t => t.Name == good && t.LabCost == 200);
         page = await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?search={Uri.EscapeDataString(duplicateInFile)}&pageSize=100");
         Assert.Contains(page.Items, t => t.Name == duplicateInFile && t.LabCost == 100);
         page = await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?search={Uri.EscapeDataString(afterGap)}&pageSize=100");
         Assert.Contains(page.Items, t => t.Name == afterGap && t.LabCost == 124);
+        page = await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?search={Uri.EscapeDataString(existing.Name)}&pageSize=100");
+        var overridden = Assert.Single(page.Items, t => t.Id == existing.Id);
+        Assert.Equal((existing.Code, 400), (overridden.Code, overridden.LabCost));
         Assert.DoesNotContain(
             (await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?search={Uri.EscapeDataString(shouldNot)}&pageSize=100")).Items,
             t => t.Name == shouldNot);
@@ -273,7 +278,7 @@ public class LabTestsTests(ApiFactory factory)
         var result = await response.Content.ReadFromJsonAsync<ImportLabTestsResult>(Ct);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal((1, 0), (result!.Imported, result.Skipped));
+        Assert.Equal((1, 0, 0), (result!.Imported, result.Updated, result.Skipped));
         var page = await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?search={Uri.EscapeDataString(us)}");
         Assert.Equal(123_450, Assert.Single(page.Items).LabCost);
     }
@@ -297,17 +302,54 @@ public class LabTestsTests(ApiFactory factory)
             await responses[1].Content.ReadFromJsonAsync<ImportLabTestsResult>(Ct),
         };
         Assert.Equal(1, results.Sum(r => r!.Imported));
-        Assert.Equal(1, results.Sum(r => r!.Skipped));
+        Assert.Equal(1, results.Sum(r => r!.Updated));
+        Assert.Equal(0, results.Sum(r => r!.Skipped));
         var page = await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?search={Uri.EscapeDataString(name)}");
         Assert.Single(page.Items);
     }
 
     [Fact]
-    public async Task Import_rejects_a_non_csv_file()
+    public async Task Import_creates_tests_from_xlsx_with_dollar_and_numeric_prices()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var dollar = $"Xlsx dollar {Guid.NewGuid():N}";
+        var numeric = $"Xlsx numeric {Guid.NewGuid():N}";
+        using var form = ImportXlsxFile(
+            ("Name", "Price"),
+            (dollar, "$0.08"),
+            (numeric, 2.5));
+
+        var response = await admin.PostAsync($"{Url}/import", form, Ct);
+        var result = await response.Content.ReadFromJsonAsync<ImportLabTestsResult>(Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal((2, 0, 0), (result!.Imported, result.Updated, result.Skipped));
+        var page = await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?search={Uri.EscapeDataString(dollar)}");
+        Assert.Equal(8, Assert.Single(page.Items).LabCost);
+        page = await admin.GetJsonAsync<PagedResult<LabTestDto>>($"{Url}?search={Uri.EscapeDataString(numeric)}");
+        Assert.Equal(250, Assert.Single(page.Items).LabCost);
+    }
+
+    [Fact]
+    public async Task Import_rejects_an_unsupported_file_type()
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
         using var form = new MultipartFormDataContent();
-        form.Add(new ByteArrayContent("not csv"u8.ToArray()), "file", "tests.xlsx");
+        form.Add(new ByteArrayContent("not a spreadsheet"u8.ToArray()), "file", "tests.pdf");
+
+        var problem = await ProblemResponse.ReadAsync(await admin.PostAsync($"{Url}/import", form, Ct));
+
+        Assert.Equal(HttpStatusCode.BadRequest, problem.Status);
+        Assert.Equal(ErrorCodes.Validation, problem.Code);
+        Assert.Equal([ErrorCodes.Invalid], problem.Errors["File"]);
+    }
+
+    [Fact]
+    public async Task Import_rejects_a_corrupt_xlsx_file()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        using var form = new MultipartFormDataContent();
+        form.Add(new ByteArrayContent("not xlsx"u8.ToArray()), "file", "tests.xlsx");
 
         var problem = await ProblemResponse.ReadAsync(await admin.PostAsync($"{Url}/import", form, Ct));
 
@@ -555,6 +597,48 @@ public class LabTestsTests(ApiFactory factory)
         var form = new MultipartFormDataContent();
         form.Add(new ByteArrayContent(Encoding.UTF8.GetBytes(csv)), "file", fileName);
         return form;
+    }
+
+    private static MultipartFormDataContent ImportXlsxFile(params (object? Name, object? Price)[] rows)
+    {
+        using var workbook = new XLWorkbook();
+        var sheet = workbook.AddWorksheet("Tests");
+        for (var i = 0; i < rows.Length; i++)
+        {
+            SetCell(sheet.Cell(i + 1, 1), rows[i].Name);
+            SetCell(sheet.Cell(i + 1, 2), rows[i].Price);
+        }
+
+        using var buffer = new MemoryStream();
+        workbook.SaveAs(buffer);
+        var form = new MultipartFormDataContent();
+        form.Add(new ByteArrayContent(buffer.ToArray()), "file", "tests.xlsx");
+        return form;
+    }
+
+    private static void SetCell(IXLCell cell, object? value)
+    {
+        switch (value)
+        {
+            case null:
+                cell.Clear();
+                break;
+            case string text:
+                cell.Value = text;
+                break;
+            case double number:
+                cell.Value = number;
+                break;
+            case int number:
+                cell.Value = number;
+                break;
+            case decimal number:
+                cell.Value = number;
+                break;
+            default:
+                cell.Value = Convert.ToString(value, CultureInfo.InvariantCulture);
+                break;
+        }
     }
 
     private static async Task<LabTestDto> CreateAsync(HttpClient admin, string? name = null)

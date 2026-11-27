@@ -1,16 +1,17 @@
 using System.Globalization;
 using System.Text;
+using ClosedXML.Excel;
 using Mostawsef.Application.Common;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.LabTests;
 
 namespace Mostawsef.Application.Modules.LabTests;
 
-/// <summary>One Name/Price row from the import CSV before validation.</summary>
+/// <summary>One Name/Price row from the import file before validation.</summary>
 internal readonly record struct LabTestImportRawRow(int RowNumber, string? Name, string? PriceText);
 
 /// <summary>
-/// Reads the lab-test import CSV (comma-separated Name + Price in the template shape: <c>$12.00</c>).
+/// Reads the lab-test import CSV or Excel (.xlsx) file (Name + Price in the template shape: <c>$12.00</c>).
 /// Stops after <see cref="LabTestRules.ImportEmptyStopRows"/> empty rows past the last filled row.
 /// </summary>
 internal static class LabTestImportFile
@@ -23,7 +24,7 @@ internal static class LabTestImportFile
         }
 
         var extension = Path.GetExtension(fileName ?? string.Empty).TrimStart('.').ToLowerInvariant();
-        if (extension is not ("csv" or ""))
+        if (extension is not ("csv" or "xlsx" or ""))
         {
             throw AppException.Validation("File", ErrorCodes.Invalid);
         }
@@ -41,7 +42,7 @@ internal static class LabTestImportFile
         }
 
         buffer.Position = 0;
-        return ReadCsv(buffer);
+        return extension == "xlsx" ? ReadXlsx(buffer) : ReadCsv(buffer);
     }
 
     /// <summary>
@@ -134,37 +135,121 @@ internal static class LabTestImportFile
         {
             rowNumber++;
             var (name, price) = ParseCsvLine(line);
-            if (!seenData && IsHeaderRow(name, price))
+            if (!AppendRow(rows, ref seenData, ref consecutiveEmpty, rowNumber, name, price))
             {
-                continue;
-            }
-
-            if (IsBlank(name) && IsBlank(price))
-            {
-                if (!seenData)
-                {
-                    continue;
-                }
-
-                consecutiveEmpty++;
-                if (consecutiveEmpty >= LabTestRules.ImportEmptyStopRows)
-                {
-                    break;
-                }
-
-                continue;
-            }
-
-            seenData = true;
-            consecutiveEmpty = 0;
-            rows.Add(new LabTestImportRawRow(rowNumber, name, price));
-            if (rows.Count > LabTestRules.MaxImportRows)
-            {
-                throw AppException.Validation("File", ErrorCodes.TooLarge);
+                break;
             }
         }
 
         return rows;
+    }
+
+    private static List<LabTestImportRawRow> ReadXlsx(Stream stream)
+    {
+        try
+        {
+            using var workbook = new XLWorkbook(stream);
+            var sheet = workbook.Worksheets.FirstOrDefault()
+                ?? throw AppException.Validation("File", ErrorCodes.Invalid);
+
+            var lastRow = sheet.LastRowUsed()?.RowNumber() ?? 0;
+            var rows = new List<LabTestImportRawRow>();
+            var consecutiveEmpty = 0;
+            var seenData = false;
+            for (var rowNumber = 1; rowNumber <= lastRow; rowNumber++)
+            {
+                var name = CellText(sheet.Cell(rowNumber, 1));
+                var price = CellText(sheet.Cell(rowNumber, 2));
+                if (!AppendRow(rows, ref seenData, ref consecutiveEmpty, rowNumber, name, price))
+                {
+                    break;
+                }
+            }
+
+            return rows;
+        }
+        catch (AppException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException and not OperationCanceledException)
+        {
+            throw AppException.Validation("File", ErrorCodes.Invalid);
+        }
+    }
+
+    /// <returns>False when the reader should stop (too many empty rows after data).</returns>
+    private static bool AppendRow(
+        List<LabTestImportRawRow> rows,
+        ref bool seenData,
+        ref int consecutiveEmpty,
+        int rowNumber,
+        string? name,
+        string? price)
+    {
+        if (!seenData && IsHeaderRow(name, price))
+        {
+            return true;
+        }
+
+        if (IsBlank(name) && IsBlank(price))
+        {
+            if (!seenData)
+            {
+                return true;
+            }
+
+            consecutiveEmpty++;
+            return consecutiveEmpty < LabTestRules.ImportEmptyStopRows;
+        }
+
+        seenData = true;
+        consecutiveEmpty = 0;
+        rows.Add(new LabTestImportRawRow(rowNumber, name, price));
+        if (rows.Count > LabTestRules.MaxImportRows)
+        {
+            throw AppException.Validation("File", ErrorCodes.TooLarge);
+        }
+
+        return true;
+    }
+
+    private static string? CellText(IXLCell cell)
+    {
+        var value = cell.Value;
+        if (value.IsBlank)
+        {
+            return null;
+        }
+
+        if (value.IsNumber)
+        {
+            return value.GetNumber().ToString("0.############################", CultureInfo.InvariantCulture);
+        }
+
+        if (value.IsText)
+        {
+            var text = value.GetText().Trim();
+            return text.Length == 0 ? null : text;
+        }
+
+        if (value.IsBoolean)
+        {
+            return value.GetBoolean() ? "TRUE" : "FALSE";
+        }
+
+        if (value.IsDateTime)
+        {
+            return value.GetDateTime().ToString("O", CultureInfo.InvariantCulture);
+        }
+
+        if (value.IsTimeSpan)
+        {
+            return value.GetTimeSpan().ToString("c", CultureInfo.InvariantCulture);
+        }
+
+        var formatted = cell.GetFormattedString().Trim();
+        return formatted.Length == 0 ? null : formatted;
     }
 
     private static (string? Name, string? Price) ParseCsvLine(string line)

@@ -300,9 +300,9 @@
   <data name="LabTests.ExportHint" xml:space="preserve"><value>تصدير كل التحاليل كملف PDF</value></data>
   <data name="LabTests.Import" xml:space="preserve"><value>استيراد</value></data>
   <data name="LabTests.ImportTitle" xml:space="preserve"><value>استيراد التحاليل</value></data>
-  <data name="LabTests.ImportHint" xml:space="preserve"><value>استيراد الاسم والسعر من ملف CSV. تُنشأ الأكواد تلقائياً. تُتخطى الصفوف غير الصالحة.</value></data>
-  <data name="LabTests.ImportDone" xml:space="preserve"><value>تم استيراد {0} تحليل. تُخطي {1} صف.</value></data>
-  <data name="LabTests.ImportNone" xml:space="preserve"><value>لم يُستورد أي تحليل. تُخطي {0} صف.</value></data>
+  <data name="LabTests.ImportHint" xml:space="preserve"><value>استيراد الاسم والسعر من ملف CSV أو Excel (.xlsx). تُنشأ الأكواد تلقائياً. تُتخطى الصفوف غير الصالحة.</value></data>
+  <data name="LabTests.ImportDone" xml:space="preserve"><value>تم استيراد {0} تحليل. حُدّث {1}. تُخطي {2} صف.</value></data>
+  <data name="LabTests.ImportNone" xml:space="preserve"><value>لم يُستورد أو يُحدَّث أي تحليل. تُخطي {0} صف.</value></data>
   <data name="LabTests.ImportEmpty" xml:space="preserve"><value>لا توجد تحاليل في الملف.</value></data>
   <data name="LabTests.ImportFailed" xml:space="preserve"><value>تعذر استيراد التحاليل.</value></data>
   <data name="LabTests.Template" xml:space="preserve"><value>نموذج</value></data>

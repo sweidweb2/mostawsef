@@ -79,7 +79,7 @@ Login protection (configuration keys under `RateLimit:`; the API answers like a 
 | `GET /api/lab-tests/all` | Admin | Every test for print/export; `?active=true` for the New Order catalog |
 | `GET /api/lab-tests/{id}` | Admin | `200 { id, code, name, labCost, isActive, ..., version }`, `404` |
 | `POST /api/lab-tests` `{ code, name, labCost }` | Admin | `201`, `400` (`max_length\|20`/`\|150`, `range\|0\|100000000` for a lab cost outside 0 to 1,000,000.00), `409 taken` on `Code` or `Name` |
-| `POST /api/lab-tests/import` multipart `file` | Admin | CSV Name+Price (`$12.00` shape); codes generated; bad/duplicate rows skipped; `200 { imported, skipped }`, `400` (`required` / `invalid` / `too_large`) |
+| `POST /api/lab-tests/import` multipart `file` | Admin | CSV or Excel (`.xlsx`) Name+Price (`$12.00` shape); new codes generated; matching names update lab cost; bad/duplicate-in-file rows skipped; `200 { imported, updated, skipped }`, `400` (`required` / `invalid` / `too_large`) |
 | `PUT /api/lab-tests/{id}` `{ code, name, labCost, isActive, version }` | Admin | `200`, `400`, `404`, `409 taken` or `concurrency_conflict` |
 | `DELETE /api/lab-tests/{id}` | Admin | `204`, `404` |
 | `GET /api/patients?page=&pageSize=&search=` | Admin | Paged list sorted by SearchName; search matches SearchText (name/phones; trigram, min 3 letters/digits or 400) |

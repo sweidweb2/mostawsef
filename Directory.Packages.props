@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup Label="Backend">
+    <PackageVersion Include="ClosedXML" Version="0.105.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.14" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.14" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.14" />

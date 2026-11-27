@@ -46,8 +46,12 @@ public interface ILabTestRepository
     Task<(bool CodeTaken, bool NameTaken)> FindDuplicatesAsync(
         string code, string searchName, Guid? exceptId, CancellationToken cancellationToken);
 
-    /// <summary>SearchNames that already exist (for import skip checks). Empty input returns an empty set.</summary>
+    /// <summary>SearchNames that already exist (for import code races). Empty input returns an empty set.</summary>
     Task<HashSet<string>> FindExistingSearchNamesAsync(
+        IReadOnlyCollection<string> searchNames, CancellationToken cancellationToken);
+
+    /// <summary>Tracked tests with these SearchNames (for import updates). Empty input returns an empty list.</summary>
+    Task<IReadOnlyList<LabTest>> GetTrackedBySearchNamesAsync(
         IReadOnlyCollection<string> searchNames, CancellationToken cancellationToken);
 
     /// <summary>Codes that already exist (for import code generation). Empty input returns an empty set.</summary>

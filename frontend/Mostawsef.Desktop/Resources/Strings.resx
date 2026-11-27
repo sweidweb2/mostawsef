@@ -301,9 +301,9 @@
   <data name="LabTests.ExportHint" xml:space="preserve"><value>Export all tests as a PDF</value></data>
   <data name="LabTests.Import" xml:space="preserve"><value>Import</value></data>
   <data name="LabTests.ImportTitle" xml:space="preserve"><value>Import lab tests</value></data>
-  <data name="LabTests.ImportHint" xml:space="preserve"><value>Import Name and Price from a CSV file. Codes are created automatically. Bad rows are skipped.</value></data>
-  <data name="LabTests.ImportDone" xml:space="preserve"><value>Imported {0} tests. Skipped {1} rows.</value></data>
-  <data name="LabTests.ImportNone" xml:space="preserve"><value>No tests imported. Skipped {0} rows.</value></data>
+  <data name="LabTests.ImportHint" xml:space="preserve"><value>Import Name and Price from a CSV or Excel (.xlsx) file. Codes are created automatically. Bad rows are skipped.</value></data>
+  <data name="LabTests.ImportDone" xml:space="preserve"><value>Imported {0} tests. Updated {1}. Skipped {2} rows.</value></data>
+  <data name="LabTests.ImportNone" xml:space="preserve"><value>No tests imported or updated. Skipped {0} rows.</value></data>
   <data name="LabTests.ImportEmpty" xml:space="preserve"><value>No tests found in the file.</value></data>
   <data name="LabTests.ImportFailed" xml:space="preserve"><value>Could not import the lab tests.</value></data>
   <data name="LabTests.Template" xml:space="preserve"><value>Template</value></data>
