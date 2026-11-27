@@ -9,7 +9,7 @@ using Mostawsef.Infrastructure.Persistence.Context;
 namespace Mostawsef.Infrastructure.Services.Backup;
 
 /// <summary>
-/// Exports the tables of the EF model straight from the database (plain SELECTs, so soft-deleted rows are included).
+/// Exports the tables of the EF model straight from the database (plain SELECTs). Soft-deleted rows are omitted.
 /// Reads everything in one repeatable-read transaction, so the tables of one export agree with each other, and writes
 /// into a temporary file that is deleted when the returned stream is disposed.
 /// </summary>
@@ -74,7 +74,7 @@ internal sealed class DatabaseBackupExporter(IDbContextFactory<AppDbContext> fac
 
         await using var command = connection.CreateCommand();
         command.Transaction = transaction;
-        command.CommandText = $"SELECT {table.QuotedColumns} FROM {Sql.Quote(table.Name)}";
+        command.CommandText = table.SelectSql;
 
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
         var values = new object[table.Columns.Count];

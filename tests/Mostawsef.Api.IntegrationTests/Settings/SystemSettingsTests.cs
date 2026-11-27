@@ -119,6 +119,24 @@ public class SystemSettingsTests(ApiFactory factory)
         Assert.Equal([$"max_length|{SystemSettingsRules.BackupPathMaxLength}"], problem.Errors["BackupPath"]);
     }
 
+    [Theory]
+    [InlineData("relative\\folder")]
+    [InlineData(@"D:\clinic\..\Windows")]
+    public async Task A_relative_or_traversing_backup_path_returns_400(string path)
+    {
+        factory.Services.RefreshSystemSettingsCache();
+        var super = await factory.CreateClientAsAsync(TestUsers.Super);
+        var current = await super.GetJsonAsync<SystemSettingsDto>(Url);
+
+        var problem = await ProblemResponse.ReadAsync(await super.PutAsJsonAsync(
+            Url,
+            new UpdateSystemSettingsRequest { BackupPath = path, Version = current.Version },
+            Ct));
+
+        Assert.Equal(HttpStatusCode.BadRequest, problem.Status);
+        Assert.Equal([ErrorCodes.Invalid], problem.Errors["BackupPath"]);
+    }
+
     [Fact]
     public async Task A_stale_version_returns_409()
     {

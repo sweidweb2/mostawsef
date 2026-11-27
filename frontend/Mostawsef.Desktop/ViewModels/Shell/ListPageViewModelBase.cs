@@ -194,9 +194,9 @@ public abstract partial class ListPageViewModelBase<TItem> : ViewModelBase, ILoa
     /// </summary>
     protected void ShowError(IApiResult result)
     {
-        if (result.Error == ApiError.Unreachable)
+        if (result.Error is ApiError.Unreachable or ApiError.Timeout)
         {
-            Toasts.Error(Localization.Get("Login.ServerUnreachable"));
+            Toasts.Error(Localization.Get(ApiErrorKeys.Action(result.Error)));
             return;
         }
 
@@ -208,7 +208,7 @@ public abstract partial class ListPageViewModelBase<TItem> : ViewModelBase, ILoa
     }
 
     protected void ShowError(ApiError error) =>
-        Toasts.Error(Localization.Get(error == ApiError.Unreachable ? "Login.ServerUnreachable" : "Error.RequestFailed"));
+        Toasts.Error(Localization.Get(ApiErrorKeys.Action(error)));
 
     /// <summary>
     /// Prefer a field-level ErrorCodes value (strip <c>|args</c>) so validation problems like File/too_large toast the

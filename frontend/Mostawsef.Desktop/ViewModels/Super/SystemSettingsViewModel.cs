@@ -108,7 +108,9 @@ public partial class SystemSettingsViewModel(
             else
             {
                 toasts.Error(localization.Get(
-                    result.Error == ApiError.Unreachable ? "Login.ServerUnreachable" : "SystemSettings.ResetFailed"));
+                    result.Error is ApiError.Unreachable or ApiError.Timeout
+                        ? ApiErrorKeys.Action(result.Error)
+                        : "SystemSettings.ResetFailed"));
             }
         }
         finally

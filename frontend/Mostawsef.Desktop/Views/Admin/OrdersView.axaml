@@ -95,10 +95,10 @@
                         <DataGridTextColumn x:DataType="orders:OrderListItemDto" Header="{l:Tr Orders.Col.Tests}" Width="80" Binding="{Binding TestsCount}"
                                            IsReadOnly="True" />
                         <DataGridTextColumn x:DataType="orders:OrderListItemDto" Header="{l:Tr Orders.Col.Total}" Width="130"
-                                           Binding="{Binding Total, Converter={x:Static conv:ValueConverters.Money}}"
+                                           Binding="{Binding ., Converter={x:Static conv:ValueConverters.OrderListTotal}}"
                                            IsReadOnly="True" />
                         <DataGridTextColumn x:DataType="orders:OrderListItemDto" Header="{l:Tr Orders.Col.Paid}" Width="130"
-                                           Binding="{Binding Paid, Converter={x:Static conv:ValueConverters.Money}}"
+                                           Binding="{Binding ., Converter={x:Static conv:ValueConverters.OrderListPaid}}"
                                            IsReadOnly="True" />
                         <DataGridTemplateColumn Header="{l:Tr Orders.Col.Status}" Width="130">
                             <DataGridTemplateColumn.CellTemplate>

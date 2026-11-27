@@ -8,7 +8,11 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
 {
     public void Configure(EntityTypeBuilder<Order> builder)
     {
-        builder.ToTable("orders");
+        builder.ToTable("orders", table =>
+        {
+            table.HasCheckConstraint("CK_orders_non_negative_money", "\"Total\" >= 0 AND \"Paid\" >= 0 AND \"Addon\" >= 0");
+            table.HasCheckConstraint("CK_orders_paid_within_total", "\"Paid\" <= \"Total\"");
+        });
         builder.HasKey(o => o.Id);
 
         builder.Property(o => o.Number).HasMaxLength(Order.NumberMaxLength).IsRequired();
@@ -35,6 +39,7 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Navigation(o => o.Payments).HasField("_payments");
 
         builder.HasIndex(o => o.Number).IsUnique();
+        builder.HasIndex(o => o.ClientRequestId).IsUnique();
         builder.HasIndex(o => new { o.PatientId, o.Status });
         builder.HasIndex(o => new { o.Status, o.CreatedAt });
         builder.HasIndex(o => o.PatientSearchName);
@@ -66,7 +71,8 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
 {
     public void Configure(EntityTypeBuilder<Payment> builder)
     {
-        builder.ToTable("payments");
+        builder.ToTable("payments", table =>
+            table.HasCheckConstraint("CK_payments_positive_amount", "\"Amount\" > 0"));
         builder.HasKey(p => p.Id);
 
         builder.Property(p => p.Type).HasConversion<string>().HasMaxLength(10).IsRequired();
@@ -79,5 +85,6 @@ public class PaymentConfiguration : IEntityTypeConfiguration<Payment>
 
         builder.HasIndex(p => p.OrderId);
         builder.HasIndex(p => p.PaidAt);
+        builder.HasIndex(p => p.ClientRequestId).IsUnique();
     }
 }

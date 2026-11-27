@@ -53,7 +53,7 @@ public class PatientService(IPatientRepository patients, IActivityLogger activit
         var patient = await GetAsync(id, cancellationToken);
         var recent = (await patients.ListRecentOrdersAsync(id, PageQuery.MaxPageSize, cancellationToken))
             .Select(o => new OrderListItemDto(
-                o.Id, o.Number, o.CreatedAt, o.PatientName, o.PatientPhone, o.TestsCount, o.Total, o.Paid, o.Status.ToString()))
+                o.Id, o.Number, o.CreatedAt, o.PatientName, o.PatientPhone, o.TestsCount, o.Total, o.Paid, o.Status.ToString(), o.Currency))
             .ToList();
         return new PatientDetailsDto(patient, recent);
     }

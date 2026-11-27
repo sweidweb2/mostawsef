@@ -49,10 +49,10 @@
                 <Grid ColumnDefinitions="320,*" ColumnSpacing="{StaticResource GapGrid}" IsVisible="{Binding HasOrder}">
                     <!-- Sidebar: the order's main info and amounts. -->
                     <StackPanel Name="OrderSidebar" Spacing="{StaticResource GapGrid}">
-                        <ui:StatCard Name="TotalCard" Title="{l:Tr Orders.Col.Total}" Value="{l:Money {Binding Order.Total}}" />
-                        <ui:StatCard Name="PaidCard" Kind="Success" Title="{l:Tr Orders.Col.Paid}" Value="{l:Money {Binding Order.Paid}}" />
+                        <ui:StatCard Name="TotalCard" Title="{l:Tr Orders.Col.Total}" Value="{l:Money {Binding Order.Total}, Currency={Binding Order.Currency}}" />
+                        <ui:StatCard Name="PaidCard" Kind="Success" Title="{l:Tr Orders.Col.Paid}" Value="{l:Money {Binding Order.Paid}, Currency={Binding Order.Currency}}" />
                         <ui:StatCard Name="BalanceCard" Kind="Warning" Icon="{StaticResource IconClock}"
-                                     Title="{l:Tr OrderDetails.Balance}" Value="{l:Money {Binding Order.Balance}}" />
+                                     Title="{l:Tr OrderDetails.Balance}" Value="{l:Money {Binding Order.Balance}, Currency={Binding Order.Currency}}" />
 
                         <ui:Card Title="{l:Tr OrderDetails.Info}">
                             <StackPanel Spacing="{StaticResource GapControls}">
@@ -70,7 +70,7 @@
                                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource GapControls}">
                                         <TextBlock Classes="muted" VerticalAlignment="Center" Text="{l:Tr NewOrder.Addon}" />
                                         <TextBlock Name="AddonText" Grid.Column="1" VerticalAlignment="Center" FontWeight="Medium"
-                                                   Text="{l:Money {Binding Order.Addon}}" />
+                                                   Text="{l:Money {Binding Order.Addon}, Currency={Binding Order.Currency}}" />
                                     </Grid>
                                 </StackPanel>
                             </StackPanel>
@@ -112,8 +112,14 @@
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellTemplate>
                                         </DataGridTemplateColumn>
-                                        <DataGridTextColumn x:DataType="orders:OrderPaymentDto" Header="{l:Tr NewOrder.PaymentAmount}" Width="140"
-                                                            Binding="{Binding Amount, Converter={x:Static conv:ValueConverters.Money}}" />
+                                        <DataGridTemplateColumn Header="{l:Tr NewOrder.PaymentAmount}" Width="140">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate x:DataType="orders:OrderPaymentDto">
+                                                    <TextBlock Margin="12,0" VerticalAlignment="Center"
+                                                               Text="{l:Money {Binding Amount}, Currency={Binding $parent[DataGrid].((vm:OrderDetailsViewModel)DataContext).Order.Currency}}" />
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
                                         <DataGridTextColumn x:DataType="orders:OrderPaymentDto" Header="{l:Tr NewOrder.PaymentNotes}" Width="*"
                                                             Binding="{Binding Notes}" />
                                         <DataGridTemplateColumn Header="{l:Tr Common.Actions}" Width="100">
@@ -149,8 +155,14 @@
                                                         Binding="{Binding Code}" />
                                     <DataGridTextColumn x:DataType="orders:OrderItemDto" Header="{l:Tr LabTests.Col.Name}" Width="*"
                                                         Binding="{Binding Name}" />
-                                    <DataGridTextColumn x:DataType="orders:OrderItemDto" Header="{l:Tr LabTests.Col.LabCost}" Width="140"
-                                                        Binding="{Binding LabCost, Converter={x:Static conv:ValueConverters.Money}}" />
+                                    <DataGridTemplateColumn Header="{l:Tr LabTests.Col.LabCost}" Width="140">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate x:DataType="orders:OrderItemDto">
+                                                <TextBlock Margin="12,0" VerticalAlignment="Center"
+                                                           Text="{l:Money {Binding LabCost}, Currency={Binding $parent[DataGrid].((vm:OrderDetailsViewModel)DataContext).Order.Currency}}" />
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
                                 </DataGrid.Columns>
                             </DataGrid>
                         </ui:Card>

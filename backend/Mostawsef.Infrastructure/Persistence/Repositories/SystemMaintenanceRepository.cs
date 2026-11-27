@@ -27,7 +27,7 @@ public class SystemMaintenanceRepository(AppDbContext db) : ISystemMaintenanceRe
         db.Orders.AsNoTracking()
             .Where(o => o.CreatedAt >= sinceUtc && o.CreatedAt < untilUtc
                 && (o.Status == OrderStatus.Pending || o.Status == OrderStatus.PartiallyPaid))
-            .SumAsync(o => o.Total - o.Paid, cancellationToken);
+            .SumAsync(o => o.Total > o.Paid ? o.Total - o.Paid : 0L, cancellationToken);
 
     public async Task<DashboardHourlySeries> GetHourlySeriesAsync(DateTime sinceUtc, DateTime untilUtc, CancellationToken cancellationToken)
     {
@@ -84,7 +84,8 @@ public class SystemMaintenanceRepository(AppDbContext db) : ISystemMaintenanceRe
             await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
             // Plain LINQ deletes (portable, no raw SQL), children before parents so no foreign key blocks a step; each
-            // returns its row count. IgnoreQueryFilters: soft-deleted rows go too.
+            // returns its row count. IgnoreQueryFilters: soft-deleted rows go too. Backup history goes too — it would
+            // otherwise describe data that no longer exists.
             var payments = await db.Set<Payment>().IgnoreQueryFilters().ExecuteDeleteAsync(cancellationToken);
             await db.OrderItems.IgnoreQueryFilters().ExecuteDeleteAsync(cancellationToken);
             var orders = await db.Orders.IgnoreQueryFilters().ExecuteDeleteAsync(cancellationToken);
@@ -92,6 +93,8 @@ public class SystemMaintenanceRepository(AppDbContext db) : ISystemMaintenanceRe
             var labTests = await db.LabTests.IgnoreQueryFilters().ExecuteDeleteAsync(cancellationToken);
             var activityLogs = await db.ActivityLogs.ExecuteDeleteAsync(cancellationToken);
             var systemErrors = await db.SystemErrors.ExecuteDeleteAsync(cancellationToken);
+            await db.Set<BackupRecord>().ExecuteDeleteAsync(cancellationToken);
+            await db.Set<ScheduledDump>().ExecuteDeleteAsync(cancellationToken);
             // Keep one-time data-backfill markers so a later restart does not re-copy Total into Addon on new orders.
             await db.Set<NumberSequence>()
                 .Where(s => s.Name != OrderAddonBackfill.CompletionMarker

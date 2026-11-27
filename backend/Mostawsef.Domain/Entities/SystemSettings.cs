@@ -15,7 +15,29 @@ public class SystemSettings : Entity
 
     public void Update(string? backupPath, bool maintenanceMode)
     {
-        BackupPath = string.IsNullOrWhiteSpace(backupPath) ? null : backupPath.Trim();
+        BackupPath = NormalizeBackupPath(backupPath);
         MaintenanceMode = maintenanceMode;
+    }
+
+    /// <summary>
+    /// Empty clears the folder. Otherwise the path must be absolute and must not contain ".." segments,
+    /// so scheduled dumps cannot purge files outside a Super-chosen rooted folder.
+    /// </summary>
+    public static string? NormalizeBackupPath(string? backupPath)
+    {
+        if (string.IsNullOrWhiteSpace(backupPath))
+        {
+            return null;
+        }
+
+        var trimmed = backupPath.Trim();
+        if (trimmed.Length > BackupPathMaxLength
+            || trimmed.Contains("..", StringComparison.Ordinal)
+            || !Path.IsPathRooted(trimmed))
+        {
+            throw new ArgumentException("Backup path must be an absolute folder path without '..'.", nameof(backupPath));
+        }
+
+        return Path.GetFullPath(trimmed).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
     }
 }

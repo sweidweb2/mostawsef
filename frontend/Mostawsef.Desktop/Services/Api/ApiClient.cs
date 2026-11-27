@@ -167,10 +167,16 @@ public class ApiClient(Lazy<HttpClient> http, PerformanceMonitor perf, TimeSpan?
             if (sw is not null)
             {
                 sw.Stop();
-                RecordApi(method, path, sw.Elapsed, "timeout");
+                RecordApi(method, path, sw.Elapsed, limit.IsCancellationRequested ? "timeout" : "unreachable");
             }
 
-            // Request timed out on a reachable server — fail the call, do not mark the app offline.
+            // Our CancelAfter fired → Timeout (server may have the write). Connect timeout / other cancel → Unreachable.
+            if (limit.IsCancellationRequested)
+            {
+                return ApiResult<T>.Fail(ApiError.Timeout);
+            }
+
+            Unreachable?.Invoke(this, EventArgs.Empty);
             return ApiResult<T>.Fail(ApiError.Unreachable);
         }
 
@@ -191,7 +197,7 @@ public class ApiClient(Lazy<HttpClient> http, PerformanceMonitor perf, TimeSpan?
                 catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
                 {
                     // The limit ran out while the body was still arriving (a long download).
-                    return ApiResult<T>.Fail(ApiError.Unreachable);
+                    return ApiResult<T>.Fail(ApiError.Timeout);
                 }
             }
 
@@ -313,9 +319,13 @@ public class ApiClient(Lazy<HttpClient> http, PerformanceMonitor perf, TimeSpan?
         {
             return ApiResult<T>.Fail(ApiError.Server, response.StatusCode);
         }
-        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !cancellationToken.IsCancellationRequested)
+        catch (HttpRequestException)
         {
             return ApiResult<T>.Fail(ApiError.Unreachable);
+        }
+        catch (TaskCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return ApiResult<T>.Fail(ApiError.Timeout);
         }
     }
 

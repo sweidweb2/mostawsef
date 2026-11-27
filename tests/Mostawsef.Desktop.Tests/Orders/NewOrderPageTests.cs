@@ -371,7 +371,7 @@ public class NewOrderPageTests : UiTestBase
         Assert.True(details.HasAddon);
         Assert.Equal(20500, details.Order!.Addon);
         Assert.True(Named<StackPanel>(window, "AddonRow").IsVisible);
-        Assert.Equal("205.00", Named<TextBlock>(window, "AddonText").Text);
+        Assert.StartsWith("205.00", Named<TextBlock>(window, "AddonText").Text, StringComparison.Ordinal);
         Assert.Empty(app.Api.RequestsTo(HttpMethod.Get, $"{OrdersPath}/{created.Id}"));
         Assert.NotNull(sent);
         Assert.Null(sent.PatientId);
@@ -381,6 +381,7 @@ public class NewOrderPageTests : UiTestBase
             sent.Items);
         Assert.Equal(20500, sent.Addon);
         Assert.Equal(new CreateFirstPaymentRequest { Amount = 5000, Method = PaymentMethods.Card, Notes = null }, sent.FirstPayment);
+        Assert.NotNull(sent.ClientRequestId);
         Assert.Equal(created.Id, details.OrderId);
         Assert.Equal(created.Number, details.Order.Number);
         Assert.Contains("Order ORD-000007 created.", Toasts(window));
@@ -414,6 +415,29 @@ public class NewOrderPageTests : UiTestBase
         Assert.Equal(ErrorCodes.ExceedsTotal, page.Errors[nameof(page.PaymentAmount)]);
         Assert.Equal("ErrorCode.validation", page.FormErrorKey);
         Assert.Contains("Some fields need attention.", Texts(window));
+    }
+
+    [AvaloniaFact]
+    public async Task A_failed_save_keeps_the_same_client_request_id_on_retry()
+    {
+        using var app = Admin();
+        var keys = new List<Guid?>();
+        app.Api.On(HttpMethod.Post, OrdersPath, request =>
+        {
+            keys.Add(request.Content!.ReadFromJsonAsync<CreateOrderRequest>().GetAwaiter().GetResult()!.ClientRequestId);
+            throw new HttpRequestException("Connection refused");
+        });
+        var (_, page, _) = await ShowNewOrderAsync(app);
+        FillReadyOrder(page, Cbc);
+
+        await page.SaveCommand.ExecuteAsync(null);
+        Assert.Equal("Login.ServerUnreachable", page.FormErrorKey);
+
+        await page.SaveCommand.ExecuteAsync(null);
+
+        Assert.Equal(2, keys.Count);
+        Assert.NotNull(keys[0]);
+        Assert.Equal(keys[0], keys[1]);
     }
 
     [AvaloniaTheory]

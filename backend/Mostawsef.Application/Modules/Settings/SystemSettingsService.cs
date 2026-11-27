@@ -30,7 +30,15 @@ public class SystemSettingsService(
             throw AppException.Conflict(ErrorCodes.ConcurrencyConflict);
         }
 
-        current.Update(request.BackupPath, request.MaintenanceMode);
+        try
+        {
+            current.Update(request.BackupPath, request.MaintenanceMode);
+        }
+        catch (ArgumentException)
+        {
+            throw AppException.Validation(nameof(UpdateSystemSettingsRequest.BackupPath), ErrorCodes.Invalid);
+        }
+
         await settings.SaveChangesAsync(cancellationToken);
         cache.Invalidate();
 

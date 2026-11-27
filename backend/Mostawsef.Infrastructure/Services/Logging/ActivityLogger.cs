@@ -53,13 +53,26 @@ public sealed class ActivityLogger(
 
         try
         {
-            await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
-            db.ActivityLogs.AddRange(batch);
-            await db.SaveChangesAsync(cancellationToken);
+            await WriteBatchAsync(batch, cancellationToken);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(ex, "Could not write {Count} activity log(s)", batch.Count);
+            logger.LogWarning(ex, "Retrying {Count} activity log(s) after a failed flush", batch.Count);
+            try
+            {
+                await WriteBatchAsync(batch, cancellationToken);
+            }
+            catch (Exception retry) when (retry is not OperationCanceledException)
+            {
+                logger.LogError(retry, "Could not write {Count} activity log(s)", batch.Count);
+            }
         }
+    }
+
+    private async Task WriteBatchAsync(List<ActivityLog> batch, CancellationToken cancellationToken)
+    {
+        await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+        db.ActivityLogs.AddRange(batch);
+        await db.SaveChangesAsync(cancellationToken);
     }
 }

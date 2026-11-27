@@ -107,13 +107,17 @@ public class FieldErrorExtension(BindingBase value) : MarkupExtension
 }
 
 /// <summary>
-/// An amount in minor units shown with the clinic currency: Text="{l:Money {Binding Total}}" -> "1,250.50 EGP".
-/// Refreshes when the language or the clinic currency changes.
+/// An amount in minor units shown with a currency: Text="{l:Money {Binding Total}}" -> "1,250.50 EGP".
+/// Uses the clinic currency unless <see cref="Currency"/> is set (order snapshot). Refreshes when the language
+/// or the clinic currency changes.
 /// </summary>
 public class MoneyExtension(BindingBase value) : MarkupExtension
 {
     /// <summary>Binding of the amount; compiled by the XAML compiler under x:DataType.</summary>
     public BindingBase Value { get; set; } = value;
+
+    /// <summary>Optional binding of a currency code (e.g. an order's snapshotted Currency). Falls back to the clinic.</summary>
+    public BindingBase? Currency { get; set; }
 
     public override object ProvideValue(IServiceProvider serviceProvider)
     {
@@ -123,17 +127,20 @@ public class MoneyExtension(BindingBase value) : MarkupExtension
         }
 
         var clinic = App.Services.GetRequiredService<ClinicContext>();
-        return new MultiBinding
+        var binding = new MultiBinding
         {
-            Bindings =
-            {
-                Value,
-                new CompiledBinding(Translation.VersionPath) { Source = App.Localization },
-                new CompiledBinding(Translation.ClinicSettingsPath) { Source = clinic },
-            },
             Mode = BindingMode.OneWay,
             Converter = new Translation.MoneyConverter(App.Localization, clinic),
         };
+        binding.Bindings.Add(Value);
+        binding.Bindings.Add(new CompiledBinding(Translation.VersionPath) { Source = App.Localization });
+        binding.Bindings.Add(new CompiledBinding(Translation.ClinicSettingsPath) { Source = clinic });
+        if (Currency is not null)
+        {
+            binding.Bindings.Add(Currency);
+        }
+
+        return binding;
     }
 }
 
@@ -214,10 +221,19 @@ internal static class Translation
 
     public sealed class MoneyConverter(LocalizationService localization, ClinicContext clinic) : Converter(localization)
     {
-        public override object? Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture) =>
-            values.Count > 0 && values[0] is long minorUnits
-                ? Converters.MoneyFormat.Format(minorUnits, clinic.CurrencyCode, Localization)
-                : null;
+        public override object? Convert(IList<object?> values, Type targetType, object? parameter, CultureInfo culture)
+        {
+            if (values.Count == 0 || values[0] is not long minorUnits)
+            {
+                return null;
+            }
+
+            // Optional 4th binding: order (or other) currency code; otherwise the live clinic currency.
+            var currency = values.Count > 3 && values[3] is string { Length: > 0 } code
+                ? code
+                : clinic.CurrencyCode;
+            return Converters.MoneyFormat.Format(minorUnits, currency, Localization);
+        }
     }
 
     /// <summary>values[0] = resource key, values[1] = the {0} argument.</summary>

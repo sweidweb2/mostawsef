@@ -26,10 +26,16 @@ public class NumberSequenceTests(ApiFactory factory)
     [Fact]
     public async Task Parallel_callers_never_get_the_same_number()
     {
-        var numbers = Sequence();
+        factory.CreateClient();
         var name = HttpClientExtensions.Unique("parallel")[..30];
 
-        var taken = await Task.WhenAll(Enumerable.Range(0, 20).Select(_ => Task.Run(() => numbers.NextAsync(name, Ct), Ct)));
+        // Each caller needs its own scope: the sequence shares the request DbContext.
+        var taken = await Task.WhenAll(Enumerable.Range(0, 20).Select(_ => Task.Run(async () =>
+        {
+            await using var scope = factory.Services.CreateAsyncScope();
+            var numbers = scope.ServiceProvider.GetRequiredService<INumberSequence>();
+            return await numbers.NextAsync(name, Ct);
+        }, Ct)));
 
         Assert.Equal(Enumerable.Range(1, 20).Select(i => (long)i), taken.Order());
     }
@@ -44,6 +50,6 @@ public class NumberSequenceTests(ApiFactory factory)
     private INumberSequence Sequence()
     {
         factory.CreateClient();
-        return factory.Services.GetRequiredService<INumberSequence>();
+        return factory.Services.CreateScope().ServiceProvider.GetRequiredService<INumberSequence>();
     }
 }

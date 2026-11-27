@@ -110,13 +110,13 @@ public class OrdersPageTests : UiTestBase
         Assert.Contains("سكر صائم", texts);
         Assert.Contains("admin@test.local", texts);
         Assert.Contains("Partially paid", window.GetVisualDescendants().OfType<Badge>().Where(b => b.IsEffectivelyVisible).Select(b => b.Text));
-        Assert.Equal(["250.00", "50.00", "200.00"], Named<StackPanel>(window, "OrderSidebar").GetVisualDescendants().OfType<StatCard>().Select(c => c.Value));
+        Assert.Equal(["250.00 EGP", "50.00 EGP", "200.00 EGP"], Named<StackPanel>(window, "OrderSidebar").GetVisualDescendants().OfType<StatCard>().Select(c => c.Value));
         var amountDue = Named<StatCard>(window, "BalanceCard");
         Assert.Equal("Amount due", amountDue.Title);
         Assert.Equal(BadgeKind.Warning, amountDue.Kind);
         Assert.Contains("PART_Accent", amountDue.GetVisualDescendants().OfType<Border>().Select(b => b.Name));
         Assert.True(details.HasAddon);
-        Assert.Equal("50.00", Named<TextBlock>(window, "AddonText").Text);
+        Assert.Equal("50.00 EGP", Named<TextBlock>(window, "AddonText").Text);
 
         await details.BackCommand.ExecuteAsync(null);
         Dispatcher.UIThread.RunJobs();
@@ -142,9 +142,9 @@ public class OrdersPageTests : UiTestBase
 
         Assert.True(details.HasAddon);
         Assert.True(Named<StackPanel>(window, "AddonRow").IsVisible);
-        Assert.Equal("30.00", Named<TextBlock>(window, "AddonText").Text);
+        Assert.Equal("30.00 EGP", Named<TextBlock>(window, "AddonText").Text);
         Assert.Contains("Our price", Texts(window));
-        Assert.Equal(["80.00", "50.00", "30.00"], Named<StackPanel>(window, "OrderSidebar").GetVisualDescendants().OfType<StatCard>().Select(c => c.Value));
+        Assert.Equal(["80.00 EGP", "50.00 EGP", "30.00 EGP"], Named<StackPanel>(window, "OrderSidebar").GetVisualDescendants().OfType<StatCard>().Select(c => c.Value));
     }
 
     [AvaloniaFact]
@@ -162,7 +162,7 @@ public class OrdersPageTests : UiTestBase
 
         Assert.False(details.HasAddon);
         Assert.False(Named<StackPanel>(window, "AddonRow").IsVisible);
-        Assert.Equal(["80.00", "50.00", "30.00"], Named<StackPanel>(window, "OrderSidebar").GetVisualDescendants().OfType<StatCard>().Select(c => c.Value));
+        Assert.Equal(["80.00 EGP", "50.00 EGP", "30.00 EGP"], Named<StackPanel>(window, "OrderSidebar").GetVisualDescendants().OfType<StatCard>().Select(c => c.Value));
     }
 
     [AvaloniaFact]

@@ -56,4 +56,24 @@ public class ApiClientTests : UiTestBase
 
         Assert.Equal(ApiError.Unreachable, result.Error);
     }
+
+    [AvaloniaFact]
+    public async Task A_request_that_hits_the_time_limit_is_a_timeout_not_unreachable()
+    {
+        var handler = new FakeApiHandler();
+        handler.On(HttpMethod.Delete, "/api/anything", async (_, cancellationToken) =>
+        {
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+            return new HttpResponseMessage(HttpStatusCode.OK);
+        });
+        using var http = new HttpClient(handler) { BaseAddress = new Uri("http://localhost/") };
+
+        var result = await new ApiClient(
+                new Lazy<HttpClient>(() => http),
+                new Mostawsef.Desktop.Services.Diagnostics.PerformanceMonitor { IsEnabled = false, WriteToFile = false },
+                requestTimeout: TimeSpan.FromMilliseconds(50))
+            .DeleteAsync("api/anything", TestContext.Current.CancellationToken);
+
+        Assert.Equal(ApiError.Timeout, result.Error);
+    }
 }

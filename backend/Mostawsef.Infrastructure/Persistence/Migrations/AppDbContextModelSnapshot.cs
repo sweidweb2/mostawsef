@@ -261,6 +261,9 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                     b.Property<long>("Addon")
                         .HasColumnType("bigint");
 
+                    b.Property<Guid?>("ClientRequestId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -339,6 +342,9 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ClientRequestId")
+                        .IsUnique();
+
                     b.HasIndex("Number")
                         .IsUnique();
 
@@ -355,7 +361,12 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("Status", "CreatedAt");
 
-                    b.ToTable("orders", (string)null);
+                    b.ToTable("orders", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_orders_non_negative_money", "\"Total\" >= 0 AND \"Paid\" >= 0 AND \"Addon\" >= 0");
+
+                            t.HasCheckConstraint("CK_orders_paid_within_total", "\"Paid\" <= \"Total\"");
+                        });
                 });
 
             modelBuilder.Entity("Mostawsef.Domain.Entities.OrderItem", b =>
@@ -501,6 +512,9 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                     b.Property<long>("Amount")
                         .HasColumnType("bigint");
 
+                    b.Property<Guid?>("ClientRequestId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -550,11 +564,17 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ClientRequestId")
+                        .IsUnique();
+
                     b.HasIndex("OrderId");
 
                     b.HasIndex("PaidAt");
 
-                    b.ToTable("payments", (string)null);
+                    b.ToTable("payments", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_payments_positive_amount", "\"Amount\" > 0");
+                        });
                 });
 
             modelBuilder.Entity("Mostawsef.Domain.Entities.ScheduledDump", b =>

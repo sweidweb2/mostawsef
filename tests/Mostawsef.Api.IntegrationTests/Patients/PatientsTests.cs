@@ -20,6 +20,19 @@ public class PatientsTests(ApiFactory factory)
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     [Fact]
+    public async Task Two_patients_may_share_the_same_phone()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var phone = "01099998888";
+        var first = await CreateAsync(admin, fullName: $"First {Guid.NewGuid():N}", phone: phone);
+        var second = await CreateAsync(admin, fullName: $"Second {Guid.NewGuid():N}", phone: phone);
+
+        Assert.Equal(phone, first.Phone);
+        Assert.Equal(phone, second.Phone);
+        Assert.NotEqual(first.Id, second.Id);
+    }
+
+    [Fact]
     public async Task Admin_creates_a_patient_and_reads_it_back()
     {
         var admin = await factory.CreateClientAsAsync(TestUsers.Admin);

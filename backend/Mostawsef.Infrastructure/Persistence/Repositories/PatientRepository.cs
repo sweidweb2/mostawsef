@@ -41,7 +41,8 @@ public class PatientRepository(AppDbContext db) : IPatientRepository
                 o.TestsCount,
                 o.Total,
                 o.Paid,
-                o.Status))
+                o.Status,
+                o.Currency))
             .ToListAsync(cancellationToken);
 
     public Task<OrderPatientRow?> GetOrderPatientAsync(Guid id, CancellationToken cancellationToken) =>

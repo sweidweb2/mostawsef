@@ -34,6 +34,7 @@ public abstract partial class FormViewModel : ViewModelBase
 
     private object? _savedRequest;
     private HashSet<string>? _requestFields;
+    private Guid? _writeAttemptId;
     private CancellationTokenSource _lifetime = new();
 
     protected FormViewModel(IDialogService dialogs, LocalizationService localization)
@@ -69,6 +70,12 @@ public abstract partial class FormViewModel : ViewModelBase
 
     public bool HasFormError => FormErrorKey is not null;
 
+    /// <summary>
+    /// Stable id for one save attempt: reused after a timeout so the API can return the same row instead of
+    /// creating a duplicate. Cleared when the request inputs change or the save succeeds.
+    /// </summary>
+    protected Guid WriteAttemptId => _writeAttemptId ??= Guid.NewGuid();
+
     /// <summary>The request to send, built from the current field values (trim text here).</summary>
     protected abstract object BuildRequest();
 
@@ -90,6 +97,7 @@ public abstract partial class FormViewModel : ViewModelBase
     /// <summary>Re-checks <see cref="IsDirty"/>; call it when an input changes without raising a request-field property.</summary>
     protected void RefreshDirty()
     {
+        _writeAttemptId = null;
         if (_savedRequest is not null)
         {
             IsDirty = HasChanges(BuildRequest(), _savedRequest);
@@ -222,6 +230,7 @@ public abstract partial class FormViewModel : ViewModelBase
             // Server may have committed before cancel — never drop a successful save.
             if (result.IsSuccess)
             {
+                _writeAttemptId = null;
                 _savedRequest = request;
                 _requestFields = FieldsOf(request.GetType());
                 IsDirty = false;
@@ -307,8 +316,8 @@ public abstract partial class FormViewModel : ViewModelBase
             return;
         }
 
-        FormErrorKey = result.Error == ApiError.Unreachable
-            ? "Login.ServerUnreachable"
+        FormErrorKey = result.Error is ApiError.Unreachable or ApiError.Timeout
+            ? ApiErrorKeys.Action(result.Error)
             : TranslatableCode(problem.Code) ?? "Error.RequestFailed";
     }
 

@@ -14,6 +14,11 @@ public class Payment : Entity
 
     internal Payment(PaymentType type, PaymentMethod method, string currency, long amount, decimal exchangeRate, DateTime paidAt, string? notes)
     {
+        if (amount <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount), "Payment amount must be positive.");
+        }
+
         Type = type;
         Method = method;
         Currency = currency;
@@ -41,9 +46,19 @@ public class Payment : Entity
 
     public string? Notes { get; private set; }
 
+    /// <summary>Optional client save-attempt id; unique when set so a timed-out retry returns the same payment.</summary>
+    public Guid? ClientRequestId { get; private set; }
+
+    internal void SetClientRequestId(Guid? clientRequestId) => ClientRequestId = clientRequestId;
+
     /// <summary>Changes method, amount and notes; <see cref="PaidAt"/> stays the original payment time.</summary>
     internal void Update(PaymentMethod method, long amount, string? notes)
     {
+        if (amount <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount), "Payment amount must be positive.");
+        }
+
         Method = method;
         Amount = amount;
         Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim();

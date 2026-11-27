@@ -64,8 +64,7 @@ public class OrderService(
 
         var (items, total) = await orders.GetPageAsync(query, new OrderListFilter(wanted, filter.PatientId), cancellationToken);
         return new PagedResult<OrderListItemDto>(
-            items.Select(o => new OrderListItemDto(
-                o.Id, o.Number, o.CreatedAt, o.PatientName, o.PatientPhone, o.TestsCount, o.Total, o.Paid, o.Status.ToString())).ToList(),
+            items.Select(ToListItem).ToList(),
             query.SafePage,
             query.SafePageSize,
             total);
@@ -111,6 +110,12 @@ public class OrderService(
 
     public async Task<OrderDetailsDto> AddPaymentAsync(Guid id, AddPaymentRequest request, CancellationToken cancellationToken)
     {
+        if (request.ClientRequestId is { } key
+            && await orders.FindPaymentByClientRequestIdAsync(key, cancellationToken) is not null)
+        {
+            return await GetAsync(id, cancellationToken);
+        }
+
         var order = await orders.GetForPaymentAsync(id, cancellationToken) ?? throw AppException.NotFound();
         EnsureCurrentVersion(order, request.Version, nameof(AddPaymentRequest.Version));
         var amount = request.Amount!.Value;
@@ -119,10 +124,27 @@ public class OrderService(
             throw AppException.Validation(nameof(AddPaymentRequest.Amount), ErrorCodes.ExceedsBalance);
         }
 
-        var payment = order.AddPayment(Enum.Parse<PaymentMethod>(request.Method), amount, time.GetUtcNow().UtcDateTime, request.Notes);
+        var payment = order.AddPayment(
+            ParseMethod(request.Method, nameof(AddPaymentRequest.Method)),
+            amount,
+            time.GetUtcNow().UtcDateTime,
+            request.Notes,
+            request.ClientRequestId);
         orders.AddPayment(payment);
         order.UpdateStatus();
-        await orders.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await orders.SaveChangesAsync(cancellationToken);
+        }
+        catch (AppException ex) when (ex.Code == ErrorCodes.Taken && request.ClientRequestId is { } raced)
+        {
+            if (await orders.FindPaymentByClientRequestIdAsync(raced, cancellationToken) is not null)
+            {
+                return await GetAsync(id, cancellationToken);
+            }
+
+            throw;
+        }
 
         await activity.LogAsync(
             new ActivityEntry(ActivityActions.OrderPaymentAdded, ActivityModules.Orders, "Added a payment to an order")
@@ -148,7 +170,8 @@ public class OrderService(
             throw AppException.Validation(nameof(UpdatePaymentRequest.Amount), ErrorCodes.ExceedsBalance);
         }
 
-        order.UpdatePayment(payment, Enum.Parse<PaymentMethod>(request.Method), amount, request.Notes);
+        order.UpdatePayment(
+            payment, ParseMethod(request.Method, nameof(UpdatePaymentRequest.Method)), amount, request.Notes);
         order.UpdateStatus();
         await orders.SaveChangesAsync(cancellationToken);
 
@@ -197,6 +220,12 @@ public class OrderService(
 
     public async Task<OrderDetailsDto> CreateAsync(CreateOrderRequest request, CancellationToken cancellationToken)
     {
+        if (request.ClientRequestId is { } existingKey
+            && await orders.FindByClientRequestIdAsync(existingKey, cancellationToken) is { } prior)
+        {
+            return ToDetails(prior);
+        }
+
         // Clinic currency is cached (own context); patient and tests share the request DbContext so they stay sequential.
         var currencyTask = clinic.GetCurrencyCodeAsync(cancellationToken);
         OrderPatientRow patient;
@@ -215,34 +244,67 @@ public class OrderService(
 
         var currencyCode = await currencyTask;
         var addon = AddonOf(request, lines); // validated before a number is taken, so a refused order never burns one
+        var lineIds = lines.Select(t => t.Id).Distinct().ToList();
+        // Number assigned inside the serializable transaction so a failed save rolls it back (no gap).
         var order = new Order(
-            DocumentNumber.Format(NumberPrefix, await numbers.NextAsync(NumberSequence, cancellationToken)),
+            DocumentNumber.Format(NumberPrefix, 0),
             patient.Id,
             patient.FullName,
             patient.SearchName,
             patient.Phone,
             currencyCode);
         Fill(order, request, lines, addon);
+        order.SetClientRequestId(request.ClientRequestId);
 
-        if (newPatient is not null)
+        Order? racedReplay = null;
+        try
         {
-            patients.Add(newPatient);
+            await orders.ExecuteInSerializableAsync(
+                async ct =>
+                {
+                    if (request.ClientRequestId is { } key
+                        && await orders.FindByClientRequestIdAsync(key, ct) is { } replay)
+                    {
+                        racedReplay = replay;
+                        return;
+                    }
+
+                    // Last-moment checks under Serializable: soft-delete / deactivate cannot sneak in before save.
+                    if (await tests.CountActiveAsync(lineIds, ct) != lineIds.Count)
+                    {
+                        throw AppException.Conflict(ErrorCodes.Inactive);
+                    }
+
+                    if (newPatient is null && await patients.GetOrderPatientAsync(patient.Id, ct) is null)
+                    {
+                        throw AppException.Validation(nameof(CreateOrderRequest.PatientId), ErrorCodes.NotFound);
+                    }
+
+                    order.AssignNumber(DocumentNumber.Format(NumberPrefix, await numbers.NextAsync(NumberSequence, ct)));
+                    order.SetSearchText(SearchText.Key(order.PatientSearchName, order.PatientPhone, order.Number));
+                    if (newPatient is not null)
+                    {
+                        patients.Add(newPatient);
+                    }
+
+                    orders.Add(order);
+                    await orders.SaveChangesAsync(ct);
+                },
+                cancellationToken);
+        }
+        catch (AppException ex) when (ex.Code == ErrorCodes.Taken && request.ClientRequestId is { } racedKey)
+        {
+            racedReplay = await orders.FindByClientRequestIdAsync(racedKey, cancellationToken);
+            if (racedReplay is null)
+            {
+                throw;
+            }
         }
 
-        // Last-moment checks: deactivated tests or a soft-deleted patient must not land on a new order.
-        var lineIds = lines.Select(t => t.Id).Distinct().ToList();
-        if (await tests.CountActiveAsync(lineIds, cancellationToken) != lineIds.Count)
+        if (racedReplay is not null)
         {
-            throw AppException.Conflict(ErrorCodes.Inactive);
+            return ToDetails(racedReplay);
         }
-
-        if (newPatient is null && await patients.GetOrderPatientAsync(patient.Id, cancellationToken) is null)
-        {
-            throw AppException.Validation(nameof(CreateOrderRequest.PatientId), ErrorCodes.NotFound);
-        }
-
-        orders.Add(order);
-        await orders.SaveChangesAsync(cancellationToken);
 
         await LogCreatedAsync(order, newPatient, cancellationToken);
         return ToDetails(order);
@@ -277,11 +339,20 @@ public class OrderService(
         order.SetCharges(addon);
         if (payment is not null)
         {
-            order.AddPayment(Enum.Parse<PaymentMethod>(payment.Method), payment.Amount!.Value, time.GetUtcNow().UtcDateTime, payment.Notes);
+            order.AddPayment(
+                ParseMethod(payment.Method, $"{nameof(CreateOrderRequest.FirstPayment)}.{nameof(CreateFirstPaymentRequest.Method)}"),
+                payment.Amount!.Value,
+                time.GetUtcNow().UtcDateTime,
+                payment.Notes);
         }
 
         order.UpdateStatus();
     }
+
+    private static PaymentMethod ParseMethod(string method, string field) =>
+        Enum.TryParse<PaymentMethod>(method, out var parsed) && Enum.IsDefined(parsed)
+            ? parsed
+            : throw AppException.Validation(field, ErrorCodes.Invalid);
 
     private async Task LogCreatedAsync(Order order, Patient? newPatient, CancellationToken cancellationToken)
     {
@@ -387,6 +458,9 @@ public class OrderService(
             throw AppException.Conflict(ErrorCodes.ConcurrencyConflict);
         }
     }
+
+    private static OrderListItemDto ToListItem(OrderListRow o) => new(
+        o.Id, o.Number, o.CreatedAt, o.PatientName, o.PatientPhone, o.TestsCount, o.Total, o.Paid, o.Status.ToString(), o.Currency);
 
     private static OrderDetailsDto ToDetails(OrderDetailsRow o) => new(
         o.Id, o.Number, o.CreatedAt, o.CreatedBy, o.PatientId, o.PatientName, o.PatientPhone, o.Status.ToString(), o.Currency,

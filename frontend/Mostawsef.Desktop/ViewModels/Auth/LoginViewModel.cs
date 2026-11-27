@@ -97,7 +97,7 @@ public partial class LoginViewModel : ViewModelBase
             {
                 ApiError.Unauthorized => "Login.Invalid",
                 ApiError.TooManyRequests => "Login.TooMany",
-                ApiError.Unreachable => "Login.ServerUnreachable",
+                ApiError.Unreachable or ApiError.Timeout => ApiErrorKeys.Action(result.Error),
                 _ => "Login.Failed",
             };
         }
@@ -136,7 +136,7 @@ public partial class LoginViewModel : ViewModelBase
             {
                 ApiError.Forbidden => "Login.ClinicForbidden",
                 ApiError.TooManyRequests => "Login.TooMany",
-                ApiError.Unreachable => "Login.ServerUnreachable",
+                ApiError.Unreachable or ApiError.Timeout => ApiErrorKeys.Action(result.Error),
                 _ => "Login.Failed",
             };
         }

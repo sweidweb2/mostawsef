@@ -35,10 +35,10 @@ internal static class OrderPages
         Guid.NewGuid(), "عمر خالد", "011 2222 3333", null, Genders.Male, null, DateTime.UtcNow, null, null, 0);
 
     public static readonly OrderListItemDto PartlyPaid = new(
-        Guid.NewGuid(), "ORD-000007", DateTime.UtcNow, Mona.FullName, Mona.Phone, 2, 25000, 5000, OrderStatuses.PartiallyPaid);
+        Guid.NewGuid(), "ORD-000007", DateTime.UtcNow, Mona.FullName, Mona.Phone, 2, 25000, 5000, OrderStatuses.PartiallyPaid, Currencies.Egp);
 
     public static readonly OrderListItemDto Unpaid = new(
-        Guid.NewGuid(), "ORD-000008", DateTime.UtcNow, "عمر خالد", "011 2222 3333", 1, 5000, 0, OrderStatuses.Pending);
+        Guid.NewGuid(), "ORD-000008", DateTime.UtcNow, "عمر خالد", "011 2222 3333", 1, 5000, 0, OrderStatuses.Pending, Currencies.Egp);
 
     public static readonly Guid PaymentId = Guid.Parse("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
 

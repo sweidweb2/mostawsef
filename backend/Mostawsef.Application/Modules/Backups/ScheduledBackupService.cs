@@ -95,11 +95,15 @@ public class ScheduledBackupService(
         return new ScheduledBackupResult(filePath, deleted, record.Id);
     }
 
-    /// <summary>Keeps the newest <paramref name="keepCount"/> dump files; deletes the rest. Returns how many were deleted.</summary>
-    internal static int PurgeOldDumps(string folder, int keepCount)
+    /// <summary>
+    /// Keeps the newest <paramref name="keepCount"/> dump files whose names match the stamp pattern
+    /// (<c>mostawsef-yyyyMMdd-HHmmss.dump</c>); deletes only those. Returns how many were deleted.
+    /// </summary>
+    public static int PurgeOldDumps(string folder, int keepCount)
     {
         var files = Directory.EnumerateFiles(folder, FilePrefix + "*" + FileExtension)
             .Select(path => new FileInfo(path))
+            .Where(f => IsOwnDumpFileName(f.Name))
             .OrderByDescending(f => f.LastWriteTimeUtc)
             .ThenByDescending(f => f.Name, StringComparer.Ordinal)
             .ToList();
@@ -112,5 +116,26 @@ public class ScheduledBackupService(
         }
 
         return deleted;
+    }
+
+    /// <summary>True for <c>mostawsef-yyyyMMdd-HHmmss.dump</c> only — refuses to touch other files in the folder.</summary>
+    public static bool IsOwnDumpFileName(string fileName)
+    {
+        const string prefix = FilePrefix;
+        const string extension = FileExtension;
+        if (!fileName.StartsWith(prefix, StringComparison.Ordinal)
+            || !fileName.EndsWith(extension, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var stamp = fileName.AsSpan(prefix.Length, fileName.Length - prefix.Length - extension.Length);
+        // yyyyMMdd-HHmmss = 15 characters with a dash at index 8.
+        return stamp.Length == 15
+            && stamp[8] == '-'
+            && char.IsDigit(stamp[0]) && char.IsDigit(stamp[1]) && char.IsDigit(stamp[2]) && char.IsDigit(stamp[3])
+            && char.IsDigit(stamp[4]) && char.IsDigit(stamp[5]) && char.IsDigit(stamp[6]) && char.IsDigit(stamp[7])
+            && char.IsDigit(stamp[9]) && char.IsDigit(stamp[10]) && char.IsDigit(stamp[11])
+            && char.IsDigit(stamp[12]) && char.IsDigit(stamp[13]) && char.IsDigit(stamp[14]);
     }
 }

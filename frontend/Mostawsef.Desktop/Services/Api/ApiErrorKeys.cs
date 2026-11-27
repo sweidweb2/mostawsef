@@ -7,6 +7,7 @@ public static class ApiErrorKeys
     {
         null => null,
         ApiError.Unreachable => "Error.UnreachableTitle",
+        ApiError.Timeout => "Error.TimeoutTitle",
         _ => "Error.Title",
     };
 
@@ -14,6 +15,15 @@ public static class ApiErrorKeys
     {
         null => null,
         ApiError.Unreachable => "Error.UnreachableDescription",
+        ApiError.Timeout => "Error.TimeoutDescription",
         _ => "Error.Description",
+    };
+
+    /// <summary>Toast / form-level text when a write or action fails on the wire.</summary>
+    public static string Action(ApiError error) => error switch
+    {
+        ApiError.Unreachable => "Login.ServerUnreachable",
+        ApiError.Timeout => "Error.Timeout",
+        _ => "Error.RequestFailed",
     };
 }

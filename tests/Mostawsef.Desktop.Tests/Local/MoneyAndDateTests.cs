@@ -57,6 +57,26 @@ public class MoneyAndDateTests : UiTestBase
         Assert.Equal("9.90 دولار", text.Text);
     }
 
+    [AvaloniaFact]
+    public void Money_markup_keeps_an_explicit_currency_when_the_clinic_currency_changes()
+    {
+        using var app = new TestServices();
+        var clinic = app.Get<ClinicContext>();
+        clinic.Update(Settings(Currencies.Egp));
+        var text = new TextBlock { DataContext = new AmountRow(990, Currencies.Egp) };
+        var amount = Avalonia.Data.CompiledBinding.Create<AmountRow, long>(r => r.Total);
+        var currency = Avalonia.Data.CompiledBinding.Create<AmountRow, string>(r => r.Currency);
+        var extension = new MoneyExtension(amount) { Currency = currency };
+        text.Bind(TextBlock.TextProperty, (Avalonia.Data.BindingBase)extension.ProvideValue(null!));
+        app.Show(text);
+
+        Assert.Equal("9.90 EGP", text.Text);
+
+        clinic.Update(Settings(Currencies.Usd));
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal("9.90 EGP", text.Text);
+    }
+
     [Fact]
     public void Calendar_dates_convert_to_and_from_the_date_picker()
     {
@@ -72,7 +92,7 @@ public class MoneyAndDateTests : UiTestBase
         Assert.Null(converter.ConvertBack(null, typeof(DateOnly?), null, System.Globalization.CultureInfo.InvariantCulture));
     }
 
-    private sealed record AmountRow(long Total);
+    private sealed record AmountRow(long Total, string Currency = "");
 
     private static ClinicSettingsDto Settings(string currency) => new("Clinic", null, null, currency, 0, null, null);
 }

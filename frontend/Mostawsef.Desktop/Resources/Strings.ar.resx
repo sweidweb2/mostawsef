@@ -31,6 +31,9 @@
   <data name="Error.Description" xml:space="preserve"><value>تعذّر تحميل البيانات. يرجى المحاولة مرة أخرى.</value></data>
   <data name="Error.UnreachableTitle" xml:space="preserve"><value>تعذّر الاتصال بالخادم</value></data>
   <data name="Error.UnreachableDescription" xml:space="preserve"><value>تأكد من تشغيل خدمة مستوصف، ثم أعد المحاولة.</value></data>
+  <data name="Error.TimeoutTitle" xml:space="preserve"><value>استغرق الخادم وقتًا طويلًا</value></data>
+  <data name="Error.TimeoutDescription" xml:space="preserve"><value>تحقق مما إذا تم حفظ التغيير قبل إعادة المحاولة.</value></data>
+  <data name="Error.Timeout" xml:space="preserve"><value>استغرق الخادم وقتًا طويلًا للرد. تحقق مما إذا تم حفظ التغيير قبل إعادة المحاولة.</value></data>
 
   <data name="Confirm.Title" xml:space="preserve"><value>هل أنت متأكد؟</value></data>
 

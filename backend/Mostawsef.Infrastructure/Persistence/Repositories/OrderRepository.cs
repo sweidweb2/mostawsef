@@ -1,3 +1,4 @@
+using System.Data;
 using Microsoft.EntityFrameworkCore;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Contracts.Common;
@@ -73,7 +74,8 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
                 o.TestsCount,
                 o.Total,
                 o.Paid,
-                o.Status));
+                o.Status,
+                o.Currency));
 
         return await rows.ToPageAsync(orders, query, cancellationToken);
     }
@@ -97,7 +99,7 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
         db.Orders.AsNoTracking()
             .Where(o => o.CreatedAt >= sinceUtc && o.CreatedAt < untilUtc
                 && (o.Status == OrderStatus.Pending || o.Status == OrderStatus.PartiallyPaid))
-            .SumAsync(o => o.Total - o.Paid, cancellationToken);
+            .SumAsync(o => o.Total > o.Paid ? o.Total - o.Paid : 0L, cancellationToken);
 
     public async Task<IReadOnlyList<HourlyValue>> GetRevenuePerHourAsync(DateTime sinceUtc, DateTime untilUtc, CancellationToken cancellationToken) =>
         HourlySeries.ToHours(await db.Set<Payment>().AsNoTracking()
@@ -140,4 +142,25 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
     public void Add(Order order) => db.Orders.Add(order);
 
     public Task SaveChangesAsync(CancellationToken cancellationToken) => db.SaveChangesAsync(cancellationToken);
+
+    public Task<Order?> FindByClientRequestIdAsync(Guid clientRequestId, CancellationToken cancellationToken) =>
+        db.Orders.AsNoTracking()
+            .Include(o => o.Items)
+            .Include(o => o.Payments)
+            .FirstOrDefaultAsync(o => o.ClientRequestId == clientRequestId, cancellationToken);
+
+    public Task<Payment?> FindPaymentByClientRequestIdAsync(Guid clientRequestId, CancellationToken cancellationToken) =>
+        db.Set<Payment>().AsNoTracking()
+            .FirstOrDefaultAsync(p => p.ClientRequestId == clientRequestId, cancellationToken);
+
+    public Task ExecuteInSerializableAsync(Func<CancellationToken, Task> action, CancellationToken cancellationToken)
+    {
+        var strategy = db.Database.CreateExecutionStrategy();
+        return strategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+            await action(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        });
+    }
 }

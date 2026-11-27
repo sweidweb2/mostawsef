@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Mostawsef.Api.IntegrationTests.Infrastructure;
+using Mostawsef.Contracts.Backups;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.Dashboards;
 using Mostawsef.Contracts.LabTests;
@@ -133,6 +134,10 @@ public class SystemMaintenanceTests(ApiFactory factory)
         // Numbering starts again and new data can be added right away.
         var next = await CreateOrderAsync(admin, (await CreateTestAsync(admin)).Id, total: 500, paid: 0);
         Assert.Equal("ORD-000001", next.Number);
+
+        // Backup / dump history that described the wiped data is gone too.
+        Assert.Empty((await super.GetJsonAsync<PagedResult<BackupRecordDto>>("api/backups")).Items);
+        Assert.Empty((await super.GetJsonAsync<PagedResult<ScheduledDumpDto>>("api/scheduled-dumps")).Items);
     }
 
     private static async Task<PatientDto> CreatePatientAsync(HttpClient admin)

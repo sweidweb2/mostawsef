@@ -14,7 +14,8 @@ public record OrderListRow(
     int TestsCount,
     long Total,
     long Paid,
-    OrderStatus Status);
+    OrderStatus Status,
+    string Currency);
 
 /// <summary>Order details projection; Paid and TestsCount are stored on the order.</summary>
 public record OrderDetailsRow(
@@ -93,4 +94,16 @@ public interface IOrderRepository
 
     /// <summary>Saves every change of the request's unit of work (e.g. a new patient and its order) in one transaction.</summary>
     Task SaveChangesAsync(CancellationToken cancellationToken);
+
+    /// <summary>Order previously saved with this client save-attempt id, or null.</summary>
+    Task<Order?> FindByClientRequestIdAsync(Guid clientRequestId, CancellationToken cancellationToken);
+
+    /// <summary>Payment previously saved with this client save-attempt id, or null.</summary>
+    Task<Payment?> FindPaymentByClientRequestIdAsync(Guid clientRequestId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Runs <paramref name="action"/> inside a serializable transaction on the request DbContext (with an
+    /// execution strategy), so concurrent patient delete / test deactivate cannot race the final checks + save.
+    /// </summary>
+    Task ExecuteInSerializableAsync(Func<CancellationToken, Task> action, CancellationToken cancellationToken);
 }

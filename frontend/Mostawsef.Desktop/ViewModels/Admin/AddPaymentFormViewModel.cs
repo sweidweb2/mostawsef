@@ -93,5 +93,8 @@ public partial class AddPaymentFormViewModel : FormViewModel
     protected override async Task<IApiResult> SubmitAsync(object request, CancellationToken cancellationToken) =>
         _paymentId is { } paymentId
             ? await _orders.UpdatePaymentAsync(_orderId, paymentId, (UpdatePaymentRequest)request, cancellationToken)
-            : await _orders.AddPaymentAsync(_orderId, (AddPaymentRequest)request, cancellationToken);
+            : await _orders.AddPaymentAsync(
+                _orderId,
+                (AddPaymentRequest)request with { ClientRequestId = WriteAttemptId },
+                cancellationToken);
 }
