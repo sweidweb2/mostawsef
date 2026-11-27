@@ -31,11 +31,6 @@ public class LabTestRepository(AppDbContext db) : ILabTestRepository
     public async Task<IReadOnlyList<LabTest>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken) =>
         await db.LabTests.AsNoTracking().Where(t => ids.Contains(t.Id)).ToListAsync(cancellationToken);
 
-    public Task<int> CountActiveAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken) =>
-        ids.Count == 0
-            ? Task.FromResult(0)
-            : db.LabTests.AsNoTracking().CountAsync(t => ids.Contains(t.Id) && t.IsActive, cancellationToken);
-
     public async Task<(bool CodeTaken, bool NameTaken)> FindDuplicatesAsync(
         string code, string searchName, Guid? exceptId, CancellationToken cancellationToken)
     {

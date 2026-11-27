@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
+using Mostawsef.Application.Common;
 using Mostawsef.Application.Modules.Settings;
 using Mostawsef.Contracts.Auth;
 using Mostawsef.Contracts.Settings;
@@ -52,7 +53,7 @@ public static class HttpClientExtensions
     /// Needed when another host (or initializer) updated the shared test database.
     /// </summary>
     public static void RefreshSystemSettingsCache(this IServiceProvider services) =>
-        services.GetRequiredService<ISystemSettingsService>().Invalidate();
+        services.GetRequiredService<SingleValueCache<SystemSettingsDto>>().Invalidate();
 
     /// <summary>Reads a fresh Version, applies <paramref name="request"/>, and returns the saved row.</summary>
     public static async Task<SystemSettingsDto> UpdateSystemSettingsAsync(

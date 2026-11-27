@@ -308,11 +308,6 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
 
-                    b.Property<string>("PatientSearchName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<string>("SearchText")
                         .IsRequired()
                         .HasMaxLength(152)
@@ -348,8 +343,6 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                     b.HasIndex("Number")
                         .IsUnique();
 
-                    b.HasIndex("PatientSearchName");
-
                     b.HasIndex("SearchText");
 
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SearchText"), "gin");
@@ -360,6 +353,8 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                     b.HasIndex("PatientId", "Status");
 
                     b.HasIndex("Status", "CreatedAt");
+
+                    b.HasIndex("PatientId", "CreatedAt", "Id");
 
                     b.ToTable("orders", null, t =>
                         {
@@ -780,6 +775,9 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("MustChangePassword")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()

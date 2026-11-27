@@ -45,16 +45,17 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var args = Environment.GetCommandLineArgs();
-            if (UpdateApplicator.TryParseArgs(args, out var setupPath, out var waitPid))
+            var applicator = new UpdateApplicator(UpdateApplicator.DefaultLockDirectory);
+            if (UpdateApplicator.TryParseArgs(args, out var setupPath, out var sha256, out var waitPid))
             {
-                RunApplyUpdate(desktop, setupPath, waitPid);
+                RunApplyUpdate(desktop, applicator, setupPath, sha256, waitPid);
                 base.OnFrameworkInitializationCompleted();
                 return;
             }
 
-            if (UpdateApplicator.IsUpdateLockHeld())
+            if (applicator.IsUpdateLockHeld())
             {
-                RunWaitForUpdate(desktop);
+                RunWaitForUpdate(desktop, applicator);
                 base.OnFrameworkInitializationCompleted();
                 return;
             }
@@ -87,19 +88,20 @@ public partial class App : Application
         base.OnFrameworkInitializationCompleted();
     }
 
-    private static void RunApplyUpdate(IClassicDesktopStyleApplicationLifetime desktop, string setupPath, int? waitPid)
+    private static void RunApplyUpdate(
+        IClassicDesktopStyleApplicationLifetime desktop, UpdateApplicator applicator, string setupPath, string sha256, int? waitPid)
     {
-        desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-        var host = new UpdateHost();
-        var waitWindow = CreatePleaseWaitWindow();
-        desktop.MainWindow = waitWindow;
-        waitWindow.Show();
-
+        ShowPleaseWait(desktop);
         _ = Task.Run(() =>
         {
             try
             {
-                UpdateApplicator.Apply(setupPath, host.DesktopExePath, waitPid);
+                applicator.Apply(setupPath, sha256, UpdateHost.DesktopExePath, waitPid);
+            }
+            catch (Exception ex)
+            {
+                // No services in this helper process: record it in the local error log ErrorReporter also writes.
+                ErrorReporter.WriteLocalOnly(ex, "Applying an app update");
             }
             finally
             {
@@ -108,38 +110,35 @@ public partial class App : Application
         });
     }
 
-    private static void RunWaitForUpdate(IClassicDesktopStyleApplicationLifetime desktop)
+    private static void RunWaitForUpdate(IClassicDesktopStyleApplicationLifetime desktop, UpdateApplicator applicator)
+    {
+        ShowPleaseWait(desktop);
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await applicator.WaitForUpdateLockAsync(TimeSpan.FromMinutes(30));
+                // Relaunch a normal instance so DI / login start cleanly after Setup.
+                UpdateApplicator.RelaunchDesktop(UpdateHost.DesktopExePath);
+            }
+            catch (Exception ex)
+            {
+                // The user can still open the shortcut; keep the reason for support.
+                ErrorReporter.WriteLocalOnly(ex, "Waiting for an app update to finish");
+            }
+            finally
+            {
+                Dispatcher.UIThread.Post(() => desktop.Shutdown());
+            }
+        });
+    }
+
+    private static void ShowPleaseWait(IClassicDesktopStyleApplicationLifetime desktop)
     {
         desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
         var waitWindow = CreatePleaseWaitWindow();
         desktop.MainWindow = waitWindow;
         waitWindow.Show();
-
-        _ = Task.Run(() =>
-        {
-            UpdateApplicator.WaitForUpdateLock(TimeSpan.FromMinutes(30));
-            Dispatcher.UIThread.Post(() =>
-            {
-                // Relaunch a normal instance so DI / login start cleanly after Setup.
-                try
-                {
-                    var exe = Environment.ProcessPath
-                        ?? System.IO.Path.Combine(AppContext.BaseDirectory, "Mostawsef.Desktop.exe");
-                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                    {
-                        FileName = exe,
-                        UseShellExecute = true,
-                        WorkingDirectory = AppContext.BaseDirectory,
-                    });
-                }
-                catch
-                {
-                    // User can open the shortcut manually.
-                }
-
-                desktop.Shutdown();
-            });
-        });
     }
 
     private static Window CreatePleaseWaitWindow()

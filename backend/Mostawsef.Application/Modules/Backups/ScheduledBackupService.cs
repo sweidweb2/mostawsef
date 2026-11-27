@@ -15,7 +15,7 @@ public class ScheduledBackupOptions
 {
     public const string SectionName = "ScheduledBackup";
 
-    /// <summary>Days between automatic dumps while the API is running. Minimum 1.</summary>
+    /// <summary>Days between automatic dumps, counted from the last one (restarts do not add dumps). Minimum 1.</summary>
     [Range(1, 365)]
     public int IntervalDays { get; set; } = 1;
 
@@ -38,6 +38,12 @@ public interface IScheduledBackupService
     /// </summary>
     Task<ScheduledBackupResult?> RunAsync(CancellationToken cancellationToken);
 
+    /// <summary>
+    /// <see cref="RunAsync"/> only when the newest scheduled dump is <see cref="ScheduledBackupOptions.IntervalDays"/>
+    /// old or more (or there is none), so restarting the API does not add dumps that push older ones out of the keep count.
+    /// </summary>
+    Task<ScheduledBackupResult?> RunIfDueAsync(CancellationToken cancellationToken);
+
     /// <summary>History of successful scheduled dumps, newest first (Super list page).</summary>
     Task<PagedResult<ScheduledDumpDto>> GetHistoryAsync(PageQuery query, CancellationToken cancellationToken);
 }
@@ -57,6 +63,14 @@ public class ScheduledBackupService(
     {
         var (items, total) = await history.GetPageAsync(query, cancellationToken);
         return new PagedResult<ScheduledDumpDto>(items, query.SafePage, query.SafePageSize, total);
+    }
+
+    public async Task<ScheduledBackupResult?> RunIfDueAsync(CancellationToken cancellationToken)
+    {
+        var last = await history.GetLatestCreatedAtAsync(cancellationToken);
+        var due = last is null
+            || time.GetUtcNow().UtcDateTime - last.Value >= TimeSpan.FromDays(Math.Max(1, options.Value.IntervalDays));
+        return due ? await RunAsync(cancellationToken) : null;
     }
 
     public async Task<ScheduledBackupResult?> RunAsync(CancellationToken cancellationToken)

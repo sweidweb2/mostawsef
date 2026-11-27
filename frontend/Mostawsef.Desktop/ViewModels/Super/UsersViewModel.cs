@@ -105,7 +105,7 @@ public partial class UsersViewModel(UsersApi users, IDialogService dialogs, IToa
         }
 
         Toasts.Success(Localization.Get("Users.Deleted"));
-        await ReloadAsync();
+        await RemoveDeletedAsync(item.Id, u => u.Id);
     }
 
     private static int CompareByName(UserListItemDto a, UserListItemDto b)

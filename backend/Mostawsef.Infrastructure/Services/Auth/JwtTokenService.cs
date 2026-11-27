@@ -22,6 +22,18 @@ public class JwtTokenService(IOptions<JwtOptions> jwtOptions, TimeProvider time)
         var now = time.GetUtcNow().UtcDateTime;
         var expiresAt = SessionExpiresAtUtc(now);
 
+        List<Claim> claims =
+        [
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
+            new Claim(JwtClaims.Role, user.Role.ToString()),
+            new Claim(JwtClaims.TokenVersion, user.TokenVersion.ToString(CultureInfo.InvariantCulture)),
+        ];
+        if (user.MustChangePassword)
+        {
+            claims.Add(new Claim(JwtClaims.MustChangePassword, "1"));
+        }
+
         var token = _handler.CreateToken(new SecurityTokenDescriptor
         {
             Issuer = _options.Issuer,
@@ -30,13 +42,7 @@ public class JwtTokenService(IOptions<JwtOptions> jwtOptions, TimeProvider time)
             NotBefore = now,
             Expires = expiresAt,
             SigningCredentials = new SigningCredentials(_signingKey, SecurityAlgorithms.HmacSha256),
-            Subject = new ClaimsIdentity(
-            [
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-                new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
-                new Claim(JwtClaims.Role, user.Role.ToString()),
-                new Claim(JwtClaims.TokenVersion, user.TokenVersion.ToString(CultureInfo.InvariantCulture)),
-            ]),
+            Subject = new ClaimsIdentity(claims),
         });
 
         return new AccessToken(token, expiresAt, expiresAt - now);

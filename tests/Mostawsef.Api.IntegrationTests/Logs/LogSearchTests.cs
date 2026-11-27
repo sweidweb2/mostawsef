@@ -56,30 +56,6 @@ public class LogSearchTests(ApiFactory factory)
     }
 
     [Fact]
-    public async Task Old_rows_without_search_text_are_found_after_the_backfill()
-    {
-        var marker = NewMarker();
-        var arabicName = $"مُحَمَّد{marker}";
-        await factory.CreateClient().LoginAsync(arabicName, "wrong");
-        var super = await factory.CreateClientAsAsync(TestUsers.Super);
-        var searchUrl = $"api/activity-logs?search={Uri.EscapeDataString("محمد" + marker)}";
-        Assert.Single((await super.GetJsonAsync<CursorPage<ActivityLogListItemDto>>(searchUrl)).Items);
-
-        // As written before the LogSearchText migration: the column exists but is empty.
-        await using var scope = factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        await db.ActivityLogs.Where(l => l.Username == arabicName)
-            .ExecuteUpdateAsync(s => s.SetProperty(l => l.SearchText, string.Empty), TestContext.Current.CancellationToken);
-        Assert.Empty((await super.GetJsonAsync<CursorPage<ActivityLogListItemDto>>(searchUrl)).Items);
-
-        var rebuilt = await SearchTextBackfill.RunAsync(db, TestContext.Current.CancellationToken);
-
-        Assert.True(rebuilt >= 1);
-        Assert.Single((await super.GetJsonAsync<CursorPage<ActivityLogListItemDto>>(searchUrl)).Items);
-        Assert.Equal(0, await db.ActivityLogs.CountAsync(l => l.SearchText == string.Empty, TestContext.Current.CancellationToken));
-    }
-
-    [Fact]
     public async Task Searching_without_a_token_returns_401_before_validating_the_term()
     {
         var response = await factory.CreateClient().GetAsync("api/activity-logs?search=ab", TestContext.Current.CancellationToken);

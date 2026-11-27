@@ -9,6 +9,9 @@ public enum SignOutReason
     None,
     UserRequested,
     Expired,
+
+    /// <summary>The account still had its initial password and the user closed the change-password form.</summary>
+    PasswordNotChanged,
 }
 
 /// <summary>

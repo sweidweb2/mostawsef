@@ -24,6 +24,12 @@
 Feed URL (app already uses this):  
 `https://github.com/sweidweb2/mostawsef/releases/latest/download/latest.json`
 
+The app only accepts a feed whose `url` is `https://github.com/sweidweb2/mostawsef/releases/download/...`
+(`UpdateChecker.AllowedDownloadPrefix`); any other host, `http`, a port or user info hides the update. If the repository
+moves or is renamed, change that constant (and `DefaultFeedUrl`) in a release first. The SHA-256 from the feed is checked
+after the download and again by the second process, which keeps the file locked until Setup exits. The feed is not signed
+yet, so whoever can publish a Release on this repository can ship a Setup: keep that account protected (2FA).
+
 ---
 
 ## First install (new clinic PC)

@@ -55,6 +55,7 @@
   <data name="Login.InsecureConnection" xml:space="preserve"><value>This connection to the server is not encrypted. Ask your administrator to set up HTTPS before signing in over the network.</value></data>
   <data name="Login.Maintenance" xml:space="preserve"><value>The system is under maintenance. Please try again later.</value></data>
   <data name="Login.SessionExpired" xml:space="preserve"><value>Your session has expired. Please sign in again.</value></data>
+  <data name="Login.PasswordChangeRequired" xml:space="preserve"><value>This account still has its initial password. Sign in again and choose your own password to continue.</value></data>
   <data name="Login.Welcome" xml:space="preserve"><value>Welcome back</value></data>
   <data name="Login.ForgotPassword" xml:space="preserve"><value>Forgot your password? Ask your system administrator to reset it.</value></data>
   <data name="Login.Version" xml:space="preserve"><value>Version {0}</value></data>
@@ -270,6 +271,7 @@
 
   <data name="Auth.ChangePassword" xml:space="preserve"><value>Change password</value></data>
   <data name="Auth.PasswordChanged" xml:space="preserve"><value>Password changed.</value></data>
+  <data name="Auth.ChooseOwnPassword" xml:space="preserve"><value>Choose your own password</value></data>
 
   <data name="Nav.Users" xml:space="preserve"><value>Users</value></data>
   <data name="Users.Subtitle" xml:space="preserve"><value>Who can sign in, and what they can do.</value></data>

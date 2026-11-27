@@ -139,6 +139,26 @@ function Get-BundledPostgresInstaller {
         Select-Object -First 1 -ExpandProperty FullName
 }
 
+# Database passwords from a cryptographic RNG (Get-Random is not one): [0-9A-Za-z], without modulo bias.
+function New-RandomSecret([int]$Length) {
+    $alphabet = [char[]]((48..57) + (65..90) + (97..122))
+    $chars = New-Object System.Collections.Generic.List[char]
+    $buffer = New-Object byte[] 64
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try {
+        while ($chars.Count -lt $Length) {
+            $rng.GetBytes($buffer)
+            foreach ($b in $buffer) {
+                # 248 = 4 * 62: bytes above it would favour the first characters.
+                if ($b -lt 248 -and $chars.Count -lt $Length) { $chars.Add($alphabet[$b % 62]) }
+            }
+        }
+    } finally {
+        $rng.Dispose()
+    }
+    return -join $chars
+}
+
 function Ensure-Postgres {
     $svc = Get-Service -Name $PostgresService -ErrorAction SilentlyContinue
     if ($svc) {
@@ -150,7 +170,7 @@ function Ensure-Postgres {
     }
 
     # Fresh clinic install: port 5432. Superuser password is local to this machine only.
-    $superPass = -join ((48..57 + 65..90 + 97..122) | Get-Random -Count 24 | ForEach-Object { [char]$_ })
+    $superPass = New-RandomSecret 24
     $superPassFile = Join-Path $InstallRoot 'postgres-superuser.password.txt'
     Set-Content -LiteralPath $superPassFile -Value $superPass -Encoding ASCII
     try {
@@ -343,7 +363,7 @@ See $logPath and Docs/3-Follow-ups/clinic-install-playbook.md.
 "@
     }
 
-    $appPass = -join ((48..57 + 65..90 + 97..122) | Get-Random -Count 20 | ForEach-Object { [char]$_ })
+    $appPass = New-RandomSecret 24
     Write-InstallLog 'Creating/updating mostawsef role and database...'
     Ensure-Database -Port $port -AppPassword $appPass -SuperPassword $superPass
     $cs = "Host=127.0.0.1;Port=$port;Database=mostawsef;Username=mostawsef;Password=$appPass"

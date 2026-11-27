@@ -34,6 +34,7 @@ public sealed class TestServices : IDisposable
                 HttpHandler = Api,
                 UpdateHttpHandler = Updates,
                 UpdateHost = UpdateHost,
+                UpdateClock = UpdateClock,
                 SettingsFilePath = SettingsFile,
                 OpenFile = OpenedFiles.Add,
                 PickSavePath = PickSavePath,
@@ -54,6 +55,9 @@ public sealed class TestServices : IDisposable
     public FakeUpdateHandler Updates { get; } = CreateOfflineUpdateHandler();
 
     public FakeUpdateHost UpdateHost { get; private set; }
+
+    /// <summary>Clock of the update-check throttle (6 h between feed reads); move it with <see cref="ManualClock.Advance"/>.</summary>
+    public ManualClock UpdateClock { get; } = new();
 
     /// <summary>Files the app asked to open (printouts) instead of launching a viewer.</summary>
     public List<string> OpenedFiles { get; } = [];

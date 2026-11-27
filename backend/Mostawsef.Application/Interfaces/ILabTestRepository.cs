@@ -17,9 +17,6 @@ public interface ILabTestRepository
     /// <summary>The tests with these ids that exist (no tracking; order items copy snapshots only).</summary>
     Task<IReadOnlyList<LabTest>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
 
-    /// <summary>How many of <paramref name="ids"/> are still active (for a last-moment create check).</summary>
-    Task<int> CountActiveAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
-
     /// <summary>
     /// Whether another test (not <paramref name="exceptId"/>) already has this code and/or SearchName.
     /// One statement; both flags can be true.

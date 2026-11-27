@@ -6,7 +6,6 @@ using Avalonia.VisualTree;
 using Mostawsef.Contracts.Auth;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Desktop.Components;
-using Mostawsef.Desktop.Services.Updates;
 using Mostawsef.Desktop.Tests.Infrastructure;
 using Mostawsef.Desktop.ViewModels.Shell;
 
@@ -15,11 +14,6 @@ namespace Mostawsef.Desktop.Tests.Shell;
 [Collection(UiTestCollection.Name)]
 public class UpdateBannerTests : UiTestBase
 {
-    public UpdateBannerTests()
-    {
-        UpdateChecker.MinCheckInterval = TimeSpan.Zero;
-    }
-
     [AvaloniaFact]
     public async Task Portal_shows_the_update_banner_when_a_newer_setup_is_published()
     {
@@ -76,12 +70,31 @@ public class UpdateBannerTests : UiTestBase
         Assert.Contains("Update now", TestServices.Texts(window));
     }
 
+    [AvaloniaFact]
+    public void A_replaced_portal_does_not_clear_the_new_portals_leave_confirmation()
+    {
+        using var app = new TestServices();
+        app.SignInAs(Roles.Admin);
+        app.Navigation.NavigateToHome();
+        var first = Assert.IsType<PortalShellViewModel>(app.Navigation.CurrentPage);
+
+        // The new shell is built (and sets its callback) before the old one is closed.
+        app.Navigation.NavigateToHome();
+        var second = Assert.IsType<PortalShellViewModel>(app.Navigation.CurrentPage);
+
+        Assert.NotSame(first, second);
+        Assert.NotNull(second.Updates.ConfirmLeaveAsync);
+
+        second.Close();
+        Assert.Null(second.Updates.ConfirmLeaveAsync);
+    }
+
     private static async Task<(Window Window, PortalShellViewModel Shell)> ShowPortalAsync(TestServices app)
     {
         app.SignInAs(Roles.Admin);
         app.Navigation.NavigateToHome();
         var shell = Assert.IsType<PortalShellViewModel>(app.Navigation.CurrentPage);
-        await UiWait.UntilAsync(() => shell.Updates.CheckAttempts > 0 || shell.Updates.IsAvailable);
+        await UiWait.UntilAsync(() => app.Updates.RequestCount > 0 || shell.Updates.IsAvailable);
         await shell.Updates.CheckNowAsync(force: true);
         var window = app.Show(shell);
         Dispatcher.UIThread.RunJobs();

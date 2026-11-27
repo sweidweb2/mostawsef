@@ -22,17 +22,11 @@ public class Order : Entity
     {
     }
 
-    public Order(string number, Patient patient, string currency)
-        : this(number, patient.Id, patient.FullName, patient.SearchName, patient.Phone, currency)
-    {
-    }
-
-    public Order(string number, Guid patientId, string patientName, string patientSearchName, string patientPhone, string currency)
+    public Order(string number, Guid patientId, string patientName, string patientPhone, string currency)
     {
         Number = number;
         PatientId = patientId;
         PatientName = patientName;
-        PatientSearchName = patientSearchName;
         PatientPhone = patientPhone;
         Currency = currency;
     }
@@ -44,9 +38,6 @@ public class Order : Entity
 
     /// <summary>The patient's name when the order was made, kept as on the invoice: renaming the patient later does not change it.</summary>
     public string PatientName { get; private set; } = string.Empty;
-
-    /// <summary>PatientName normalized for search.</summary>
-    public string PatientSearchName { get; private set; } = string.Empty;
 
     public string PatientPhone { get; private set; } = string.Empty;
 
@@ -86,8 +77,6 @@ public class Order : Entity
 
     public long Balance => Total - Paid;
 
-    public void AssignNumber(string number) => Number = number;
-
     public void SetClientRequestId(Guid? clientRequestId) => ClientRequestId = clientRequestId;
 
     public void AddItem(LabTest test)
@@ -106,17 +95,6 @@ public class Order : Entity
 
         Addon = addon;
         Total = addon + _items.Sum(i => i.LabPrice);
-    }
-
-    /// <summary>Sets the chargeable total. Used by the one-time backfill of orders saved before our price existed.</summary>
-    public void SetTotal(long total)
-    {
-        if (total < 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(total), "Total cannot be negative.");
-        }
-
-        Total = total;
     }
 
     /// <summary>A payment in the order currency (exchange rate 1). At most <see cref="Balance"/>.</summary>
@@ -163,13 +141,6 @@ public class Order : Entity
             : OrderStatus.Pending;
 
     public void SetSearchText(string searchText) => SearchText = searchText;
-
-    /// <summary>Used by the one-time data backfill after TestsCount/Paid columns were added.</summary>
-    public void SetListAggregates(int testsCount, long paid)
-    {
-        TestsCount = testsCount;
-        Paid = paid;
-    }
 
     private long SumPayments() =>
         _payments.Sum(p => p.Type == PaymentType.Refund ? -p.Amount : p.Amount);

@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Mostawsef.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261127173720_AddClientRequestIds")]
-    partial class AddClientRequestIds
+    [Migration("20261127192254_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -311,11 +311,6 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
 
-                    b.Property<string>("PatientSearchName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<string>("SearchText")
                         .IsRequired()
                         .HasMaxLength(152)
@@ -350,8 +345,6 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("Number")
                         .IsUnique();
-
-                    b.HasIndex("PatientSearchName");
 
                     b.HasIndex("SearchText");
 

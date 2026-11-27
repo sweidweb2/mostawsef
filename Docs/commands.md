@@ -154,8 +154,9 @@ The API logs every request in Development and only slow ones (1 s or more) in pr
 ## Scheduled database dumps (clinic)
 
 Super → Settings → **Backup folder** (Browse). Default on first run: a `Backups` folder next to the API install
-(`AppContext.BaseDirectory\Backups`). While the API Windows service is running and that folder is set, the API
-writes `mostawsef-yyyyMMdd-HHmmss.dump` there (custom `pg_dump` format), keeps the newest `ScheduledBackup:KeepCount`
+(`AppContext.BaseDirectory\Backups`). While the API Windows service is running and that folder is set, the API checks
+every hour and, when the newest dump is `ScheduledBackup:IntervalDays` old (default 1) or there is none, writes
+`mostawsef-yyyyMMdd-HHmmss.dump` there (custom `pg_dump` format), keeps the newest `ScheduledBackup:KeepCount`
 files **and** history rows in `scheduled_dumps` (default 7; Super → **Backups** → Auto backups), and logs `backups.scheduled`.
 Clear the folder in Settings to skip scheduled dumps. Needs `pg_dump` on the API PC (`ScheduledBackup:PgDumpPath` if
 it is not on PATH). If the API lives under Program Files and writes fail, pick a writable folder (another drive / USB)

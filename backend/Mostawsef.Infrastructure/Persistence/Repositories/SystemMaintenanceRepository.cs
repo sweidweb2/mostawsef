@@ -95,11 +95,7 @@ public class SystemMaintenanceRepository(AppDbContext db) : ISystemMaintenanceRe
             var systemErrors = await db.SystemErrors.ExecuteDeleteAsync(cancellationToken);
             await db.Set<BackupRecord>().ExecuteDeleteAsync(cancellationToken);
             await db.Set<ScheduledDump>().ExecuteDeleteAsync(cancellationToken);
-            // Keep one-time data-backfill markers so a later restart does not re-copy Total into Addon on new orders.
-            await db.Set<NumberSequence>()
-                .Where(s => s.Name != OrderAddonBackfill.CompletionMarker
-                    && s.Name != PatientSearchTextRebuild.CompletionMarker)
-                .ExecuteDeleteAsync(cancellationToken);
+            await db.Set<NumberSequence>().ExecuteDeleteAsync(cancellationToken);
 
             await transaction.CommitAsync(cancellationToken);
             db.ChangeTracker.Clear();

@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Json;
-using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,16 +13,24 @@ using Mostawsef.Desktop.Services.Local;
 namespace Mostawsef.Desktop.Services.Updates;
 
 /// <summary>
-/// Checks the public GitHub <c>latest.json</c> feed and installs an update Setup in-app
-/// (download → sha256 → elevated silent Setup via a second process → this app exits → relaunch).
+/// Checks the public GitHub <c>latest.json</c> feed and holds the update banner's state. Install hands the download
+/// to <see cref="UpdateDownloader"/>, then the elevated silent Setup to a second process (<see cref="IUpdateHost"/>).
 /// </summary>
-public partial class UpdateChecker : ObservableObject
+public sealed partial class UpdateChecker : ObservableObject, IDisposable
 {
     public static readonly Uri DefaultFeedUrl =
         new("https://github.com/sweidweb2/mostawsef/releases/latest/download/latest.json");
 
-    /// <summary>Do not re-hit the feed more often than this (portal re-entry, language churn, etc.).</summary>
-    public static TimeSpan MinCheckInterval { get; set; } = TimeSpan.FromHours(6);
+    /// <summary>
+    /// A feed may only point at a Setup in this repository's GitHub releases over https. Anything else is ignored,
+    /// so a tampered or misconfigured feed cannot send the app to another host (the Setup runs elevated).
+    /// </summary>
+    public const string AllowedDownloadPrefix = "https://github.com/sweidweb2/mostawsef/releases/download/";
+
+    /// <summary>Do not re-hit the feed more often than this (portal re-entry, sign-out and back, etc.).</summary>
+    public static readonly TimeSpan MinCheckInterval = TimeSpan.FromHours(6);
+
+    private static readonly TimeSpan FeedTimeout = TimeSpan.FromSeconds(8);
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -33,8 +40,10 @@ public partial class UpdateChecker : ObservableObject
     private readonly HttpClient _http;
     private readonly LocalizationService _localization;
     private readonly IUpdateHost _host;
+    private readonly UpdateDownloader _downloader;
+    private readonly TimeProvider _time;
     private readonly Uri _feedUrl;
-    private readonly object _gate = new();
+    private readonly Lock _gate = new();
     private DateTimeOffset _lastCheckAttempt = DateTimeOffset.MinValue;
     private UpdateFeed? _feed;
     private CancellationTokenSource? _installCts;
@@ -43,6 +52,7 @@ public partial class UpdateChecker : ObservableObject
         HttpMessageHandler handler,
         LocalizationService localization,
         IUpdateHost host,
+        TimeProvider? time = null,
         Uri? feedUrl = null)
     {
         _http = new HttpClient(handler, disposeHandler: false)
@@ -51,6 +61,8 @@ public partial class UpdateChecker : ObservableObject
         };
         _localization = localization;
         _host = host;
+        _downloader = new UpdateDownloader(_http, host.DownloadDirectory);
+        _time = time ?? TimeProvider.System;
         _feedUrl = feedUrl ?? DefaultFeedUrl;
         _localization.LanguageChanged += OnLanguageChanged;
     }
@@ -90,33 +102,30 @@ public partial class UpdateChecker : ObservableObject
 
     public string? DownloadUrl { get; private set; }
 
-    /// <summary>How many feed HTTP calls succeeded or failed (tests).</summary>
-    public int CheckAttempts { get; private set; }
-
-    /// <summary>Setup paths handed to the applicator (tests).</summary>
-    public string? LastSetupPath { get; private set; }
-
     /// <summary>Optional: portal confirms dirty forms before the app exits. Return false to abort.</summary>
     public Func<Task<bool>>? ConfirmLeaveAsync { get; set; }
 
+    /// <summary>
+    /// Reads the feed (at most once per <see cref="MinCheckInterval"/> unless <paramref name="force"/>). An offline PC,
+    /// a timeout, an error page or a malformed feed is expected and only means "no update"; anything else is thrown.
+    /// </summary>
     public async Task CheckNowAsync(bool force = false, CancellationToken cancellationToken = default)
     {
         lock (_gate)
         {
-            if (!force && DateTimeOffset.UtcNow - _lastCheckAttempt < MinCheckInterval)
+            var now = _time.GetUtcNow();
+            if (!force && now - _lastCheckAttempt < MinCheckInterval)
             {
                 return;
             }
 
-            _lastCheckAttempt = DateTimeOffset.UtcNow;
+            _lastCheckAttempt = now;
         }
-
-        CheckAttempts++;
 
         try
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeout.CancelAfter(TimeSpan.FromSeconds(8));
+            timeout.CancelAfter(FeedTimeout);
 
             using var response = await _http.GetAsync(_feedUrl, HttpCompletionOption.ResponseHeadersRead, timeout.Token)
                 .ConfigureAwait(false);
@@ -131,7 +140,7 @@ public partial class UpdateChecker : ObservableObject
                 || string.IsNullOrWhiteSpace(feed.Version)
                 || string.IsNullOrWhiteSpace(feed.Url)
                 || string.IsNullOrWhiteSpace(feed.Sha256)
-                || !Uri.TryCreate(feed.Url, UriKind.Absolute, out _))
+                || !IsAllowedDownloadUrl(feed.Url))
             {
                 return;
             }
@@ -144,13 +153,13 @@ public partial class UpdateChecker : ObservableObject
 
             await ApplyFeedAsync(feed).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            throw;
+            // Feed timeout: try again on the next check.
         }
-        catch
+        catch (Exception ex) when (ex is HttpRequestException or IOException or JsonException)
         {
-            // Offline, timeout, HTML error page, bad JSON — stay quiet.
+            // Offline, connection dropped, or an HTML error page instead of JSON: no update to show.
         }
     }
 
@@ -184,18 +193,16 @@ public partial class UpdateChecker : ObservableObject
                 return;
             }
 
-            var setupPath = await DownloadSetupAsync(feed, ct).ConfigureAwait(false);
-            await SetStatusAsync(_localization.Get("Update.Verifying")).ConfigureAwait(false);
-            if (!await VerifySha256Async(setupPath, feed.Sha256, ct).ConfigureAwait(false))
+            await SetStatusAsync(_localization.Format("Update.Downloading", 0)).ConfigureAwait(false);
+            var setupPath = await _downloader.DownloadAsync(feed, ReportProgressAsync, ct).ConfigureAwait(false);
+            if (setupPath is null)
             {
-                TryDelete(setupPath);
                 await FailAsync(_localization.Get("Update.ChecksumFailed")).ConfigureAwait(false);
                 return;
             }
 
             await SetStatusAsync(_localization.Get("Update.StartingSetup")).ConfigureAwait(false);
-            LastSetupPath = setupPath;
-            _host.StartApplyUpdate(setupPath, Environment.ProcessId);
+            _host.StartApplyUpdate(setupPath, feed.Sha256.Trim(), Environment.ProcessId);
             _host.ExitApplication();
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -204,6 +211,7 @@ public partial class UpdateChecker : ObservableObject
         }
         catch (Exception ex)
         {
+            // Shown to the user in the banner (download failed, disk full, Setup could not start).
             await FailAsync(_localization.Format("Update.Failed", ShortError(ex))).ConfigureAwait(false);
         }
     }
@@ -218,62 +226,28 @@ public partial class UpdateChecker : ObservableObject
 
     private bool CanCancelInstall() => IsInstalling && ProgressPercent is not null;
 
-    private async Task<string> DownloadSetupAsync(UpdateFeed feed, CancellationToken cancellationToken)
+    /// <summary>https, no user info or custom port, and under <see cref="AllowedDownloadPrefix"/>.</summary>
+    public static bool IsAllowedDownloadUrl(string? url) =>
+        Uri.TryCreate(url, UriKind.Absolute, out var uri)
+        && uri.Scheme == Uri.UriSchemeHttps
+        && uri.IsDefaultPort
+        && string.IsNullOrEmpty(uri.UserInfo)
+        && uri.AbsoluteUri.StartsWith(AllowedDownloadPrefix, StringComparison.Ordinal);
+
+    public void Dispose()
     {
-        Directory.CreateDirectory(_host.DownloadDirectory);
-        var fileName = $"Mostawsef-Setup-{SanitizeFileVersion(feed.Version)}.exe";
-        var path = Path.Combine(_host.DownloadDirectory, fileName);
-        var tempPath = path + ".partial";
-        TryDelete(tempPath);
-        TryDelete(path);
+        _localization.LanguageChanged -= OnLanguageChanged;
+        _installCts?.Cancel();
+        _installCts?.Dispose();
+        _http.Dispose();
+    }
 
-        await SetStatusAsync(_localization.Format("Update.Downloading", 0)).ConfigureAwait(false);
-
-        using var response = await _http.GetAsync(new Uri(feed.Url), HttpCompletionOption.ResponseHeadersRead, cancellationToken)
-            .ConfigureAwait(false);
-        response.EnsureSuccessStatusCode();
-
-        var total = response.Content.Headers.ContentLength ?? -1L;
-        await using (var remote = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false))
-        await using (var local = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None, 81920, useAsync: true))
+    private async Task ReportProgressAsync(int percent) =>
+        await Dispatcher.UIThread.InvokeAsync(() =>
         {
-            var buffer = new byte[81920];
-            long readTotal = 0;
-            int read;
-            var lastReported = -1;
-            while ((read = await remote.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken).ConfigureAwait(false)) > 0)
-            {
-                await local.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
-                readTotal += read;
-                if (total > 0)
-                {
-                    var percent = (int)Math.Clamp(readTotal * 100 / total, 0, 100);
-                    if (percent != lastReported)
-                    {
-                        lastReported = percent;
-                        var p = percent;
-                        await Dispatcher.UIThread.InvokeAsync(() =>
-                        {
-                            ProgressPercent = p;
-                            StatusText = _localization.Format("Update.Downloading", p);
-                        });
-                    }
-                }
-            }
-        }
-
-        File.Move(tempPath, path, overwrite: true);
-        await Dispatcher.UIThread.InvokeAsync(() => { ProgressPercent = 100; });
-        return path;
-    }
-
-    private static async Task<bool> VerifySha256Async(string path, string expectedHex, CancellationToken cancellationToken)
-    {
-        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
-        var hash = await SHA256.HashDataAsync(stream, cancellationToken).ConfigureAwait(false);
-        var actual = Convert.ToHexString(hash);
-        return string.Equals(actual, expectedHex.Trim(), StringComparison.OrdinalIgnoreCase);
-    }
+            ProgressPercent = percent;
+            StatusText = _localization.Format("Update.Downloading", percent);
+        });
 
     private async Task ApplyFeedAsync(UpdateFeed feed)
     {
@@ -342,33 +316,6 @@ public partial class UpdateChecker : ObservableObject
         return notes is null
             ? _localization.Format("Update.Available", feed.Version)
             : _localization.Format("Update.AvailableWithNotes", feed.Version, notes);
-    }
-
-    private static string SanitizeFileVersion(string version)
-    {
-        Span<char> buffer = stackalloc char[version.Length];
-        var n = 0;
-        foreach (var c in version)
-        {
-            buffer[n++] = char.IsAsciiLetterOrDigit(c) || c is '.' or '-' ? c : '_';
-        }
-
-        return new string(buffer[..n]);
-    }
-
-    private static void TryDelete(string path)
-    {
-        try
-        {
-            if (File.Exists(path))
-            {
-                File.Delete(path);
-            }
-        }
-        catch
-        {
-            // Best-effort.
-        }
     }
 
     private static string ShortError(Exception ex) =>

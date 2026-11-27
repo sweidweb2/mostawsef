@@ -10,8 +10,10 @@ public record LoginRequest([Required] string Username, [Required] string Passwor
 /// <summary>
 /// ExpiresInSeconds is the session length as the server sees it. The desktop counts it from its own receipt of the
 /// reply, so a PC whose clock is wrong does not read the session as already expired. 0 (older servers) means: use ExpiresAt.
+/// MustChangePassword: the account still has its seeded initial password; until it is changed (change-password),
+/// every Super endpoint answers 403.
 /// </summary>
-public record LoginResponse(string AccessToken, DateTime ExpiresAt, UserDto User, int ExpiresInSeconds = 0);
+public record LoginResponse(string AccessToken, DateTime ExpiresAt, UserDto User, int ExpiresInSeconds = 0, bool MustChangePassword = false);
 
 public record UserDto(Guid Id, string Username, string Role, string? FullName = null);
 

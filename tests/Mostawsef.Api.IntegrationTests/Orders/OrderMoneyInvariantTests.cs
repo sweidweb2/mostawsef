@@ -38,13 +38,13 @@ public class OrderMoneyInvariantTests
     [Fact]
     public void SetCharges_refuses_a_negative_addon()
     {
-        var order = new Order("ORD-1", Guid.NewGuid(), "P", "p", "010", "EGP");
+        var order = new Order("ORD-1", Guid.NewGuid(), "P", "010", "EGP");
         Assert.Throws<ArgumentOutOfRangeException>(() => order.SetCharges(-1));
     }
 
     private static Order OpenOrder(long totalLabs, long addon)
     {
-        var order = new Order("ORD-1", Guid.NewGuid(), "Patient", "patient", "010", "EGP");
+        var order = new Order("ORD-1", Guid.NewGuid(), "Patient", "010", "EGP");
         order.AddItem(new LabTest("T1", "Test", "test", totalLabs));
         order.SetCharges(addon);
         return order;

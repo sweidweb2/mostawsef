@@ -14,4 +14,10 @@ public static class TestUsers
 
     /// <summary>Password-seeded accounts only (clinic is created by the API initializer).</summary>
     public static readonly TestUser[] SeededLogins = [Super];
+
+    /// <summary>
+    /// Seeded the way a clinic install seeds Super: its password is an initial one that must be changed at first
+    /// sign-in. Not in <see cref="SeededLogins"/>; only the initial-password tests use it.
+    /// </summary>
+    public static readonly TestUser InitialSuper = new("initial-super@test.local", "Initial#Pass1", Roles.Super);
 }

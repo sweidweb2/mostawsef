@@ -58,6 +58,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         || ContainsMessage(ex, "UNIQUE constraint failed")
         || ContainsMessage(ex, "unique constraint");
 
+    /// <summary>
+    /// PostgreSQL rolled the transaction back because a concurrent one touched the same rows (Serializable /
+    /// Repeatable Read) or they deadlocked. Safe to run the whole transaction again.
+    /// </summary>
+    public static bool IsSerializationFailure(Exception ex) =>
+        FindPostgres(ex)?.SqlState is PostgresErrorCodes.SerializationFailure or PostgresErrorCodes.DeadlockDetected;
+
     private static bool IsForeignKeyViolation(DbUpdateException ex) =>
         FindPostgres(ex)?.SqlState == PostgresErrorCodes.ForeignKeyViolation
         || ContainsMessage(ex, "FOREIGN KEY constraint failed")

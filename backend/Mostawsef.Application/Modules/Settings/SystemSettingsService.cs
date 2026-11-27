@@ -12,20 +12,15 @@ public interface ISystemSettingsService
     Task<SystemSettingsDto> GetAsync(CancellationToken cancellationToken);
 
     Task<SystemSettingsDto> UpdateAsync(UpdateSystemSettingsRequest request, CancellationToken cancellationToken);
-
-    /// <summary>Drops the cached row (after an edit or a rare initializer repair).</summary>
-    void Invalidate();
 }
 
 public class SystemSettingsService(
     ISystemSettingsRepository settings,
-    SystemSettingsCache cache,
+    SingleValueCache<SystemSettingsDto> cache,
     IActivityLogger activity) : ISystemSettingsService
 {
     public Task<SystemSettingsDto> GetAsync(CancellationToken cancellationToken) =>
         cache.GetAsync(cancellationToken);
-
-    public void Invalidate() => cache.Invalidate();
 
     public async Task<SystemSettingsDto> UpdateAsync(UpdateSystemSettingsRequest request, CancellationToken cancellationToken)
     {
@@ -35,15 +30,12 @@ public class SystemSettingsService(
             throw AppException.Conflict(ErrorCodes.ConcurrencyConflict);
         }
 
-        try
-        {
-            current.Update(request.BackupPath, request.MaintenanceMode);
-        }
-        catch (ArgumentException)
+        if (!SystemSettings.TryNormalizeBackupPath(request.BackupPath, out _))
         {
             throw AppException.Validation(nameof(UpdateSystemSettingsRequest.BackupPath), ErrorCodes.Invalid);
         }
 
+        current.Update(request.BackupPath, request.MaintenanceMode);
         await settings.SaveChangesAsync(cancellationToken);
         cache.Invalidate();
 

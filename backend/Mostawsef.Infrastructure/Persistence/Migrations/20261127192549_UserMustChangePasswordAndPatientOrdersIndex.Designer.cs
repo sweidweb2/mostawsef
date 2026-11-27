@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Mostawsef.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261109200541_AddOrderOurPrice")]
-    partial class AddOrderOurPrice
+    [Migration("20261127192549_UserMustChangePasswordAndPatientOrdersIndex")]
+    partial class UserMustChangePasswordAndPatientOrdersIndex
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -98,6 +98,46 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                     b.ToTable("activity_logs", (string)null);
                 });
 
+            modelBuilder.Entity("Mostawsef.Domain.Entities.BackupRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Format")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Table")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.ToTable("backup_records", (string)null);
+                });
+
             modelBuilder.Entity("Mostawsef.Domain.Entities.ClinicSettings", b =>
                 {
                     b.Property<Guid>("Id")
@@ -174,9 +214,6 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("character varying(150)");
 
-                    b.Property<long>("Price")
-                        .HasColumnType("bigint");
-
                     b.Property<string>("SearchName")
                         .IsRequired()
                         .HasMaxLength(150)
@@ -224,6 +261,12 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<long>("Addon")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid?>("ClientRequestId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -252,7 +295,7 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
-                    b.Property<long>("OurPrice")
+                    b.Property<long>("Paid")
                         .HasColumnType("bigint");
 
                     b.Property<Guid>("PatientId")
@@ -268,15 +311,21 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
 
-                    b.Property<string>("PatientSearchName")
+                    b.Property<string>("SearchText")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasMaxLength(152)
+                        .HasColumnType("character varying(152)");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
+
+                    b.Property<int>("TestsCount")
+                        .HasColumnType("integer");
+
+                    b.Property<long>("Total")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -291,18 +340,31 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedAt");
+                    b.HasIndex("ClientRequestId")
+                        .IsUnique();
 
                     b.HasIndex("Number")
                         .IsUnique();
 
-                    b.HasIndex("PatientId");
+                    b.HasIndex("SearchText");
 
-                    b.HasIndex("PatientSearchName");
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SearchText"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("SearchText"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex("CreatedAt", "Id");
+
+                    b.HasIndex("PatientId", "Status");
 
                     b.HasIndex("Status", "CreatedAt");
 
-                    b.ToTable("orders", (string)null);
+                    b.HasIndex("PatientId", "CreatedAt", "Id");
+
+                    b.ToTable("orders", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_orders_non_negative_money", "\"Total\" >= 0 AND \"Paid\" >= 0 AND \"Addon\" >= 0");
+
+                            t.HasCheckConstraint("CK_orders_paid_within_total", "\"Paid\" <= \"Total\"");
+                        });
                 });
 
             modelBuilder.Entity("Mostawsef.Domain.Entities.OrderItem", b =>
@@ -321,14 +383,21 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                     b.Property<long>("LabPrice")
                         .HasColumnType("bigint");
 
+                    b.Property<string>("LabTestCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
                     b.Property<Guid>("LabTestId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("LabTestName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
                     b.Property<Guid>("OrderId")
                         .HasColumnType("uuid");
-
-                    b.Property<long>("OurPrice")
-                        .HasColumnType("bigint");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -383,14 +452,7 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("character varying(10)");
 
-                    b.Property<string>("GuardianPhone")
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)");
-
                     b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsInsured")
                         .HasColumnType("boolean");
 
                     b.Property<string>("Notes")
@@ -407,6 +469,11 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("SearchText")
+                        .IsRequired()
+                        .HasMaxLength(162)
+                        .HasColumnType("character varying(162)");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -420,9 +487,16 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedAt");
+
                     b.HasIndex("Phone");
 
-                    b.HasIndex("SearchName");
+                    b.HasIndex("SearchText");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("SearchText"), "gin");
+                    NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("SearchText"), new[] { "gin_trgm_ops" });
+
+                    b.HasIndex("SearchName", "Id");
 
                     b.ToTable("patients", (string)null);
                 });
@@ -435,6 +509,9 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
 
                     b.Property<long>("Amount")
                         .HasColumnType("bigint");
+
+                    b.Property<Guid?>("ClientRequestId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -485,11 +562,70 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ClientRequestId")
+                        .IsUnique();
+
                     b.HasIndex("OrderId");
 
                     b.HasIndex("PaidAt");
 
-                    b.ToTable("payments", (string)null);
+                    b.ToTable("payments", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_payments_positive_amount", "\"Amount\" > 0");
+                        });
+                });
+
+            modelBuilder.Entity("Mostawsef.Domain.Entities.ScheduledDump", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("DeletedOldFiles")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("character varying(400)");
+
+                    b.Property<long>("FileSizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("FolderPath")
+                        .IsRequired()
+                        .HasMaxLength(260)
+                        .HasColumnType("character varying(260)");
+
+                    b.Property<int>("IntervalDays")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("KeepCount")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.ToTable("scheduled_dumps", (string)null);
                 });
 
             modelBuilder.Entity("Mostawsef.Domain.Entities.SystemError", b =>
@@ -643,6 +779,9 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<bool>("MustChangePassword")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -657,6 +796,9 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<int>("TokenVersion")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -675,6 +817,10 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("FullName");
+
+                    b.HasIndex("SearchName");
 
                     b.HasIndex("Username")
                         .IsUnique();

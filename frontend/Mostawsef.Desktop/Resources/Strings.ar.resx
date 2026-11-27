@@ -55,6 +55,7 @@
   <data name="Login.InsecureConnection" xml:space="preserve"><value>الاتصال بالخادم غير مشفّر. اطلب من المسؤول تفعيل HTTPS قبل تسجيل الدخول عبر الشبكة.</value></data>
   <data name="Login.Maintenance" xml:space="preserve"><value>النظام تحت الصيانة. يرجى المحاولة لاحقًا.</value></data>
   <data name="Login.SessionExpired" xml:space="preserve"><value>انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.</value></data>
+  <data name="Login.PasswordChangeRequired" xml:space="preserve"><value>لا يزال هذا الحساب يستخدم كلمة المرور الأولية. سجّل الدخول مرة أخرى واختر كلمة مرور خاصة بك للمتابعة.</value></data>
   <data name="Login.Welcome" xml:space="preserve"><value>مرحبًا بعودتك</value></data>
   <data name="Login.ForgotPassword" xml:space="preserve"><value>نسيت كلمة المرور؟ اطلب من مسؤول النظام إعادة تعيينها.</value></data>
   <data name="Login.Version" xml:space="preserve"><value>الإصدار {0}</value></data>
@@ -269,6 +270,7 @@
 
   <data name="Auth.ChangePassword" xml:space="preserve"><value>تغيير كلمة المرور</value></data>
   <data name="Auth.PasswordChanged" xml:space="preserve"><value>تم تغيير كلمة المرور.</value></data>
+  <data name="Auth.ChooseOwnPassword" xml:space="preserve"><value>اختر كلمة مرور خاصة بك</value></data>
 
   <data name="Nav.Users" xml:space="preserve"><value>المستخدمون</value></data>
   <data name="Users.Subtitle" xml:space="preserve"><value>من يمكنه تسجيل الدخول، وما الذي يمكنه فعله.</value></data>

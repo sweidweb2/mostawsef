@@ -10,27 +10,18 @@ namespace Mostawsef.Desktop.Services.Updates;
 /// <summary>Process / path hooks for applying a downloaded Setup (real app or fakes in tests).</summary>
 public interface IUpdateHost
 {
-    string DesktopExePath { get; }
-
     string DownloadDirectory { get; }
 
-    /// <summary>Default <c>C:\Mostawsef\install-clinic.log</c> next to the install root.</summary>
-    string InstallClinicLogPath { get; }
-
-    void StartApplyUpdate(string setupPath, int currentProcessId);
+    /// <summary>Starts the second process that re-checks <paramref name="sha256"/> and runs the Setup.</summary>
+    void StartApplyUpdate(string setupPath, string sha256, int currentProcessId);
 
     void ExitApplication();
 }
 
 public sealed class UpdateHost : IUpdateHost
 {
-    public const string ApplyUpdateArg = "--apply-update";
-    public const string WaitPidArg = "--wait-pid";
-
-    public static readonly string SilentSetupArguments =
-        "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS";
-
-    public string DesktopExePath { get; } =
+    /// <summary>This Desktop's exe: started again as the update helper, and relaunched after Setup.</summary>
+    public static string DesktopExePath { get; } =
         Environment.ProcessPath
         ?? Path.Combine(AppContext.BaseDirectory, "Mostawsef.Desktop.exe");
 
@@ -39,18 +30,13 @@ public sealed class UpdateHost : IUpdateHost
         "Mostawsef",
         "updates");
 
-    public string InstallClinicLogPath { get; } = ResolveInstallClinicLogPath();
-
-    public void StartApplyUpdate(string setupPath, int currentProcessId)
-    {
-        var args = $"{ApplyUpdateArg} \"{setupPath}\" {WaitPidArg} {currentProcessId}";
+    public void StartApplyUpdate(string setupPath, string sha256, int currentProcessId) =>
         Process.Start(new ProcessStartInfo
         {
             FileName = DesktopExePath,
-            Arguments = args,
+            Arguments = UpdateApplicator.BuildArgs(setupPath, sha256, currentProcessId),
             UseShellExecute = true,
         });
-    }
 
     public void ExitApplication()
     {
@@ -65,12 +51,5 @@ public sealed class UpdateHost : IUpdateHost
                 Environment.Exit(0);
             }
         });
-    }
-
-    private static string ResolveInstallClinicLogPath()
-    {
-        // Published layout: C:\Mostawsef\Desktop\*.exe → log at C:\Mostawsef\install-clinic.log
-        var installRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, ".."));
-        return Path.Combine(installRoot, "install-clinic.log");
     }
 }

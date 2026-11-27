@@ -17,7 +17,6 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
 
         builder.Property(o => o.Number).HasMaxLength(Order.NumberMaxLength).IsRequired();
         builder.Property(o => o.PatientName).HasMaxLength(Patient.FullNameMaxLength).IsRequired();
-        builder.Property(o => o.PatientSearchName).HasMaxLength(Patient.FullNameMaxLength).IsRequired();
         builder.Property(o => o.PatientPhone).HasMaxLength(Patient.PhoneMaxLength).IsRequired();
         builder.Property(o => o.SearchText).HasMaxLength(Order.SearchTextMaxLength).IsRequired();
         builder.Property(o => o.Status).HasConversion<string>().HasMaxLength(20).IsRequired();
@@ -41,8 +40,9 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.HasIndex(o => o.Number).IsUnique();
         builder.HasIndex(o => o.ClientRequestId).IsUnique();
         builder.HasIndex(o => new { o.PatientId, o.Status });
+        // Patient details: that patient's newest orders (WHERE PatientId ORDER BY CreatedAt DESC, Id DESC LIMIT n).
+        builder.HasIndex(o => new { o.PatientId, o.CreatedAt, o.Id });
         builder.HasIndex(o => new { o.Status, o.CreatedAt });
-        builder.HasIndex(o => o.PatientSearchName);
         builder.HasIndex(o => new { o.CreatedAt, o.Id });
         // Index-only PostgreSQL exception (SQLite ignores it): substring search stays plain Contains/LIKE.
         builder.HasIndex(o => o.SearchText).HasMethod("gin").HasOperators("gin_trgm_ops");

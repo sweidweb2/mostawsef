@@ -139,7 +139,7 @@ public partial class LabTestsViewModel : NumberedListViewModel<LabTestDto>
 
         Toasts.Success(Localization.Get("LabTests.Deleted"));
         _catalogVersion.Invalidate();
-        await ReloadAsync();
+        await RemoveDeletedAsync(item.Id, t => t.Id);
     }
 
     /// <summary>True while the export is fetching and writing the PDF (the settings menu button shows a spinner).</summary>

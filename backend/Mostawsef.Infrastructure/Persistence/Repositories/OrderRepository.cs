@@ -153,14 +153,32 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
         db.Set<Payment>().AsNoTracking()
             .FirstOrDefaultAsync(p => p.ClientRequestId == clientRequestId, cancellationToken);
 
-    public Task ExecuteInSerializableAsync(Func<CancellationToken, Task> action, CancellationToken cancellationToken)
+    /// <summary>
+    /// How often a transaction that lost a serialization race is run again before the error reaches the client.
+    /// Every order create takes from the same number row, so each round of simultaneous creates lets one commit:
+    /// this covers far more simultaneous saves than one clinic's PCs make.
+    /// </summary>
+    internal const int SerializableAttempts = 10;
+
+    public async Task ExecuteInSerializableAsync(Func<CancellationToken, Task> action, CancellationToken cancellationToken)
     {
-        var strategy = db.Database.CreateExecutionStrategy();
-        return strategy.ExecuteAsync(async () =>
+        for (var attempt = 1; ; attempt++)
         {
-            await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
-            await action(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-        });
+            try
+            {
+                await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+                await action(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+                return;
+            }
+            catch (Exception ex) when (attempt < SerializableAttempts && AppDbContext.IsSerializationFailure(ex))
+            {
+                // Two saves touched the same rows (e.g. both took an order number): PostgreSQL rolled this one back.
+                // Drop what the failed attempt added and run it again; the action rebuilds everything it saves.
+                db.ChangeTracker.Clear();
+                // Random spread so the losers of one round do not collide again in the next.
+                await Task.Delay(TimeSpan.FromMilliseconds(Random.Shared.Next(5, 25) * attempt), cancellationToken);
+            }
+        }
     }
 }

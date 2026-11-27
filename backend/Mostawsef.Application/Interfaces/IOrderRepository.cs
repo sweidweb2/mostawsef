@@ -102,8 +102,9 @@ public interface IOrderRepository
     Task<Payment?> FindPaymentByClientRequestIdAsync(Guid clientRequestId, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Runs <paramref name="action"/> inside a serializable transaction on the request DbContext (with an
-    /// execution strategy), so concurrent patient delete / test deactivate cannot race the final checks + save.
+    /// Runs <paramref name="action"/> inside a serializable transaction on the request DbContext, so concurrent patient
+    /// delete / test deactivate cannot race the final checks + save. When a concurrent transaction wins a serialization
+    /// race the whole action runs again (a few times), so it must build every entity it saves.
     /// </summary>
     Task ExecuteInSerializableAsync(Func<CancellationToken, Task> action, CancellationToken cancellationToken);
 }

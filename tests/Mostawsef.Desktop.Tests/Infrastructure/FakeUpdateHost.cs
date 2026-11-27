@@ -10,18 +10,14 @@ public sealed class FakeUpdateHost : IUpdateHost
         Directory.CreateDirectory(downloadDirectory);
     }
 
-    public string DesktopExePath { get; set; } = Path.Combine(Path.GetTempPath(), "Mostawsef.Desktop.exe");
-
     public string DownloadDirectory { get; }
 
-    public string InstallClinicLogPath { get; set; } = Path.Combine(Path.GetTempPath(), "install-clinic.log");
-
-    public List<(string SetupPath, int Pid)> ApplyCalls { get; } = [];
+    public List<(string SetupPath, string Sha256, int Pid)> ApplyCalls { get; } = [];
 
     public int ExitCalls { get; private set; }
 
-    public void StartApplyUpdate(string setupPath, int currentProcessId) =>
-        ApplyCalls.Add((setupPath, currentProcessId));
+    public void StartApplyUpdate(string setupPath, string sha256, int currentProcessId) =>
+        ApplyCalls.Add((setupPath, sha256, currentProcessId));
 
     public void ExitApplication() => ExitCalls++;
 }

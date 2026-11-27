@@ -49,4 +49,33 @@ public class TokenTests(ApiFactory factory)
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
+
+    [Fact]
+    public async Task Signing_out_revokes_a_super_token()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var (_, login) = await (await factory.CreateClientAsAsync(TestUsers.Super)).CreateUserAsync();
+        var session = await factory.CreateClient().LoginAsAsync(login);
+        var client = factory.CreateClient().WithBearer(session.AccessToken);
+
+        Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync("api/auth/logout", null, ct)).StatusCode);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("api/users", ct)).StatusCode);
+        var fresh = await factory.CreateClient().LoginAsAsync(login);
+        Assert.Equal(
+            HttpStatusCode.OK,
+            (await factory.CreateClient().WithBearer(fresh.AccessToken).GetAsync("api/users", ct)).StatusCode);
+    }
+
+    [Fact]
+    public async Task Signing_out_of_one_clinic_session_leaves_other_clinic_sessions_working()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var leaving = factory.CreateClient().WithBearer((await factory.CreateClient().OpenClinicSessionAsync()).AccessToken);
+        var staying = factory.CreateClient().WithBearer((await factory.CreateClient().OpenClinicSessionAsync()).AccessToken);
+
+        Assert.Equal(HttpStatusCode.NoContent, (await leaving.PostAsync("api/auth/logout", null, ct)).StatusCode);
+
+        Assert.Equal(HttpStatusCode.OK, (await staying.GetAsync("api/clinic-settings", ct)).StatusCode);
+    }
 }

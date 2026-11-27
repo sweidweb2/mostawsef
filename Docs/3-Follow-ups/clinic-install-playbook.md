@@ -135,7 +135,8 @@ Install accounts (seeded once on first Production start):
 | `ali@etkan` | `ali@1234` | Super |
 
 - [ ] Use **Enter clinic** on the login screen (Admin portal, no password)
-- [ ] Sign in as Super → **change password**
+- [ ] Sign in as Super right away: the app asks for a new password before anything else (the initial one is public
+      and the server refuses every Super action until it is changed)
 - [ ] Write the new Super password somewhere safe for the clinic owner (not in the repo)
 
 ### 7. Super Settings — backup folder

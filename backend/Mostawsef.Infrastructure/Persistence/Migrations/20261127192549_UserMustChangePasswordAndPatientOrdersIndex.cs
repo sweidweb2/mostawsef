@@ -5,37 +5,34 @@
 namespace Mostawsef.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
-    public partial class AddOrderSearchText : Migration
+    public partial class UserMustChangePasswordAndPatientOrdersIndex : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "SearchText",
-                table: "orders",
-                type: "character varying(152)",
-                maxLength: 152,
+            migrationBuilder.AddColumn<bool>(
+                name: "MustChangePassword",
+                table: "users",
+                type: "boolean",
                 nullable: false,
-                defaultValue: "");
+                defaultValue: false);
 
             migrationBuilder.CreateIndex(
-                name: "IX_orders_SearchText",
+                name: "IX_orders_PatientId_CreatedAt_Id",
                 table: "orders",
-                column: "SearchText")
-                .Annotation("Npgsql:IndexMethod", "gin")
-                .Annotation("Npgsql:IndexOperators", new[] { "gin_trgm_ops" });
+                columns: new[] { "PatientId", "CreatedAt", "Id" });
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropIndex(
-                name: "IX_orders_SearchText",
+                name: "IX_orders_PatientId_CreatedAt_Id",
                 table: "orders");
 
             migrationBuilder.DropColumn(
-                name: "SearchText",
-                table: "orders");
+                name: "MustChangePassword",
+                table: "users");
         }
     }
 }

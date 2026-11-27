@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -15,6 +16,7 @@ using Mostawsef.Contracts.Backups;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.Logs;
 using Mostawsef.Contracts.Settings;
+using Mostawsef.Infrastructure.Persistence.Context;
 
 namespace Mostawsef.Api.IntegrationTests.Backups;
 
@@ -108,12 +110,36 @@ public class ScheduledBackupTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task A_restart_before_the_interval_does_not_add_a_dump_but_an_overdue_one_does()
+    {
+        var folder = NewTempFolder();
+        using var host = CreateHost(keepCount: 7);
+        await SetBackupPathAsync(host, folder);
+        await ClearHistoryAsync(host);
+
+        await using var scope = host.Services.CreateAsyncScope();
+        var backups = scope.ServiceProvider.GetRequiredService<IScheduledBackupService>();
+
+        var first = await backups.RunIfDueAsync(Ct);
+        Assert.NotNull(first); // no dump yet
+        Assert.Null(await backups.RunIfDueAsync(Ct)); // the last dump is younger than IntervalDays (1)
+        Assert.Single(Directory.GetFiles(folder));
+
+        await scope.ServiceProvider.GetRequiredService<AppDbContext>().ScheduledDumps
+            .Where(d => d.Id == first.HistoryId)
+            .ExecuteUpdateAsync(s => s.SetProperty(d => d.CreatedAt, d => d.CreatedAt.AddDays(-2)), Ct);
+
+        Assert.NotNull(await backups.RunIfDueAsync(Ct));
+    }
+
+    [Fact]
     public async Task A_dump_failure_in_the_worker_is_recorded_as_a_system_error()
     {
         var marker = HttpClientExtensions.Unique("dumpfail");
         var folder = NewTempFolder();
         using var host = CreateHost(keepCount: 3, dump: new FailingDumpRunner(marker), startWorkerAutomatically: false);
         await SetBackupPathAsync(host, folder);
+        await ClearHistoryAsync(host); // so a dump is due when the worker starts
 
         var worker = host.Services.GetRequiredService<ScheduledBackupWorker>();
         using var cts = new CancellationTokenSource();
@@ -218,6 +244,12 @@ public class ScheduledBackupTests(ApiFactory factory)
             Ct);
         response.EnsureSuccessStatusCode();
         factory.Services.RefreshSystemSettingsCache();
+    }
+
+    private static async Task ClearHistoryAsync(WebApplicationFactory<Program> host)
+    {
+        await using var scope = host.Services.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<AppDbContext>().ScheduledDumps.ExecuteDeleteAsync(Ct);
     }
 
     private static string NewTempFolder()

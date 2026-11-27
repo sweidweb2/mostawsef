@@ -68,5 +68,9 @@ public class UserRepository(AppDbContext db) : IUserRepository
     public Task RecordLoginAsync(Guid userId, DateTime at, CancellationToken cancellationToken) =>
         db.Users.Where(u => u.Id == userId).ExecuteUpdateAsync(s => s.SetProperty(u => u.LastLoginAt, at), cancellationToken);
 
+    public Task RevokeTokensAsync(Guid userId, CancellationToken cancellationToken) =>
+        db.Users.Where(u => u.Id == userId)
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.TokenVersion, u => u.TokenVersion + 1), cancellationToken);
+
     public Task SaveChangesAsync(CancellationToken cancellationToken) => db.SaveChangesAsync(cancellationToken);
 }

@@ -1,6 +1,12 @@
 using System.Net;
 using System.Net.Http;
+using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
+using Mostawsef.Desktop.Components;
+using Mostawsef.Desktop.Services.Auth;
+using Mostawsef.Desktop.Services.Ui;
 using Mostawsef.Contracts.Auth;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Desktop.Services.Local;
@@ -199,6 +205,68 @@ public class LoginViewModelTests : UiTestBase
         window.UpdateLayout();
 
         Assert.Contains("اسم المستخدم أو كلمة المرور غير صحيحة.", TestServices.Texts(window));
+    }
+
+    [AvaloniaFact]
+    public async Task A_super_on_the_initial_password_chooses_their_own_before_the_portal_opens()
+    {
+        using var app = new TestServices();
+        app.Api.RespondToClinicAccess(available: true);
+        app.Api.On(HttpMethod.Post, "/api/auth/login", _ => FakeApiHandler.Json(
+            FakeApiHandler.LoginResponseFor(Roles.Super) with { MustChangePassword = true }));
+        app.Api.On(HttpMethod.Post, "/api/auth/change-password", _ => FakeApiHandler.Json(
+            FakeApiHandler.LoginResponseFor(Roles.Super) with { AccessToken = "own-password-token" }));
+        var vm = Filled(app.Get<LoginViewModel>());
+        var window = ShowWithDialogs(app, vm);
+
+        var login = vm.LoginCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+        var modal = window.GetVisualDescendants().OfType<Modal>().Single();
+        Assert.Equal("Choose your own password", modal.Title);
+        Assert.IsNotType<PortalShellViewModel>(app.Navigation.CurrentPage);
+
+        var form = Assert.IsType<ChangePasswordFormViewModel>(modal.Content);
+        form.CurrentPassword = "Initial#Pass1";
+        form.NewPassword = "Own#Choice9";
+        form.ConfirmPassword = "Own#Choice9";
+        await form.SaveCommand.ExecuteAsync(null);
+        await login;
+
+        Assert.IsType<PortalShellViewModel>(app.Navigation.CurrentPage);
+        Assert.Equal("own-password-token", app.Session.AccessToken);
+    }
+
+    [AvaloniaFact]
+    public async Task Closing_the_initial_password_form_signs_out_and_says_why()
+    {
+        using var app = new TestServices();
+        app.Api.RespondToClinicAccess(available: true);
+        app.Api.On(HttpMethod.Post, "/api/auth/login", _ => FakeApiHandler.Json(
+            FakeApiHandler.LoginResponseFor(Roles.Super) with { MustChangePassword = true }));
+        app.Api.On(HttpMethod.Post, "/api/auth/logout", HttpStatusCode.NoContent);
+        var vm = Filled(app.Get<LoginViewModel>());
+        var window = ShowWithDialogs(app, vm);
+
+        var login = vm.LoginCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+        var form = (ChangePasswordFormViewModel)window.GetVisualDescendants().OfType<Modal>().Single().Content!;
+        await form.CancelCommand.ExecuteAsync(null);
+        await login;
+
+        Assert.False(app.Session.IsAuthenticated);
+        Assert.Single(app.Api.RequestsTo(HttpMethod.Post, "/api/auth/logout"));
+        var again = Assert.IsType<LoginViewModel>(app.Navigation.CurrentPage);
+        Assert.Equal("Login.PasswordChangeRequired", again.ErrorKey);
+        Assert.StartsWith("This account still has its initial password", app.Localization.Get(again.ErrorKey!));
+    }
+
+    private static Window ShowWithDialogs(TestServices app, LoginViewModel vm)
+    {
+        var host = new DialogHost { Content = new ContentControl { Content = vm } };
+        app.Get<DialogService>().Attach(host);
+        var window = app.Show(host);
+        Dispatcher.UIThread.RunJobs();
+        return window;
     }
 
     private static LoginViewModel Filled(LoginViewModel vm)

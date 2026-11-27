@@ -33,6 +33,9 @@ public interface IUserRepository
     /// <summary>Stores the sign-in time directly, without counting as an edit of the user (no Version change).</summary>
     Task RecordLoginAsync(Guid userId, DateTime at, CancellationToken cancellationToken);
 
+    /// <summary>Bumps TokenVersion (not Version) so every token issued so far stops working.</summary>
+    Task RevokeTokensAsync(Guid userId, CancellationToken cancellationToken);
+
     /// <summary>Throws AppException (409 concurrency_conflict) if the user changed since it was loaded.</summary>
     Task SaveChangesAsync(CancellationToken cancellationToken);
 }

@@ -31,7 +31,7 @@ public sealed class FakeUpdateHandler : HttpMessageHandler
         FileBody = setupBytes;
         var feed = new UpdateFeed(
             version,
-            $"https://example.com/Mostawsef-Setup-{version}.exe",
+            $"{UpdateChecker.AllowedDownloadPrefix}v{version}/Mostawsef-Setup-{version}.exe",
             Sha256Hex(setupBytes),
             notesEn,
             notesAr);

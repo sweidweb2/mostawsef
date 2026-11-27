@@ -48,6 +48,9 @@ public partial class PortalShellViewModel : ViewModelBase
     /// <summary>Menu pages kept for the portal lifetime so returning to a page reuses its view model (reload only when stale).</summary>
     private readonly Dictionary<int, ViewModelBase> _menuPages = [];
 
+    /// <summary>One delegate instance, so <see cref="Close"/> can tell whether the singleton still holds this shell's callback.</summary>
+    private readonly Func<Task<bool>> _confirmLeaveForUpdate;
+
     public PortalShellViewModel(
         PortalDefinition portal,
         NavigationService navigation,
@@ -76,7 +79,8 @@ public partial class PortalShellViewModel : ViewModelBase
 
         PortalTitleKey = portal.TitleKey;
         MenuItems = portal.Pages;
-        Updates.ConfirmLeaveAsync = ConfirmLeaveForUpdateAsync;
+        _confirmLeaveForUpdate = ConfirmLeaveForUpdateAsync;
+        Updates.ConfirmLeaveAsync = _confirmLeaveForUpdate;
 
         SelectedMenuIndex = 0;
     }
@@ -424,8 +428,9 @@ public partial class PortalShellViewModel : ViewModelBase
         _updateCheck?.Cancel();
         _updateCheck?.Dispose();
         _updateCheck = null;
-        // UpdateChecker is a singleton; drop the method-group capture so this shell can be collected.
-        if (ReferenceEquals(Updates.ConfirmLeaveAsync, (Func<Task<bool>>)ConfirmLeaveForUpdateAsync))
+        // UpdateChecker is a singleton; drop the callback so this shell can be collected. The next shell is built (and
+        // sets its own callback) before this one closes, so only clear the callback while it is still ours.
+        if (ReferenceEquals(Updates.ConfirmLeaveAsync, _confirmLeaveForUpdate))
         {
             Updates.ConfirmLeaveAsync = null;
         }

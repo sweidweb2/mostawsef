@@ -8,6 +8,7 @@ using Mostawsef.Desktop.Services.Api;
 using Mostawsef.Desktop.Services.Auth;
 using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Navigation;
+using Mostawsef.Desktop.Services.Ui;
 
 namespace Mostawsef.Desktop.ViewModels.Auth;
 
@@ -19,20 +20,32 @@ public partial class LoginViewModel : ViewModelBase
     private readonly AuthApi _authApi;
     private readonly SessionService _session;
     private readonly NavigationService _navigation;
+    private readonly IDialogService _dialogs;
+    private readonly LocalizationService _localization;
     private readonly DispatcherTimer _clinicAccessPoll = new();
 
-    public LoginViewModel(AuthApi authApi, SessionService session, NavigationService navigation, SettingsService settings)
+    public LoginViewModel(
+        AuthApi authApi,
+        SessionService session,
+        NavigationService navigation,
+        SettingsService settings,
+        IDialogService dialogs,
+        LocalizationService localization)
     {
+        _dialogs = dialogs;
+        _localization = localization;
         ShowInsecureConnectionWarning = ApiAddress.IsInsecureRemote(settings.Current.ApiBaseUrl);
         _authApi = authApi;
         _session = session;
         _navigation = navigation;
         _clinicAccessPoll.Tick += (_, _) => _ = RefreshClinicAccessAsync();
 
-        if (session.LastSignOutReason == SignOutReason.Expired)
+        ErrorKey = session.LastSignOutReason switch
         {
-            ErrorKey = "Login.SessionExpired";
-        }
+            SignOutReason.Expired => "Login.SessionExpired",
+            SignOutReason.PasswordNotChanged => "Login.PasswordChangeRequired",
+            _ => null,
+        };
 
         _ = RefreshClinicAccessAsync();
     }
@@ -91,6 +104,11 @@ public partial class LoginViewModel : ViewModelBase
                 StopClinicAccessPoll();
                 _session.SignIn(result.Value!);
                 Password = string.Empty;
+                if (result.Value!.MustChangePassword && !await ChooseOwnPasswordAsync())
+                {
+                    return;
+                }
+
                 _navigation.NavigateToHome();
                 return;
             }
@@ -147,6 +165,23 @@ public partial class LoginViewModel : ViewModelBase
         {
             IsBusy = false;
         }
+    }
+
+    /// <summary>
+    /// The account still has its initial (seeded) password: the server allows nothing else until it is changed.
+    /// Closing the form signs out again, and the new login screen says why.
+    /// </summary>
+    private async Task<bool> ChooseOwnPasswordAsync()
+    {
+        var form = new ChangePasswordFormViewModel(_authApi, _session, _dialogs, _localization);
+        if (await _dialogs.ShowFormAsync(form, _localization.Get("Auth.ChooseOwnPassword")))
+        {
+            return true;
+        }
+
+        await _authApi.LogoutAsync();
+        _session.SignOut(SignOutReason.PasswordNotChanged);
+        return false;
     }
 
     private async Task RefreshClinicAccessAsync()

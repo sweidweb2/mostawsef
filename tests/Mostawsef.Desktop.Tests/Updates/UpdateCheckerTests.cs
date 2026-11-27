@@ -11,11 +11,6 @@ namespace Mostawsef.Desktop.Tests.Updates;
 [Collection(UiTestCollection.Name)]
 public class UpdateCheckerTests : UiTestBase
 {
-    public UpdateCheckerTests()
-    {
-        UpdateChecker.MinCheckInterval = TimeSpan.Zero;
-    }
-
     [AvaloniaFact]
     public async Task A_newer_feed_version_marks_an_update_available()
     {
@@ -38,7 +33,7 @@ public class UpdateCheckerTests : UiTestBase
         app.Updates.Error = null;
         app.Updates.RespondWith(new UpdateFeed(
             AppVersion.Current,
-            "https://example.com/setup.exe",
+            UpdateChecker.AllowedDownloadPrefix + "v1/setup.exe",
             "abc",
             "notes",
             null));
@@ -100,7 +95,7 @@ public class UpdateCheckerTests : UiTestBase
         app.Updates.Error = null;
         app.Updates.RespondWith(new UpdateFeed(
             "99.0.0",
-            "https://example.com/Mostawsef-Setup-99.0.0.exe",
+            UpdateChecker.AllowedDownloadPrefix + "v99.0.0/Mostawsef-Setup-99.0.0.exe",
             "",
             "notes",
             null));
@@ -157,6 +152,7 @@ public class UpdateCheckerTests : UiTestBase
         Assert.Equal(1, app.UpdateHost.ExitCalls);
         Assert.True(File.Exists(app.UpdateHost.ApplyCalls[0].SetupPath));
         Assert.Equal(bytes, await File.ReadAllBytesAsync(app.UpdateHost.ApplyCalls[0].SetupPath));
+        Assert.Equal(FakeUpdateHandler.Sha256Hex(bytes), app.UpdateHost.ApplyCalls[0].Sha256, ignoreCase: true);
         Assert.True(app.Updates.FileRequestCount >= 1);
     }
 
@@ -236,9 +232,8 @@ public class UpdateCheckerTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task Throttle_skips_a_second_check_inside_the_interval()
+    public async Task Throttle_skips_a_second_check_inside_the_interval_and_checks_again_after_it()
     {
-        UpdateChecker.MinCheckInterval = TimeSpan.FromHours(1);
         using var app = new TestServices();
         app.Updates.Error = null;
         app.Updates.RespondWithSetup("99.0.0", Encoding.UTF8.GetBytes("x"));
@@ -247,9 +242,42 @@ public class UpdateCheckerTests : UiTestBase
         await checker.CheckNowAsync(force: true);
         var first = app.Updates.RequestCount;
 
+        app.UpdateClock.Advance(UpdateChecker.MinCheckInterval - TimeSpan.FromMinutes(1));
         await checker.CheckNowAsync(force: false);
-
         Assert.Equal(first, app.Updates.RequestCount);
+
+        app.UpdateClock.Advance(TimeSpan.FromMinutes(1));
+        await checker.CheckNowAsync(force: false);
+        Assert.Equal(first + 1, app.Updates.RequestCount);
+    }
+
+    [AvaloniaFact]
+    public async Task An_unexpected_failure_is_thrown_instead_of_hidden()
+    {
+        using var app = new TestServices();
+        app.Updates.Error = new InvalidOperationException("bug in the handler");
+
+        var checker = app.Get<UpdateChecker>();
+
+        // Only offline / timeout / bad feed mean "no update"; a bug must reach ErrorReporter (via the portal).
+        await Assert.ThrowsAsync<InvalidOperationException>(() => checker.CheckNowAsync(force: true));
+    }
+
+    [AvaloniaFact]
+    public async Task A_disposed_checker_no_longer_follows_the_language()
+    {
+        using var app = new TestServices();
+        app.Updates.Error = null;
+        app.Updates.RespondWithSetup("99.0.0", Encoding.UTF8.GetBytes("x"), notesEn: "English notes", notesAr: "ملاحظات عربية");
+        var checker = app.Get<UpdateChecker>();
+        await checker.CheckNowAsync(force: true);
+        Dispatcher.UIThread.RunJobs();
+        var english = checker.BannerText;
+
+        checker.Dispose();
+        app.Get<LocalizationService>().SetLanguage(AppLanguage.Arabic);
+
+        Assert.Equal(english, checker.BannerText);
     }
 
     [AvaloniaFact]
@@ -268,13 +296,43 @@ public class UpdateCheckerTests : UiTestBase
     }
 
     [Fact]
-    public void TryParseArgs_reads_setup_path_and_wait_pid()
+    public void TryParseArgs_reads_setup_path_hash_and_wait_pid()
     {
         Assert.True(UpdateApplicator.TryParseArgs(
-            ["Mostawsef.Desktop.exe", "--apply-update", @"C:\Temp\setup.exe", "--wait-pid", "1234"],
+            ["Mostawsef.Desktop.exe", "--apply-update", @"C:\Temp\setup.exe", "--sha256", "abc123", "--wait-pid", "1234"],
             out var path,
+            out var sha256,
             out var pid));
         Assert.Equal(@"C:\Temp\setup.exe", path);
+        Assert.Equal("abc123", sha256);
         Assert.Equal(1234, pid);
+    }
+
+    [Theory]
+    [InlineData("http://github.com/sweidweb2/mostawsef/releases/download/v99.0.0/Mostawsef-Setup-99.0.0.exe")]
+    [InlineData("https://example.com/Mostawsef-Setup-99.0.0.exe")]
+    [InlineData("https://github.com/someone-else/mostawsef/releases/download/v99.0.0/Mostawsef-Setup-99.0.0.exe")]
+    [InlineData("https://github.com.evil.example/sweidweb2/mostawsef/releases/download/v99.0.0/Mostawsef-Setup-99.0.0.exe")]
+    [InlineData("https://github.com:8443/sweidweb2/mostawsef/releases/download/v99.0.0/Mostawsef-Setup-99.0.0.exe")]
+    [InlineData("https://user@github.com/sweidweb2/mostawsef/releases/download/v99.0.0/Mostawsef-Setup-99.0.0.exe")]
+    public void A_setup_url_outside_this_repository_releases_is_not_allowed(string url)
+    {
+        Assert.False(UpdateChecker.IsAllowedDownloadUrl(url));
+    }
+
+    [AvaloniaFact]
+    public async Task A_feed_pointing_at_another_host_shows_no_update()
+    {
+        using var app = new TestServices();
+        app.Updates.Error = null;
+        var feed = app.Updates.RespondWithSetup("99.0.0", Encoding.UTF8.GetBytes("setup"));
+        app.Updates.RespondWith(feed with { Url = "https://example.com/Mostawsef-Setup-99.0.0.exe" });
+
+        var checker = app.Get<UpdateChecker>();
+        await checker.CheckNowAsync(force: true);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.False(checker.IsAvailable);
+        Assert.False(checker.InstallCommand.CanExecute(null));
     }
 }
