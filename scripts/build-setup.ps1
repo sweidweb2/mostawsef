@@ -300,7 +300,7 @@ Copy-Item -LiteralPath $built -Destination $dest -Force
 Write-Host "Setup ready: $dest" -ForegroundColor Green
 Write-Host "Older builds in $OutputDir are kept (Mostawsef-Setup-*.exe)." -ForegroundColor DarkGray
 if ($UpdateOnly) {
-    Write-Host 'Update Setup (no Postgres redist). Silent in-app flags: see Docs/7-automating install/decisions.md'
+    Write-Host 'Update Setup (no Postgres redist). Silent in-app flags: see Docs/7-automating install/02-decisions.md'
     Write-Host 'Desktop relaunches itself after a silent update — Setup does not auto-start the app when silent.'
 } else {
     Write-Host 'Clinic install: run the versioned Setup as Administrator (offline: self-contained apps + bundled Postgres).'

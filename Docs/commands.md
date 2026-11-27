@@ -231,13 +231,16 @@ Needs Inno Setup (`ISCC.exe`; the script can install it via winget). Publishes D
 
 Publishes Desktop + API with `-p:Version=` matching the Setup file (login screen shows that semver; source default is `1.0.0` in `Directory.Build.props`).
 
-Silent in-app update (after download; Admin / UAC):  
-`Mostawsef-Setup-{version}.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS`  
-Desktop relaunches itself; on failure see `C:\Mostawsef\install-clinic.log`.
+In-app **Update now** (portal banner): downloads Setup, checks sha256, then a helper runs  
+`Mostawsef-Setup-{version}.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS` (UAC),  
+exits the old Desktop, and relaunches it when Setup finishes. Mid-update reopen shows a wait window.  
+On failure see `C:\Mostawsef\install-clinic.log`.  
+After Setup, the API service restarts and applies DB migrations automatically; a short connection-lost banner is normal.  
+Data safety notes (backups before major updates): `Docs/7-automating install/03-data-safety.md`.
 
 ### Publish a GitHub Release (CI)
 
-Merge the work you want, then tag and push (must be `v` + semver):
+Full ship checklist (backup note, USB, rollback): [`Docs/7-automating install/01-release-playbook.md`](7-automating%20install/01-release-playbook.md).
 
 ```powershell
 git tag v1.2.0

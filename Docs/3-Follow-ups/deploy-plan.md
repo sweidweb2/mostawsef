@@ -12,8 +12,8 @@ Related: open packaging work in [`deploy-install.md`](deploy-install.md) (especi
 | Installer | **One** elevated `Mostawsef-Setup.exe` (Inno Setup: self-contained Desktop + API + service + **bundled offline PostgreSQL 17** installer; winget only as build-PC download / last-resort fallback) |
 | Docker | **Never** on clinic PCs — native PostgreSQL 17 only (Docker is for development) |
 | Network | `http://localhost:5270` only (no multi-PC / HTTPS yet) |
-| Updates | **No auto-update for now.** Rebuild, make a new Setup, send it; client reinstalls. Do not wipe clinic data on update |
-| CI today | Tests only (`.github/workflows/tests.yml`). Release/publish CI comes in Phase 6 |
+| Updates | **In-app Update now** (GitHub `latest.json` + silent Setup) or USB Setup. Do not wipe clinic data on update |
+| CI today | Tests (`.github/workflows/tests.yml`) + Release on `v*.*.*` tags (`.github/workflows/release.yml`) |
 
 ## Architecture on the clinic PC
 
@@ -33,7 +33,7 @@ The desktop never talks to PostgreSQL. Publishing only the Avalonia app is not e
 | 3 | Manual smoke: published API + Desktop end-to-end | ✅ Done |
 | 4 | API as Windows service (survives reboot) | ✅ Done — `MostawsefApi` (after `postgresql-x64-17`) |
 | 5 | Clinic install playbook (human checklist) | ✅ Done — [`clinic-install-playbook.md`](clinic-install-playbook.md) |
-| 6 | One Setup.exe (Inno Setup) + optional GitHub Releases | ✅ Done — `Mostawsef-Setup.exe` (CI Releases later) |
+| 6 | One Setup.exe (Inno Setup) + GitHub Releases | ✅ Done — Setup + tag Release CI + in-app update (`Docs/7-automating install/`) |
 
 Work phases **in order**. Do not start Phase 6 until Phase 3 works by hand.
 
@@ -198,35 +198,22 @@ Until Phase 6 exists, you *could* install a friendly first client this same way 
 
 ---
 
-## Phase 6 — One Setup.exe (and optional release CI) ✅
+## Phase 6 — One Setup.exe + release / in-app update ✅
 
-**Start only after Phase 3 (and ideally 4–5) work by hand.**
-
-**Goal:** One installer the client runs. Same product decisions as above.
+**Goal:** One installer the client runs; later updates via cloud Release or USB.
 
 **Chosen packaging: Inno Setup** (not Velopack — Velopack cannot install a Windows service / machine-wide API).
 
-**Steps**
+**Done**
 
-1. Choose packaging ✅ — Inno Setup (`packaging/innosetup/Mostawsef.iss`)
-2. Package **Desktop + API** (self-contained) + **bundled PostgreSQL 17** installer; install/configure DB in the same flow ✅ (`build-setup.ps1` downloads Postgres once; `install-clinic.ps1` runs the offline installer if Postgres is missing, else prompts for postgres password)
-3. Build `Setup.exe` ✅ — `./scripts/build-setup.ps1` → `mostawsef-3ammo\[2] Builds\Mostawsef-Setup.exe`
-4. Test on a clean PC: install → first-run → sign-in → create data (run Setup as Admin; see playbook)
-5. Document reinstall/update ✅ — newer Setup replaces app files; **never** deletes the PostgreSQL data directory; preserves `appsettings.Clinic.json` + connection string
-6. Optional later: GitHub Actions → GitHub Releases (CI today stays tests-only)
+1. Inno Setup (`packaging/innosetup/Mostawsef.iss`) + `build-setup.ps1` / `install-clinic.ps1`
+2. Full Setup (Postgres bundled) and **update** Setup (`-UpdateOnly`)
+3. GitHub Release CI on `v*.*.*` tags + `latest.json` feed
+4. In-app **Update now** (download → silent Setup → relaunch)
+5. Upgrade preserves Postgres data + `appsettings.Clinic.json` / connection string
 
-**Updates (v1)**
-
-- No in-app auto-update
-- Run `./scripts/build-setup.ps1` (auto next `Mostawsef-Setup-{version}.exe` under Builds; older files kept) or pass `-Version 1.2.0`
-- Send the new Setup to the clinic; they reinstall
-- Clinic data stays in PostgreSQL
-
-**Done when**
-
-- [x] Installer / update method chosen ([`deploy-install.md` Block 5](deploy-install.md)) — Inno Setup
-- [x] Build produces `Mostawsef-Setup.exe` (clinic: run elevated; smoke PC may already have Postgres on :5433)
-- [x] Reinstall / upgrade path preserves DB + clinic JWT / connection string (backup in Setup `[Code]`)
+**How to ship:** [`01-release-playbook.md`](../7-automating%20install/01-release-playbook.md)  
+**Clinic first install / USB / rollback:** [`clinic-install-playbook.md`](clinic-install-playbook.md)
 
 ---
 
@@ -235,7 +222,7 @@ Until Phase 6 exists, you *could* install a friendly first client this same way 
 - Multi-PC / LAN API address (`deploy-install.md` Block 2)
 - HTTPS for remote desktops (Block 4 option B)
 - Clinic logo (Block 6)
-- In-app automatic updates
+- Slimmer Pattern B file-swap updater (only if Setup size/time hurts)
 
 ---
 
@@ -246,4 +233,4 @@ Until Phase 6 exists, you *could* install a friendly first client this same way 
 3. Phase 3 — smoke test ✅  
 4. Phase 4 — Windows service ✅  
 5. Phase 5 — playbook ✅  
-6. Phase 6 — Inno Setup.exe ✅ (optional: Releases CI later)
+6. Phase 6 — Setup.exe + Releases + in-app update ✅  

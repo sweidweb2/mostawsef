@@ -3,24 +3,35 @@
 Checklist for installing Mostawsef on a **single Windows clinic PC**.  
 No Docker. No `dotnet run`. Written from Phases 2–4 on the smoke machine.
 
-Related: [`deploy-plan.md`](deploy-plan.md) · publish commands: [`Docs/commands.md`](../commands.md) · auth: [`Docs/4-Business/auth.md`](../4-Business/auth.md)
+Related: [`deploy-plan.md`](deploy-plan.md) · publish commands: [`Docs/commands.md`](../commands.md) · auth: [`Docs/4-Business/auth.md`](../4-Business/auth.md) · ship updates: [`01-release-playbook.md`](../7-automating%20install/01-release-playbook.md)
 
-## Preferred: Setup.exe (Phase 6)
+## Preferred: first install with Setup.exe
 
-1. On the build PC: `./scripts/build-setup.ps1` (writes `Mostawsef-Setup-{version}.exe`; does not overwrite older builds)
-2. Copy that versioned Setup from `mostawsef-3ammo\[2] Builds\` to the clinic PC
+1. On the build PC: `./scripts/build-setup.ps1` (full Setup with Postgres — writes `Mostawsef-Setup-{version}.exe`; does not overwrite older builds)
+2. Copy that versioned Setup from `mostawsef-3ammo\[2] Builds\` to the clinic PC (USB is fine)
 3. Run it **as Administrator**
 4. If PostgreSQL is already installed, enter the **postgres** superuser password when asked (leave blank on a new PC — Setup uses the **bundled offline** Postgres installer)
 5. Sign in with install Super/Admin → **change passwords** → set backup folder → smoke test
 
-Installs to `C:\Mostawsef\` (Api + Desktop + scripts), registers `MostawsefApi`, shortcuts for staff.  
-**Update:** run a newer Setup; app files are replaced; Postgres data and `appsettings.Clinic.json` / connection string are preserved. Uninstall does **not** remove PostgreSQL.
+Installs to `C:\Mostawsef\` (Api + Desktop + scripts), registers `MostawsefApi`, shortcuts for staff. Uninstall does **not** remove PostgreSQL.
+
+## Updates after the clinic is live
+
+| Path | When | What staff do |
+| --- | --- | --- |
+| **In-app** | PC online | Sign in → **Update now** → UAC → wait for reopen |
+| **USB** | Offline / no GitHub | Copy newer `Mostawsef-Setup-*.exe`, run as Administrator |
+
+Both replace app files only. Postgres data and `appsettings.Clinic.json` / connection string stay. A short “connection lost” banner while the API restarts is normal.  
+Before a **major** update: confirm Super → Settings → backup folder has a recent dump ([`03-data-safety.md`](../7-automating%20install/03-data-safety.md)).
+
+**Rollback:** install the previous `Mostawsef-Setup-*.exe` from [GitHub Releases](https://github.com/sweidweb2/mostawsef/releases) or your USB archive (Admin). Data is kept; if a migration already applied and the old app will not start, restore a dump first (`Docs/commands.md`).
 
 ### Developer note (not a clinic step)
 
-For a normal new **app** version: change code → `./scripts/build-setup.ps1` → send `Mostawsef-Setup.exe` → clinic runs Setup over the old install. No need to redo deploy Phases 0–6.
+Day-to-day: merge → tag `vX.Y.Z` → GitHub Release → clinic **Update now** (or USB). Full steps: [`01-release-playbook.md`](../7-automating%20install/01-release-playbook.md). Local update Setup: `./scripts/build-setup.ps1 -UpdateOnly`.
 
-Only if you change **how install works** (service name, install path, Postgres rules, Setup scripts under `packaging/innosetup/` or `scripts/install-*.ps1`): update those scripts, then rebuild Setup. Clinics still just run the new Setup.
+Only if you change **how install works** (service name, install path, Postgres rules, Setup scripts under `packaging/innosetup/` or `scripts/install-*.ps1`): update those scripts, then rebuild Setup. Clinics still just run Setup or **Update now**.
 
 ---
 
@@ -149,11 +160,11 @@ Install accounts (seeded once on first Production start):
 
 ---
 
-## Updates
+## Updates (manual folder replace — rare)
 
-**Preferred:** build a newer `Mostawsef-Setup.exe` (`./scripts/build-setup.ps1 -Version x.y.z`) and run it on the clinic PC.
+Prefer in-app / USB Setup — see **Updates after the clinic is live** at the top.
 
-**Manual:**
+If you must swap publish folders by hand:
 
 1. On the build PC: publish Desktop + API again (`Docs/commands.md`)
 2. On the clinic: **stop** service `MostawsefApi`
