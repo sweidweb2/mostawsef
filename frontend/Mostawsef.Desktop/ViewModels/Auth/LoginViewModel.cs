@@ -70,6 +70,9 @@ public partial class LoginViewModel : ViewModelBase
     /// <summary>The API address is plain http to another machine, so the password would cross the network unencrypted.</summary>
     public bool ShowInsecureConnectionWarning { get; }
 
+    /// <summary>Product semver for support and update checks (shown on the login screen).</summary>
+    public string Version => AppVersion.Current;
+
     private bool CanLogin() => !IsBusy && !string.IsNullOrWhiteSpace(Username) && !string.IsNullOrEmpty(Password);
 
     private bool CanEnterClinic() => !IsBusy && IsClinicEntryAvailable;

@@ -14,6 +14,17 @@ namespace Mostawsef.Desktop.Tests.Auth;
 public class LoginViewModelTests : UiTestBase
 {
     [AvaloniaFact]
+    public void Login_exposes_the_product_version_from_the_desktop_assembly()
+    {
+        using var app = new TestServices();
+        var vm = app.Get<LoginViewModel>();
+
+        Assert.False(string.IsNullOrWhiteSpace(vm.Version));
+        Assert.Equal(AppVersion.Current, vm.Version);
+        Assert.Matches(@"^\d+\.\d+\.\d+", vm.Version);
+    }
+
+    [AvaloniaFact]
     public void Sign_in_is_disabled_until_username_and_password_are_entered()
     {
         using var app = new TestServices();

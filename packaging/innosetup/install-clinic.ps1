@@ -401,7 +401,8 @@ catch {
     Write-InstallLog ("FAILED: " + $_.Exception.Message)
     Write-Host ("install-clinic FAILED: " + $_.Exception.Message) -ForegroundColor Red
     Write-Host "Log: $logPath" -ForegroundColor Yellow
-    throw
+    # Non-zero exit so Inno [Run] waituntilterminated aborts Setup; Desktop can point at this log.
+    exit 1
 }
 finally {
     # Best-effort: never leave the wizard password file behind after the run.

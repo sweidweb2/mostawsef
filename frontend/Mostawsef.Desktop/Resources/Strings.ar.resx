@@ -57,6 +57,7 @@
   <data name="Login.SessionExpired" xml:space="preserve"><value>انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.</value></data>
   <data name="Login.Welcome" xml:space="preserve"><value>مرحبًا بعودتك</value></data>
   <data name="Login.ForgotPassword" xml:space="preserve"><value>نسيت كلمة المرور؟ اطلب من مسؤول النظام إعادة تعيينها.</value></data>
+  <data name="Login.Version" xml:space="preserve"><value>الإصدار {0}</value></data>
   <data name="Login.HeroTag" xml:space="preserve"><value>نظام إدارة العيادات</value></data>
   <data name="Login.HeroTitle" xml:space="preserve"><value>عيادتك منظّمة في مكان واحد</value></data>
   <data name="Login.HeroSubtitle" xml:space="preserve"><value>المرضى وطلبات التحاليل والمدفوعات والتقارير، بالعربية والإنجليزية، على شبكة عيادتك.</value></data>

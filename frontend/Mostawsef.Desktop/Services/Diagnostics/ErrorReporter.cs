@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -43,7 +42,7 @@ public class ErrorReporter(
 
     private const int MaxTrackedErrors = 200;
     private static readonly TimeSpan RateWindow = TimeSpan.FromMinutes(1);
-    private static readonly string AppVersion = Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "unknown";
+    private static readonly string ReportedAppVersion = Services.Local.AppVersion.Current;
 
     private readonly Lock _gate = new();
     private readonly Dictionary<string, Occurrence> _recent = [];
@@ -118,7 +117,7 @@ public class ErrorReporter(
                         exception.ToString(),
                         level,
                         fullContext,
-                        AppVersion,
+                        ReportedAppVersion,
                         RuntimeInformation.OSDescription);
 
                     var result = await logsApi.Value.ReportErrorAsync(request);

@@ -31,6 +31,7 @@ public class ViewRenderingTests : UiTestBase
         Assert.NotNull(window.FindDescendantOfType<PreferencesBar>());
         Assert.Contains(Texts(window), t => t == "Sign in");
         Assert.Contains(Texts(window), t => t == "Enter clinic");
+        Assert.Contains(Texts(window), t => t == $"Version {app.Get<LoginViewModel>().Version}");
     }
 
     [AvaloniaFact]

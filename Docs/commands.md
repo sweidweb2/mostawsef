@@ -222,11 +222,18 @@ Stop the service before publishing over the same folder, then start it again (or
 Needs Inno Setup (`ISCC.exe`; the script can install it via winget). Publishes Desktop + API into `artifacts/installer-staging`, then compiles:
 
 ```powershell
-./scripts/build-setup.ps1              # auto next version (1.0.0, 1.0.1, …)
-./scripts/build-setup.ps1 -Version 1.2.0
+./scripts/build-setup.ps1              # full Setup (bundled Postgres) — first install / USB
+./scripts/build-setup.ps1 -UpdateOnly  # smaller update Setup (no Postgres) — GitHub Releases / in-app update
+./scripts/build-setup.ps1 -Version 1.2.0 -UpdateOnly
 # reuse staging: -SkipPublish
 # replace one version only: -Version 1.0.1 -Force
 ```
+
+Publishes Desktop + API with `-p:Version=` matching the Setup file (login screen shows that semver; source default is `1.0.0` in `Directory.Build.props`).
+
+Silent in-app update (after download; Admin / UAC):  
+`Mostawsef-Setup-{version}.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS`  
+Desktop relaunches itself; on failure see `C:\Mostawsef\install-clinic.log`.
 
 Output: `C:\Users\User\Desktop\mostawsef-3ammo\[2] Builds\Mostawsef-Setup-{version}.exe` (older builds are kept; also under `artifacts\installer\`).
 
