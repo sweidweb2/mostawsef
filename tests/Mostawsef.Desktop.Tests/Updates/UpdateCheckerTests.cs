@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Mostawsef.Desktop.Services.Local;
@@ -19,7 +21,7 @@ public class UpdateCheckerTests : UiTestBase
     {
         using var app = new TestServices();
         app.Updates.Error = null;
-        app.Updates.RespondWith(NewerFeed());
+        app.Updates.RespondWithSetup("99.0.0", Encoding.UTF8.GetBytes("setup-bytes"));
 
         var checker = app.Get<UpdateChecker>();
         await checker.CheckNowAsync(force: true);
@@ -27,7 +29,6 @@ public class UpdateCheckerTests : UiTestBase
 
         Assert.True(checker.IsAvailable);
         Assert.Contains("99.0.0", checker.BannerText);
-        Assert.Equal(NewerFeed().Url, checker.DownloadUrl);
     }
 
     [AvaloniaFact]
@@ -54,7 +55,6 @@ public class UpdateCheckerTests : UiTestBase
     public async Task Network_errors_stay_quiet()
     {
         using var app = new TestServices();
-        // Default handler already fails the network.
 
         var checker = app.Get<UpdateChecker>();
         await checker.CheckNowAsync(force: true);
@@ -79,21 +79,160 @@ public class UpdateCheckerTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task Download_opens_the_setup_url()
+    public async Task Feed_404_stays_quiet()
     {
         using var app = new TestServices();
         app.Updates.Error = null;
-        var feed = NewerFeed();
-        app.Updates.RespondWith(feed);
+        app.Updates.StatusCode = HttpStatusCode.NotFound;
+        app.Updates.JsonBody = "{}";
 
         var checker = app.Get<UpdateChecker>();
         await checker.CheckNowAsync(force: true);
         Dispatcher.UIThread.RunJobs();
 
-        Assert.True(checker.DownloadCommand.CanExecute(null));
-        checker.DownloadCommand.Execute(null);
+        Assert.False(checker.IsAvailable);
+    }
 
-        Assert.Equal([feed.Url], app.OpenedUrls);
+    [AvaloniaFact]
+    public async Task Feed_without_sha256_is_ignored()
+    {
+        using var app = new TestServices();
+        app.Updates.Error = null;
+        app.Updates.RespondWith(new UpdateFeed(
+            "99.0.0",
+            "https://example.com/Mostawsef-Setup-99.0.0.exe",
+            "",
+            "notes",
+            null));
+
+        var checker = app.Get<UpdateChecker>();
+        await checker.CheckNowAsync(force: true);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.False(checker.IsAvailable);
+    }
+
+    [AvaloniaFact]
+    public async Task Second_install_while_busy_does_not_start_twice()
+    {
+        using var app = new TestServices();
+        app.Updates.Error = null;
+        app.Updates.RespondWithSetup("99.0.0", Encoding.UTF8.GetBytes("setup"));
+
+        var checker = app.Get<UpdateChecker>();
+        await checker.CheckNowAsync(force: true);
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        checker.ConfirmLeaveAsync = async () =>
+        {
+            gate.SetResult();
+            await Task.Delay(200);
+            return true;
+        };
+
+        var first = checker.InstallCommand.ExecuteAsync(null);
+        await gate.Task;
+        Assert.False(checker.InstallCommand.CanExecute(null));
+        await first;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Single(app.UpdateHost.ApplyCalls);
+    }
+
+    [AvaloniaFact]
+    public async Task Install_downloads_verifies_and_starts_the_applicator()
+    {
+        using var app = new TestServices();
+        app.Updates.Error = null;
+        var bytes = Encoding.UTF8.GetBytes("mostawsef-setup-payload");
+        app.Updates.RespondWithSetup("99.0.0", bytes);
+
+        var checker = app.Get<UpdateChecker>();
+        await checker.CheckNowAsync(force: true);
+        Dispatcher.UIThread.RunJobs();
+
+        await checker.InstallCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Single(app.UpdateHost.ApplyCalls);
+        Assert.Equal(1, app.UpdateHost.ExitCalls);
+        Assert.True(File.Exists(app.UpdateHost.ApplyCalls[0].SetupPath));
+        Assert.Equal(bytes, await File.ReadAllBytesAsync(app.UpdateHost.ApplyCalls[0].SetupPath));
+        Assert.True(app.Updates.FileRequestCount >= 1);
+    }
+
+    [AvaloniaFact]
+    public async Task Bad_checksum_does_not_start_setup()
+    {
+        using var app = new TestServices();
+        app.Updates.Error = null;
+        var bytes = Encoding.UTF8.GetBytes("payload");
+        var feed = app.Updates.RespondWithSetup("99.0.0", bytes);
+        app.Updates.RespondWith(feed with { Sha256 = "0000000000000000000000000000000000000000000000000000000000000000" });
+        app.Updates.FileBody = bytes;
+
+        var checker = app.Get<UpdateChecker>();
+        await checker.CheckNowAsync(force: true);
+        await checker.InstallCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Empty(app.UpdateHost.ApplyCalls);
+        Assert.Equal(0, app.UpdateHost.ExitCalls);
+        Assert.Contains("damaged", checker.ErrorText ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [AvaloniaFact]
+    public async Task Cancel_during_download_keeps_the_old_app()
+    {
+        using var app = new TestServices();
+        app.Updates.Error = null;
+        // Large enough that we can cancel; handler returns synchronously so cancel after start still works via CTS.
+        app.Updates.RespondWithSetup("99.0.0", new byte[1024 * 256]);
+
+        var checker = app.Get<UpdateChecker>();
+        await checker.CheckNowAsync(force: true);
+        checker.ConfirmLeaveAsync = () =>
+        {
+            checker.CancelInstallCommand.Execute(null);
+            return Task.FromResult(true);
+        };
+
+        // Cancel before download by aborting leave? Better: cancel after install starts via ConfirmLeave staying true
+        // and CancelInstall from a progress callback — use ConfirmLeave that cancels the CTS mid-flight.
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        checker.ConfirmLeaveAsync = async () =>
+        {
+            started.SetResult();
+            await Task.Yield();
+            checker.CancelInstallCommand.Execute(null);
+            return true;
+        };
+
+        var install = checker.InstallCommand.ExecuteAsync(null);
+        await started.Task;
+        await install;
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Empty(app.UpdateHost.ApplyCalls);
+        Assert.Equal(0, app.UpdateHost.ExitCalls);
+    }
+
+    [AvaloniaFact]
+    public async Task ConfirmLeave_false_aborts_without_downloading()
+    {
+        using var app = new TestServices();
+        app.Updates.Error = null;
+        app.Updates.RespondWithSetup("99.0.0", Encoding.UTF8.GetBytes("x"));
+
+        var checker = app.Get<UpdateChecker>();
+        await checker.CheckNowAsync(force: true);
+        checker.ConfirmLeaveAsync = () => Task.FromResult(false);
+
+        await checker.InstallCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(0, app.Updates.FileRequestCount);
+        Assert.Empty(app.UpdateHost.ApplyCalls);
+        Assert.False(checker.IsInstalling);
     }
 
     [AvaloniaFact]
@@ -102,7 +241,7 @@ public class UpdateCheckerTests : UiTestBase
         UpdateChecker.MinCheckInterval = TimeSpan.FromHours(1);
         using var app = new TestServices();
         app.Updates.Error = null;
-        app.Updates.RespondWith(NewerFeed());
+        app.Updates.RespondWithSetup("99.0.0", Encoding.UTF8.GetBytes("x"));
 
         var checker = app.Get<UpdateChecker>();
         await checker.CheckNowAsync(force: true);
@@ -118,12 +257,7 @@ public class UpdateCheckerTests : UiTestBase
     {
         using var app = new TestServices(AppLanguage.Arabic);
         app.Updates.Error = null;
-        app.Updates.RespondWith(new UpdateFeed(
-            "99.0.0",
-            "https://example.com/Mostawsef-Setup.exe",
-            "deadbeef",
-            "English notes",
-            "ملاحظات عربية"));
+        app.Updates.RespondWithSetup("99.0.0", Encoding.UTF8.GetBytes("x"), notesEn: "English notes", notesAr: "ملاحظات عربية");
 
         var checker = app.Get<UpdateChecker>();
         await checker.CheckNowAsync(force: true);
@@ -133,10 +267,14 @@ public class UpdateCheckerTests : UiTestBase
         Assert.StartsWith("الإصدار", checker.BannerText);
     }
 
-    private static UpdateFeed NewerFeed() => new(
-        "99.0.0",
-        "https://github.com/sweidweb2/mostawsef/releases/download/v99.0.0/Mostawsef-Setup-99.0.0.exe",
-        "abc123",
-        "Bug fixes",
-        "إصلاحات");
+    [Fact]
+    public void TryParseArgs_reads_setup_path_and_wait_pid()
+    {
+        Assert.True(UpdateApplicator.TryParseArgs(
+            ["Mostawsef.Desktop.exe", "--apply-update", @"C:\Temp\setup.exe", "--wait-pid", "1234"],
+            out var path,
+            out var pid));
+        Assert.Equal(@"C:\Temp\setup.exe", path);
+        Assert.Equal(1234, pid);
+    }
 }

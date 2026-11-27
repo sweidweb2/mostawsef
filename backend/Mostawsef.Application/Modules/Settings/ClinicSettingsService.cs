@@ -11,16 +11,26 @@ public interface IClinicSettingsService
 {
     Task<ClinicSettingsDto> GetAsync(CancellationToken cancellationToken);
 
+    Task<string> GetCurrencyCodeAsync(CancellationToken cancellationToken);
+
     Task<ClinicSettingsDto> UpdateAsync(UpdateClinicSettingsRequest request, CancellationToken cancellationToken);
+
+    /// <summary>Drops the cached row (after an edit or a rare initializer repair).</summary>
+    void Invalidate();
 }
 
 public class ClinicSettingsService(
     IClinicSettingsRepository settings,
-    IClinicSettingsCache cache,
+    ClinicSettingsCache cache,
     IActivityLogger activity) : IClinicSettingsService
 {
     public Task<ClinicSettingsDto> GetAsync(CancellationToken cancellationToken) =>
         cache.GetAsync(cancellationToken);
+
+    public Task<string> GetCurrencyCodeAsync(CancellationToken cancellationToken) =>
+        cache.GetCurrencyCodeAsync(cancellationToken);
+
+    public void Invalidate() => cache.Invalidate();
 
     public async Task<ClinicSettingsDto> UpdateAsync(UpdateClinicSettingsRequest request, CancellationToken cancellationToken)
     {

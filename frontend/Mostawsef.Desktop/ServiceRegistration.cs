@@ -25,8 +25,8 @@ public class DesktopServiceOptions
     /// <summary>Override the update feed URL (tests).</summary>
     public Uri? UpdateFeedUrl { get; init; }
 
-    /// <summary>Opens a download / web URL; the default uses the system browser.</summary>
-    public Action<string>? OpenUrl { get; init; }
+    /// <summary>Process/path hooks for in-app Setup install (tests supply a fake).</summary>
+    public IUpdateHost? UpdateHost { get; init; }
 
     public string? SettingsFilePath { get; init; }
 
@@ -95,10 +95,11 @@ public static class ServiceRegistration
         services.AddSingleton<PatientsApi>();
         services.AddSingleton<OrdersApi>();
         services.AddSingleton<ConnectionMonitor>();
+        services.AddSingleton<IUpdateHost>(_ => options.UpdateHost ?? new UpdateHost());
         services.AddSingleton(sp => new UpdateChecker(
             options.UpdateHttpHandler ?? CreateServerHandler(),
             sp.GetRequiredService<LocalizationService>(),
-            options.OpenUrl,
+            sp.GetRequiredService<IUpdateHost>(),
             options.UpdateFeedUrl));
 
         // Diagnostics: system errors + optional performance overlay/log

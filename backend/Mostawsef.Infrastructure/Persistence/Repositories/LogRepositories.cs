@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Mostawsef.Application.Common;
 using Mostawsef.Application.Interfaces;
+using Mostawsef.Contracts.Common;
 using Mostawsef.Domain.Enums;
 using Mostawsef.Infrastructure.Persistence.Context;
 
@@ -36,18 +37,20 @@ public class ActivityLogRepository(AppDbContext db) : IActivityLogRepository
             db.ActivityLogs.Where(l => l.OccurredAt < cutoffUtc).OrderBy(l => l.OccurredAt), cancellationToken);
 
     /// <summary>
-    /// One statement of four COUNT subqueries, each served by an index: the total and the periods by (OccurredAt, Id),
-    /// failed sign-ins by (Action, OccurredAt). An empty table returns no row, which means all zeros.
+    /// One statement of four capped COUNT subqueries (each stops at <see cref="PageQuery.MaxCountedTotal"/>),
+    /// served by an index. An empty table returns no row, which means all zeros.
     /// </summary>
     public async Task<LogCounts> GetCountsAsync(DateTime todayStartUtc, DateTime weekStartUtc, CancellationToken cancellationToken)
     {
         var logs = db.ActivityLogs.AsNoTracking();
+        var cap = PageQuery.MaxCountedTotal;
         return await logs
             .Select(_ => new LogCounts(
-                logs.Count(),
-                logs.Count(l => l.OccurredAt >= todayStartUtc),
-                logs.Count(l => l.OccurredAt >= weekStartUtc),
-                logs.Count(l => l.Action == ActivityActions.SignInFailed && l.OccurredAt >= todayStartUtc)))
+                logs.OrderBy(l => l.OccurredAt).ThenBy(l => l.Id).Take(cap).Count(),
+                logs.Where(l => l.OccurredAt >= todayStartUtc).OrderBy(l => l.OccurredAt).ThenBy(l => l.Id).Take(cap).Count(),
+                logs.Where(l => l.OccurredAt >= weekStartUtc).OrderBy(l => l.OccurredAt).ThenBy(l => l.Id).Take(cap).Count(),
+                logs.Where(l => l.Action == ActivityActions.SignInFailed && l.OccurredAt >= todayStartUtc)
+                    .OrderBy(l => l.OccurredAt).ThenBy(l => l.Id).Take(cap).Count()))
             .FirstOrDefaultAsync(cancellationToken)
             ?? LogCounts.None;
     }
@@ -86,18 +89,19 @@ public class SystemErrorRepository(AppDbContext db) : ISystemErrorRepository
             db.SystemErrors.Where(e => e.OccurredAt < cutoffUtc).OrderBy(e => e.OccurredAt), cancellationToken);
 
     /// <summary>
-    /// One statement of four COUNT subqueries, each served by an index: the total and the periods by (OccurredAt, Id),
-    /// critical errors by (Level, OccurredAt). An empty table returns no row, which means all zeros.
+    /// One statement of four capped COUNT subqueries (each stops at <see cref="PageQuery.MaxCountedTotal"/>),
+    /// served by an index. An empty table returns no row, which means all zeros.
     /// </summary>
     public async Task<LogCounts> GetCountsAsync(DateTime todayStartUtc, DateTime weekStartUtc, CancellationToken cancellationToken)
     {
         var errors = db.SystemErrors.AsNoTracking();
+        var cap = PageQuery.MaxCountedTotal;
         return await errors
             .Select(_ => new LogCounts(
-                errors.Count(),
-                errors.Count(e => e.OccurredAt >= todayStartUtc),
-                errors.Count(e => e.OccurredAt >= weekStartUtc),
-                errors.Count(e => e.Level == ErrorLevel.Critical)))
+                errors.OrderBy(e => e.OccurredAt).ThenBy(e => e.Id).Take(cap).Count(),
+                errors.Where(e => e.OccurredAt >= todayStartUtc).OrderBy(e => e.OccurredAt).ThenBy(e => e.Id).Take(cap).Count(),
+                errors.Where(e => e.OccurredAt >= weekStartUtc).OrderBy(e => e.OccurredAt).ThenBy(e => e.Id).Take(cap).Count(),
+                errors.Where(e => e.Level == ErrorLevel.Critical).OrderBy(e => e.OccurredAt).ThenBy(e => e.Id).Take(cap).Count()))
             .FirstOrDefaultAsync(cancellationToken)
             ?? LogCounts.None;
     }

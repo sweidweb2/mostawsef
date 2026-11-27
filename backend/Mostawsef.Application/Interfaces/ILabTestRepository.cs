@@ -1,34 +1,15 @@
 using Mostawsef.Contracts.Common;
+using Mostawsef.Contracts.LabTests;
 using Mostawsef.Domain.Entities;
 
 namespace Mostawsef.Application.Interfaces;
-
-/// <summary>One row of the lab-tests list.</summary>
-public record LabTestListRow(
-    Guid Id,
-    string Code,
-    string Name,
-    long LabCost,
-    bool IsActive,
-    DateTime CreatedAt,
-    DateTime? UpdatedAt,
-    string? UpdatedBy,
-    int Version);
-
-/// <summary>Columns the lab-tests PDF needs (no audit/version).</summary>
-public record LabTestExportRow(
-    Guid Id,
-    string Code,
-    string Name,
-    long LabCost,
-    bool IsActive);
 
 public interface ILabTestRepository
 {
     Task<LabTest?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>List-row projection (no tracking). Null when missing.</summary>
-    Task<LabTestListRow?> GetRowByIdAsync(Guid id, CancellationToken cancellationToken);
+    Task<LabTestDto?> GetRowByIdAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>Tracked test plus whether any order item references it. Null test when missing.</summary>
     Task<(LabTest? Test, bool IsUsed)> GetWithUsageAsync(Guid id, CancellationToken cancellationToken);
@@ -59,13 +40,13 @@ public interface ILabTestRepository
         IReadOnlyCollection<string> codes, CancellationToken cancellationToken);
 
     /// <summary>Ordered by SearchName then Code (unique indexes). Search is a prefix on SearchName or Code. <paramref name="active"/> filters IsActive when set.</summary>
-    Task<(IReadOnlyList<LabTestListRow> Items, int Total)> GetPageAsync(PageQuery query, bool? active, CancellationToken cancellationToken);
+    Task<(IReadOnlyList<LabTestDto> Items, int Total)> GetPageAsync(PageQuery query, bool? active, CancellationToken cancellationToken);
 
     /// <summary>
     /// Up to <see cref="PageQuery.MaxExportRows"/> tests for print/export (no audit).
     /// When <paramref name="active"/> is set, only that IsActive value is returned (New Order catalog uses true).
     /// </summary>
-    Task<IReadOnlyList<LabTestExportRow>> ListAllAsync(bool? active, CancellationToken cancellationToken);
+    Task<IReadOnlyList<LabTestDto>> ListAllAsync(bool? active, CancellationToken cancellationToken);
 
     void Add(LabTest test);
 

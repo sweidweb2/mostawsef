@@ -1,33 +1,9 @@
 using Mostawsef.Contracts.Common;
+using Mostawsef.Contracts.Users;
 using Mostawsef.Domain.Entities;
 using Mostawsef.Domain.Enums;
 
 namespace Mostawsef.Application.Interfaces;
-
-/// <summary>One row of the users list: no password hash.</summary>
-public record UserListRow(
-    Guid Id,
-    string Username,
-    string FullName,
-    UserRole Role,
-    bool IsActive,
-    DateTime? LastLoginAt,
-    DateTime CreatedAt,
-    int Version);
-
-/// <summary>User details for a read-only GET (no password hash, no tracking).</summary>
-public record UserDetailsRow(
-    Guid Id,
-    string Username,
-    string FullName,
-    UserRole Role,
-    bool IsActive,
-    DateTime? LastLoginAt,
-    DateTime CreatedAt,
-    string? CreatedBy,
-    DateTime? UpdatedAt,
-    string? UpdatedBy,
-    int Version);
 
 /// <summary>Deleted users are invisible to every method except <see cref="UsernameExistsAsync"/>.</summary>
 public interface IUserRepository
@@ -35,7 +11,7 @@ public interface IUserRepository
     Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>Details projection without PasswordHash (no tracking). Null when missing.</summary>
-    Task<UserDetailsRow?> GetDetailsAsync(Guid id, CancellationToken cancellationToken);
+    Task<UserDetailsDto?> GetDetailsAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>Active flag and role only (no tracking). Null when the user is missing or soft-deleted.</summary>
     Task<UserAuthStatus?> GetAuthStatusAsync(Guid id, CancellationToken cancellationToken);
@@ -47,7 +23,7 @@ public interface IUserRepository
     Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken);
 
     /// <summary>Ordered by full name. Search matches the username or the normalized full name. No password hash.</summary>
-    Task<(IReadOnlyList<UserListRow> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken);
+    Task<(IReadOnlyList<UserListItemDto> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken);
 
     void Add(User user);
 

@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Mostawsef.Application.Common;
+using Mostawsef.Contracts.Common;
 using Mostawsef.Domain.Common;
 
 namespace Mostawsef.Infrastructure.Persistence.Repositories;
@@ -19,7 +20,11 @@ internal static class KeysetPaging
         CancellationToken cancellationToken)
         where TRow : class, IChronological
     {
-        var total = request.IncludeTotal ? await rows.CountAsync(cancellationToken) : (int?)null;
+        // Same cap as numbered lists: a filtered total never scans past MaxCountedTotal rows.
+        var total = request.IncludeTotal
+            ? await rows.OrderBy(r => r.OccurredAt).ThenBy(r => r.Id)
+                .Take(PageQuery.MaxCountedTotal).CountAsync(cancellationToken)
+            : (int?)null;
         var items = await Window(rows, request).Select(select).ToListAsync(cancellationToken);
         var hasMore = items.Count > request.PageSize;
         if (hasMore)

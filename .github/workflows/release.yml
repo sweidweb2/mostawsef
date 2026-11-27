@@ -110,9 +110,30 @@ jobs:
           $version = '${{ steps.ver.outputs.version }}'
           $outDir = Join-Path $PWD 'artifacts/release-builds'
           $setup = Join-Path $outDir "Mostawsef-Setup-$version.exe"
-          $feed = Join-Path $outDir 'latest.json'
+          $feedPath = Join-Path $outDir 'latest.json'
           if (-not (Test-Path -LiteralPath $setup)) { throw "Missing $setup" }
-          if (-not (Test-Path -LiteralPath $feed)) { throw "Missing $feed" }
+          if (-not (Test-Path -LiteralPath $feedPath)) { throw "Missing $feedPath" }
+          if ((Get-Item -LiteralPath $setup).Length -lt 1MB) {
+            throw "Setup looks too small: $setup ($((Get-Item $setup).Length) bytes)"
+          }
+
+          $feed = Get-Content -LiteralPath $feedPath -Raw | ConvertFrom-Json
+          foreach ($name in @('version', 'url', 'sha256', 'notesEn', 'notesAr')) {
+            if (-not $feed.PSObject.Properties[$name] -or [string]::IsNullOrWhiteSpace([string]$feed.$name)) {
+              throw "latest.json missing or empty field: $name"
+            }
+          }
+          if ($feed.version -ne $version) {
+            throw "latest.json version '$($feed.version)' does not match tag version '$version'"
+          }
+          $actualSha = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($feed.sha256 -ne $actualSha) {
+            throw "latest.json sha256 does not match Setup file"
+          }
+          if ($feed.url -notlike "*Mostawsef-Setup-$version.exe") {
+            throw "latest.json url does not point at Mostawsef-Setup-$version.exe"
+          }
+          Write-Host "Release assets OK ($version, $([math]::Round((Get-Item $setup).Length / 1MB, 1)) MB)"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2

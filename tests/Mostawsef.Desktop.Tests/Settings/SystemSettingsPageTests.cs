@@ -192,6 +192,8 @@ public class SystemSettingsPageTests : UiTestBase
             sent = request.Content!.ReadFromJsonAsync<ResetDataRequest>().GetAwaiter().GetResult();
             return FakeApiHandler.Json(new ResetDataResultDto(12, 30, 41, 8, 200, 5));
         });
+        var catalogVersion = app.Get<LabTestCatalogVersion>();
+        var versionBefore = catalogVersion.Current;
         var (page, window) = await ShowPage(app);
 
         var reset = page.ResetDataCommand.ExecuteAsync(null);
@@ -210,6 +212,7 @@ public class SystemSettingsPageTests : UiTestBase
         Dispatcher.UIThread.RunJobs();
 
         Assert.Equal(DataResetRules.ConfirmationWord, sent!.Confirmation);
+        Assert.Equal(versionBefore + 1, catalogVersion.Current);
         Assert.Contains(
             "Database reset: 12 patients, 30 orders, 8 lab tests and 205 log records deleted.",
             window.GetVisualDescendants().OfType<Toast>().Select(t => t.Message));

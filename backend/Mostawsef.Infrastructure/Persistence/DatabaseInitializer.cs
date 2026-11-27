@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Application.Modules.Backups;
+using Mostawsef.Application.Modules.Settings;
 using Mostawsef.Contracts.Auth;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Domain.Entities;
@@ -145,7 +146,7 @@ public static class DatabaseInitializer
         // Direct DbContext writes skip SystemSettingsService, so drop any cached row this host holds.
         if (systemSettingsChanged)
         {
-            scope.ServiceProvider.GetService<ISystemSettingsCache>()?.Invalidate();
+            scope.ServiceProvider.GetService<ISystemSettingsService>()?.Invalidate();
         }
 
         // Clinic repair / legacy Admin retirement bump TokenVersion; drop cache so old JWTs die immediately.

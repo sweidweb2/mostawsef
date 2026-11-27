@@ -32,7 +32,7 @@ public class RequestTimeoutTests
     {
         var result = await SlowServer(HttpStatusCode.OK, "{}").GetAsync<UserDto>("api/clinic-settings", Ct);
 
-        Assert.Equal(ApiError.Unreachable, result.Error);
+        Assert.Equal(ApiError.Timeout, result.Error);
     }
 
     [Fact]

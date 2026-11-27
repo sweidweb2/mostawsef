@@ -34,25 +34,18 @@ public class UserService(
     public async Task<PagedResult<UserListItemDto>> GetPageAsync(PageQuery query, CancellationToken cancellationToken)
     {
         var (items, total) = await users.GetPageAsync(query, cancellationToken);
-        return new PagedResult<UserListItemDto>(
-            items.Select(u => new UserListItemDto(
-                u.Id, u.Username, u.FullName, u.Role.ToString(), u.IsActive, u.LastLoginAt, u.CreatedAt, u.Version)).ToList(),
-            query.SafePage,
-            query.SafePageSize,
-            total);
+        return new PagedResult<UserListItemDto>(items, query.SafePage, query.SafePageSize, total);
     }
 
     public async Task<UserDetailsDto> GetAsync(Guid id, CancellationToken cancellationToken)
     {
         var user = await users.GetDetailsAsync(id, cancellationToken) ?? throw AppException.NotFound();
-        if (user.Role != UserRole.Super)
+        if (user.Role != Roles.Super)
         {
             throw AppException.NotFound();
         }
 
-        return new UserDetailsDto(
-            user.Id, user.Username, user.FullName, user.Role.ToString(), user.IsActive, user.LastLoginAt,
-            user.CreatedAt, user.CreatedBy, user.UpdatedAt, user.UpdatedBy, user.Version);
+        return user;
     }
 
     public async Task<UserDetailsDto> CreateAsync(CreateUserRequest request, CancellationToken cancellationToken)

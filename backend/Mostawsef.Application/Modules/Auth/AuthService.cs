@@ -1,5 +1,6 @@
 using Mostawsef.Application.Common;
 using Mostawsef.Application.Interfaces;
+using Mostawsef.Application.Modules.Settings;
 using Mostawsef.Contracts.Auth;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Domain.Entities;
@@ -36,7 +37,7 @@ public interface IAuthService
 
 public class AuthService(
     IUserRepository users,
-    ISystemSettingsCache systemSettings,
+    ISystemSettingsService systemSettings,
     IPasswordHasher passwordHasher,
     ITokenService tokens,
     IUserAuthCache authCache,

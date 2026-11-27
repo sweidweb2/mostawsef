@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Contracts.Common;
+using Mostawsef.Contracts.LabTests;
 using Mostawsef.Domain.Entities;
 using Mostawsef.Infrastructure.Persistence.Context;
 
@@ -11,10 +12,10 @@ public class LabTestRepository(AppDbContext db) : ILabTestRepository
     public Task<LabTest?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
         db.LabTests.FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
 
-    public Task<LabTestListRow?> GetRowByIdAsync(Guid id, CancellationToken cancellationToken) =>
+    public Task<LabTestDto?> GetRowByIdAsync(Guid id, CancellationToken cancellationToken) =>
         db.LabTests.AsNoTracking()
             .Where(t => t.Id == id)
-            .Select(t => new LabTestListRow(
+            .Select(t => new LabTestDto(
                 t.Id, t.Code, t.Name, t.LabCost, t.IsActive, t.CreatedAt, t.UpdatedAt, t.UpdatedBy, t.Version))
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -88,7 +89,7 @@ public class LabTestRepository(AppDbContext db) : ILabTestRepository
         return hits.ToHashSet(StringComparer.Ordinal);
     }
 
-    public async Task<(IReadOnlyList<LabTestListRow> Items, int Total)> GetPageAsync(PageQuery query, bool? active, CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<LabTestDto> Items, int Total)> GetPageAsync(PageQuery query, bool? active, CancellationToken cancellationToken)
     {
         var tests = db.LabTests.AsNoTracking();
         if (active is { } isActive)
@@ -107,13 +108,13 @@ public class LabTestRepository(AppDbContext db) : ILabTestRepository
         var rows = tests
             .OrderBy(t => t.SearchName)
             .ThenBy(t => t.Code)
-            .Select(t => new LabTestListRow(
+            .Select(t => new LabTestDto(
                 t.Id, t.Code, t.Name, t.LabCost, t.IsActive, t.CreatedAt, t.UpdatedAt, t.UpdatedBy, t.Version));
 
         return await rows.ToPageAsync(tests, query, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<LabTestExportRow>> ListAllAsync(bool? active, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<LabTestDto>> ListAllAsync(bool? active, CancellationToken cancellationToken)
     {
         var tests = db.LabTests.AsNoTracking();
         if (active is { } isActive)
@@ -125,7 +126,7 @@ public class LabTestRepository(AppDbContext db) : ILabTestRepository
             .OrderBy(t => t.SearchName)
             .ThenBy(t => t.Code)
             .Take(PageQuery.MaxExportRows)
-            .Select(t => new LabTestExportRow(t.Id, t.Code, t.Name, t.LabCost, t.IsActive))
+            .Select(t => new LabTestDto(t.Id, t.Code, t.Name, t.LabCost, t.IsActive, default, null, null, 0))
             .ToListAsync(cancellationToken);
     }
 

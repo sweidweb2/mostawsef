@@ -24,14 +24,16 @@ public sealed class TestServices : IDisposable
         SettingsFile = Path.Combine(_settingsDirectory, "settings.json");
         DownloadsFolder = Path.Combine(_settingsDirectory, "Downloads");
         Directory.CreateDirectory(_settingsDirectory);
+        Directory.CreateDirectory(Path.Combine(_settingsDirectory, "updates"));
         File.WriteAllText(SettingsFile, $$"""{ "Theme": "Light", "Language": "{{language}}" }""");
 
+        UpdateHost = new FakeUpdateHost(Path.Combine(_settingsDirectory, "updates"));
         Provider = new ServiceCollection()
             .AddMostawsefDesktop(new DesktopServiceOptions
             {
                 HttpHandler = Api,
                 UpdateHttpHandler = Updates,
-                OpenUrl = OpenedUrls.Add,
+                UpdateHost = UpdateHost,
                 SettingsFilePath = SettingsFile,
                 OpenFile = OpenedFiles.Add,
                 PickSavePath = PickSavePath,
@@ -51,8 +53,7 @@ public sealed class TestServices : IDisposable
     /// <summary>GitHub update feed stand-in (offline by default so portal Start never hits the network).</summary>
     public FakeUpdateHandler Updates { get; } = CreateOfflineUpdateHandler();
 
-    /// <summary>URLs the app asked to open in the browser (update download).</summary>
-    public List<string> OpenedUrls { get; } = [];
+    public FakeUpdateHost UpdateHost { get; private set; }
 
     /// <summary>Files the app asked to open (printouts) instead of launching a viewer.</summary>
     public List<string> OpenedFiles { get; } = [];

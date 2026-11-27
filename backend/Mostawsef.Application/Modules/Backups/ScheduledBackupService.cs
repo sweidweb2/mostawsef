@@ -3,6 +3,7 @@ using System.Globalization;
 using Microsoft.Extensions.Options;
 using Mostawsef.Application.Common;
 using Mostawsef.Application.Interfaces;
+using Mostawsef.Application.Modules.Settings;
 using Mostawsef.Contracts.Backups;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Domain.Entities;
@@ -42,7 +43,7 @@ public interface IScheduledBackupService
 }
 
 public class ScheduledBackupService(
-    ISystemSettingsCache settings,
+    ISystemSettingsService settings,
     IDatabaseDumpRunner dump,
     IScheduledDumpRepository history,
     IActivityLogger activity,

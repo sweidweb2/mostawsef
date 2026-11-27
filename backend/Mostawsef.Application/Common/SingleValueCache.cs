@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Mostawsef.Infrastructure.Services;
+namespace Mostawsef.Application.Common;
 
 /// <summary>
 /// Loads one value on first use, shares it with concurrent callers (one load at a time) and keeps it until

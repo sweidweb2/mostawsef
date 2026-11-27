@@ -1,11 +1,12 @@
 using Microsoft.Extensions.DependencyInjection;
+using Mostawsef.Application.Common;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Contracts.Settings;
 
-namespace Mostawsef.Infrastructure.Services;
+namespace Mostawsef.Application.Modules.Settings;
 
-/// <summary>Reads the single clinic-settings row once and keeps it until <see cref="Invalidate"/>.</summary>
-public sealed class ClinicSettingsCache(IServiceScopeFactory scopes) : IClinicSettingsCache
+/// <summary>Singleton store for the clinic-settings row; owned by <see cref="ClinicSettingsService"/>.</summary>
+public sealed class ClinicSettingsCache(IServiceScopeFactory scopes)
 {
     private readonly SingleValueCache<ClinicSettingsDto> _cache = new(
         scopes,

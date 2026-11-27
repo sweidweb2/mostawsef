@@ -2,6 +2,7 @@ using System.Globalization;
 using Mostawsef.Application.Common;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Application.Modules.Patients;
+using Mostawsef.Application.Modules.Settings;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.Dashboards;
 using Mostawsef.Contracts.Orders;
@@ -43,7 +44,7 @@ public class OrderService(
     IOrderRepository orders,
     IPatientRepository patients,
     ILabTestRepository tests,
-    IClinicSettingsCache clinic,
+    IClinicSettingsService clinic,
     INumberSequence numbers,
     IActivityLogger activity,
     TimeProvider time) : IOrderService

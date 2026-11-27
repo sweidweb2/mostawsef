@@ -8,7 +8,7 @@ public interface ISystemSettingsRepository
     /// <summary>Read-only snapshot (no tracking) for the cache and HTTP GET.</summary>
     Task<SystemSettingsDto> GetSnapshotAsync(CancellationToken cancellationToken);
 
-    /// <summary>The single settings row (tracked) for updates. HTTP GET uses <see cref="ISystemSettingsCache"/>.</summary>
+    /// <summary>The single settings row (tracked) for updates. HTTP GET uses <see cref="Modules.Settings.ISystemSettingsService"/>.</summary>
     Task<SystemSettings> GetForUpdateAsync(CancellationToken cancellationToken);
 
     /// <summary>Throws AppException (409 concurrency_conflict) if the settings changed since they were loaded.</summary>

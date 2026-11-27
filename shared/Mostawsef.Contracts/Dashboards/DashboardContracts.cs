@@ -20,6 +20,12 @@ public static class DashboardRangeRules
 
     /// <summary>The period when the request names none: the last 30 days.</summary>
     public const int DefaultDays = 30;
+
+    /// <summary>
+    /// Longest custom (or clamped) span the API will scan for hour aggregates (~2 years). Wider requests keep the
+    /// end day and pull the start forward so multi-year clinic history cannot force a full-table scan.
+    /// </summary>
+    public const int MaxSpanDays = 732;
 }
 
 /// <summary>

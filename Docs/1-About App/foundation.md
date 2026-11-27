@@ -2,8 +2,9 @@
 
 Locally installed **Clinic Management System** (desktop application + local backend + local database).
 
-This document records the foundational decisions only. No business (clinic) modules are defined yet; only the
-platform modules exist: auth, activity logs and system errors.
+This document records the foundational decisions. Business modules in the product today include patients, orders,
+lab tests, clinic/system settings, backups and dashboards, on top of the platform modules (auth, activity logs,
+system errors).
 
 ---
 

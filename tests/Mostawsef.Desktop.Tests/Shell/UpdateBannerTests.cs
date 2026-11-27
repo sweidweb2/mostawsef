@@ -1,3 +1,4 @@
+using System.Text;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
@@ -25,58 +26,65 @@ public class UpdateBannerTests : UiTestBase
         using var app = new TestServices();
         app.Api.OnGet("/api/health", new HealthDto("Healthy", "Connected", ApiVersion.Current));
         app.Updates.Error = null;
-        app.Updates.RespondWith(new UpdateFeed(
-            "99.0.0",
-            "https://example.com/Mostawsef-Setup.exe",
-            "abc",
-            "Release notes",
-            null));
+        app.Updates.RespondWithSetup("99.0.0", Encoding.UTF8.GetBytes("setup"), notesEn: "Release notes");
 
-        var window = await ShowPortalAsync(app);
+        var (window, _) = await ShowPortalAsync(app);
         Dispatcher.UIThread.RunJobs();
 
-        var banner = window.GetVisualDescendants().OfType<Grid>().Single(g => g.Name == "UpdateBanner");
+        var banner = window.GetVisualDescendants().OfType<StackPanel>().Single(g => g.Name == "UpdateBanner");
         var alert = window.GetVisualDescendants().OfType<Alert>().Single(a => a.Name == "UpdateAvailableAlert");
         Assert.True(banner.IsVisible);
         Assert.Contains("99.0.0", alert.Text);
-        Assert.Contains("Download update", Texts(window));
+        Assert.Contains("Update now", TestServices.Texts(window));
     }
 
     [AvaloniaFact]
-    public async Task Download_update_from_the_portal_opens_the_setup_url()
+    public async Task Update_now_from_the_portal_starts_the_applicator_and_exits()
     {
         using var app = new TestServices();
         app.Api.OnGet("/api/health", new HealthDto("Healthy", "Connected", ApiVersion.Current));
         app.Updates.Error = null;
-        const string url = "https://example.com/Mostawsef-Setup-9.9.9.exe";
-        app.Updates.RespondWith(new UpdateFeed(
-            "99.0.0",
-            url,
-            "abc",
-            null,
-            null));
+        app.Updates.RespondWithSetup("99.0.0", Encoding.UTF8.GetBytes("setup-bytes"));
 
-        var window = await ShowPortalAsync(app);
+        var (window, shell) = await ShowPortalAsync(app);
         Dispatcher.UIThread.RunJobs();
 
-        var button = window.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "DownloadUpdateButton");
-        button.Command!.Execute(null);
+        await shell.Updates.InstallCommand.ExecuteAsync(null);
+        Dispatcher.UIThread.RunJobs();
 
-        Assert.Equal([url], app.OpenedUrls);
+        Assert.Single(app.UpdateHost.ApplyCalls);
+        Assert.Equal(1, app.UpdateHost.ExitCalls);
+        _ = window;
     }
 
-    private static async Task<Window> ShowPortalAsync(TestServices app)
+    [AvaloniaFact]
+    public async Task Super_portal_also_shows_the_update_banner()
+    {
+        using var app = new TestServices();
+        app.Api.OnGet("/api/health", new HealthDto("Healthy", "Connected", ApiVersion.Current));
+        app.Updates.Error = null;
+        app.Updates.RespondWithSetup("99.0.0", Encoding.UTF8.GetBytes("setup"));
+
+        app.SignInAs(Roles.Super);
+        app.Navigation.NavigateToHome();
+        var shell = Assert.IsType<PortalShellViewModel>(app.Navigation.CurrentPage);
+        await shell.Updates.CheckNowAsync(force: true);
+        var window = app.Show(shell);
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.True(shell.Updates.IsAvailable);
+        Assert.Contains("Update now", TestServices.Texts(window));
+    }
+
+    private static async Task<(Window Window, PortalShellViewModel Shell)> ShowPortalAsync(TestServices app)
     {
         app.SignInAs(Roles.Admin);
         app.Navigation.NavigateToHome();
         var shell = Assert.IsType<PortalShellViewModel>(app.Navigation.CurrentPage);
-        // Start already ran CheckNowAsync; wait for the feed handler.
         await UiWait.UntilAsync(() => shell.Updates.CheckAttempts > 0 || shell.Updates.IsAvailable);
         await shell.Updates.CheckNowAsync(force: true);
         var window = app.Show(shell);
         Dispatcher.UIThread.RunJobs();
-        return window;
+        return (window, shell);
     }
-
-    private static List<string> Texts(Window window) => TestServices.Texts(window);
 }

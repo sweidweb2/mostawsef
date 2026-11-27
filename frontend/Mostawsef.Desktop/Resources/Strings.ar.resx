@@ -229,7 +229,15 @@
   <data name="Connection.VersionMismatch" xml:space="preserve"><value>إصدار هذا التطبيق لا يطابق إصدار الخادم. حدّث التطبيق على هذا الجهاز.</value></data>
   <data name="Update.Available" xml:space="preserve"><value>الإصدار {0} متاح.</value></data>
   <data name="Update.AvailableWithNotes" xml:space="preserve"><value>الإصدار {0} متاح. {1}</value></data>
-  <data name="Update.Download" xml:space="preserve"><value>تنزيل التحديث</value></data>
+  <data name="Update.Apply" xml:space="preserve"><value>حدّث الآن</value></data>
+  <data name="Update.Preparing" xml:space="preserve"><value>جارٍ تجهيز التحديث…</value></data>
+  <data name="Update.Downloading" xml:space="preserve"><value>جارٍ تنزيل التحديث… {0}٪</value></data>
+  <data name="Update.Verifying" xml:space="preserve"><value>جارٍ التحقق من التنزيل…</value></data>
+  <data name="Update.StartingSetup" xml:space="preserve"><value>جارٍ تشغيل برنامج التثبيت…</value></data>
+  <data name="Update.Cancelled" xml:space="preserve"><value>تم إلغاء التحديث.</value></data>
+  <data name="Update.ChecksumFailed" xml:space="preserve"><value>التنزيل تالف أو غير مكتمل. حاول مرة أخرى.</value></data>
+  <data name="Update.Failed" xml:space="preserve"><value>فشل التحديث: {0}</value></data>
+  <data name="Update.PleaseWait" xml:space="preserve"><value>جارٍ تحديث مستوصف… يرجى الانتظار.</value></data>
 
   <data name="Print.Page" xml:space="preserve"><value>صفحة</value></data>
   <data name="Print.Of" xml:space="preserve"><value>من</value></data>

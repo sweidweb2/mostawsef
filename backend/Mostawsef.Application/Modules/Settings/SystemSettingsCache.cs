@@ -1,11 +1,12 @@
 using Microsoft.Extensions.DependencyInjection;
+using Mostawsef.Application.Common;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Contracts.Settings;
 
-namespace Mostawsef.Infrastructure.Services;
+namespace Mostawsef.Application.Modules.Settings;
 
-/// <summary>Reads the single system-settings row once and keeps it until <see cref="Invalidate"/>.</summary>
-public sealed class SystemSettingsCache(IServiceScopeFactory scopes) : ISystemSettingsCache
+/// <summary>Singleton store for the system-settings row; owned by <see cref="SystemSettingsService"/>.</summary>
+public sealed class SystemSettingsCache(IServiceScopeFactory scopes)
 {
     private readonly SingleValueCache<SystemSettingsDto> _cache = new(
         scopes,

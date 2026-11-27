@@ -10,8 +10,9 @@ namespace Mostawsef.Infrastructure.Services.Backup;
 
 /// <summary>
 /// Exports the tables of the EF model straight from the database (plain SELECTs). Soft-deleted rows are omitted.
-/// Reads everything in one repeatable-read transaction, so the tables of one export agree with each other, and writes
-/// into a temporary file that is deleted when the returned stream is disposed.
+/// Each table is read in its own short repeatable-read transaction so a large multi-table export does not hold one
+/// snapshot for the whole run (scheduled <c>pg_dump</c> remains the consistent full backup). Writes into a temporary
+/// file that is deleted when the returned stream is disposed.
 /// </summary>
 internal sealed class DatabaseBackupExporter(IDbContextFactory<AppDbContext> factory, TimeProvider time) : IBackupExporter
 {
@@ -42,15 +43,21 @@ internal sealed class DatabaseBackupExporter(IDbContextFactory<AppDbContext> fac
         try
         {
             await using var db = await factory.CreateDbContextAsync(cancellationToken);
-            await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.RepeatableRead, cancellationToken);
             var connection = db.Database.GetDbConnection();
+            if (connection.State != ConnectionState.Open)
+            {
+                await connection.OpenAsync(cancellationToken);
+            }
 
             await using (var sink = BackupSinks.Create(format, file, allTables: table is null))
             {
                 await sink.BeginAsync(time.GetLocalNow());
                 foreach (var info in selected)
                 {
+                    await using var transaction = await db.Database.BeginTransactionAsync(
+                        IsolationLevel.RepeatableRead, cancellationToken);
                     await WriteTableAsync(sink, info, connection, transaction.GetDbTransaction(), cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
                 }
 
                 await sink.EndAsync();

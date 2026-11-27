@@ -61,9 +61,6 @@ public static class DependencyInjection
         services.AddSingleton<ITokenService, JwtTokenService>();
         services.AddSingleton<IUserAuthCache, UserAuthCache>();
         services.AddSingleton<ILoginThrottle, LoginThrottle>();
-        services.AddSingleton<IClinicSettingsCache, ClinicSettingsCache>();
-        services.AddSingleton<ISystemSettingsCache, SystemSettingsCache>();
-
         services.AddScoped<IActivityLogger, ActivityLogger>();
         services.AddScoped<ISystemErrorLogger, SystemErrorLogger>();
 

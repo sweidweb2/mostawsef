@@ -12,15 +12,20 @@ public interface ISystemSettingsService
     Task<SystemSettingsDto> GetAsync(CancellationToken cancellationToken);
 
     Task<SystemSettingsDto> UpdateAsync(UpdateSystemSettingsRequest request, CancellationToken cancellationToken);
+
+    /// <summary>Drops the cached row (after an edit or a rare initializer repair).</summary>
+    void Invalidate();
 }
 
 public class SystemSettingsService(
     ISystemSettingsRepository settings,
-    ISystemSettingsCache cache,
+    SystemSettingsCache cache,
     IActivityLogger activity) : ISystemSettingsService
 {
     public Task<SystemSettingsDto> GetAsync(CancellationToken cancellationToken) =>
         cache.GetAsync(cancellationToken);
+
+    public void Invalidate() => cache.Invalidate();
 
     public async Task<SystemSettingsDto> UpdateAsync(UpdateSystemSettingsRequest request, CancellationToken cancellationToken)
     {

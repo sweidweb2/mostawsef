@@ -169,7 +169,7 @@ public sealed partial class DashboardPeriodFilter : ObservableObject
             SelectedMonth = SelectedMonth is { } month && Months.Contains(month) ? month : NearestMonth(SelectedMonth);
             SelectedYear = SelectedYear is { } year && Years.Contains(year) ? year : NearestYear(SelectedYear);
             CustomTo = ClampDay(CustomTo);
-            CustomFrom = CustomFrom is { } from ? Clamp(from, firstDate, CustomTo ?? today) : null;
+            CustomFrom = CustomFrom is { } from ? ClampCustomFrom(from) : null;
         }
         finally
         {
@@ -194,10 +194,18 @@ public sealed partial class DashboardPeriodFilter : ObservableObject
     partial void OnSelectedYearChanged(int? value) => Update();
 
     partial void OnCustomFromChanged(DateOnly? value) =>
-        Coerce(value, value is { } v ? Clamp(v, _firstDate ?? DateOnly.MinValue, CustomTo ?? _today) : null, v => CustomFrom = v);
+        Coerce(value, value is { } v ? ClampCustomFrom(v) : null, v => CustomFrom = v);
 
     partial void OnCustomToChanged(DateOnly? value) =>
         Coerce(value, value is { } v ? Clamp(v, CustomFrom ?? _firstDate ?? DateOnly.MinValue, _today) : null, v => CustomTo = v);
+
+    private DateOnly ClampCustomFrom(DateOnly value)
+    {
+        var to = CustomTo ?? _today;
+        var min = _firstDate ?? DateOnly.MinValue;
+        var earliest = to.AddDays(1 - DashboardRangeRules.MaxSpanDays);
+        return Clamp(value, earliest > min ? earliest : min, to);
+    }
 
     /// <summary>A typed or picked day outside the bounds is replaced by the nearest valid one (which runs this again).</summary>
     private void Coerce(DateOnly? value, DateOnly? valid, Action<DateOnly?> set)
@@ -243,7 +251,14 @@ public sealed partial class DashboardPeriodFilter : ObservableObject
 
         var min = _firstDate ?? DateOnly.MinValue;
         to = Clamp(to, min, _today);
-        return (Clamp(from, min, to), to);
+        from = Clamp(from, min, to);
+        var earliest = to.AddDays(1 - DashboardRangeRules.MaxSpanDays);
+        if (from < earliest)
+        {
+            from = Clamp(earliest, min, to);
+        }
+
+        return (from, to);
     }
 
     /// <summary>Adds and removes list entries in place so the selected item stays selected in its dropdown.</summary>

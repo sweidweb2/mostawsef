@@ -44,9 +44,21 @@ public class DashboardRangeTests
     {
         var range = Resolve("2001-01-01", "2030-01-01");
 
+        // First record → today is within MaxSpanDays, so the whole history stays.
         Assert.Equal((new DateOnly(2025, 3, 10), new DateOnly(2026, 11, 15)), (range.From, range.To));
         Assert.Equal((new DateOnly(2025, 3, 10), new DateOnly(2026, 11, 15)), (range.FirstDate, range.Today));
         Assert.Equal(new DateTime(2025, 3, 1), range.BucketStarts()[0]);
+    }
+
+    [Fact]
+    public void A_span_wider_than_MaxSpanDays_keeps_the_end_and_pulls_the_start_forward()
+    {
+        var first = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var range = Resolve("2001-01-01", "2030-01-01", first);
+
+        Assert.Equal(new DateOnly(2026, 11, 15), range.To);
+        Assert.Equal(range.To.AddDays(1 - DashboardRangeRules.MaxSpanDays), range.From);
+        Assert.Equal(DashboardBuckets.Month, range.Bucket);
     }
 
     [Fact]

@@ -76,8 +76,19 @@ public partial class PortalShellViewModel : ViewModelBase
 
         PortalTitleKey = portal.TitleKey;
         MenuItems = portal.Pages;
+        Updates.ConfirmLeaveAsync = ConfirmLeaveForUpdateAsync;
 
         SelectedMenuIndex = 0;
+    }
+
+    private async Task<bool> ConfirmLeaveForUpdateAsync()
+    {
+        if (SubPage is FormViewModel { IsDirty: true } form)
+        {
+            return await form.ConfirmDiscardAsync();
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -120,7 +131,7 @@ public partial class PortalShellViewModel : ViewModelBase
     /// <summary>Server reachability and version; the view shows its banner above the page.</summary>
     public ConnectionMonitor Connection { get; }
 
-    /// <summary>GitHub release feed; banner + Download open the Setup URL (MVP).</summary>
+    /// <summary>GitHub release feed; banner + in-app Update (download → silent Setup → relaunch).</summary>
     public UpdateChecker Updates { get; }
 
     /// <summary>Resource key of the portal title, e.g. "Portal.Admin".</summary>
@@ -413,6 +424,12 @@ public partial class PortalShellViewModel : ViewModelBase
         _updateCheck?.Cancel();
         _updateCheck?.Dispose();
         _updateCheck = null;
+        // UpdateChecker is a singleton; drop the method-group capture so this shell can be collected.
+        if (ReferenceEquals(Updates.ConfirmLeaveAsync, (Func<Task<bool>>)ConfirmLeaveForUpdateAsync))
+        {
+            Updates.ConfirmLeaveAsync = null;
+        }
+
         DiscardSubPage();
         (CurrentPage as ILoadablePage)?.Deactivate();
         foreach (var page in _menuPages.Values)

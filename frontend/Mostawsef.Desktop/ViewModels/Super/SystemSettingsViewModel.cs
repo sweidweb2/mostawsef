@@ -16,6 +16,7 @@ namespace Mostawsef.Desktop.ViewModels.Super;
 public partial class SystemSettingsViewModel(
     SystemSettingsApi api,
     SystemApi system,
+    LabTestCatalogVersion catalogVersion,
     IDialogService dialogs,
     IToastService toasts,
     LocalizationService localization,
@@ -100,6 +101,7 @@ public partial class SystemSettingsViewModel(
             var result = await system.ResetDataAsync(DataResetRules.ConfirmationWord);
             if (result.IsSuccess)
             {
+                catalogVersion.Invalidate();
                 var removed = result.Value!;
                 toasts.Success(localization.Format(
                     "SystemSettings.ResetDone",

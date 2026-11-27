@@ -1,5 +1,6 @@
 using Mostawsef.Application.Common;
 using Mostawsef.Application.Interfaces;
+using Mostawsef.Application.Modules.Settings;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Contracts.Dashboards;
 using Mostawsef.Contracts.Maintenance;
@@ -23,7 +24,7 @@ public interface ISystemMaintenanceService
 public class SystemMaintenanceService(
     ISystemMaintenanceRepository repository,
     IOrderRepository orders,
-    IClinicSettingsCache clinic,
+    IClinicSettingsService clinic,
     IActivityLogger activity,
     TimeProvider time) : ISystemMaintenanceService
 {

@@ -69,7 +69,8 @@ public class ScheduledBackupTests(ApiFactory factory)
 
         for (var i = 0; i < 3; i++)
         {
-            var stale = Path.Combine(folder, $"{ScheduledBackupService.FilePrefix}old{i}{ScheduledBackupService.FileExtension}");
+            // Stamp must match IsOwnDumpFileName (mostawsef-yyyyMMdd-HHmmss.dump).
+            var stale = Path.Combine(folder, $"{ScheduledBackupService.FilePrefix}2020010{i}-120000{ScheduledBackupService.FileExtension}");
             await File.WriteAllTextAsync(stale, "old", Ct);
             File.SetLastWriteTimeUtc(stale, DateTime.UtcNow.AddDays(-10 + i));
         }

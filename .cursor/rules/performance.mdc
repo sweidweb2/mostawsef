@@ -31,7 +31,8 @@ Each one below was found by measurement and fixed. Do not reintroduce it; if a c
 8. **Doing first-time work at the moment the user clicks.** JIT + first XAML load made the portal take ~800 ms after
    sign-in and first menu pages 250-550 ms. Instead: idle-time warm-up (`ViewWarmUp` on the login screen,
    `PageHost.Prebuild` after sign-in), one item per Background-priority dispatcher job so input always goes first.
-9. **Unbounded `COUNT(*)` for list totals**; it grows with the table. Instead: capped count (`PageQuery.MaxCountedTotal`).
+9. **Unbounded `COUNT(*)` for list totals**; it grows with the table. Instead: capped count (`PageQuery.MaxCountedTotal`)
+   for numbered lists, keyset log totals, and log stats cards.
 10. **Logging every request at Information in production** (console writes on Windows are slow). Instead: slow requests
     (>= 1 s) as warnings; per-request lines only in Development.
 
