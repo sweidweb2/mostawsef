@@ -13,8 +13,8 @@ Related: [`01-release-playbook.md`](01-release-playbook.md) · [`03-data-safety.
 
 ## Publish a newer build
 
-- [ ] Merge the work you want to `main` (or use `dev` only if the Release workflow is on that ref — normally tag from `main`)
-- [ ] `git tag vX.Y.Z` → `git push origin vX.Y.Z` (X.Y.Z newer than the installed app version on the login screen)
+- [ ] Bump `<Version>` in `Directory.Build.props` on `dev` (newer than the installed app version on the login screen)
+- [ ] Merge that work to `main` (release-only branch)
 - [ ] GitHub Actions **Release** is green; Release page has `Mostawsef-Setup-X.Y.Z.exe` + `latest.json`
 
 ## In-app update

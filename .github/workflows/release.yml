@@ -1,10 +1,11 @@
 name: Release
 
-# Tag a semver (v1.2.0) → tests → update Setup (no Postgres) → GitHub Release + latest.json
+# Merge to main (only when shipping) → tests → update Setup → GitHub Release + latest.json.
+# Version comes from Directory.Build.props <Version>; CI creates tag vX.Y.Z on that commit.
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: release-${{ github.ref }}
@@ -46,6 +47,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-dotnet@v5
         with:
@@ -55,17 +58,28 @@ jobs:
         run: choco install innosetup -y --no-progress
         shell: pwsh
 
-      - name: Resolve version from tag
+      - name: Resolve version from Directory.Build.props
         id: ver
         shell: pwsh
         run: |
-          $tag = $env:GITHUB_REF_NAME
-          if ($tag -notmatch '^v(\d+\.\d+\.\d+)$') {
-            throw "Tag must look like v1.2.3 (got: $tag)"
+          $props = Get-Content -LiteralPath Directory.Build.props -Raw
+          if ($props -notmatch '<Version>\s*([^<\s]+)\s*</Version>') {
+            throw "Directory.Build.props must set <Version>1.2.3</Version>"
           }
           $version = $Matches[1]
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Version must be semver like 1.2.3 (got: $version)"
+          }
+          $tag = "v$version"
+
+          $remoteTag = git ls-remote --tags origin "refs/tags/$tag"
+          if (-not [string]::IsNullOrWhiteSpace($remoteTag)) {
+            throw "Tag $tag already exists. Bump <Version> in Directory.Build.props on dev before merging to main."
+          }
+
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          Write-Host "Release version: $version (tag $tag)"
+          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Release version: $version (will create tag $tag)"
 
       - name: Build update Setup
         shell: pwsh
@@ -81,7 +95,7 @@ jobs:
         shell: pwsh
         run: |
           $version = '${{ steps.ver.outputs.version }}'
-          $tag = $env:GITHUB_REF_NAME
+          $tag = '${{ steps.ver.outputs.tag }}'
           $outDir = Join-Path $PWD 'artifacts/release-builds'
           $setupName = "Mostawsef-Setup-$version.exe"
           $setupPath = Join-Path $outDir $setupName
@@ -138,7 +152,8 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ steps.ver.outputs.tag }}
+          target_commitish: ${{ github.sha }}
           name: Mostawsef ${{ steps.ver.outputs.version }}
           generate_release_notes: true
           fail_on_unmatched_files: true

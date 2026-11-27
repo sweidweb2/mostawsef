@@ -29,7 +29,7 @@ Before a **major** update: confirm Super → Settings → backup folder has a re
 
 ### Developer note (not a clinic step)
 
-Day-to-day: merge → tag `vX.Y.Z` → GitHub Release → clinic **Update now** (or USB). Full steps: [`01-release-playbook.md`](../7-automating%20install/01-release-playbook.md). Local update Setup: `./scripts/build-setup.ps1 -UpdateOnly`.
+Day-to-day: bump version → merge to `main` → GitHub Release → clinic **Update now** (or USB). Full steps: [`01-release-playbook.md`](../7-automating%20install/01-release-playbook.md). Local update Setup: `./scripts/build-setup.ps1 -UpdateOnly`.
 
 Only if you change **how install works** (service name, install path, Postgres rules, Setup scripts under `packaging/innosetup/` or `scripts/install-*.ps1`): update those scripts, then rebuild Setup. Clinics still just run Setup or **Update now**.
 

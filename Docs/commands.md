@@ -244,11 +244,14 @@ Data safety notes (backups before major updates): `Docs/7-automating install/03-
 Full ship checklist (backup note, USB, rollback): [`Docs/7-automating install/01-release-playbook.md`](7-automating%20install/01-release-playbook.md).
 
 ```powershell
-git tag v1.2.0
-git push origin v1.2.0
+# On dev: bump <Version> in Directory.Build.props (e.g. 1.0.1), then merge to main.
+git checkout main
+git merge dev
+git push origin main
 ```
 
-GitHub Actions (`.github/workflows/release.yml`) runs API + Desktop tests, builds an **update** Setup (`-UpdateOnly`), uploads `Mostawsef-Setup-1.2.0.exe` and `latest.json` to a public Release.  
+GitHub Actions (`.github/workflows/release.yml`) on **push to `main`**: API + Desktop tests → builds an **update** Setup (`-UpdateOnly`) using that `<Version>` → creates tag `vX.Y.Z` → uploads `Mostawsef-Setup-X.Y.Z.exe` and `latest.json`.  
+If the tag already exists, the job fails — bump `<Version>` before merging.  
 Feed URL: `https://github.com/sweidweb2/mostawsef/releases/latest/download/latest.json`
 
 Output: `C:\Users\User\Desktop\mostawsef-3ammo\[2] Builds\Mostawsef-Setup-{version}.exe` (older builds are kept; also under `artifacts\installer\`).

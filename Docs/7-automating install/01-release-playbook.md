@@ -6,19 +6,13 @@
 
 ## Normal release (in-app update)
 
-1. Finish work on `dev` → PR / merge to `main` (tests green).
-2. Confirm Super backup folder is set on clinics that will update soon (major releases: prefer a fresh dump — [`03-data-safety.md`](03-data-safety.md)).
-3. Tag and push (semver with `v`):
+`main` is release-only: merge there only when you intend to ship. CI publishes the Release on that push.
 
-   ```powershell
-   git checkout main
-   git pull
-   git tag v1.2.0
-   git push origin v1.2.0
-   ```
-
-4. Wait for GitHub Actions **Release** (API + Desktop tests → `-UpdateOnly` Setup → Release assets).
-5. Confirm the Release has `Mostawsef-Setup-1.2.0.exe` and `latest.json`.
+1. On `dev`, bump `<Version>` in `Directory.Build.props` (e.g. `1.0.0` → `1.0.1`) — must be a new semver not already tagged.
+2. Finish work on `dev` → PR / merge to `main` (Tests green on `dev` first).
+3. Confirm Super backup folder is set on clinics that will update soon (major releases: prefer a fresh dump — [`03-data-safety.md`](03-data-safety.md)).
+4. Wait for GitHub Actions **Release** on `main` (API + Desktop tests → `-UpdateOnly` Setup → creates tag `vX.Y.Z` → Release assets).
+5. Confirm the Release has `Mostawsef-Setup-X.Y.Z.exe` and `latest.json`.
 6. Clinic: open Mostawsef → sign in → **Update now** (UAC) → app reopens on the new version.
 
 Feed URL (app already uses this):  
@@ -61,4 +55,4 @@ After that, day-to-day updates use the in-app path above.
 
 ## If install behavior itself changes
 
-Paths, service name, Postgres rules, or scripts under `packaging/innosetup/` / `scripts/install-*.ps1`: update those first, rebuild Setup, then tag. Clinics still only run Setup or **Update now**.
+Paths, service name, Postgres rules, or scripts under `packaging/innosetup/` / `scripts/install-*.ps1`: update those first, bump version, merge to `main`. Clinics still only run Setup or **Update now**.
