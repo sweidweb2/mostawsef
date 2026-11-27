@@ -31,6 +31,9 @@
   <data name="Error.Description" xml:space="preserve"><value>We couldn't load this data. Please try again.</value></data>
   <data name="Error.UnreachableTitle" xml:space="preserve"><value>Cannot reach the server</value></data>
   <data name="Error.UnreachableDescription" xml:space="preserve"><value>Make sure the Mostawsef service is running, then try again.</value></data>
+  <data name="Error.TimeoutTitle" xml:space="preserve"><value>The server took too long</value></data>
+  <data name="Error.TimeoutDescription" xml:space="preserve"><value>Check whether the change was saved before trying again.</value></data>
+  <data name="Error.Timeout" xml:space="preserve"><value>The server took too long to answer. Check whether the change was saved before trying again.</value></data>
 
   <data name="Confirm.Title" xml:space="preserve"><value>Are you sure?</value></data>
 
@@ -52,8 +55,10 @@
   <data name="Login.InsecureConnection" xml:space="preserve"><value>This connection to the server is not encrypted. Ask your administrator to set up HTTPS before signing in over the network.</value></data>
   <data name="Login.Maintenance" xml:space="preserve"><value>The system is under maintenance. Please try again later.</value></data>
   <data name="Login.SessionExpired" xml:space="preserve"><value>Your session has expired. Please sign in again.</value></data>
+  <data name="Login.PasswordChangeRequired" xml:space="preserve"><value>This account still has its initial password. Sign in again and choose your own password to continue.</value></data>
   <data name="Login.Welcome" xml:space="preserve"><value>Welcome back</value></data>
   <data name="Login.ForgotPassword" xml:space="preserve"><value>Forgot your password? Ask your system administrator to reset it.</value></data>
+  <data name="Login.Version" xml:space="preserve"><value>Version {0}</value></data>
   <data name="Login.HeroTag" xml:space="preserve"><value>Clinic management system</value></data>
   <data name="Login.HeroTitle" xml:space="preserve"><value>Your clinic, organized in one place</value></data>
   <data name="Login.HeroSubtitle" xml:space="preserve"><value>Patients, lab orders, payments and reports, in Arabic and English, on your clinic network.</value></data>
@@ -224,6 +229,17 @@
 
   <data name="Connection.Lost" xml:space="preserve"><value>Connection to the server was lost. Retrying...</value></data>
   <data name="Connection.VersionMismatch" xml:space="preserve"><value>This app does not match the server version. Update the app on this PC.</value></data>
+  <data name="Update.Available" xml:space="preserve"><value>Version {0} is available.</value></data>
+  <data name="Update.AvailableWithNotes" xml:space="preserve"><value>Version {0} is available. {1}</value></data>
+  <data name="Update.Apply" xml:space="preserve"><value>Update now</value></data>
+  <data name="Update.Preparing" xml:space="preserve"><value>Preparing update…</value></data>
+  <data name="Update.Downloading" xml:space="preserve"><value>Downloading update… {0}%</value></data>
+  <data name="Update.Verifying" xml:space="preserve"><value>Checking the download…</value></data>
+  <data name="Update.StartingSetup" xml:space="preserve"><value>Starting the installer…</value></data>
+  <data name="Update.Cancelled" xml:space="preserve"><value>Update cancelled.</value></data>
+  <data name="Update.ChecksumFailed" xml:space="preserve"><value>The download was damaged or incomplete. Try again.</value></data>
+  <data name="Update.Failed" xml:space="preserve"><value>Update failed: {0}</value></data>
+  <data name="Update.PleaseWait" xml:space="preserve"><value>Updating Mostawsef… Please wait.</value></data>
 
   <data name="Print.Page" xml:space="preserve"><value>Page</value></data>
   <data name="Print.Of" xml:space="preserve"><value>of</value></data>
@@ -255,6 +271,7 @@
 
   <data name="Auth.ChangePassword" xml:space="preserve"><value>Change password</value></data>
   <data name="Auth.PasswordChanged" xml:space="preserve"><value>Password changed.</value></data>
+  <data name="Auth.ChooseOwnPassword" xml:space="preserve"><value>Choose your own password</value></data>
 
   <data name="Nav.Users" xml:space="preserve"><value>Users</value></data>
   <data name="Users.Subtitle" xml:space="preserve"><value>Who can sign in, and what they can do.</value></data>

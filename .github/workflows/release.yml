@@ -1,0 +1,162 @@
+name: Release
+
+# Merge to main (only when shipping) → tests → update Setup → GitHub Release + latest.json.
+# Version comes from Directory.Build.props <Version>; CI creates tag vX.Y.Z on that commit.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  api:
+    name: API tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      - run: ./scripts/test.ps1 api
+        shell: pwsh
+
+  desktop:
+    name: Desktop tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      - run: ./scripts/test.ps1 desktop
+        shell: pwsh
+
+  setup:
+    name: Build Setup + publish Release
+    needs: [api, desktop]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y --no-progress
+        shell: pwsh
+
+      - name: Resolve version from Directory.Build.props
+        id: ver
+        shell: pwsh
+        run: |
+          $props = Get-Content -LiteralPath Directory.Build.props -Raw
+          if ($props -notmatch '<Version>\s*([^<\s]+)\s*</Version>') {
+            throw "Directory.Build.props must set <Version>1.2.3</Version>"
+          }
+          $version = $Matches[1]
+          if ($version -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Version must be semver like 1.2.3 (got: $version)"
+          }
+          $tag = "v$version"
+
+          $remoteTag = git ls-remote --tags origin "refs/tags/$tag"
+          if (-not [string]::IsNullOrWhiteSpace($remoteTag)) {
+            throw "Tag $tag already exists. Bump <Version> in Directory.Build.props on dev before merging to main."
+          }
+
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Release version: $version (will create tag $tag)"
+
+      - name: Build update Setup
+        shell: pwsh
+        run: |
+          ./scripts/build-setup.ps1 `
+            -Version '${{ steps.ver.outputs.version }}' `
+            -UpdateOnly `
+            -Force `
+            -SkipInnoInstall `
+            -OutputDir (Join-Path $PWD 'artifacts/release-builds')
+
+      - name: Write latest.json
+        shell: pwsh
+        run: |
+          $version = '${{ steps.ver.outputs.version }}'
+          $tag = '${{ steps.ver.outputs.tag }}'
+          $outDir = Join-Path $PWD 'artifacts/release-builds'
+          $setupName = "Mostawsef-Setup-$version.exe"
+          $setupPath = Join-Path $outDir $setupName
+          if (-not (Test-Path -LiteralPath $setupPath)) {
+            throw "Setup missing after build: $setupPath"
+          }
+
+          $sha = (Get-FileHash -LiteralPath $setupPath -Algorithm SHA256).Hash.ToLowerInvariant()
+          $url = "https://github.com/$($env:GITHUB_REPOSITORY)/releases/download/$tag/$setupName"
+          $feed = [ordered]@{
+            version = $version
+            url     = $url
+            sha256  = $sha
+            notesEn = "Mostawsef $version"
+            notesAr = "مستوصف $version"
+          }
+          $jsonPath = Join-Path $outDir 'latest.json'
+          $json = $feed | ConvertTo-Json -Compress
+          [System.IO.File]::WriteAllText($jsonPath, $json)
+          Write-Host "Feed: $jsonPath"
+          Get-Content -LiteralPath $jsonPath
+
+      - name: Ensure Release assets exist
+        shell: pwsh
+        run: |
+          $version = '${{ steps.ver.outputs.version }}'
+          $outDir = Join-Path $PWD 'artifacts/release-builds'
+          $setup = Join-Path $outDir "Mostawsef-Setup-$version.exe"
+          $feedPath = Join-Path $outDir 'latest.json'
+          if (-not (Test-Path -LiteralPath $setup)) { throw "Missing $setup" }
+          if (-not (Test-Path -LiteralPath $feedPath)) { throw "Missing $feedPath" }
+          if ((Get-Item -LiteralPath $setup).Length -lt 1MB) {
+            throw "Setup looks too small: $setup ($((Get-Item $setup).Length) bytes)"
+          }
+
+          $feed = Get-Content -LiteralPath $feedPath -Raw | ConvertFrom-Json
+          foreach ($name in @('version', 'url', 'sha256', 'notesEn', 'notesAr')) {
+            if (-not $feed.PSObject.Properties[$name] -or [string]::IsNullOrWhiteSpace([string]$feed.$name)) {
+              throw "latest.json missing or empty field: $name"
+            }
+          }
+          if ($feed.version -ne $version) {
+            throw "latest.json version '$($feed.version)' does not match tag version '$version'"
+          }
+          $actualSha = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($feed.sha256 -ne $actualSha) {
+            throw "latest.json sha256 does not match Setup file"
+          }
+          if ($feed.url -notlike "*Mostawsef-Setup-$version.exe") {
+            throw "latest.json url does not point at Mostawsef-Setup-$version.exe"
+          }
+          Write-Host "Release assets OK ($version, $([math]::Round((Get-Item $setup).Length / 1MB, 1)) MB)"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: Mostawsef ${{ steps.ver.outputs.version }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            artifacts/release-builds/Mostawsef-Setup-${{ steps.ver.outputs.version }}.exe
+            artifacts/release-builds/latest.json

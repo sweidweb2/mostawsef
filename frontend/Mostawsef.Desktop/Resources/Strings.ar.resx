@@ -31,6 +31,9 @@
   <data name="Error.Description" xml:space="preserve"><value>تعذّر تحميل البيانات. يرجى المحاولة مرة أخرى.</value></data>
   <data name="Error.UnreachableTitle" xml:space="preserve"><value>تعذّر الاتصال بالخادم</value></data>
   <data name="Error.UnreachableDescription" xml:space="preserve"><value>تأكد من تشغيل خدمة مستوصف، ثم أعد المحاولة.</value></data>
+  <data name="Error.TimeoutTitle" xml:space="preserve"><value>استغرق الخادم وقتًا طويلًا</value></data>
+  <data name="Error.TimeoutDescription" xml:space="preserve"><value>تحقق مما إذا تم حفظ التغيير قبل إعادة المحاولة.</value></data>
+  <data name="Error.Timeout" xml:space="preserve"><value>استغرق الخادم وقتًا طويلًا للرد. تحقق مما إذا تم حفظ التغيير قبل إعادة المحاولة.</value></data>
 
   <data name="Confirm.Title" xml:space="preserve"><value>هل أنت متأكد؟</value></data>
 
@@ -52,8 +55,10 @@
   <data name="Login.InsecureConnection" xml:space="preserve"><value>الاتصال بالخادم غير مشفّر. اطلب من المسؤول تفعيل HTTPS قبل تسجيل الدخول عبر الشبكة.</value></data>
   <data name="Login.Maintenance" xml:space="preserve"><value>النظام تحت الصيانة. يرجى المحاولة لاحقًا.</value></data>
   <data name="Login.SessionExpired" xml:space="preserve"><value>انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.</value></data>
+  <data name="Login.PasswordChangeRequired" xml:space="preserve"><value>لا يزال هذا الحساب يستخدم كلمة المرور الأولية. سجّل الدخول مرة أخرى واختر كلمة مرور خاصة بك للمتابعة.</value></data>
   <data name="Login.Welcome" xml:space="preserve"><value>مرحبًا بعودتك</value></data>
   <data name="Login.ForgotPassword" xml:space="preserve"><value>نسيت كلمة المرور؟ اطلب من مسؤول النظام إعادة تعيينها.</value></data>
+  <data name="Login.Version" xml:space="preserve"><value>الإصدار {0}</value></data>
   <data name="Login.HeroTag" xml:space="preserve"><value>نظام إدارة العيادات</value></data>
   <data name="Login.HeroTitle" xml:space="preserve"><value>عيادتك منظّمة في مكان واحد</value></data>
   <data name="Login.HeroSubtitle" xml:space="preserve"><value>المرضى وطلبات التحاليل والمدفوعات والتقارير، بالعربية والإنجليزية، على شبكة عيادتك.</value></data>
@@ -223,6 +228,17 @@
 
   <data name="Connection.Lost" xml:space="preserve"><value>انقطع الاتصال بالخادم. جارٍ إعادة المحاولة...</value></data>
   <data name="Connection.VersionMismatch" xml:space="preserve"><value>إصدار هذا التطبيق لا يطابق إصدار الخادم. حدّث التطبيق على هذا الجهاز.</value></data>
+  <data name="Update.Available" xml:space="preserve"><value>الإصدار {0} متاح.</value></data>
+  <data name="Update.AvailableWithNotes" xml:space="preserve"><value>الإصدار {0} متاح. {1}</value></data>
+  <data name="Update.Apply" xml:space="preserve"><value>حدّث الآن</value></data>
+  <data name="Update.Preparing" xml:space="preserve"><value>جارٍ تجهيز التحديث…</value></data>
+  <data name="Update.Downloading" xml:space="preserve"><value>جارٍ تنزيل التحديث… {0}٪</value></data>
+  <data name="Update.Verifying" xml:space="preserve"><value>جارٍ التحقق من التنزيل…</value></data>
+  <data name="Update.StartingSetup" xml:space="preserve"><value>جارٍ تشغيل برنامج التثبيت…</value></data>
+  <data name="Update.Cancelled" xml:space="preserve"><value>تم إلغاء التحديث.</value></data>
+  <data name="Update.ChecksumFailed" xml:space="preserve"><value>التنزيل تالف أو غير مكتمل. حاول مرة أخرى.</value></data>
+  <data name="Update.Failed" xml:space="preserve"><value>فشل التحديث: {0}</value></data>
+  <data name="Update.PleaseWait" xml:space="preserve"><value>جارٍ تحديث مستوصف… يرجى الانتظار.</value></data>
 
   <data name="Print.Page" xml:space="preserve"><value>صفحة</value></data>
   <data name="Print.Of" xml:space="preserve"><value>من</value></data>
@@ -254,6 +270,7 @@
 
   <data name="Auth.ChangePassword" xml:space="preserve"><value>تغيير كلمة المرور</value></data>
   <data name="Auth.PasswordChanged" xml:space="preserve"><value>تم تغيير كلمة المرور.</value></data>
+  <data name="Auth.ChooseOwnPassword" xml:space="preserve"><value>اختر كلمة مرور خاصة بك</value></data>
 
   <data name="Nav.Users" xml:space="preserve"><value>المستخدمون</value></data>
   <data name="Users.Subtitle" xml:space="preserve"><value>من يمكنه تسجيل الدخول، وما الذي يمكنه فعله.</value></data>

@@ -1,3 +1,4 @@
+using System.Data;
 using Microsoft.EntityFrameworkCore;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Contracts.Common;
@@ -73,7 +74,8 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
                 o.TestsCount,
                 o.Total,
                 o.Paid,
-                o.Status));
+                o.Status,
+                o.Currency));
 
         return await rows.ToPageAsync(orders, query, cancellationToken);
     }
@@ -97,7 +99,7 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
         db.Orders.AsNoTracking()
             .Where(o => o.CreatedAt >= sinceUtc && o.CreatedAt < untilUtc
                 && (o.Status == OrderStatus.Pending || o.Status == OrderStatus.PartiallyPaid))
-            .SumAsync(o => o.Total - o.Paid, cancellationToken);
+            .SumAsync(o => o.Total > o.Paid ? o.Total - o.Paid : 0L, cancellationToken);
 
     public async Task<IReadOnlyList<HourlyValue>> GetRevenuePerHourAsync(DateTime sinceUtc, DateTime untilUtc, CancellationToken cancellationToken) =>
         HourlySeries.ToHours(await db.Set<Payment>().AsNoTracking()
@@ -140,4 +142,43 @@ public class OrderRepository(AppDbContext db) : IOrderRepository
     public void Add(Order order) => db.Orders.Add(order);
 
     public Task SaveChangesAsync(CancellationToken cancellationToken) => db.SaveChangesAsync(cancellationToken);
+
+    public Task<Order?> FindByClientRequestIdAsync(Guid clientRequestId, CancellationToken cancellationToken) =>
+        db.Orders.AsNoTracking()
+            .Include(o => o.Items)
+            .Include(o => o.Payments)
+            .FirstOrDefaultAsync(o => o.ClientRequestId == clientRequestId, cancellationToken);
+
+    public Task<Payment?> FindPaymentByClientRequestIdAsync(Guid clientRequestId, CancellationToken cancellationToken) =>
+        db.Set<Payment>().AsNoTracking()
+            .FirstOrDefaultAsync(p => p.ClientRequestId == clientRequestId, cancellationToken);
+
+    /// <summary>
+    /// How often a transaction that lost a serialization race is run again before the error reaches the client.
+    /// Every order create takes from the same number row, so each round of simultaneous creates lets one commit:
+    /// this covers far more simultaneous saves than one clinic's PCs make.
+    /// </summary>
+    internal const int SerializableAttempts = 10;
+
+    public async Task ExecuteInSerializableAsync(Func<CancellationToken, Task> action, CancellationToken cancellationToken)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+                await action(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+                return;
+            }
+            catch (Exception ex) when (attempt < SerializableAttempts && AppDbContext.IsSerializationFailure(ex))
+            {
+                // Two saves touched the same rows (e.g. both took an order number): PostgreSQL rolled this one back.
+                // Drop what the failed attempt added and run it again; the action rebuilds everything it saves.
+                db.ChangeTracker.Clear();
+                // Random spread so the losers of one round do not collide again in the next.
+                await Task.Delay(TimeSpan.FromMilliseconds(Random.Shared.Next(5, 25) * attempt), cancellationToken);
+            }
+        }
+    }
 }

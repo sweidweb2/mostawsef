@@ -38,7 +38,7 @@ public class SystemSettingsTests(ApiFactory factory)
     [Fact]
     public async Task Super_updates_the_settings_and_the_change_is_audited()
     {
-        var path = $@"D:\Backups\{Guid.NewGuid():N}";
+        var path = Folder("Backups", Guid.NewGuid().ToString("N"));
         factory.Services.RefreshSystemSettingsCache();
         var super = await factory.CreateClientAsAsync(TestUsers.Super);
         var current = await super.GetJsonAsync<SystemSettingsDto>(Url);
@@ -119,6 +119,46 @@ public class SystemSettingsTests(ApiFactory factory)
         Assert.Equal([$"max_length|{SystemSettingsRules.BackupPathMaxLength}"], problem.Errors["BackupPath"]);
     }
 
+    [Theory]
+    [InlineData("relative")]
+    [InlineData("rooted-without-drive")]
+    [InlineData("parent-segment")]
+    public async Task A_relative_or_traversing_backup_path_returns_400(string kind)
+    {
+        var path = kind switch
+        {
+            "relative" => Path.Combine("relative", "folder"),
+            "rooted-without-drive" => @"\Backups", // rooted on Windows, but relative to the current drive
+            _ => Folder("clinic", "..", "Windows"),
+        };
+        factory.Services.RefreshSystemSettingsCache();
+        var super = await factory.CreateClientAsAsync(TestUsers.Super);
+        var current = await super.GetJsonAsync<SystemSettingsDto>(Url);
+
+        var problem = await ProblemResponse.ReadAsync(await super.PutAsJsonAsync(
+            Url,
+            new UpdateSystemSettingsRequest { BackupPath = path, Version = current.Version },
+            Ct));
+
+        Assert.Equal(HttpStatusCode.BadRequest, problem.Status);
+        Assert.Equal([ErrorCodes.Invalid], problem.Errors["BackupPath"]);
+    }
+
+    [Fact]
+    public async Task A_folder_name_that_only_contains_dots_is_accepted()
+    {
+        var path = Folder("Backups..old", Guid.NewGuid().ToString("N"));
+        factory.Services.RefreshSystemSettingsCache();
+        var super = await factory.CreateClientAsAsync(TestUsers.Super);
+        var current = await super.GetJsonAsync<SystemSettingsDto>(Url);
+
+        var response = await super.PutAsJsonAsync(
+            Url, new UpdateSystemSettingsRequest { BackupPath = path, Version = current.Version }, Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(path, (await response.Content.ReadFromJsonAsync<SystemSettingsDto>(Ct))!.BackupPath);
+    }
+
     [Fact]
     public async Task A_stale_version_returns_409()
     {
@@ -126,7 +166,7 @@ public class SystemSettingsTests(ApiFactory factory)
         var super = await factory.CreateClientAsAsync(TestUsers.Super);
         var current = await super.GetJsonAsync<SystemSettingsDto>(Url);
         var request = new UpdateSystemSettingsRequest { BackupPath = current.BackupPath, Version = current.Version };
-        (await super.PutAsJsonAsync(Url, request with { BackupPath = @"E:\Edited" }, Ct)).EnsureSuccessStatusCode();
+        (await super.PutAsJsonAsync(Url, request with { BackupPath = Folder("Edited") }, Ct)).EnsureSuccessStatusCode();
 
         var problem = await ProblemResponse.ReadAsync(await super.PutAsJsonAsync(Url, request, Ct));
 
@@ -166,6 +206,9 @@ public class SystemSettingsTests(ApiFactory factory)
         var afterwards = await factory.CreateClient().OpenClinicSessionAsync();
         Assert.Equal(Roles.Admin, afterwards.User.Role);
     }
+
+    /// <summary>A full folder path on any OS (CI runs these tests on Ubuntu, where <c>D:\...</c> is not a full path).</summary>
+    private static string Folder(params string[] parts) => Path.Combine([Path.GetTempPath(), "mostawsef-settings-tests", .. parts]);
 
     private async Task SetMaintenanceModeAsync(HttpClient super, bool on)
     {

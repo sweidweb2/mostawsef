@@ -11,16 +11,21 @@ public interface IClinicSettingsService
 {
     Task<ClinicSettingsDto> GetAsync(CancellationToken cancellationToken);
 
+    Task<string> GetCurrencyCodeAsync(CancellationToken cancellationToken);
+
     Task<ClinicSettingsDto> UpdateAsync(UpdateClinicSettingsRequest request, CancellationToken cancellationToken);
 }
 
 public class ClinicSettingsService(
     IClinicSettingsRepository settings,
-    IClinicSettingsCache cache,
+    SingleValueCache<ClinicSettingsDto> cache,
     IActivityLogger activity) : IClinicSettingsService
 {
     public Task<ClinicSettingsDto> GetAsync(CancellationToken cancellationToken) =>
         cache.GetAsync(cancellationToken);
+
+    public async Task<string> GetCurrencyCodeAsync(CancellationToken cancellationToken) =>
+        (await cache.GetAsync(cancellationToken)).CurrencyCode;
 
     public async Task<ClinicSettingsDto> UpdateAsync(UpdateClinicSettingsRequest request, CancellationToken cancellationToken)
     {

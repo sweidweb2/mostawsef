@@ -63,6 +63,12 @@ public sealed class DashboardRange
 
         var to = Clamp(query.To ?? today, firstDate, today);
         var from = Clamp(query.From ?? today.AddDays(1 - DashboardRangeRules.DefaultDays), firstDate, to);
+        var earliest = to.AddDays(1 - DashboardRangeRules.MaxSpanDays);
+        if (from < earliest)
+        {
+            from = Clamp(earliest, firstDate, to);
+        }
+
         var days = to.DayNumber - from.DayNumber + 1;
         var bucket = days == 1 ? DashboardBuckets.Hour
             : days <= DashboardRangeRules.MaxDailyDays ? DashboardBuckets.Day

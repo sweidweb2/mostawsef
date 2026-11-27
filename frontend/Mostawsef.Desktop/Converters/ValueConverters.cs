@@ -24,9 +24,18 @@ public static class ValueConverters
 
     /// <summary>
     /// Minor units -> money text for DataGrid text columns (one binding, no MultiBinding per cell).
+    /// Uses the live clinic currency. Prefer <see cref="OrderListTotal"/> / <see cref="OrderListPaid"/> for order rows.
     /// Forms and details keep {l:Money ...} so they still refresh on language/currency changes.
     /// </summary>
     public static readonly IValueConverter Money = new FuncValueConverter<long, string>(FormatMoney);
+
+    /// <summary>Order list Total using the row's snapshotted <see cref="OrderListItemDto.Currency"/>.</summary>
+    public static readonly IValueConverter OrderListTotal = new FuncValueConverter<OrderListItemDto?, string>(
+        row => row is null ? string.Empty : FormatMoney(row.Total, row.Currency));
+
+    /// <summary>Order list Paid using the row's snapshotted <see cref="OrderListItemDto.Currency"/>.</summary>
+    public static readonly IValueConverter OrderListPaid = new FuncValueConverter<OrderListItemDto?, string>(
+        row => row is null ? string.Empty : FormatMoney(row.Paid, row.Currency));
 
     /// <summary>"Warning" / "Error" / "Critical" -> Badge kind.</summary>
     public static readonly IValueConverter ErrorLevelToBadgeKind = new FuncValueConverter<string?, BadgeKind>(level => level switch
@@ -79,7 +88,9 @@ public static class ValueConverters
         };
     }
 
-    public static string FormatMoney(long minorUnits)
+    public static string FormatMoney(long minorUnits) => FormatMoney(minorUnits, currencyCode: null);
+
+    public static string FormatMoney(long minorUnits, string? currencyCode)
     {
         if (App.Services is null)
         {
@@ -87,7 +98,7 @@ public static class ValueConverters
                 .ToString("N2", System.Globalization.CultureInfo.InvariantCulture);
         }
 
-        return MoneyFormat.Format(minorUnits, Clinic.CurrencyCode, App.Localization);
+        return MoneyFormat.Format(minorUnits, currencyCode ?? Clinic.CurrencyCode, App.Localization);
     }
 
     private static ClinicContext? _clinic;

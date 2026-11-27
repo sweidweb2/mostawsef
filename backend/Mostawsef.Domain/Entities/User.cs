@@ -16,11 +16,12 @@ public class User : SoftDeletableEntity
     {
     }
 
-    public User(string username, string fullName, string searchName, string passwordHash, UserRole role)
+    public User(string username, string fullName, string searchName, string passwordHash, UserRole role, bool mustChangePassword = false)
     {
         Username = NormalizeUsername(username);
         PasswordHash = passwordHash;
         Role = role;
+        MustChangePassword = mustChangePassword;
         Rename(fullName, searchName);
     }
 
@@ -38,6 +39,12 @@ public class User : SoftDeletableEntity
     public int TokenVersion { get; private set; }
 
     public UserRole Role { get; private set; }
+
+    /// <summary>
+    /// The password is a known initial one (seeded from configuration): until the user sets their own, their token
+    /// only allows changing it. Cleared by <see cref="ChangeOwnPassword"/>.
+    /// </summary>
+    public bool MustChangePassword { get; private set; }
 
     public bool IsActive { get; private set; } = true;
 
@@ -57,6 +64,13 @@ public class User : SoftDeletableEntity
     {
         PasswordHash = passwordHash;
         TokenVersion++;
+    }
+
+    /// <summary>The user chose a new password themselves: also lifts <see cref="MustChangePassword"/>.</summary>
+    public void ChangeOwnPassword(string passwordHash)
+    {
+        ChangePasswordHash(passwordHash);
+        MustChangePassword = false;
     }
 
     public void RecordLogin(DateTime at) => LastLoginAt = at;

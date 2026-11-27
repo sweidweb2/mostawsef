@@ -526,7 +526,7 @@ public class LabTestsPageTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task Delete_asks_first_then_deletes_and_reloads()
+    public async Task Delete_asks_first_then_removes_the_row_without_reloading()
     {
         using var app = AdminWithTests(Cbc);
         app.Api.On(HttpMethod.Delete, $"{TestsPath}/{Cbc.Id}", HttpStatusCode.NoContent);
@@ -548,7 +548,9 @@ public class LabTestsPageTests : UiTestBase
         Dispatcher.UIThread.RunJobs();
 
         Assert.Single(app.Api.RequestsTo(HttpMethod.Delete, $"{TestsPath}/{Cbc.Id}"));
-        Assert.True(app.Api.RequestsTo(HttpMethod.Get, TestsPath).Count() > listRequests);
+        Assert.Equal(listRequests, app.Api.RequestsTo(HttpMethod.Get, TestsPath).Count());
+        Assert.Empty(page.Items);
+        Assert.Equal(0, page.TotalCount);
         Assert.Contains("Lab test deleted.", Toasts(window));
     }
 

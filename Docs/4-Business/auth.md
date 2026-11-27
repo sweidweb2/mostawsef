@@ -38,7 +38,7 @@ Desktop LoginView
 | `Version` | integer | Concurrency token: an edit based on an older version returns 409 |
 | `IsDeleted`, `DeletedAt`, `DeletedBy` | | Soft delete: deleted users are hidden, cannot sign in, and their username is never reused |
 
-Migrations: `*_InitialUsers`, `*_AuditFieldsAndUserProfile`. Migrations are applied automatically when the API starts.
+Migrations (the schema starts at `*_Initial`) are applied automatically when the API starts.
 
 ## Password hashing
 
@@ -50,9 +50,9 @@ Password login is Super-only. Unknown usernames (and Admin / clinic) take the sa
 
 | Endpoint | Auth | Result |
 | --- | --- | --- |
-| `POST /api/auth/login` `{ username, password }` | Anonymous, max 10 requests/min per IP | `200 { accessToken, expiresAt, user }` for Super only; `400` empty fields, `401` invalid (including Admin/clinic), `429` too many |
+| `POST /api/auth/login` `{ username, password }` | Anonymous, max 10 requests/min per IP | `200 { accessToken, expiresAt, user, mustChangePassword }` for Super only; `400` empty fields, `401` invalid (including Admin/clinic), `429` too many |
 | `GET /api/auth/clinic-access` | Anonymous | `200 { available }` — `false` while maintenance mode is on (login screen disables Enter clinic) |
-| `POST /api/auth/clinic-session` | Anonymous, loopback only (Testing allows null remote IP), own rate limit | `200` Admin JWT for `clinic`; `403` non-local; `409 maintenance_mode`; `404` if clinic identity missing (startup repairs a soft-deleted / wrong-role `clinic` row) |
+| `POST /api/auth/clinic-session` | Anonymous, loopback only (Testing allows null remote IP), own rate limit | `200` Admin JWT for `clinic`; `403` non-local, or the request still carries `X-Forwarded-For` / `Forwarded` (came through a proxy the API did not resolve); `409 maintenance_mode`; `404` if clinic identity missing (startup repairs a soft-deleted / wrong-role `clinic` row) |
 
 Login protection (configuration keys under `RateLimit:`; the API answers like a wrong password, without logging, while blocked):
 - `LoginPermitLimit` (default 10): Super password login requests per minute per client IP, then `429`.
@@ -62,9 +62,13 @@ Login protection (configuration keys under `RateLimit:`; the API answers like a 
   In memory, per API process.
 - `HealthPermitLimit` (default 120): `GET /api/health` requests per minute per IP.
 - Behind a reverse proxy set `ForwardedHeaders:Enabled` to `true` so the limits use the client address from `X-Forwarded-For`
-  (only loopback proxies are trusted unless `KnownProxies` is configured).
+  (only loopback proxies are trusted unless `KnownProxies` is configured). Passwordless Enter clinic trusts "the request comes
+  from this PC": a proxy on the same PC connects from loopback, so without `ForwardedHeaders` every proxied request would look
+  local and anyone on the network could open the Admin portal. The API refuses clinic sessions that still carry proxy headers,
+  but never expose the API through a proxy without `ForwardedHeaders:Enabled` and a correct `KnownProxies`.
 - `POST /api/system-errors/report` is anonymous: body capped at 128 KB, stored fields truncated.
-| `POST /api/auth/change-password` `{ currentPassword, newPassword }` | Bearer token (Super) | `200 { accessToken, expiresAt, user }` (old JWT invalidated), `400` (`wrong_password` on `CurrentPassword`, `min_length\|8`...), `404` for the clinic Admin |
+| `POST /api/auth/logout` | Bearer token | `204`; logged as `auth.signed_out`. Revokes every token of a Super (bumps `tv`); the shared `clinic` identity keeps its tokens (a new one needs no password anyway, and revoking would end every clinic session) |
+| `POST /api/auth/change-password` `{ currentPassword, newPassword }` | Bearer token (Super) | `200 { accessToken, expiresAt, user }` (old JWT invalidated, `mustChangePassword` cleared), `400` (`wrong_password` on `CurrentPassword`, `min_length\|8`...), `404` for the clinic Admin |
 | `GET /api/users?page=&pageSize=&search=` | Super | Paged list of Super users only (clinic Admin hidden); search matches the username or the normalized full name |
 | `GET /api/users/{id}` | Super | `200` details with audit fields and `version`, `404` (including clinic / non-Super) |
 | `POST /api/users` `{ fullName, username, password, role }` | Super | `201` (role must be Super), `400`, `409 username_taken` (also for deleted users' usernames and for `clinic`) |
@@ -90,7 +94,7 @@ Login protection (configuration keys under `RateLimit:`; the API answers like a 
 | `DELETE /api/patients/{id}` | Admin | `204` (soft delete), `404` |
 | `GET /api/health` | Anonymous | `200 { status, database, apiVersion }`, `503` when the database is down |
 
-- Tokens: JWT signed with HMAC-SHA256, valid until the next midnight (server local time), so staff sign in once a day; if less than one hour remains until midnight, expiry rolls to the following midnight. Claims `sub`, `unique_name`, `role`, `tv` (`User.TokenVersion`).
+- Tokens: JWT signed with HMAC-SHA256, valid until the next midnight (server local time), so staff sign in once a day; if less than one hour remains until midnight, expiry rolls to the following midnight. Claims `sub`, `unique_name`, `role`, `tv` (`User.TokenVersion`), and `pwd_change` while the account must change its initial password.
 - Every request re-checks the token's user (active flag, role and token version, cached until that user is updated, deleted or their password changes): a
   deactivated, deleted, re-roled or password-changed user gets `401` on the next request (the desktop then returns to the login screen),
   not only when the token expires. Changing your own password returns a fresh token so the current session stays signed in; other sessions with the old `tv` are rejected.
@@ -129,7 +133,12 @@ From `appsettings.Development.json`. Does not replace install seeds in a Product
 | --- | --- | --- |
 | `ali@etkan` | `ali@1234` | Super |
 
-Seeded once on first Production start from `appsettings.json` (`Seed:Users`, Super only). Change the password after install.
+Seeded once on first Production start from `appsettings.json` (`Seed:Users`, Super only). This password is public (it is in the
+repository), so it is only an initial one: seeded users get `MustChangePassword` (default `true`; only Development and the test
+factory set `"MustChangePassword": false`). Signing in with it returns `mustChangePassword: true` and a token with the
+`pwd_change` claim: the `SuperOnly` policy answers `403` to it, so it can only change the password (`/api/auth/change-password`)
+or sign out. The desktop opens "Choose your own password" right after such a sign-in; closing it signs out again with
+`Login.PasswordChangeRequired`. Sign in and choose the password right after installing, before anyone else can.
 
 ## Desktop
 

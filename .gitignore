@@ -3,15 +3,27 @@
 ##
 ## Get latest from `dotnet new gitignore`
 
-# dotenv files
+# dotenv files (.env.example / .env.sample stay shareable templates)
 .env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
 
-# Per-clinic JWT signing key (created on first Production start; never commit)
+# Per-clinic / local secrets (never commit). appsettings.Development.json is
+# tracked on purpose with Docker-only credentials — put real overrides in *.local.json.
 **/appsettings.Clinic.json
+**/appsettings.Clinic.*.json
+**/appsettings.Production.json
+**/appsettings.*.local.json
+**/secrets.json
 
-# Local agent rules/docs and tool config (not part of the product)
+# Local agent rules/docs (shared Cursor rules live in .cursor/, which is tracked)
 .claude/
-.config/
+
+# Local tool user config; keep a shared .NET local-tools manifest if present
+.config/*
+!.config/dotnet-tools.json
 
 # User-specific files
 *.rsuser
@@ -68,7 +80,8 @@ BenchmarkDotNet.Artifacts/
 # .NET
 project.lock.json
 project.fragment.lock.json
-artifacts/
+# Root build output only — a source/docs folder named artifacts stays trackable
+/artifacts/
 
 # Tye
 .tye/
@@ -189,8 +202,8 @@ DocProject/Help/*.hhp
 DocProject/Help/Html2
 DocProject/Help/html
 
-# Click-Once directory
-publish/
+# Click-Once / publish output (root only — a source folder named Publish stays trackable)
+/publish/
 
 # Publish Web Output
 *.[Pp]ublish.xml
@@ -255,7 +268,7 @@ orleans.codegen.cs
 
 # Including strong name files can present a security risk
 # (https://github.com/github/gitignore/pull/2483#issue-259490424)
-#*.snk
+*.snk
 
 # Since there are multiple workflows, uncomment next line to ignore bower_components
 # (https://github.com/github/gitignore/pull/1529#issuecomment-104372622)
@@ -267,8 +280,9 @@ Generated_Code/
 # Backup & report files from converting an old project file
 # to a newer Visual Studio version. Backup files are not needed,
 # because we have git ;-)
+# Root-only so product folders (Modules/Backups, Services/Backup, …) stay tracked.
 _UpgradeReport_Files/
-Backup*/
+/Backup*/
 UpgradeLog*.XML
 UpgradeLog*.htm
 ServiceFabricBackup/
@@ -395,6 +409,7 @@ FodyWeavers.xsd
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+!.vscode/*.code-snippets
 *.code-workspace
 
 # Local History for Visual Studio Code
@@ -486,11 +501,9 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 
-# Database copies made by scripts/wipe.ps1
-backups/
+# Database copies made by scripts/wipe.ps1 (root only; case-insensitive on Windows)
+/backups/
 
-# The Backups feature folders (the Visual Studio patterns above would hide them; the root backups/ dump folder stays ignored)
-!**/Modules/Backups/
-!shared/Mostawsef.Contracts/Backups/
-!**/Services/Backup/
-!tests/**/Backups/
+# pg_dump / scheduled dump files if someone points BackupPath into the clone
+mostawsef-*.dump
+*.pgdump

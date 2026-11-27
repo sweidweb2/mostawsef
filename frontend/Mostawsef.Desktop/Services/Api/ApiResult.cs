@@ -8,8 +8,11 @@ public enum ApiError
 {
     None,
 
-    /// <summary>The API could not be reached (not running, wrong address, timeout).</summary>
+    /// <summary>The API could not be reached (not running, wrong address).</summary>
     Unreachable,
+
+    /// <summary>The server was reachable but the call hit the request time limit before an answer arrived.</summary>
+    Timeout,
     Unauthorized,
     Forbidden,
     TooManyRequests,

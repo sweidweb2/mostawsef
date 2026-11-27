@@ -185,15 +185,6 @@ public class ErrorReporterTests : UiTestBase
         };
     }
 
-    private sealed class ManualClock : TimeProvider
-    {
-        private DateTimeOffset _now = new(2026, 11, 7, 12, 0, 0, TimeSpan.Zero);
-
-        public override DateTimeOffset GetUtcNow() => _now;
-
-        public void Advance(TimeSpan by) => _now += by;
-    }
-
     private static Exception Thrown(Exception exception)
     {
         try

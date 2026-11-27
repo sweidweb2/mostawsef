@@ -2,6 +2,9 @@ name: Tests
 
 on:
   push:
+    # Version tags are released by release.yml (includes its own test gate).
+    tags-ignore:
+      - 'v*.*.*'
   workflow_dispatch:
 
 concurrency:

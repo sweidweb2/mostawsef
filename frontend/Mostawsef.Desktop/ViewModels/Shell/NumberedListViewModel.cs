@@ -118,6 +118,46 @@ public abstract partial class NumberedListViewModel<TItem> : ListPageViewModelBa
         MarkStale();
     }
 
+    /// <summary>
+    /// Takes a deleted row off the page. When no rows follow this page, that is all (no server call); when rows do
+    /// follow, only this page is fetched again to close the gap, without re-counting the total. A capped total
+    /// ("10,000+") cannot be lowered by one, and a row not on the page is unknown, so those reload as before.
+    /// </summary>
+    protected Task RemoveDeletedAsync(Guid id, Func<TItem, Guid> idOf)
+    {
+        var index = -1;
+        for (var i = 0; i < Items.Count; i++)
+        {
+            if (idOf(Items[i]) == id)
+            {
+                index = i;
+                break;
+            }
+        }
+
+        if (!IsLoaded || index < 0 || PageQuery.IsTotalCapped(TotalCount) || TotalCount <= 0)
+        {
+            return ReloadAsync();
+        }
+
+        var rowsFollow = CurrentPage * PageSize < TotalCount;
+        TotalCount--;
+        PageCount = Math.Max(1, (int)Math.Ceiling(TotalCount / (double)PageSize));
+        if (rowsFollow)
+        {
+            return ReloadAsync(includeTotal: false);
+        }
+
+        Items.RemoveAt(index);
+        if (Items.Count == 0 && CurrentPage > 1)
+        {
+            return LoadAsync(CurrentPage - 1, includeTotal: false);
+        }
+
+        OnPropertyChanged(nameof(IsEmpty));
+        return Task.CompletedTask;
+    }
+
     /// <summary>True while a search (or a subclass's own filter) may hide a new row; override to add filters.</summary>
     protected virtual bool HasActiveFilter => !string.IsNullOrWhiteSpace(_appliedSearch);
 

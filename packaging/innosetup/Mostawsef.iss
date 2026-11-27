@@ -52,8 +52,8 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "{#MyStagingDir}\Api\*"; DestDir: "{app}\Api"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "appsettings.Clinic.json"
 Source: "{#MyStagingDir}\Desktop\*"; DestDir: "{app}\Desktop"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#MyStagingDir}\scripts\*"; DestDir: "{app}\scripts"; Flags: ignoreversion recursesubdirs createallsubdirs
-; Offline PostgreSQL 17 Windows installer (downloaded on the build PC by build-setup.ps1).
-Source: "{#MyStagingDir}\redist\*"; DestDir: "{app}\redist"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Offline PostgreSQL 17 (full first-install builds only). UpdateOnly staging leaves redist empty.
+Source: "{#MyStagingDir}\redist\*"; DestDir: "{app}\redist"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 
 [Icons]
 ; IconFilename uses the published exe (ApplicationIcon is embedded in Mostawsef.Desktop.exe).
@@ -62,12 +62,12 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\Desktop\{#MyAppExeName}"; W
 
 [Run]
 ; After files are in place: Postgres (if needed), DB, connection string, Windows service.
-; Visible window + log file so a failure is not a silent "success".
+; runhidden: quiet for silent in-app updates; failures still abort Setup (non-zero exit) and land in install-clinic.log.
 Filename: "powershell.exe"; \
   Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\scripts\install-clinic.ps1"" -InstallRoot ""{app}"" -ConfigBackup ""{tmp}\mostawsef-config"""; \
   StatusMsg: "Configuring PostgreSQL and the Mostawsef API service..."; \
-  Flags: waituntilterminated
-; Unchecked: do not auto-launch after Setup.
+  Flags: runhidden waituntilterminated
+; Interactive only: optional launch. Silent updates: Desktop relaunches itself (Phase 5) — skipifsilent.
 Filename: "{app}\Desktop\{#MyAppExeName}"; Description: "Launch Mostawsef"; Flags: nowait postinstall skipifsilent unchecked
 
 [UninstallRun]

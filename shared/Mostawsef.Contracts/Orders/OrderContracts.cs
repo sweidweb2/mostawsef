@@ -47,6 +47,7 @@ public static class PaymentMethods
     public static readonly IReadOnlyList<string> All = [Cash, Card, Transfer, Insurance];
 }
 
+/// <param name="Currency">Clinic currency code copied when the order was created (display amounts with this, not the live clinic setting).</param>
 public record OrderListItemDto(
     Guid Id,
     string Number,
@@ -56,7 +57,8 @@ public record OrderListItemDto(
     int TestsCount,
     long Total,
     long Paid,
-    string Status);
+    string Status,
+    string Currency);
 
 /// <summary>How many orders are in each payment state (cancelled and refunded orders are not counted).</summary>
 /// <param name="Unpaid">Nothing paid yet (status Pending).</param>
@@ -145,6 +147,12 @@ public record CreateOrderRequest
 
     /// <summary>Optional; at most the order total.</summary>
     public CreateFirstPaymentRequest? FirstPayment { get; init; }
+
+    /// <summary>
+    /// Desktop save-attempt id. A repeated create with the same id after a timeout returns the original order
+    /// instead of inserting another. Optional for older clients.
+    /// </summary>
+    public Guid? ClientRequestId { get; init; }
 }
 
 public record CreateOrderItemRequest
@@ -173,6 +181,12 @@ public record AddPaymentRequest
     /// <summary>Order Version from the details the client last loaded; omitted → 400 required.</summary>
     [Required(ErrorMessage = ErrorCodes.Required)]
     public int? Version { get; init; }
+
+    /// <summary>
+    /// Desktop save-attempt id. A repeated add with the same id after a timeout returns the order as after the
+    /// first payment instead of inserting another. Optional for older clients.
+    /// </summary>
+    public Guid? ClientRequestId { get; init; }
 }
 
 /// <summary>

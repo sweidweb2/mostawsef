@@ -24,12 +24,17 @@ public sealed class TestServices : IDisposable
         SettingsFile = Path.Combine(_settingsDirectory, "settings.json");
         DownloadsFolder = Path.Combine(_settingsDirectory, "Downloads");
         Directory.CreateDirectory(_settingsDirectory);
+        Directory.CreateDirectory(Path.Combine(_settingsDirectory, "updates"));
         File.WriteAllText(SettingsFile, $$"""{ "Theme": "Light", "Language": "{{language}}" }""");
 
+        UpdateHost = new FakeUpdateHost(Path.Combine(_settingsDirectory, "updates"));
         Provider = new ServiceCollection()
             .AddMostawsefDesktop(new DesktopServiceOptions
             {
                 HttpHandler = Api,
+                UpdateHttpHandler = Updates,
+                UpdateHost = UpdateHost,
+                UpdateClock = UpdateClock,
                 SettingsFilePath = SettingsFile,
                 OpenFile = OpenedFiles.Add,
                 PickSavePath = PickSavePath,
@@ -45,6 +50,14 @@ public sealed class TestServices : IDisposable
     }
 
     public FakeApiHandler Api { get; } = new();
+
+    /// <summary>GitHub update feed stand-in (offline by default so portal Start never hits the network).</summary>
+    public FakeUpdateHandler Updates { get; } = CreateOfflineUpdateHandler();
+
+    public FakeUpdateHost UpdateHost { get; private set; }
+
+    /// <summary>Clock of the update-check throttle (6 h between feed reads); move it with <see cref="ManualClock.Advance"/>.</summary>
+    public ManualClock UpdateClock { get; } = new();
 
     /// <summary>Files the app asked to open (printouts) instead of launching a viewer.</summary>
     public List<string> OpenedFiles { get; } = [];
@@ -69,6 +82,13 @@ public sealed class TestServices : IDisposable
 
     /// <summary>Titles shown in the folder dialog.</summary>
     public List<string> FolderPickerTitles { get; } = [];
+
+    private static FakeUpdateHandler CreateOfflineUpdateHandler()
+    {
+        var handler = new FakeUpdateHandler();
+        handler.FailWithNetworkError();
+        return handler;
+    }
 
     private Task<string?> PickSavePath(string suggestedFileName, string title)
     {

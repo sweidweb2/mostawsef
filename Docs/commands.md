@@ -154,8 +154,9 @@ The API logs every request in Development and only slow ones (1 s or more) in pr
 ## Scheduled database dumps (clinic)
 
 Super → Settings → **Backup folder** (Browse). Default on first run: a `Backups` folder next to the API install
-(`AppContext.BaseDirectory\Backups`). While the API Windows service is running and that folder is set, the API
-writes `mostawsef-yyyyMMdd-HHmmss.dump` there (custom `pg_dump` format), keeps the newest `ScheduledBackup:KeepCount`
+(`AppContext.BaseDirectory\Backups`). While the API Windows service is running and that folder is set, the API checks
+every hour and, when the newest dump is `ScheduledBackup:IntervalDays` old (default 1) or there is none, writes
+`mostawsef-yyyyMMdd-HHmmss.dump` there (custom `pg_dump` format), keeps the newest `ScheduledBackup:KeepCount`
 files **and** history rows in `scheduled_dumps` (default 7; Super → **Backups** → Auto backups), and logs `backups.scheduled`.
 Clear the folder in Settings to skip scheduled dumps. Needs `pg_dump` on the API PC (`ScheduledBackup:PgDumpPath` if
 it is not on PATH). If the API lives under Program Files and writes fail, pick a writable folder (another drive / USB)
@@ -222,11 +223,36 @@ Stop the service before publishing over the same folder, then start it again (or
 Needs Inno Setup (`ISCC.exe`; the script can install it via winget). Publishes Desktop + API into `artifacts/installer-staging`, then compiles:
 
 ```powershell
-./scripts/build-setup.ps1              # auto next version (1.0.0, 1.0.1, …)
-./scripts/build-setup.ps1 -Version 1.2.0
+./scripts/build-setup.ps1              # full Setup (bundled Postgres) — first install / USB
+./scripts/build-setup.ps1 -UpdateOnly  # smaller update Setup (no Postgres) — GitHub Releases / in-app update
+./scripts/build-setup.ps1 -Version 1.2.0 -UpdateOnly
 # reuse staging: -SkipPublish
 # replace one version only: -Version 1.0.1 -Force
 ```
+
+Publishes Desktop + API with `-p:Version=` matching the Setup file (login screen shows that semver; source default is `1.0.0` in `Directory.Build.props`).
+
+In-app **Update now** (portal banner): downloads Setup, checks sha256, then a helper runs  
+`Mostawsef-Setup-{version}.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS` (UAC),  
+exits the old Desktop, and relaunches it when Setup finishes. Mid-update reopen shows a wait window.  
+On failure see `C:\Mostawsef\install-clinic.log`.  
+After Setup, the API service restarts and applies DB migrations automatically; a short connection-lost banner is normal.  
+Data safety notes (backups before major updates): `Docs/7-automating install/03-data-safety.md`.
+
+### Publish a GitHub Release (CI)
+
+Full ship checklist (backup note, USB, rollback): [`Docs/7-automating install/01-release-playbook.md`](7-automating%20install/01-release-playbook.md).
+
+```powershell
+# On dev: bump <Version> in Directory.Build.props (e.g. 1.0.1), then merge to main.
+git checkout main
+git merge dev
+git push origin main
+```
+
+GitHub Actions (`.github/workflows/release.yml`) on **push to `main`**: API + Desktop tests → builds an **update** Setup (`-UpdateOnly`) using that `<Version>` → creates tag `vX.Y.Z` → uploads `Mostawsef-Setup-X.Y.Z.exe` and `latest.json`.  
+If the tag already exists, the job fails — bump `<Version>` before merging.  
+Feed URL: `https://github.com/sweidweb2/mostawsef/releases/latest/download/latest.json`
 
 Output: `C:\Users\User\Desktop\mostawsef-3ammo\[2] Builds\Mostawsef-Setup-{version}.exe` (older builds are kept; also under `artifacts\installer\`).
 

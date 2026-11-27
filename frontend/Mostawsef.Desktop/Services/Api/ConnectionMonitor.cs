@@ -119,7 +119,7 @@ public partial class ConnectionMonitor : ObservableObject
             State = result switch
             {
                 { IsSuccess: true } => result.Value!.ApiVersion == ApiVersion.Current ? ConnectionState.Online : ConnectionState.VersionMismatch,
-                { Error: ApiError.Unreachable or ApiError.Server } => ConnectionState.Offline,
+                { Error: ApiError.Unreachable or ApiError.Timeout or ApiError.Server } => ConnectionState.Offline,
                 _ => ConnectionState.Online,
             };
 

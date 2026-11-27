@@ -63,7 +63,10 @@ public static class AuthExtensions
 
         services.AddAuthorizationBuilder()
             .AddPolicy(AuthPolicies.AdminOnly, policy => policy.RequireRole(Roles.Admin))
-            .AddPolicy(AuthPolicies.SuperOnly, policy => policy.RequireRole(Roles.Super));
+            // A Super still on the seeded initial password may only change it ([Authorize] endpoints), nothing else.
+            .AddPolicy(AuthPolicies.SuperOnly, policy => policy
+                .RequireRole(Roles.Super)
+                .RequireAssertion(context => !context.User.HasClaim(c => c.Type == JwtClaims.MustChangePassword)));
 
         services.AddRateLimiter(options =>
         {

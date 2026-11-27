@@ -16,7 +16,7 @@ public interface ISystemSettingsService
 
 public class SystemSettingsService(
     ISystemSettingsRepository settings,
-    ISystemSettingsCache cache,
+    SingleValueCache<SystemSettingsDto> cache,
     IActivityLogger activity) : ISystemSettingsService
 {
     public Task<SystemSettingsDto> GetAsync(CancellationToken cancellationToken) =>
@@ -28,6 +28,11 @@ public class SystemSettingsService(
         if (current.Version != request.Version)
         {
             throw AppException.Conflict(ErrorCodes.ConcurrencyConflict);
+        }
+
+        if (!SystemSettings.TryNormalizeBackupPath(request.BackupPath, out _))
+        {
+            throw AppException.Validation(nameof(UpdateSystemSettingsRequest.BackupPath), ErrorCodes.Invalid);
         }
 
         current.Update(request.BackupPath, request.MaintenanceMode);

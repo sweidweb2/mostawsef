@@ -10,7 +10,7 @@ public class ConnectTimeoutTests
     [Fact]
     public async Task An_api_pc_that_never_answers_fails_after_the_connect_timeout_not_the_request_timeout()
     {
-        var handler = ServiceRegistration.CreateServerHandler();
+        var handler = ServiceRegistration.CreateNetworkHandler();
         handler.ConnectCallback = async (_, cancellationToken) =>
         {
             await Task.Delay(Timeout.Infinite, cancellationToken);

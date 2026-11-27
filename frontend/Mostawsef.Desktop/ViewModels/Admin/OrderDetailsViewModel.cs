@@ -64,21 +64,13 @@ public partial class OrderDetailsViewModel(
 
     public bool HasLoadError => LoadError is not null;
 
-    public string? LoadErrorTitleKey => LoadError switch
-    {
-        null => null,
-        ApiError.Unreachable => "Error.UnreachableTitle",
-        ApiError.NotFound => "OrderDetails.NotFound",
-        _ => "Error.Title",
-    };
+    public string? LoadErrorTitleKey => LoadError == ApiError.NotFound
+        ? "OrderDetails.NotFound"
+        : ApiErrorKeys.Title(LoadError);
 
-    public string? LoadErrorDescriptionKey => LoadError switch
-    {
-        null => null,
-        ApiError.Unreachable => "Error.UnreachableDescription",
-        ApiError.NotFound => null,
-        _ => "Error.Description",
-    };
+    public string? LoadErrorDescriptionKey => LoadError == ApiError.NotFound
+        ? null
+        : ApiErrorKeys.Description(LoadError);
 
     /// <summary>Clears prior order state so Orders can reuse one instance (and its PageHost view) per portal visit.</summary>
     public void BeginReuse()
@@ -191,7 +183,7 @@ public partial class OrderDetailsViewModel(
             var code = result.Problem?.Code;
             var codeKey = code is null ? null : "ErrorCode." + code;
             toasts.Error(localization.Get(
-                result.Error == ApiError.Unreachable ? "Login.ServerUnreachable"
+                result.Error is ApiError.Unreachable or ApiError.Timeout ? ApiErrorKeys.Action(result.Error)
                 : codeKey is not null && localization.Get(codeKey) != codeKey ? codeKey
                 : "Error.RequestFailed"));
             return;

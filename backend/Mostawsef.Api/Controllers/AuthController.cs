@@ -55,7 +55,7 @@ public class AuthController(IAuthService auth, IHostEnvironment environment) : C
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Logout(CancellationToken cancellationToken)
     {
-        await auth.SignOutAsync(cancellationToken);
+        await auth.SignOutAsync(CurrentUserId(), User.FindFirst(JwtRegisteredClaimNames.UniqueName)?.Value, cancellationToken);
         return NoContent();
     }
 
@@ -78,9 +78,17 @@ public class AuthController(IAuthService auth, IHostEnvironment environment) : C
     /// <summary>
     /// Clinic entry is for the one-PC install (API on localhost). TestServer leaves RemoteIpAddress null — allow that
     /// in the Testing environment so integration tests can open a clinic session.
+    /// A request that still carries proxy headers came through a proxy on this PC that the API did not resolve
+    /// (ForwardedHeaders off, or an untrusted proxy): its loopback address says nothing about the real client, so it
+    /// is refused. With ForwardedHeaders on and a trusted proxy, the middleware has already replaced the address.
     /// </summary>
     private bool IsLocalRequest()
     {
+        if (Request.Headers.ContainsKey("X-Forwarded-For") || Request.Headers.ContainsKey("Forwarded"))
+        {
+            return false;
+        }
+
         var ip = HttpContext.Connection.RemoteIpAddress;
         if (ip is null)
         {

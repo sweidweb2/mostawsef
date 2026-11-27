@@ -25,13 +25,15 @@ public static class OrderPaymentMapping
                 Notes = NormalizeNotes(notes),
             };
 
-    public static AddPaymentRequest ToAdd(decimal? amount, string method, string? notes, int orderVersion) =>
+    public static AddPaymentRequest ToAdd(
+        decimal? amount, string method, string? notes, int orderVersion, Guid? clientRequestId = null) =>
         new()
         {
             Amount = ToMinorAmount(amount),
             Method = method,
             Notes = NormalizeNotes(notes),
             Version = orderVersion,
+            ClientRequestId = clientRequestId,
         };
 
     public static UpdatePaymentRequest ToUpdate(decimal? amount, string method, string? notes, int orderVersion) =>

@@ -1,10 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Mostawsef.Application.Common;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Application.Modules.Backups;
+using Mostawsef.Application.Modules.Settings;
 using Mostawsef.Contracts.Auth;
 using Mostawsef.Contracts.Common;
+using Mostawsef.Contracts.Settings;
 using Mostawsef.Domain.Entities;
 using Mostawsef.Domain.Enums;
 using Mostawsef.Infrastructure.Persistence.Context;
@@ -22,11 +25,17 @@ public class SeedUser
     public string Password { get; set; } = string.Empty;
 
     public UserRole Role { get; set; }
+
+    /// <summary>
+    /// True (default): the configured password is only an initial one, and the user must replace it at first sign-in.
+    /// Only development and test configuration turn it off.
+    /// </summary>
+    public bool MustChangePassword { get; set; } = true;
 }
 
 public static class DatabaseInitializer
 {
-    /// <summary>Applies pending migrations (and their data backfills), then creates any missing seed users (passwords are hashed).</summary>
+    /// <summary>Applies pending migrations, then creates the settings rows and any missing seed users (passwords are hashed).</summary>
     public static async Task InitializeDatabaseAsync(
         this IServiceProvider services,
         IEnumerable<SeedUser> seedUsers,
@@ -37,58 +46,7 @@ public static class DatabaseInitializer
         var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
         var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(DatabaseInitializer));
 
-        var pending = await db.Database.GetPendingMigrationsAsync(cancellationToken);
         await db.Database.MigrateAsync(cancellationToken);
-
-        if (pending.Contains(SearchTextBackfill.Migration))
-        {
-            var rebuilt = await SearchTextBackfill.RunAsync(db, cancellationToken);
-            logger.LogInformation("Filled the search text of {Count} existing log rows", rebuilt);
-        }
-
-        if (pending.Contains(OrderOurPriceBackfill.Migration))
-        {
-            var priced = await OrderOurPriceBackfill.RunAsync(db, cancellationToken);
-            logger.LogInformation("Filled Total on {Count} existing orders", priced);
-        }
-
-        if (pending.Contains(OrderSearchTextBackfill.Migration))
-        {
-            var searchable = await OrderSearchTextBackfill.RunAsync(db, cancellationToken);
-            logger.LogInformation("Filled SearchText on {Count} existing orders", searchable);
-        }
-
-        if (pending.Contains(PatientSearchTextBackfill.Migration))
-        {
-            var patients = await PatientSearchTextBackfill.RunAsync(db, cancellationToken);
-            logger.LogInformation("Filled SearchText on {Count} existing patients", patients);
-        }
-
-        if (pending.Contains(PatientSearchTextRebuild.Migration)
-            || await PatientSearchTextRebuild.ShouldRunAsync(db, cancellationToken))
-        {
-            var rebuilt = await PatientSearchTextRebuild.RunAsync(db, cancellationToken);
-            logger.LogInformation("Rebuilt SearchText on {Count} patients after dropping guardian phone", rebuilt);
-        }
-
-        if (pending.Contains(OrderListAggregatesBackfill.Migration))
-        {
-            var aggregates = await OrderListAggregatesBackfill.RunAsync(db, cancellationToken);
-            logger.LogInformation("Filled TestsCount and Paid on {Count} existing orders", aggregates);
-        }
-
-        if (pending.Contains(OrderItemSnapshotBackfill.Migration))
-        {
-            var snapshots = await OrderItemSnapshotBackfill.RunAsync(db, cancellationToken);
-            logger.LogInformation("Filled lab-test snapshots on {Count} existing order items", snapshots);
-        }
-
-        if (pending.Contains(OrderAddonBackfill.Migration)
-            || await OrderAddonBackfill.ShouldRunAsync(db, cancellationToken))
-        {
-            var addons = await OrderAddonBackfill.RunAsync(db, cancellationToken);
-            logger.LogInformation("Copied the saved total into Addon on {Count} existing orders", addons);
-        }
 
         if (!await db.Set<ClinicSettings>().AnyAsync(cancellationToken))
         {
@@ -136,7 +94,7 @@ public static class DatabaseInitializer
             }
 
             var fullName = string.IsNullOrWhiteSpace(seed.FullName) ? username : seed.FullName;
-            db.Users.Add(new User(username, fullName, SearchText.Normalize(fullName), hasher.Hash(seed.Password), seed.Role));
+            db.Users.Add(new User(username, fullName, SearchText.Normalize(fullName), hasher.Hash(seed.Password), seed.Role, seed.MustChangePassword));
             logger.LogInformation("Seeded user {Username} with role {Role}", username, seed.Role);
         }
 
@@ -145,7 +103,7 @@ public static class DatabaseInitializer
         // Direct DbContext writes skip SystemSettingsService, so drop any cached row this host holds.
         if (systemSettingsChanged)
         {
-            scope.ServiceProvider.GetService<ISystemSettingsCache>()?.Invalidate();
+            scope.ServiceProvider.GetService<SingleValueCache<SystemSettingsDto>>()?.Invalidate();
         }
 
         // Clinic repair / legacy Admin retirement bump TokenVersion; drop cache so old JWTs die immediately.

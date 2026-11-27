@@ -51,9 +51,9 @@
                                                       Kind="{Binding Status, Converter={x:Static conv:ValueConverters.OrderStatusToBadgeKind}}"
                                                       Text="{l:TrKey {Binding Status}, Prefix=OrderStatus.}" />
                                             <StackPanel VerticalAlignment="Center" Spacing="{StaticResource Space1}">
-                                                <TextBlock Classes="h3" Text="{l:Money {Binding Total}}" TextWrapping="Wrap" />
+                                                <TextBlock Classes="h3" Text="{l:Money {Binding Total}, Currency={Binding Currency}}" TextWrapping="Wrap" />
                                                 <TextBlock Classes="caption muted">
-                                                    <Run Text="{l:Tr Orders.Col.Paid}" /><Run Text=": " /><Run Text="{l:Money {Binding Paid}}" />
+                                                    <Run Text="{l:Tr Orders.Col.Paid}" /><Run Text=": " /><Run Text="{l:Money {Binding Paid}, Currency={Binding Currency}}" />
                                                 </TextBlock>
                                             </StackPanel>
                                         </DockPanel>

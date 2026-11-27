@@ -1,5 +1,6 @@
 using Mostawsef.Application.Common;
 using Mostawsef.Application.Interfaces;
+using Mostawsef.Application.Modules.Settings;
 using Mostawsef.Contracts.Auth;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Domain.Entities;
@@ -24,8 +25,12 @@ public interface IAuthService
     /// </summary>
     Task<LoginResponse> OpenClinicSessionAsync(CancellationToken cancellationToken);
 
-    /// <summary>Records the sign-out of the current user (tokens are stateless, the client discards it).</summary>
-    Task SignOutAsync(CancellationToken cancellationToken);
+    /// <summary>
+    /// Records the sign-out. For a password account it also revokes the user's tokens, so a copied token stops
+    /// working too. The shared clinic identity keeps its tokens: anyone on this PC can open a new clinic session
+    /// without a password anyway, and revoking would end every clinic session at once.
+    /// </summary>
+    Task SignOutAsync(Guid? userId, string? username, CancellationToken cancellationToken);
 
     /// <summary>
     /// Super only. Throws AppException: 400 wrong_password on CurrentPassword, 404 if the user no longer exists
@@ -36,7 +41,7 @@ public interface IAuthService
 
 public class AuthService(
     IUserRepository users,
-    ISystemSettingsCache systemSettings,
+    ISystemSettingsService systemSettings,
     IPasswordHasher passwordHasher,
     ITokenService tokens,
     IUserAuthCache authCache,
@@ -74,7 +79,7 @@ public class AuthService(
         await RecordSignInAsync(user, request.Password, check, cancellationToken);
 
         var token = tokens.CreateAccessToken(user);
-        return new LoginResponse(token.Token, token.ExpiresAt, ToDto(user), (int)token.Lifetime.TotalSeconds);
+        return new LoginResponse(token.Token, token.ExpiresAt, ToDto(user), (int)token.Lifetime.TotalSeconds, user.MustChangePassword);
     }
 
     public async Task<ClinicAccessResponse> GetClinicAccessAsync(CancellationToken cancellationToken)
@@ -114,7 +119,7 @@ public class AuthService(
             cancellationToken);
 
         var token = tokens.CreateAccessToken(user);
-        return new LoginResponse(token.Token, token.ExpiresAt, ToDto(user), (int)token.Lifetime.TotalSeconds);
+        return new LoginResponse(token.Token, token.ExpiresAt, ToDto(user), (int)token.Lifetime.TotalSeconds, user.MustChangePassword);
     }
 
     private async Task<PasswordCheck> VerifyPasswordAsync(User user, string password)
@@ -150,8 +155,16 @@ public class AuthService(
             cancellationToken);
     }
 
-    public Task SignOutAsync(CancellationToken cancellationToken) =>
-        activity.LogAsync(new ActivityEntry(ActivityActions.SignedOut, ActivityModules.Auth, "Signed out"), cancellationToken);
+    public async Task SignOutAsync(Guid? userId, string? username, CancellationToken cancellationToken)
+    {
+        if (userId is { } id && !string.Equals(username, ClinicIdentity.Username, StringComparison.Ordinal))
+        {
+            await users.RevokeTokensAsync(id, cancellationToken);
+            authCache.Invalidate(id);
+        }
+
+        await activity.LogAsync(new ActivityEntry(ActivityActions.SignedOut, ActivityModules.Auth, "Signed out"), cancellationToken);
+    }
 
     public async Task<LoginResponse> ChangePasswordAsync(Guid userId, ChangePasswordRequest request, CancellationToken cancellationToken)
     {
@@ -166,7 +179,7 @@ public class AuthService(
             throw AppException.Validation(nameof(ChangePasswordRequest.CurrentPassword), ErrorCodes.WrongPassword);
         }
 
-        user.ChangePasswordHash(passwordHasher.Hash(request.NewPassword));
+        user.ChangeOwnPassword(passwordHasher.Hash(request.NewPassword));
         await users.SaveChangesAsync(cancellationToken);
         authCache.Invalidate(user.Id);
 
@@ -179,7 +192,7 @@ public class AuthService(
             cancellationToken);
 
         var token = tokens.CreateAccessToken(user);
-        return new LoginResponse(token.Token, token.ExpiresAt, ToDto(user), (int)token.Lifetime.TotalSeconds);
+        return new LoginResponse(token.Token, token.ExpiresAt, ToDto(user), (int)token.Lifetime.TotalSeconds, user.MustChangePassword);
     }
 
     private Task LogFailedSignInAsync(string attemptedUsername, CancellationToken cancellationToken)

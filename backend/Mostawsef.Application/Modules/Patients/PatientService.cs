@@ -34,26 +34,21 @@ public class PatientService(IPatientRepository patients, IActivityLogger activit
     {
         query.EnsureSearchable();
         var (items, total) = await patients.GetPageAsync(query, includeUnpaid, cancellationToken);
-        return new PagedResult<PatientDto>(items.Select(ToListDto).ToList(), query.SafePage, query.SafePageSize, total);
+        return new PagedResult<PatientDto>(items, query.SafePage, query.SafePageSize, total);
     }
 
-    public async Task<IReadOnlyList<PatientDto>> ListAllAsync(CancellationToken cancellationToken) =>
-        (await patients.ListAllAsync(cancellationToken)).Select(ToExportDto).ToList();
+    public Task<IReadOnlyList<PatientDto>> ListAllAsync(CancellationToken cancellationToken) =>
+        patients.ListAllAsync(cancellationToken);
 
-    public async Task<PatientDto> GetAsync(Guid id, CancellationToken cancellationToken)
-    {
-        var patient = await patients.GetDetailsAsync(id, cancellationToken) ?? throw AppException.NotFound();
-        return new PatientDto(
-            patient.Id, patient.FullName, patient.Phone, patient.Notes,
-            patient.Gender.ToString(), patient.DateOfBirth, patient.CreatedAt, patient.UpdatedAt, patient.UpdatedBy, patient.Version);
-    }
+    public async Task<PatientDto> GetAsync(Guid id, CancellationToken cancellationToken) =>
+        await patients.GetDetailsAsync(id, cancellationToken) ?? throw AppException.NotFound();
 
     public async Task<PatientDetailsDto> GetDetailsAsync(Guid id, CancellationToken cancellationToken)
     {
         var patient = await GetAsync(id, cancellationToken);
         var recent = (await patients.ListRecentOrdersAsync(id, PageQuery.MaxPageSize, cancellationToken))
             .Select(o => new OrderListItemDto(
-                o.Id, o.Number, o.CreatedAt, o.PatientName, o.PatientPhone, o.TestsCount, o.Total, o.Paid, o.Status.ToString()))
+                o.Id, o.Number, o.CreatedAt, o.PatientName, o.PatientPhone, o.TestsCount, o.Total, o.Paid, o.Status.ToString(), o.Currency))
             .ToList();
         return new PatientDetailsDto(patient, recent);
     }
@@ -119,14 +114,6 @@ public class PatientService(IPatientRepository patients, IActivityLogger activit
                 Details = new { patient.FullName },
             },
             cancellationToken);
-
-    private static PatientDto ToListDto(PatientListRow p) => new(
-        p.Id, p.FullName, p.Phone, Notes: null, p.Gender.ToString(), p.DateOfBirth,
-        p.CreatedAt, p.UpdatedAt, p.UpdatedBy, p.Version, p.HasUnpaidOrders);
-
-    private static PatientDto ToExportDto(PatientExportRow p) => new(
-        p.Id, p.FullName, p.Phone, Notes: null, p.Gender.ToString(), p.DateOfBirth,
-        default, null, null, 0);
 
     private static PatientDto ToDto(Patient p) => new(
         p.Id, p.FullName, p.Phone, p.Notes, p.Gender.ToString(), p.DateOfBirth,

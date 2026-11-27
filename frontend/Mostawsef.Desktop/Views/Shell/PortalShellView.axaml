@@ -87,11 +87,53 @@
         </ui:AppShell.TopBar>
 
         <DockPanel>
-            <ui:Alert Name="ConnectionBanner"
-                      DockPanel.Dock="Top"
-                      Margin="{StaticResource PaddingPageCompact}"
-                      Kind="{Binding Connection.AlertKind}"
-                      Text="{l:TrKey {Binding Connection.MessageKey}}" />
+            <StackPanel DockPanel.Dock="Top"
+                        Margin="{StaticResource PaddingPageCompact}"
+                        Spacing="{StaticResource Space2}">
+                <ui:Alert Name="ConnectionBanner"
+                          Kind="{Binding Connection.AlertKind}"
+                          Text="{l:TrKey {Binding Connection.MessageKey}}" />
+                <StackPanel Name="UpdateBanner"
+                            Spacing="{StaticResource Space2}"
+                            IsVisible="{Binding Updates.ShowBanner}">
+                    <Grid ColumnDefinitions="*,Auto"
+                          ColumnSpacing="{StaticResource GapControls}">
+                        <ui:Alert Name="UpdateAvailableAlert"
+                                  Kind="Info"
+                                  Text="{Binding Updates.BannerText}" />
+                        <StackPanel Grid.Column="1"
+                                    Orientation="Horizontal"
+                                    Spacing="{StaticResource GapControls}"
+                                    VerticalAlignment="Center">
+                            <Button Name="CancelUpdateButton"
+                                    Classes="ghost sm"
+                                    IsVisible="{Binding Updates.ShowProgress}"
+                                    Command="{Binding Updates.CancelInstallCommand}">
+                                <TextBlock Text="{l:Tr Common.Cancel}" />
+                            </Button>
+                            <Button Name="InstallUpdateButton"
+                                    Classes="secondary sm"
+                                    Command="{Binding Updates.InstallCommand}">
+                                <TextBlock Text="{l:Tr Update.Apply}" />
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                    <ProgressBar Name="UpdateProgress"
+                                 Minimum="0"
+                                 Maximum="100"
+                                 Height="6"
+                                 IsVisible="{Binding Updates.ShowProgress}"
+                                 Value="{Binding Updates.ProgressPercent}" />
+                    <TextBlock Name="UpdateStatus"
+                               Classes="caption muted"
+                               Text="{Binding Updates.StatusText}"
+                               IsVisible="{Binding Updates.StatusText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                               TextWrapping="Wrap" />
+                    <ui:Alert Name="UpdateErrorAlert"
+                              Kind="Warning"
+                              Text="{Binding Updates.ErrorText}" />
+                </StackPanel>
+            </StackPanel>
             <ui:PageHost Name="PageHost" Page="{Binding CurrentPage}" />
         </DockPanel>
     </ui:AppShell>

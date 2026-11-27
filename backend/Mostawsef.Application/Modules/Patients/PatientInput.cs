@@ -29,5 +29,8 @@ internal static class PatientInput
         }
     }
 
-    private static Gender ParseGender(string gender) => Enum.Parse<Gender>(gender);
+    private static Gender ParseGender(string gender) =>
+        Enum.TryParse<Gender>(gender, out var parsed) && Enum.IsDefined(parsed)
+            ? parsed
+            : throw AppException.Validation(nameof(CreatePatientRequest.Gender), ErrorCodes.Invalid);
 }

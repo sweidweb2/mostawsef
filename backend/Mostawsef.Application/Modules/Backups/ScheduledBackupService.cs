@@ -3,6 +3,7 @@ using System.Globalization;
 using Microsoft.Extensions.Options;
 using Mostawsef.Application.Common;
 using Mostawsef.Application.Interfaces;
+using Mostawsef.Application.Modules.Settings;
 using Mostawsef.Contracts.Backups;
 using Mostawsef.Contracts.Common;
 using Mostawsef.Domain.Entities;
@@ -14,7 +15,7 @@ public class ScheduledBackupOptions
 {
     public const string SectionName = "ScheduledBackup";
 
-    /// <summary>Days between automatic dumps while the API is running. Minimum 1.</summary>
+    /// <summary>Days between automatic dumps, counted from the last one (restarts do not add dumps). Minimum 1.</summary>
     [Range(1, 365)]
     public int IntervalDays { get; set; } = 1;
 
@@ -37,12 +38,18 @@ public interface IScheduledBackupService
     /// </summary>
     Task<ScheduledBackupResult?> RunAsync(CancellationToken cancellationToken);
 
+    /// <summary>
+    /// <see cref="RunAsync"/> only when the newest scheduled dump is <see cref="ScheduledBackupOptions.IntervalDays"/>
+    /// old or more (or there is none), so restarting the API does not add dumps that push older ones out of the keep count.
+    /// </summary>
+    Task<ScheduledBackupResult?> RunIfDueAsync(CancellationToken cancellationToken);
+
     /// <summary>History of successful scheduled dumps, newest first (Super list page).</summary>
     Task<PagedResult<ScheduledDumpDto>> GetHistoryAsync(PageQuery query, CancellationToken cancellationToken);
 }
 
 public class ScheduledBackupService(
-    ISystemSettingsCache settings,
+    ISystemSettingsService settings,
     IDatabaseDumpRunner dump,
     IScheduledDumpRepository history,
     IActivityLogger activity,
@@ -56,6 +63,14 @@ public class ScheduledBackupService(
     {
         var (items, total) = await history.GetPageAsync(query, cancellationToken);
         return new PagedResult<ScheduledDumpDto>(items, query.SafePage, query.SafePageSize, total);
+    }
+
+    public async Task<ScheduledBackupResult?> RunIfDueAsync(CancellationToken cancellationToken)
+    {
+        var last = await history.GetLatestCreatedAtAsync(cancellationToken);
+        var due = last is null
+            || time.GetUtcNow().UtcDateTime - last.Value >= TimeSpan.FromDays(Math.Max(1, options.Value.IntervalDays));
+        return due ? await RunAsync(cancellationToken) : null;
     }
 
     public async Task<ScheduledBackupResult?> RunAsync(CancellationToken cancellationToken)
@@ -95,11 +110,15 @@ public class ScheduledBackupService(
         return new ScheduledBackupResult(filePath, deleted, record.Id);
     }
 
-    /// <summary>Keeps the newest <paramref name="keepCount"/> dump files; deletes the rest. Returns how many were deleted.</summary>
-    internal static int PurgeOldDumps(string folder, int keepCount)
+    /// <summary>
+    /// Keeps the newest <paramref name="keepCount"/> dump files whose names match the stamp pattern
+    /// (<c>mostawsef-yyyyMMdd-HHmmss.dump</c>); deletes only those. Returns how many were deleted.
+    /// </summary>
+    public static int PurgeOldDumps(string folder, int keepCount)
     {
         var files = Directory.EnumerateFiles(folder, FilePrefix + "*" + FileExtension)
             .Select(path => new FileInfo(path))
+            .Where(f => IsOwnDumpFileName(f.Name))
             .OrderByDescending(f => f.LastWriteTimeUtc)
             .ThenByDescending(f => f.Name, StringComparer.Ordinal)
             .ToList();
@@ -112,5 +131,26 @@ public class ScheduledBackupService(
         }
 
         return deleted;
+    }
+
+    /// <summary>True for <c>mostawsef-yyyyMMdd-HHmmss.dump</c> only — refuses to touch other files in the folder.</summary>
+    public static bool IsOwnDumpFileName(string fileName)
+    {
+        const string prefix = FilePrefix;
+        const string extension = FileExtension;
+        if (!fileName.StartsWith(prefix, StringComparison.Ordinal)
+            || !fileName.EndsWith(extension, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var stamp = fileName.AsSpan(prefix.Length, fileName.Length - prefix.Length - extension.Length);
+        // yyyyMMdd-HHmmss = 15 characters with a dash at index 8.
+        return stamp.Length == 15
+            && stamp[8] == '-'
+            && char.IsDigit(stamp[0]) && char.IsDigit(stamp[1]) && char.IsDigit(stamp[2]) && char.IsDigit(stamp[3])
+            && char.IsDigit(stamp[4]) && char.IsDigit(stamp[5]) && char.IsDigit(stamp[6]) && char.IsDigit(stamp[7])
+            && char.IsDigit(stamp[9]) && char.IsDigit(stamp[10]) && char.IsDigit(stamp[11])
+            && char.IsDigit(stamp[12]) && char.IsDigit(stamp[13]) && char.IsDigit(stamp[14]);
     }
 }

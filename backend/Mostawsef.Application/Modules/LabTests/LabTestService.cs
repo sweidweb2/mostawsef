@@ -41,14 +41,14 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
     public async Task<PagedResult<LabTestDto>> GetPageAsync(PageQuery query, bool? active, CancellationToken cancellationToken)
     {
         var (items, total) = await tests.GetPageAsync(query, active, cancellationToken);
-        return new PagedResult<LabTestDto>(items.Select(t => ToListDto(t)).ToList(), query.SafePage, query.SafePageSize, total);
+        return new PagedResult<LabTestDto>(items, query.SafePage, query.SafePageSize, total);
     }
 
-    public async Task<IReadOnlyList<LabTestDto>> ListAllAsync(bool? active, CancellationToken cancellationToken) =>
-        (await tests.ListAllAsync(active, cancellationToken)).Select(ToExportDto).ToList();
+    public Task<IReadOnlyList<LabTestDto>> ListAllAsync(bool? active, CancellationToken cancellationToken) =>
+        tests.ListAllAsync(active, cancellationToken);
 
     public async Task<LabTestDto> GetAsync(Guid id, CancellationToken cancellationToken) =>
-        ToListDto(await tests.GetRowByIdAsync(id, cancellationToken) ?? throw AppException.NotFound());
+        await tests.GetRowByIdAsync(id, cancellationToken) ?? throw AppException.NotFound();
 
     public async Task<LabTestDto> CreateAsync(CreateLabTestRequest request, CancellationToken cancellationToken)
     {
@@ -339,12 +339,6 @@ public class LabTestService(ILabTestRepository tests, IActivityLogger activity) 
                 Details = new { test.Code, test.Name, test.LabCost, test.IsActive },
             },
             cancellationToken);
-
-    private static LabTestDto ToListDto(LabTestListRow t) => new(
-        t.Id, t.Code, t.Name, t.LabCost, t.IsActive, t.CreatedAt, t.UpdatedAt, t.UpdatedBy, t.Version);
-
-    private static LabTestDto ToExportDto(LabTestExportRow t) => new(
-        t.Id, t.Code, t.Name, t.LabCost, t.IsActive, default, null, null, 0);
 
     private static LabTestDto ToDto(LabTest t) => new(
         t.Id, t.Code, t.Name, t.LabCost, t.IsActive, t.CreatedAt, t.UpdatedAt, t.UpdatedBy, t.Version);

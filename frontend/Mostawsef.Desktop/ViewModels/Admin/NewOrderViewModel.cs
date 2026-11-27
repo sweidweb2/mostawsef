@@ -211,19 +211,9 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
 
     public bool HasCatalogError => CatalogLoadError is not null;
 
-    public string? CatalogErrorTitleKey => CatalogLoadError switch
-    {
-        null => null,
-        ApiError.Unreachable => "Error.UnreachableTitle",
-        _ => "Error.Title",
-    };
+    public string? CatalogErrorTitleKey => ApiErrorKeys.Title(CatalogLoadError);
 
-    public string? CatalogErrorDescriptionKey => CatalogLoadError switch
-    {
-        null => null,
-        ApiError.Unreachable => "Error.UnreachableDescription",
-        _ => "Error.Description",
-    };
+    public string? CatalogErrorDescriptionKey => ApiErrorKeys.Description(CatalogLoadError);
 
     public bool IsCatalogEmpty => !IsCatalogLoading && !HasCatalogError && Catalog.Count == 0;
 
@@ -435,7 +425,8 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
 
     protected override async Task<IApiResult> SubmitAsync(object request, CancellationToken cancellationToken)
     {
-        var result = await _orders.CreateOrderAsync((CreateOrderRequest)request, cancellationToken);
+        var body = (CreateOrderRequest)request with { ClientRequestId = WriteAttemptId };
+        var result = await _orders.CreateOrderAsync(body, cancellationToken);
         _created = result.Value;
         return result;
     }
@@ -531,7 +522,7 @@ public partial class NewOrderViewModel : FormViewModel, ILoadablePage, IReusable
 
             if (!result.IsSuccess)
             {
-                _toasts.Error(Localization.Get(result.Error == ApiError.Unreachable ? "Login.ServerUnreachable" : "Error.RequestFailed"));
+                _toasts.Error(Localization.Get(ApiErrorKeys.Action(result.Error)));
                 _loadedPatientSearch = search;
                 Patients = [];
                 return Patients;

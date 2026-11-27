@@ -71,15 +71,25 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
             Environment.SetEnvironmentVariable($"Seed__Users__{i}__Username", TestUsers.SeededLogins[i].Username);
             Environment.SetEnvironmentVariable($"Seed__Users__{i}__Password", TestUsers.SeededLogins[i].Password);
             Environment.SetEnvironmentVariable($"Seed__Users__{i}__Role", TestUsers.SeededLogins[i].Role);
+            Environment.SetEnvironmentVariable($"Seed__Users__{i}__MustChangePassword", "false");
         }
 
-        // Drop leftover Admin seed slots from older test runs in this process.
-        for (var i = TestUsers.SeededLogins.Length; i < 4; i++)
+        // Seeded like a clinic install (no MustChangePassword setting, so it defaults to true). Only
+        // InitialPasswordTests signs in with it.
+        var initial = TestUsers.SeededLogins.Length;
+        Environment.SetEnvironmentVariable($"Seed__Users__{initial}__Username", TestUsers.InitialSuper.Username);
+        Environment.SetEnvironmentVariable($"Seed__Users__{initial}__Password", TestUsers.InitialSuper.Password);
+        Environment.SetEnvironmentVariable($"Seed__Users__{initial}__Role", TestUsers.InitialSuper.Role);
+        Environment.SetEnvironmentVariable($"Seed__Users__{initial}__MustChangePassword", null);
+
+        // Drop leftover seed slots from older test runs in this process.
+        for (var i = initial + 1; i < 4; i++)
         {
             Environment.SetEnvironmentVariable($"Seed__Users__{i}__Username", null);
             Environment.SetEnvironmentVariable($"Seed__Users__{i}__Password", null);
             Environment.SetEnvironmentVariable($"Seed__Users__{i}__Role", null);
             Environment.SetEnvironmentVariable($"Seed__Users__{i}__FullName", null);
+            Environment.SetEnvironmentVariable($"Seed__Users__{i}__MustChangePassword", null);
         }
     }
 

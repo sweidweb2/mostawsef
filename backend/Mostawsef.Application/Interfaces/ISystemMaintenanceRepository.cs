@@ -32,7 +32,8 @@ public interface ISystemMaintenanceRepository
 
     /// <summary>
     /// In one transaction, empties every business and log table (payments, order items, orders, patients, lab tests,
-    /// activity logs, system errors, number sequences). Users, clinic/system settings and backup records stay.
+    /// activity logs, system errors, number sequences, backup records, scheduled dumps). Users and clinic/system
+    /// settings stay.
     /// </summary>
     Task<DataResetCounts> ResetDataAsync(CancellationToken cancellationToken);
 }

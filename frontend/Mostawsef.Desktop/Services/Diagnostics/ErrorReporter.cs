@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -43,7 +42,7 @@ public class ErrorReporter(
 
     private const int MaxTrackedErrors = 200;
     private static readonly TimeSpan RateWindow = TimeSpan.FromMinutes(1);
-    private static readonly string AppVersion = Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "unknown";
+    private static readonly string ReportedAppVersion = Services.Local.AppVersion.Current;
 
     private readonly Lock _gate = new();
     private readonly Dictionary<string, Occurrence> _recent = [];
@@ -53,8 +52,17 @@ public class ErrorReporter(
     private DateTimeOffset _serverPausedUntil;
     private DateTimeOffset? _lastToastAt;
 
-    public string LogDirectory { get; init; } =
+    public static string DefaultLogDirectory { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Mostawsef", "logs");
+
+    public string LogDirectory { get; init; } = DefaultLogDirectory;
+
+    /// <summary>
+    /// For a process that runs without services (the update helper): appends to the default local error log only,
+    /// in the same format as <see cref="Report"/>'s local copy.
+    /// </summary>
+    public static void WriteLocalOnly(Exception exception, string context) =>
+        AppendLocal(DefaultLogDirectory, TimeProvider.System, exception, ErrorLevels.Critical, context);
 
     public TimeProvider Clock { get; init; } = TimeProvider.System;
 
@@ -118,7 +126,7 @@ public class ErrorReporter(
                         exception.ToString(),
                         level,
                         fullContext,
-                        AppVersion,
+                        ReportedAppVersion,
                         RuntimeInformation.OSDescription);
 
                     var result = await logsApi.Value.ReportErrorAsync(request);
@@ -241,12 +249,15 @@ public class ErrorReporter(
     }
 
     /// <summary>Synchronous, for the process-crash handler only.</summary>
-    private void WriteLocal(Exception exception, string level, string? context)
+    private void WriteLocal(Exception exception, string level, string? context) =>
+        AppendLocal(LogDirectory, Clock, exception, level, context);
+
+    private static void AppendLocal(string directory, TimeProvider clock, Exception exception, string level, string? context)
     {
         try
         {
-            Directory.CreateDirectory(LogDirectory);
-            File.AppendAllText(LogFile(), LogEntry(exception, level, context));
+            Directory.CreateDirectory(directory);
+            File.AppendAllText(LogFileIn(directory, clock), LogEntry(clock, exception, level, context));
         }
         catch (Exception)
         {
@@ -254,10 +265,15 @@ public class ErrorReporter(
         }
     }
 
-    private string LogFile() => Path.Combine(LogDirectory, $"errors-{Clock.GetLocalNow():yyyyMMdd}.log");
+    private string LogFile() => LogFileIn(LogDirectory, Clock);
 
-    private string LogEntry(Exception exception, string level, string? context) =>
-        $"[{Clock.GetLocalNow():O}] {level} {context}{Environment.NewLine}{exception}{Environment.NewLine}{Environment.NewLine}";
+    private static string LogFileIn(string directory, TimeProvider clock) =>
+        Path.Combine(directory, $"errors-{clock.GetLocalNow():yyyyMMdd}.log");
+
+    private string LogEntry(Exception exception, string level, string? context) => LogEntry(Clock, exception, level, context);
+
+    private static string LogEntry(TimeProvider clock, Exception exception, string level, string? context) =>
+        $"[{clock.GetLocalNow():O}] {level} {context}{Environment.NewLine}{exception}{Environment.NewLine}{Environment.NewLine}";
 
     private sealed class Occurrence(DateTimeOffset sentAt)
     {

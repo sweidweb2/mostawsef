@@ -84,7 +84,7 @@ public class InvoiceService(
             return result.Value;
         }
 
-        toasts.Error(localization.Get(result.Error == ApiError.Unreachable ? "Error.UnreachableTitle" : "Error.Title"));
+        toasts.Error(localization.Get(ApiErrorKeys.Title(result.Error) ?? "Error.Title"));
         return null;
     }
 

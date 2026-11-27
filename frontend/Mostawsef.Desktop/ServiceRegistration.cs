@@ -9,6 +9,7 @@ using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Navigation;
 using Mostawsef.Desktop.Services.Printing;
 using Mostawsef.Desktop.Services.Ui;
+using Mostawsef.Desktop.Services.Updates;
 using Mostawsef.Desktop.ViewModels;
 
 namespace Mostawsef.Desktop;
@@ -17,6 +18,18 @@ namespace Mostawsef.Desktop;
 public class DesktopServiceOptions
 {
     public HttpMessageHandler? HttpHandler { get; init; }
+
+    /// <summary>HTTP for the public update feed (GitHub). Tests supply a fake; production uses the network.</summary>
+    public HttpMessageHandler? UpdateHttpHandler { get; init; }
+
+    /// <summary>Override the update feed URL (tests).</summary>
+    public Uri? UpdateFeedUrl { get; init; }
+
+    /// <summary>Process/path hooks for in-app Setup install (tests supply a fake).</summary>
+    public IUpdateHost? UpdateHost { get; init; }
+
+    /// <summary>Clock for the update-check throttle; tests move it by hand. Default: the system clock.</summary>
+    public TimeProvider? UpdateClock { get; init; }
 
     public string? SettingsFilePath { get; init; }
 
@@ -41,8 +54,8 @@ public static class ServiceRegistration
     /// <summary>Longest wait to open a connection, so a switched-off API PC fails fast instead of after RequestTimeout.</summary>
     public static readonly TimeSpan ConnectTimeout = TimeSpan.FromSeconds(3);
 
-    /// <summary>The real network handler under the API HttpClient.</summary>
-    public static SocketsHttpHandler CreateServerHandler() => new() { ConnectTimeout = ConnectTimeout };
+    /// <summary>A real network handler (connects fail fast): under the API HttpClient and the update feed's.</summary>
+    public static SocketsHttpHandler CreateNetworkHandler() => new() { ConnectTimeout = ConnectTimeout };
 
     public static IServiceCollection AddMostawsefDesktop(this IServiceCollection services, DesktopServiceOptions? options = null)
     {
@@ -61,7 +74,7 @@ public static class ServiceRegistration
         {
             var auth = new AuthHeaderHandler(sp.GetRequiredService<SessionService>())
             {
-                InnerHandler = options.HttpHandler ?? CreateServerHandler(),
+                InnerHandler = options.HttpHandler ?? CreateNetworkHandler(),
             };
             var http = new HttpClient(auth);
             http.BaseAddress = new Uri(sp.GetRequiredService<SettingsService>().Current.ApiBaseUrl.TrimEnd('/') + "/");
@@ -85,6 +98,13 @@ public static class ServiceRegistration
         services.AddSingleton<PatientsApi>();
         services.AddSingleton<OrdersApi>();
         services.AddSingleton<ConnectionMonitor>();
+        services.AddSingleton<IUpdateHost>(_ => options.UpdateHost ?? new UpdateHost());
+        services.AddSingleton(sp => new UpdateChecker(
+            options.UpdateHttpHandler ?? CreateNetworkHandler(),
+            sp.GetRequiredService<LocalizationService>(),
+            sp.GetRequiredService<IUpdateHost>(),
+            options.UpdateClock,
+            options.UpdateFeedUrl));
 
         // Diagnostics: system errors + optional performance overlay/log
         // Lazy deps so Install() does not build the HTTP stack or toast service.

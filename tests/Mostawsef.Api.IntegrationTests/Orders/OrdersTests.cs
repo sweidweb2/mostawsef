@@ -12,6 +12,7 @@ using Mostawsef.Contracts.Logs;
 using Mostawsef.Contracts.Orders;
 using Mostawsef.Contracts.Patients;
 using Mostawsef.Contracts.Settings;
+using Mostawsef.Domain.Entities;
 using Mostawsef.Infrastructure.Persistence.Context;
 
 namespace Mostawsef.Api.IntegrationTests.Orders;
@@ -113,8 +114,8 @@ public class OrdersTests(ApiFactory factory)
         var details = await admin.GetJsonAsync<OrderDetailsDto>($"{Url}/{order.Id}");
 
         Assert.Equal(
-            (details.Number, details.PatientName, details.PatientPhone, details.Items.Count, details.Total, details.Paid, details.Status),
-            (listed.Number, listed.PatientName, listed.PatientPhone, listed.TestsCount, listed.Total, listed.Paid, listed.Status));
+            (details.Number, details.PatientName, details.PatientPhone, details.Items.Count, details.Total, details.Paid, details.Status, details.Currency),
+            (listed.Number, listed.PatientName, listed.PatientPhone, listed.TestsCount, listed.Total, listed.Paid, listed.Status, listed.Currency));
         Assert.Equal((7500L, 3000L), (details.Total, details.Addon));
         Assert.Equal(first.LabCost + second.LabCost + third.LabCost, details.Items.Sum(i => i.LabCost));
     }
@@ -689,6 +690,27 @@ public class OrdersTests(ApiFactory factory)
         Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
     }
 
+    [Fact]
+    public async Task Creating_an_order_reads_the_patient_and_the_tests_once()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var patient = await CreatePatientAsync(admin);
+        var first = await CreateTestAsync(admin);
+        var second = await CreateTestAsync(admin);
+
+        factory.Sql.Clear();
+        await CreateOrderAsync(admin, new CreateOrderRequest
+        {
+            PatientId = patient.Id,
+            Items = [new() { LabTestId = first.Id }, new() { LabTestId = second.Id }],
+        });
+
+        // Read inside the serializable transaction only (no separate pre-read plus last-moment re-check).
+        var reads = factory.Sql.Queries.Where(q => !q.Contains("INSERT", StringComparison.Ordinal)).ToList();
+        Assert.Single(reads, q => q.Contains("FROM patients", StringComparison.Ordinal));
+        Assert.Single(reads, q => q.Contains("FROM lab_tests", StringComparison.Ordinal));
+    }
+
     private static async Task<OrderDetailsDto> PayAsync(HttpClient admin, Guid orderId, AddPaymentRequest request)
     {
         var current = await admin.GetJsonAsync<OrderDetailsDto>($"{Url}/{orderId}");
@@ -964,6 +986,183 @@ public class OrdersTests(ApiFactory factory)
         }, Ct);
         update.EnsureSuccessStatusCode();
         return (await update.Content.ReadFromJsonAsync<LabTestDto>(Ct))!;
+    }
+
+    [Fact]
+    public async Task Concurrent_payments_with_the_same_version_accept_one_and_conflict_the_other()
+    {
+        var a = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var b = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var patient = await CreatePatientAsync(a);
+        var test = await CreateTestAsync(a, labCost: 0);
+        var order = await CreateOrderAsync(a, ForPatient(patient.Id, test.Id) with { Addon = 10_000 });
+        var version = order.Version;
+        var body = new AddPaymentRequest { Amount = 6_000, Method = PaymentMethods.Cash, Version = version };
+
+        var responses = await Task.WhenAll(
+            a.PostAsJsonAsync($"{Url}/{order.Id}/payments", body, Ct),
+            b.PostAsJsonAsync($"{Url}/{order.Id}/payments", body, Ct));
+
+        Assert.Equal(1, responses.Count(r => r.StatusCode == HttpStatusCode.OK));
+        Assert.Equal(1, responses.Count(r => r.StatusCode == HttpStatusCode.Conflict));
+
+        var details = await a.GetJsonAsync<OrderDetailsDto>($"{Url}/{order.Id}");
+        Assert.Equal((6_000L, 4_000L, 1), (details.Paid, details.Balance, details.Payments.Count));
+    }
+
+    [Fact]
+    public async Task Changing_the_clinic_currency_does_not_rewrite_an_existing_order_currency()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var patient = await CreatePatientAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 1000);
+        var before = (await admin.GetJsonAsync<ClinicSettingsDto>("api/clinic-settings")).CurrencyCode;
+        var order = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id));
+        Assert.Equal(before, order.Currency);
+
+        var other = Currencies.All.First(c => c != before);
+        var settings = await admin.GetJsonAsync<ClinicSettingsDto>("api/clinic-settings");
+        (await admin.PutAsJsonAsync(
+            "api/clinic-settings",
+            new UpdateClinicSettingsRequest
+            {
+                Name = settings.Name,
+                Address = settings.Address,
+                Phone = settings.Phone,
+                CurrencyCode = other,
+                Version = settings.Version,
+            },
+            Ct)).EnsureSuccessStatusCode();
+
+        try
+        {
+            var details = await admin.GetJsonAsync<OrderDetailsDto>($"{Url}/{order.Id}");
+            var listed = (await admin.GetJsonAsync<PagedResult<OrderListItemDto>>($"{Url}?search={order.Number}")).Items.Single();
+            Assert.Equal(before, details.Currency);
+            Assert.Equal(before, listed.Currency);
+            Assert.Equal(other, (await admin.GetJsonAsync<ClinicSettingsDto>("api/clinic-settings")).CurrencyCode);
+        }
+        finally
+        {
+            var current = await admin.GetJsonAsync<ClinicSettingsDto>("api/clinic-settings");
+            await admin.PutAsJsonAsync(
+                "api/clinic-settings",
+                new UpdateClinicSettingsRequest
+                {
+                    Name = current.Name,
+                    Address = current.Address,
+                    Phone = current.Phone,
+                    CurrencyCode = before,
+                    Version = current.Version,
+                },
+                Ct);
+        }
+    }
+
+    [Fact]
+    public async Task Repeating_create_with_the_same_client_request_id_returns_the_same_order()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var patient = await CreatePatientAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 1000);
+        var key = Guid.NewGuid();
+        var request = ForPatient(patient.Id, test.Id) with { ClientRequestId = key };
+
+        var first = await CreateOrderAsync(admin, request);
+        var second = await CreateOrderAsync(admin, request);
+
+        Assert.Equal(first.Id, second.Id);
+        Assert.Equal(first.Number, second.Number);
+        Assert.True(await CountOrdersWithClientRequestIdAsync(key) == 1);
+    }
+
+    [Fact]
+    public async Task Repeating_add_payment_with_the_same_client_request_id_does_not_double_charge()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var patient = await CreatePatientAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 0);
+        var order = await CreateOrderAsync(admin, ForPatient(patient.Id, test.Id) with { Addon = 10_000 });
+        var key = Guid.NewGuid();
+        var body = new AddPaymentRequest
+        {
+            Amount = 4_000,
+            Method = PaymentMethods.Cash,
+            ClientRequestId = key,
+        };
+
+        var first = await PayAsync(admin, order.Id, body);
+        var second = await PayAsync(admin, order.Id, body);
+
+        Assert.Equal(first.Paid, second.Paid);
+        Assert.Single(second.Payments);
+        Assert.True(await CountPaymentsWithClientRequestIdAsync(key) == 1);
+    }
+
+    [Fact]
+    public async Task Parallel_creates_all_succeed_with_their_own_numbers()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var patient = await CreatePatientAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 1000);
+
+        // Serializable transactions that all take from the same number row: losers are rolled back by PostgreSQL
+        // (40001) and must be run again, not answered with 500.
+        var responses = await Task.WhenAll(Enumerable.Range(0, 8).Select(i => admin.PostAsJsonAsync(
+            Url,
+            i % 2 == 0
+                ? ForPatient(patient.Id, test.Id)
+                : new CreateOrderRequest { NewPatient = NewPatient(), Items = [new() { LabTestId = test.Id }] },
+            Ct)));
+
+        Assert.All(responses, r => Assert.Equal(HttpStatusCode.Created, r.StatusCode));
+        var numbers = await Task.WhenAll(responses.Select(async r => (await r.Content.ReadFromJsonAsync<OrderDetailsDto>(Ct))!.Number));
+        Assert.Equal(numbers.Length, numbers.Distinct().Count());
+    }
+
+    [Fact]
+    public async Task Parallel_creates_with_the_same_client_request_id_save_one_order()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var patient = await CreatePatientAsync(admin);
+        var test = await CreateTestAsync(admin, labCost: 1000);
+        var key = Guid.NewGuid();
+        var request = ForPatient(patient.Id, test.Id) with { ClientRequestId = key };
+
+        var responses = await Task.WhenAll(Enumerable.Range(0, 4).Select(_ => admin.PostAsJsonAsync(Url, request, Ct)));
+
+        Assert.All(responses, r => Assert.Equal(HttpStatusCode.Created, r.StatusCode));
+        var ids = await Task.WhenAll(responses.Select(async r => (await r.Content.ReadFromJsonAsync<OrderDetailsDto>(Ct))!.Id));
+        Assert.Single(ids.Distinct());
+        Assert.Equal(1, await CountOrdersWithClientRequestIdAsync(key));
+    }
+
+    [Fact]
+    public async Task Creating_an_order_for_a_soft_deleted_patient_is_refused()
+    {
+        var admin = await factory.CreateClientAsAsync(TestUsers.Admin);
+        var patient = await CreatePatientAsync(admin);
+        var test = await CreateTestAsync(admin);
+        (await admin.DeleteAsync($"api/patients/{patient.Id}", Ct)).EnsureSuccessStatusCode();
+
+        var problem = await ProblemResponse.ReadAsync(await admin.PostAsJsonAsync(Url, ForPatient(patient.Id, test.Id), Ct));
+
+        Assert.Equal(HttpStatusCode.BadRequest, problem.Status);
+        Assert.Equal([ErrorCodes.NotFound], problem.Errors[nameof(CreateOrderRequest.PatientId)]);
+    }
+
+    private async Task<int> CountOrdersWithClientRequestIdAsync(Guid key)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<AppDbContext>().Orders
+            .CountAsync(o => o.ClientRequestId == key, Ct);
+    }
+
+    private async Task<int> CountPaymentsWithClientRequestIdAsync(Guid key)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<AppDbContext>().Set<Payment>()
+            .CountAsync(p => p.ClientRequestId == key, Ct);
     }
 
     private async Task<int> CountPatientsNamedAsync(string fullName)

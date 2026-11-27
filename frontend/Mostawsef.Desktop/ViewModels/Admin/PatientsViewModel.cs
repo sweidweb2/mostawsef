@@ -181,7 +181,7 @@ public partial class PatientsViewModel : NumberedListViewModel<PatientDto>
         }
 
         Toasts.Success(Localization.Get("Patients.Deleted"));
-        await ReloadAsync();
+        await RemoveDeletedAsync(item.Id, p => p.Id);
     }
 
     /// <summary>True while the export is fetching and writing the PDF (its button shows a spinner).</summary>

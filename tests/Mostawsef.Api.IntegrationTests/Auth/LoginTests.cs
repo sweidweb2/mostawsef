@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.AspNetCore.Http;
 using Mostawsef.Api.IntegrationTests.Infrastructure;
 using Mostawsef.Contracts.Auth;
 using Mostawsef.Contracts.Common;
@@ -132,7 +133,40 @@ public class LoginTests(ApiFactory factory)
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.DoesNotContain("passwordHash", body, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Password", body, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"password\"", body, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("AQAAAA", body, StringComparison.Ordinal); // Identity v3 hash prefix
+        // The only password-related field is the flag, and the clinic identity never has to change one.
+        Assert.Contains("\"mustChangePassword\":false", body, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Clinic_session_from_a_non_loopback_address_returns_403()
+    {
+        var context = await factory.Server.SendAsync(ctx =>
+        {
+            ctx.Connection.RemoteIpAddress = IPAddress.Parse("203.0.113.10");
+            ctx.Request.Method = HttpMethods.Post;
+            ctx.Request.Path = "/api/auth/clinic-session";
+        }, TestContext.Current.CancellationToken);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, context.Response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("X-Forwarded-For", "203.0.113.10")]
+    [InlineData("Forwarded", "for=203.0.113.10")]
+    public async Task Clinic_session_through_an_unresolved_proxy_returns_403(string header, string value)
+    {
+        // A reverse proxy on the same PC connects from loopback; without ForwardedHeaders the real client is only in this header.
+        var context = await factory.Server.SendAsync(ctx =>
+        {
+            ctx.Connection.RemoteIpAddress = IPAddress.Loopback;
+            ctx.Request.Method = HttpMethods.Post;
+            ctx.Request.Path = "/api/auth/clinic-session";
+            ctx.Request.Headers[header] = value;
+        }, TestContext.Current.CancellationToken);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, context.Response.StatusCode);
     }
 
     private static string? Title(string problemJson) =>

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Mostawsef.Application.Common;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Contracts.Common;
+using Mostawsef.Contracts.Patients;
 using Mostawsef.Domain.Entities;
 using Mostawsef.Domain.Enums;
 using Mostawsef.Infrastructure.Persistence.Context;
@@ -14,12 +15,13 @@ public class PatientRepository(AppDbContext db) : IPatientRepository
     public Task<Patient?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
         db.Patients.FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
 
-    public Task<PatientDetailsRow?> GetDetailsAsync(Guid id, CancellationToken cancellationToken) =>
+    public Task<PatientDto?> GetDetailsAsync(Guid id, CancellationToken cancellationToken) =>
         db.Patients.AsNoTracking()
             .Where(p => p.Id == id)
-            .Select(p => new PatientDetailsRow(
-                p.Id, p.FullName, p.Phone, p.Notes, p.Gender, p.DateOfBirth,
-                p.CreatedAt, p.UpdatedAt, p.UpdatedBy, p.Version))
+            .Select(p => new PatientDto(
+                p.Id, p.FullName, p.Phone, p.Notes,
+                p.Gender == Gender.Male ? Genders.Male : Genders.Female,
+                p.DateOfBirth, p.CreatedAt, p.UpdatedAt, p.UpdatedBy, p.Version))
             .FirstOrDefaultAsync(cancellationToken);
 
     public Task<bool> HasOrdersAsync(Guid id, CancellationToken cancellationToken) =>
@@ -41,7 +43,8 @@ public class PatientRepository(AppDbContext db) : IPatientRepository
                 o.TestsCount,
                 o.Total,
                 o.Paid,
-                o.Status))
+                o.Status,
+                o.Currency))
             .ToListAsync(cancellationToken);
 
     public Task<OrderPatientRow?> GetOrderPatientAsync(Guid id, CancellationToken cancellationToken) =>
@@ -50,7 +53,7 @@ public class PatientRepository(AppDbContext db) : IPatientRepository
             .Select(p => new OrderPatientRow(p.Id, p.FullName, p.SearchName, p.Phone))
             .FirstOrDefaultAsync(cancellationToken);
 
-    public async Task<(IReadOnlyList<PatientListRow> Items, int Total)> GetPageAsync(PageQuery query, bool includeUnpaid, CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<PatientDto> Items, int Total)> GetPageAsync(PageQuery query, bool includeUnpaid, CancellationToken cancellationToken)
     {
         var patients = db.Patients.AsNoTracking();
 
@@ -64,9 +67,10 @@ public class PatientRepository(AppDbContext db) : IPatientRepository
         var rows = patients
             .OrderBy(p => p.SearchName)
             .ThenBy(p => p.Id)
-            .Select(p => new PatientListRow(
-                p.Id, p.FullName, p.Phone, p.Gender, p.DateOfBirth,
-                p.CreatedAt, p.UpdatedAt, p.UpdatedBy, p.Version,
+            .Select(p => new PatientDto(
+                p.Id, p.FullName, p.Phone, Notes: null,
+                p.Gender == Gender.Male ? Genders.Male : Genders.Female,
+                p.DateOfBirth, p.CreatedAt, p.UpdatedAt, p.UpdatedBy, p.Version,
                 includeUnpaid
                     ? db.Orders.Any(o => o.PatientId == p.Id
                         && (o.Status == OrderStatus.Pending || o.Status == OrderStatus.PartiallyPaid))
@@ -75,13 +79,15 @@ public class PatientRepository(AppDbContext db) : IPatientRepository
         return await rows.ToPageAsync(patients, query, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<PatientExportRow>> ListAllAsync(CancellationToken cancellationToken) =>
+    public async Task<IReadOnlyList<PatientDto>> ListAllAsync(CancellationToken cancellationToken) =>
         await db.Patients.AsNoTracking()
             .OrderBy(p => p.SearchName)
             .ThenBy(p => p.Id)
             .Take(PageQuery.MaxExportRows)
-            .Select(p => new PatientExportRow(
-                p.Id, p.FullName, p.Phone, p.Gender, p.DateOfBirth))
+            .Select(p => new PatientDto(
+                p.Id, p.FullName, p.Phone, Notes: null,
+                p.Gender == Gender.Male ? Genders.Male : Genders.Female,
+                p.DateOfBirth, default, null, null, 0))
             .ToListAsync(cancellationToken);
 
     public void Add(Patient patient) => db.Patients.Add(patient);

@@ -20,9 +20,8 @@ The list search is a single `LIKE '%term%'` on that column (`Repositories/LogSea
 served on PostgreSQL by a `pg_trgm` GIN index (an index-only PostgreSQL feature: the query stays plain `LIKE`, so SQLite still works).
 The index reads groups of three characters, so a term needs at least 3 letters or digits (`CursorQuery.MinSearchLength`):
 shorter terms get a 400 (`errors.Search = ["min_length|3"]`), and the desktop app shows a warning instead of sending them.
-Rows written before `SearchText` existed are filled once by `SearchTextBackfill` (run by `DatabaseInitializer` right after
-the `LogSearchText` migration), with EF Core code, not SQL. A new searchable field goes into the entity's `RebuildSearchText`,
-plus a backfill like that one for existing rows.
+A new searchable field goes into `LogQueries.FillSearchText`, plus a one-time EF Core backfill (not SQL) run by
+`DatabaseInitializer` after its migration when existing rows must become searchable.
 
 ## Retention
 

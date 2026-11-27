@@ -261,6 +261,9 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                     b.Property<long>("Addon")
                         .HasColumnType("bigint");
 
+                    b.Property<Guid?>("ClientRequestId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -305,11 +308,6 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
 
-                    b.Property<string>("PatientSearchName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<string>("SearchText")
                         .IsRequired()
                         .HasMaxLength(152)
@@ -339,10 +337,11 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Number")
+                    b.HasIndex("ClientRequestId")
                         .IsUnique();
 
-                    b.HasIndex("PatientSearchName");
+                    b.HasIndex("Number")
+                        .IsUnique();
 
                     b.HasIndex("SearchText");
 
@@ -355,7 +354,14 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("Status", "CreatedAt");
 
-                    b.ToTable("orders", (string)null);
+                    b.HasIndex("PatientId", "CreatedAt", "Id");
+
+                    b.ToTable("orders", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_orders_non_negative_money", "\"Total\" >= 0 AND \"Paid\" >= 0 AND \"Addon\" >= 0");
+
+                            t.HasCheckConstraint("CK_orders_paid_within_total", "\"Paid\" <= \"Total\"");
+                        });
                 });
 
             modelBuilder.Entity("Mostawsef.Domain.Entities.OrderItem", b =>
@@ -501,6 +507,9 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
                     b.Property<long>("Amount")
                         .HasColumnType("bigint");
 
+                    b.Property<Guid?>("ClientRequestId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -550,11 +559,17 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ClientRequestId")
+                        .IsUnique();
+
                     b.HasIndex("OrderId");
 
                     b.HasIndex("PaidAt");
 
-                    b.ToTable("payments", (string)null);
+                    b.ToTable("payments", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_payments_positive_amount", "\"Amount\" > 0");
+                        });
                 });
 
             modelBuilder.Entity("Mostawsef.Domain.Entities.ScheduledDump", b =>
@@ -760,6 +775,9 @@ namespace Mostawsef.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("MustChangePassword")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()

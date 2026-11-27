@@ -37,6 +37,8 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(u => u.TokenVersion).IsRequired();
 
+        builder.Property(u => u.MustChangePassword).IsRequired();
+
         builder.Property(u => u.Role)
             .HasConversion<string>()
             .HasMaxLength(20)

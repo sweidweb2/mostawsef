@@ -271,9 +271,9 @@ public class PatientsPageTests : UiTestBase
     }
 
     [AvaloniaFact]
-    public async Task Delete_asks_first_then_deletes_and_reloads()
+    public async Task Delete_asks_first_then_removes_the_row_without_reloading()
     {
-        using var app = AdminWithPatients(Mona);
+        using var app = AdminWithPatients(Mona, Omar);
         app.Api.On(HttpMethod.Delete, $"{PatientsPath}/{Mona.Id}", HttpStatusCode.NoContent);
         var (page, window) = await ShowPage(app);
         var listRequests = app.Api.RequestsTo(HttpMethod.Get, PatientsPath).Count();
@@ -292,8 +292,32 @@ public class PatientsPageTests : UiTestBase
         Dispatcher.UIThread.RunJobs();
 
         Assert.Single(app.Api.RequestsTo(HttpMethod.Delete, $"{PatientsPath}/{Mona.Id}"));
-        Assert.True(app.Api.RequestsTo(HttpMethod.Get, PatientsPath).Count() > listRequests);
+        // Nothing follows this page: the row goes and the total drops, with no list request.
+        Assert.Equal(listRequests, app.Api.RequestsTo(HttpMethod.Get, PatientsPath).Count());
+        Assert.Equal([Omar.Id], page.Items.Select(p => p.Id));
+        Assert.Equal(1, page.TotalCount);
         Assert.Contains("Patient deleted.", Toasts(window));
+    }
+
+    [AvaloniaFact]
+    public async Task Deleting_when_more_pages_follow_refills_the_page_without_counting_again()
+    {
+        using var app = new TestServices();
+        app.SignInAs(Roles.Admin);
+        app.Api.OnGet(PatientsPath, new PagedResult<PatientDto>([Mona, Omar], 1, 40, 41));
+        app.Api.On(HttpMethod.Delete, $"{PatientsPath}/{Mona.Id}", HttpStatusCode.NoContent);
+        var (page, window) = await ShowPage(app);
+        var listRequests = app.Api.RequestsTo(HttpMethod.Get, PatientsPath).Count();
+
+        var delete = page.DeleteCommand.ExecuteAsync(Mona);
+        Dispatcher.UIThread.RunJobs();
+        window.GetVisualDescendants().OfType<ConfirmDialog>().Single().Close(true);
+        await delete;
+        Dispatcher.UIThread.RunJobs();
+
+        var reload = app.Api.RequestsTo(HttpMethod.Get, PatientsPath).Skip(listRequests).Single();
+        Assert.Contains("includeTotal=false", reload.RequestUri!.Query, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(40, page.TotalCount);
     }
 
     [AvaloniaFact]

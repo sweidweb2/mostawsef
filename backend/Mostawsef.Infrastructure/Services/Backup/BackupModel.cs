@@ -1,6 +1,7 @@
 using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Mostawsef.Domain.Common;
 using Mostawsef.Domain.Entities;
 
 namespace Mostawsef.Infrastructure.Services.Backup;
@@ -16,10 +17,16 @@ internal sealed record TableInfo(
     string Name,
     IReadOnlyList<ColumnInfo> Columns,
     IReadOnlyList<string> PrimaryKey,
-    IReadOnlyList<string> DependsOn)
+    IReadOnlyList<string> DependsOn,
+    bool ExcludeSoftDeleted)
 {
     /// <summary>Every column, quoted, for a SELECT or a column list.</summary>
     public string QuotedColumns => string.Join(", ", Columns.Select(c => Sql.Quote(c.Name)));
+
+    /// <summary>SELECT with soft-deleted rows omitted when the entity implements ISoftDeletable.</summary>
+    public string SelectSql => ExcludeSoftDeleted
+        ? $"SELECT {QuotedColumns} FROM {Sql.Quote(Name)} WHERE NOT {Sql.Quote("IsDeleted")}"
+        : $"SELECT {QuotedColumns} FROM {Sql.Quote(Name)}";
 
     /// <summary>
     /// Reads every table of the EF model, parents before the tables that reference them (so INSERTs satisfy foreign keys).
@@ -49,7 +56,8 @@ internal sealed record TableInfo(
                 .Distinct()
                 .ToList();
 
-            tables.Add(new TableInfo(name, columns, key, parents));
+            var excludeDeleted = typeof(ISoftDeletable).IsAssignableFrom(type.ClrType);
+            tables.Add(new TableInfo(name, columns, key, parents, excludeDeleted));
         }
 
         return ParentsFirst(tables);

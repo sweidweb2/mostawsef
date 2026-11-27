@@ -30,6 +30,9 @@ public class ScheduledDumpRepository(AppDbContext db) : IScheduledDumpRepository
         return await rows.ToPageAsync(records, query, cancellationToken);
     }
 
+    public Task<DateTime?> GetLatestCreatedAtAsync(CancellationToken cancellationToken) =>
+        db.ScheduledDumps.AsNoTracking().MaxAsync(d => (DateTime?)d.CreatedAt, cancellationToken);
+
     public void Add(ScheduledDump dump) => db.ScheduledDumps.Add(dump);
 
     public async Task TrimToAsync(int keepCount, CancellationToken cancellationToken)

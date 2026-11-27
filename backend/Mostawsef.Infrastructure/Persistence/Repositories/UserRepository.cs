@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Mostawsef.Application.Interfaces;
+using Mostawsef.Contracts.Auth;
 using Mostawsef.Contracts.Common;
+using Mostawsef.Contracts.Users;
 using Mostawsef.Domain.Common;
 using Mostawsef.Domain.Entities;
 using Mostawsef.Domain.Enums;
@@ -13,11 +15,13 @@ public class UserRepository(AppDbContext db) : IUserRepository
     public Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
         db.Users.FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
 
-    public Task<UserDetailsRow?> GetDetailsAsync(Guid id, CancellationToken cancellationToken) =>
+    public Task<UserDetailsDto?> GetDetailsAsync(Guid id, CancellationToken cancellationToken) =>
         db.Users.AsNoTracking()
             .Where(u => u.Id == id)
-            .Select(u => new UserDetailsRow(
-                u.Id, u.Username, u.FullName, u.Role, u.IsActive, u.LastLoginAt,
+            .Select(u => new UserDetailsDto(
+                u.Id, u.Username, u.FullName,
+                u.Role == UserRole.Super ? Roles.Super : Roles.Admin,
+                u.IsActive, u.LastLoginAt,
                 u.CreatedAt, u.CreatedBy, u.UpdatedAt, u.UpdatedBy, u.Version))
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -36,7 +40,7 @@ public class UserRepository(AppDbContext db) : IUserRepository
     public Task<bool> UsernameExistsAsync(string username, CancellationToken cancellationToken) =>
         db.Users.IgnoreQueryFilters().AnyAsync(u => u.Username == username, cancellationToken);
 
-    public async Task<(IReadOnlyList<UserListRow> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<UserListItemDto> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken)
     {
         // The Users page manages Super accounts only; the built-in clinic Admin stays hidden.
         var users = db.Users.AsNoTracking().Where(u => u.Role == UserRole.Super);
@@ -47,11 +51,12 @@ public class UserRepository(AppDbContext db) : IUserRepository
             users = users.Where(u => u.SearchName.Contains(term) || u.Username.Contains(term));
         }
 
+        // Role is always Super on this page, so the Contracts string needs no enum→string map.
         var rows = users
             .OrderBy(u => u.FullName)
             .ThenBy(u => u.Username)
-            .Select(u => new UserListRow(
-                u.Id, u.Username, u.FullName, u.Role, u.IsActive, u.LastLoginAt, u.CreatedAt, u.Version));
+            .Select(u => new UserListItemDto(
+                u.Id, u.Username, u.FullName, Roles.Super, u.IsActive, u.LastLoginAt, u.CreatedAt, u.Version));
 
         return await rows.ToPageAsync(users, query, cancellationToken);
     }
@@ -62,6 +67,10 @@ public class UserRepository(AppDbContext db) : IUserRepository
 
     public Task RecordLoginAsync(Guid userId, DateTime at, CancellationToken cancellationToken) =>
         db.Users.Where(u => u.Id == userId).ExecuteUpdateAsync(s => s.SetProperty(u => u.LastLoginAt, at), cancellationToken);
+
+    public Task RevokeTokensAsync(Guid userId, CancellationToken cancellationToken) =>
+        db.Users.Where(u => u.Id == userId)
+            .ExecuteUpdateAsync(s => s.SetProperty(u => u.TokenVersion, u => u.TokenVersion + 1), cancellationToken);
 
     public Task SaveChangesAsync(CancellationToken cancellationToken) => db.SaveChangesAsync(cancellationToken);
 }

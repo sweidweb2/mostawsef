@@ -23,6 +23,10 @@
 .PARAMETER SkipPostgresDownload
     Do not call winget. Reuse the durable cache (artifacts\cache\postgresql) or fail if missing.
     Normal builds already reuse the cache; this only blocks a first-time download when offline.
+
+.PARAMETER UpdateOnly
+    Build an update Setup (no PostgreSQL redist). For GitHub Releases / in-app update.
+    First-install / USB builds omit this switch so Postgres stays bundled.
 #>
 [CmdletBinding()]
 param(
@@ -31,7 +35,8 @@ param(
     [switch] $Force,
     [switch] $SkipPublish,
     [switch] $SkipInnoInstall,
-    [switch] $SkipPostgresDownload
+    [switch] $SkipPostgresDownload,
+    [switch] $UpdateOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -222,9 +227,10 @@ if (-not $SkipPublish) {
 
     Push-Location $repoRoot
     try {
-        dotnet publish frontend/Mostawsef.Desktop -c Release -o (Join-Path $staging 'Desktop')
+        # Stamp the same semver into Desktop + API as the Setup file name / Inno AppVersion.
+        dotnet publish frontend/Mostawsef.Desktop -c Release -o (Join-Path $staging 'Desktop') -p:Version=$Version
         if ($LASTEXITCODE -ne 0) { throw "Desktop publish failed ($LASTEXITCODE)" }
-        dotnet publish backend/Mostawsef.Api -c Release -o (Join-Path $staging 'Api')
+        dotnet publish backend/Mostawsef.Api -c Release -o (Join-Path $staging 'Api') -p:Version=$Version
         if ($LASTEXITCODE -ne 0) { throw "API publish failed ($LASTEXITCODE)" }
     } finally {
         Pop-Location
@@ -232,13 +238,28 @@ if (-not $SkipPublish) {
 
     Copy-Item -LiteralPath (Join-Path $repoRoot 'scripts\install-api-service.ps1') -Destination (Join-Path $staging 'scripts\install-api-service.ps1') -Force
     Copy-Item -LiteralPath (Join-Path $repoRoot 'packaging\innosetup\install-clinic.ps1') -Destination (Join-Path $staging 'scripts\install-clinic.ps1') -Force
-    Ensure-PostgresRedist (Join-Path $staging 'redist')
+    if ($UpdateOnly) {
+        Write-Host 'UpdateOnly: skipping PostgreSQL redist (clinic already has Postgres).'
+    } else {
+        Ensure-PostgresRedist (Join-Path $staging 'redist')
+    }
     Write-Host "Staging ready: $staging"
 } else {
     if (-not (Test-Path -LiteralPath (Join-Path $staging 'Api\Mostawsef.Api.exe'))) {
         throw "SkipPublish set but staging API missing under $staging"
     }
-    Ensure-PostgresRedist (Join-Path $staging 'redist')
+    $redistDir = Join-Path $staging 'redist'
+    if ($UpdateOnly) {
+        if (Test-Path -LiteralPath $redistDir) {
+            Get-ChildItem -LiteralPath $redistDir -Force -ErrorAction SilentlyContinue |
+                Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+        } else {
+            New-Item -ItemType Directory -Force -Path $redistDir | Out-Null
+        }
+        Write-Host 'UpdateOnly: cleared staging redist (no PostgreSQL in this Setup).'
+    } else {
+        Ensure-PostgresRedist $redistDir
+    }
 }
 
 $iscc = Find-Iscc
@@ -278,6 +299,11 @@ if (-not (Test-Path -LiteralPath $built)) {
 Copy-Item -LiteralPath $built -Destination $dest -Force
 Write-Host "Setup ready: $dest" -ForegroundColor Green
 Write-Host "Older builds in $OutputDir are kept (Mostawsef-Setup-*.exe)." -ForegroundColor DarkGray
-Write-Host 'Clinic install: run the versioned Setup as Administrator (offline: self-contained apps + bundled Postgres).'
-Write-Host 'After install: open Mostawsef from the Desktop shortcut (do not spam-click if a reboot was requested).'
-Write-Host 'Updates: send a newer Mostawsef-Setup-{version}.exe; Postgres data directory is never deleted.'
+if ($UpdateOnly) {
+    Write-Host 'Update Setup (no Postgres redist). Silent in-app flags: see Docs/7-automating install/02-decisions.md'
+    Write-Host 'Desktop relaunches itself after a silent update — Setup does not auto-start the app when silent.'
+} else {
+    Write-Host 'Clinic install: run the versioned Setup as Administrator (offline: self-contained apps + bundled Postgres).'
+    Write-Host 'After install: open Mostawsef from the Desktop shortcut (do not spam-click if a reboot was requested).'
+}
+Write-Host 'Updates: send a newer Mostawsef-Setup-{version}.exe (-UpdateOnly for Releases); Postgres data directory is never deleted.'

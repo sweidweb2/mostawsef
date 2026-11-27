@@ -172,6 +172,13 @@
                                HorizontalAlignment="Center"
                                TextAlignment="Center"
                                TextWrapping="Wrap" />
+
+                    <!-- Product version: visible before sign-in for support / update compare. -->
+                    <TextBlock Name="VersionLabel"
+                               Classes="caption muted"
+                               Text="{l:Tr Login.Version, Arg={Binding Version}}"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center" />
                 </StackPanel>
             </ScrollViewer>
         </Grid>

@@ -1,7 +1,10 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Mostawsef.Api.IntegrationTests.Infrastructure;
 using Mostawsef.Application.Interfaces;
 using Mostawsef.Domain.Common;
+using Mostawsef.Domain.Entities;
+using Mostawsef.Infrastructure.Persistence.Context;
 
 namespace Mostawsef.Api.IntegrationTests.Numbers;
 
@@ -26,12 +29,51 @@ public class NumberSequenceTests(ApiFactory factory)
     [Fact]
     public async Task Parallel_callers_never_get_the_same_number()
     {
-        var numbers = Sequence();
+        factory.CreateClient();
         var name = HttpClientExtensions.Unique("parallel")[..30];
 
-        var taken = await Task.WhenAll(Enumerable.Range(0, 20).Select(_ => Task.Run(() => numbers.NextAsync(name, Ct), Ct)));
+        // Each caller needs its own scope: the sequence shares the request DbContext.
+        var taken = await Task.WhenAll(Enumerable.Range(0, 20).Select(_ => Task.Run(async () =>
+        {
+            await using var scope = factory.Services.CreateAsyncScope();
+            var numbers = scope.ServiceProvider.GetRequiredService<INumberSequence>();
+            return await numbers.NextAsync(name, Ct);
+        }, Ct)));
 
         Assert.Equal(Enumerable.Range(1, 20).Select(i => (long)i), taken.Order());
+    }
+
+    [Fact]
+    public async Task Taking_a_first_number_leaves_the_callers_unsaved_changes_alone()
+    {
+        factory.CreateClient();
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var numbers = scope.ServiceProvider.GetRequiredService<INumberSequence>();
+        var pendingName = HttpClientExtensions.Unique("pending")[..30];
+        var pending = db.Add(new NumberSequence(pendingName, 7));
+
+        Assert.Equal(1, await numbers.NextAsync(HttpClientExtensions.Unique("first")[..30], Ct));
+
+        // The sequence shares the request DbContext: it must neither save nor drop what the caller is building.
+        Assert.Equal(EntityState.Added, pending.State);
+        Assert.False(await db.Set<NumberSequence>().AsNoTracking().AnyAsync(s => s.Name == pendingName, Ct));
+    }
+
+    [Fact]
+    public async Task A_first_number_taken_inside_a_transaction_rolls_back_with_it()
+    {
+        factory.CreateClient();
+        var name = HttpClientExtensions.Unique("rollback")[..30];
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await using var transaction = await db.Database.BeginTransactionAsync(Ct);
+            Assert.Equal(1, await scope.ServiceProvider.GetRequiredService<INumberSequence>().NextAsync(name, Ct));
+            await transaction.RollbackAsync(Ct);
+        }
+
+        Assert.Equal(1, await Sequence().NextAsync(name, Ct));
     }
 
     [Theory]
@@ -44,6 +86,6 @@ public class NumberSequenceTests(ApiFactory factory)
     private INumberSequence Sequence()
     {
         factory.CreateClient();
-        return factory.Services.GetRequiredService<INumberSequence>();
+        return factory.Services.CreateScope().ServiceProvider.GetRequiredService<INumberSequence>();
     }
 }

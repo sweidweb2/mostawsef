@@ -9,6 +9,9 @@ public interface IScheduledDumpRepository
     /// <summary>Newest first. Search is unused: the history is browsed by date.</summary>
     Task<(IReadOnlyList<ScheduledDumpDto> Items, int Total)> GetPageAsync(PageQuery query, CancellationToken cancellationToken);
 
+    /// <summary>When the newest scheduled dump was written; null when there is none.</summary>
+    Task<DateTime?> GetLatestCreatedAtAsync(CancellationToken cancellationToken);
+
     void Add(ScheduledDump dump);
 
     /// <summary>Keeps the newest <paramref name="keepCount"/> rows (same cap as dump files on disk); deletes the rest.</summary>

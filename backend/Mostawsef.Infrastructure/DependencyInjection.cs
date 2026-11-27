@@ -43,7 +43,8 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
         services.AddScoped<ISystemErrorRepository, SystemErrorRepository>();
-        services.AddSingleton<INumberSequence, NumberSequenceRepository>();
+        // Scoped: shares the request DbContext so NextAsync joins an open create transaction (no number gap on rollback).
+        services.AddScoped<INumberSequence, NumberSequenceRepository>();
         services.AddScoped<IClinicSettingsRepository, ClinicSettingsRepository>();
         services.AddScoped<ISystemSettingsRepository, SystemSettingsRepository>();
         services.AddScoped<ILabTestRepository, LabTestRepository>();
@@ -60,9 +61,6 @@ public static class DependencyInjection
         services.AddSingleton<ITokenService, JwtTokenService>();
         services.AddSingleton<IUserAuthCache, UserAuthCache>();
         services.AddSingleton<ILoginThrottle, LoginThrottle>();
-        services.AddSingleton<IClinicSettingsCache, ClinicSettingsCache>();
-        services.AddSingleton<ISystemSettingsCache, SystemSettingsCache>();
-
         services.AddScoped<IActivityLogger, ActivityLogger>();
         services.AddScoped<ISystemErrorLogger, SystemErrorLogger>();
 

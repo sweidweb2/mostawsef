@@ -87,6 +87,10 @@ Tests and docs
    `UserRepository`: `GetByIdAsync`, `GetPageAsync(PageQuery)` (normalize the term with `SearchText.Normalize`,
    `Contains`, order, `SafePage`/`SafePageSize`), `Add`, `Remove`, `SaveChangesAsync`, plus an `...ExistsAsync` per
    unique field (`IgnoreQueryFilters()` only if deleted rows must keep the value reserved).
+   **Project list/details reads straight to Contracts DTOs** in the EF `Select` (no parallel `*ListRow` /
+   `*DetailsRow` types). Map Domain enums to Contracts strings in the projection (`==` / ternary, or a known constant
+   when the query already filters to one value). Keep a small Application row type only when the shape is not a DTO
+   (e.g. an internal snapshot used by another module).
 4. **Contracts**: `shared/Mostawsef.Contracts/<Feature>/<Entity>Contracts.cs`, copy of `UserContracts.cs`:
    - `<Entity>Rules` with the limits (same values as the entity constants).
    - `<Entity>ListItemDto` (the list columns) and `<Entity>DetailsDto` (all fields + `CreatedAt/By`, `UpdatedAt/By`, `Version`).
@@ -94,6 +98,7 @@ Tests and docs
      `ErrorMessage` is an `ErrorCodes` constant. The update request carries `int Version`.
 5. **Service**: `backend/Mostawsef.Application/Modules/<Feature>/<Entity>Service.cs`, copy of `UserService.cs`
    (interface and class in one file):
+   - Pass repository page/details DTOs through (no 1:1 field shuffle). Map only when writing from a tracked entity.
    - Not found: `AppException.NotFound()`. Unique value taken: `AppException.Conflict(code, field)`.
      Stale edit: compare `request.Version` with the entity and throw `AppException.Conflict(ErrorCodes.ConcurrencyConflict)`.
    - After each main action: `IActivityLogger.LogAsync(new ActivityEntry(...))` with `EntityType`, `EntityId` and
