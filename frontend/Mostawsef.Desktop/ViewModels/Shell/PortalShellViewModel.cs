@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -13,6 +14,7 @@ using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Navigation;
 using Mostawsef.Desktop.Services.Printing;
 using Mostawsef.Desktop.Services.Ui;
+using Mostawsef.Desktop.Services.Updates;
 using Mostawsef.Desktop.ViewModels.Auth;
 
 namespace Mostawsef.Desktop.ViewModels.Shell;
@@ -32,6 +34,7 @@ public partial class PortalShellViewModel : ViewModelBase
     private readonly ErrorReporter _errors;
     private readonly PerformanceMonitor _perf;
     private readonly ClinicContext _clinic;
+    private CancellationTokenSource? _updateCheck;
 
     /// <summary>Set while the menu goes back to its entry because the user kept a sub-page's changes.</summary>
     private bool _restoringMenu;
@@ -54,6 +57,7 @@ public partial class PortalShellViewModel : ViewModelBase
         AuthApi authApi,
         IToastService toasts,
         ConnectionMonitor connection,
+        UpdateChecker updates,
         ClinicContext clinic,
         ErrorReporter errors,
         PerformanceMonitor perf)
@@ -68,6 +72,7 @@ public partial class PortalShellViewModel : ViewModelBase
         _perf = perf;
         _clinic = clinic;
         Connection = connection;
+        Updates = updates;
 
         PortalTitleKey = portal.TitleKey;
         MenuItems = portal.Pages;
@@ -83,6 +88,11 @@ public partial class PortalShellViewModel : ViewModelBase
     public void Start()
     {
         Connection.Start();
+        _updateCheck?.Cancel();
+        _updateCheck?.Dispose();
+        _updateCheck = new CancellationTokenSource();
+        var updateToken = _updateCheck.Token;
+        _ = CheckForUpdatesAsync(updateToken);
         // Money/print need clinic details; Super never shows them. Single-flight in ClinicContext.
         if (_session.CurrentUser?.Role == Roles.Admin)
         {
@@ -91,8 +101,27 @@ public partial class PortalShellViewModel : ViewModelBase
         }
     }
 
+    private async Task CheckForUpdatesAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Updates.CheckNowAsync(cancellationToken: cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Portal closed / signed out.
+        }
+        catch (Exception ex)
+        {
+            _errors.Report(ex, context: "Checking for app updates");
+        }
+    }
+
     /// <summary>Server reachability and version; the view shows its banner above the page.</summary>
     public ConnectionMonitor Connection { get; }
+
+    /// <summary>GitHub release feed; banner + Download open the Setup URL (MVP).</summary>
+    public UpdateChecker Updates { get; }
 
     /// <summary>Resource key of the portal title, e.g. "Portal.Admin".</summary>
     public string PortalTitleKey { get; }
@@ -381,6 +410,9 @@ public partial class PortalShellViewModel : ViewModelBase
     /// <summary>Called when the portal is replaced (e.g. sign-out): cancels open work and drops cached menu pages.</summary>
     public void Close()
     {
+        _updateCheck?.Cancel();
+        _updateCheck?.Dispose();
+        _updateCheck = null;
         DiscardSubPage();
         (CurrentPage as ILoadablePage)?.Deactivate();
         foreach (var page in _menuPages.Values)

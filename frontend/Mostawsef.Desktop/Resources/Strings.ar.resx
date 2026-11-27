@@ -227,6 +227,9 @@
 
   <data name="Connection.Lost" xml:space="preserve"><value>انقطع الاتصال بالخادم. جارٍ إعادة المحاولة...</value></data>
   <data name="Connection.VersionMismatch" xml:space="preserve"><value>إصدار هذا التطبيق لا يطابق إصدار الخادم. حدّث التطبيق على هذا الجهاز.</value></data>
+  <data name="Update.Available" xml:space="preserve"><value>الإصدار {0} متاح.</value></data>
+  <data name="Update.AvailableWithNotes" xml:space="preserve"><value>الإصدار {0} متاح. {1}</value></data>
+  <data name="Update.Download" xml:space="preserve"><value>تنزيل التحديث</value></data>
 
   <data name="Print.Page" xml:space="preserve"><value>صفحة</value></data>
   <data name="Print.Of" xml:space="preserve"><value>من</value></data>

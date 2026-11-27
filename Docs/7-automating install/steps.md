@@ -62,54 +62,26 @@ Done on `dev` (details in [`decisions.md`](decisions.md)):
 
 ---
 
-## Phase 3 — CI release pipeline
+## Phase 3 — CI release pipeline ✅
 
-### Step 3.1 — Release workflow
-- **Do:** Add `.github/workflows/release.yml` (or similar).
-- **Trigger:** `push` of tags `v*` on a **Windows** runner.
-- **Done when:** Pushing `v1.2.0` starts the job.
+Done on `dev` (details in [`decisions.md`](decisions.md)):
 
-### Step 3.2 — Build Setup on the runner
-- **Do:** Install/cache Inno Setup; reuse Postgres cache or skip redist for update builds.
-- **Do:** Run `./scripts/build-setup.ps1 -Version` derived from the tag (`v1.2.0` → `1.2.0`).
-- **Done when:** Job produces `Mostawsef-Setup-{version}.exe`.
+- `.github/workflows/release.yml` on tag `v*.*.*`
+- API + Desktop tests gate → `-UpdateOnly` Setup → `latest.json` (sha256) → GitHub Release
+- `tests.yml` ignores `v*.*.*` tags (release workflow owns those)
 
-### Step 3.3 — Checksum + feed
-- **Do:** Compute `sha256` of the Setup.
-- **Do:** Write `latest.json` with Step 0.5 fields.
-- **Done when:** Both files exist in the job artifacts.
-
-### Step 3.4 — Publish GitHub Release
-- **Do:** Create/upload Release assets: Setup exe + `latest.json`.
-- **Do:** Fail the job if either is missing (no half releases).
-- **Done when:** Opening the Release in the browser shows both files.
-
-### Step 3.5 — Gate with tests
-- **Do:** Keep `tests.yml`; require green tests before trusting a release (same tag job needs / workflow_run / manual discipline — pick one and document it).
-- **Done when:** You will not ship a Setup from a red test run by accident.
+**Ship:** `git tag v1.2.0` → `git push origin v1.2.0`
 
 ---
 
-## Phase 4 — Desktop: check for updates (MVP UI)
+## Phase 4 — Desktop: check for updates (MVP UI) ✅
 
-### Step 4.1 — Feed client
-- **Do:** HTTP GET `latest.json` with timeout; never crash if offline.
-- **Done when:** Offline clinic behaves as today (no banner, no errors spam).
+Done on `dev`:
 
-### Step 4.2 — Compare versions
-- **Do:** Compare feed `version` to running app version.
-- **Handle:** already latest; invalid JSON; feed older than app (dev build).
-- **Done when:** Unit/VM tests cover compare + parse errors.
-
-### Step 4.3 — Notify UI
-- **Do:** Banner/dialog when newer **and** role is allowed (Step 0.2).
-- **Do:** EN + AR strings.
-- **MVP action:** button opens download URL / starts browser download (user runs Setup manually).
-- **Done when:** On a PC with an older build, signing in shows the update affordance.
-
-### Step 4.4 — Throttle checks
-- **Do:** Cache last check time; don’t hit the network every few seconds.
-- **Done when:** Opening pages repeatedly does not flood GitHub.
+- `UpdateChecker` GETs `latest.json` (quiet offline / bad feed)
+- Portal banner + **Download update** opens the Setup URL in the browser
+- Any signed-in user; EN + AR; 6-hour throttle
+- Tests: `UpdateCheckerTests`, `UpdateBannerTests`
 
 ---
 
@@ -210,8 +182,8 @@ Copy and tick as you go:
 **MVP**
 - [x] Phase 0 decisions locked → [`decisions.md`](decisions.md)
 - [x] Phase 1 versioning (login shows semver; props + publish stamp)
-- [ ] Phase 3 CI Release + `latest.json`
-- [ ] Phase 4 notify UI (browser/manual Setup OK)
+- [x] Phase 3 CI Release + `latest.json`
+- [x] Phase 4 notify UI (browser/manual Setup OK)
 - [ ] Phase 8 playbook + USB note
 - [ ] Manual smoke (MVP)
 

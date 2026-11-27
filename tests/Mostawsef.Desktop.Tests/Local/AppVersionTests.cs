@@ -20,6 +20,15 @@ public class AppVersionTests
         Assert.Equal("1.2.3", AppVersion.Read(assembly));
     }
 
+    [Fact]
+    public void Compare_orders_semver_strings()
+    {
+        Assert.True(AppVersion.Compare("1.0.1", "1.0.0") > 0);
+        Assert.True(AppVersion.Compare("1.0.0", "1.0.1") < 0);
+        Assert.Equal(0, AppVersion.Compare("1.2.3", "1.2.3"));
+        Assert.True(AppVersion.Compare("1.2", "1.1.9") > 0);
+    }
+
     private static AssemblyBuilder EmitInformationalVersion(string informationalVersion)
     {
         var assemblyName = new AssemblyName($"AppVersionTest_{Guid.NewGuid():N}");

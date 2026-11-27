@@ -235,6 +235,18 @@ Silent in-app update (after download; Admin / UAC):
 `Mostawsef-Setup-{version}.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS`  
 Desktop relaunches itself; on failure see `C:\Mostawsef\install-clinic.log`.
 
+### Publish a GitHub Release (CI)
+
+Merge the work you want, then tag and push (must be `v` + semver):
+
+```powershell
+git tag v1.2.0
+git push origin v1.2.0
+```
+
+GitHub Actions (`.github/workflows/release.yml`) runs API + Desktop tests, builds an **update** Setup (`-UpdateOnly`), uploads `Mostawsef-Setup-1.2.0.exe` and `latest.json` to a public Release.  
+Feed URL: `https://github.com/sweidweb2/mostawsef/releases/latest/download/latest.json`
+
 Output: `C:\Users\User\Desktop\mostawsef-3ammo\[2] Builds\Mostawsef-Setup-{version}.exe` (older builds are kept; also under `artifacts\installer\`).
 
 Clinic: run the **versioned** Setup as Administrator (e.g. `Mostawsef-Setup-1.0.1.exe`). It installs to `C:\Mostawsef`, installs PostgreSQL from the **bundled offline** installer if missing, registers `MostawsefApi`, and creates Start Menu / Desktop shortcuts that use the Mostawsef app icon (`Assets/app.ico`, also the Setup.exe icon). Apps are self-contained — no separate .NET install. Prefer this over the manual playbook; keep the playbook as fallback.

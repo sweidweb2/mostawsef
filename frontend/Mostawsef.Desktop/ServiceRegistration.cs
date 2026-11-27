@@ -9,6 +9,7 @@ using Mostawsef.Desktop.Services.Local;
 using Mostawsef.Desktop.Services.Navigation;
 using Mostawsef.Desktop.Services.Printing;
 using Mostawsef.Desktop.Services.Ui;
+using Mostawsef.Desktop.Services.Updates;
 using Mostawsef.Desktop.ViewModels;
 
 namespace Mostawsef.Desktop;
@@ -17,6 +18,15 @@ namespace Mostawsef.Desktop;
 public class DesktopServiceOptions
 {
     public HttpMessageHandler? HttpHandler { get; init; }
+
+    /// <summary>HTTP for the public update feed (GitHub). Tests supply a fake; production uses the network.</summary>
+    public HttpMessageHandler? UpdateHttpHandler { get; init; }
+
+    /// <summary>Override the update feed URL (tests).</summary>
+    public Uri? UpdateFeedUrl { get; init; }
+
+    /// <summary>Opens a download / web URL; the default uses the system browser.</summary>
+    public Action<string>? OpenUrl { get; init; }
 
     public string? SettingsFilePath { get; init; }
 
@@ -85,6 +95,11 @@ public static class ServiceRegistration
         services.AddSingleton<PatientsApi>();
         services.AddSingleton<OrdersApi>();
         services.AddSingleton<ConnectionMonitor>();
+        services.AddSingleton(sp => new UpdateChecker(
+            options.UpdateHttpHandler ?? CreateServerHandler(),
+            sp.GetRequiredService<LocalizationService>(),
+            options.OpenUrl,
+            options.UpdateFeedUrl));
 
         // Diagnostics: system errors + optional performance overlay/log
         // Lazy deps so Install() does not build the HTTP stack or toast service.

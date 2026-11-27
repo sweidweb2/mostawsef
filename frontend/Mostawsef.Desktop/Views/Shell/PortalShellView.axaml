@@ -87,11 +87,28 @@
         </ui:AppShell.TopBar>
 
         <DockPanel>
-            <ui:Alert Name="ConnectionBanner"
-                      DockPanel.Dock="Top"
-                      Margin="{StaticResource PaddingPageCompact}"
-                      Kind="{Binding Connection.AlertKind}"
-                      Text="{l:TrKey {Binding Connection.MessageKey}}" />
+            <StackPanel DockPanel.Dock="Top"
+                        Margin="{StaticResource PaddingPageCompact}"
+                        Spacing="{StaticResource Space2}">
+                <ui:Alert Name="ConnectionBanner"
+                          Kind="{Binding Connection.AlertKind}"
+                          Text="{l:TrKey {Binding Connection.MessageKey}}" />
+                <Grid Name="UpdateBanner"
+                      ColumnDefinitions="*,Auto"
+                      ColumnSpacing="{StaticResource GapControls}"
+                      IsVisible="{Binding Updates.IsAvailable}">
+                    <ui:Alert Name="UpdateAvailableAlert"
+                              Kind="Info"
+                              Text="{Binding Updates.BannerText}" />
+                    <Button Name="DownloadUpdateButton"
+                            Grid.Column="1"
+                            Classes="secondary sm"
+                            VerticalAlignment="Center"
+                            Command="{Binding Updates.DownloadCommand}">
+                        <TextBlock Text="{l:Tr Update.Download}" />
+                    </Button>
+                </Grid>
+            </StackPanel>
             <ui:PageHost Name="PageHost" Page="{Binding CurrentPage}" />
         </DockPanel>
     </ui:AppShell>

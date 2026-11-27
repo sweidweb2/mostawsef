@@ -30,6 +30,8 @@ public sealed class TestServices : IDisposable
             .AddMostawsefDesktop(new DesktopServiceOptions
             {
                 HttpHandler = Api,
+                UpdateHttpHandler = Updates,
+                OpenUrl = OpenedUrls.Add,
                 SettingsFilePath = SettingsFile,
                 OpenFile = OpenedFiles.Add,
                 PickSavePath = PickSavePath,
@@ -45,6 +47,12 @@ public sealed class TestServices : IDisposable
     }
 
     public FakeApiHandler Api { get; } = new();
+
+    /// <summary>GitHub update feed stand-in (offline by default so portal Start never hits the network).</summary>
+    public FakeUpdateHandler Updates { get; } = CreateOfflineUpdateHandler();
+
+    /// <summary>URLs the app asked to open in the browser (update download).</summary>
+    public List<string> OpenedUrls { get; } = [];
 
     /// <summary>Files the app asked to open (printouts) instead of launching a viewer.</summary>
     public List<string> OpenedFiles { get; } = [];
@@ -69,6 +77,13 @@ public sealed class TestServices : IDisposable
 
     /// <summary>Titles shown in the folder dialog.</summary>
     public List<string> FolderPickerTitles { get; } = [];
+
+    private static FakeUpdateHandler CreateOfflineUpdateHandler()
+    {
+        var handler = new FakeUpdateHandler();
+        handler.FailWithNetworkError();
+        return handler;
+    }
 
     private Task<string?> PickSavePath(string suggestedFileName, string title)
     {

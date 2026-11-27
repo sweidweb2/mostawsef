@@ -26,20 +26,20 @@ Related: [`steps.md`](steps.md) · [`plan.md`](plan.md) · [`edge cases.md`](edg
 **Stable URL (Desktop always GETs this):**
 
 ```text
-https://github.com/<owner>/<repo>/releases/latest/download/latest.json
+https://github.com/sweidweb2/mostawsef/releases/latest/download/latest.json
 ```
 
-(`<owner>/<repo>` = this GitHub repository. No version in the path — GitHub resolves “latest”.)
+(No version in the path — GitHub resolves “latest”.)
 
 **`latest.json` shape:**
 
 ```json
 {
   "version": "1.2.0",
-  "url": "https://github.com/<owner>/<repo>/releases/download/v1.2.0/Mostawsef-Setup-1.2.0.exe",
+  "url": "https://github.com/sweidweb2/mostawsef/releases/download/v1.2.0/Mostawsef-Setup-1.2.0.exe",
   "sha256": "lowercase-hex-of-the-exe",
-  "notesEn": "Bug fixes.",
-  "notesAr": "إصلاحات."
+  "notesEn": "Mostawsef 1.2.0",
+  "notesAr": "مستوصف 1.2.0"
 }
 ```
 
@@ -85,3 +85,30 @@ Mostawsef-Setup-{version}.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPP
 | `/CLOSEAPPLICATIONS` | Let Inno close locked app files (`CloseApplications=force` in the .iss) |
 
 Before launch: Desktop should exit cleanly so files unlock. After success: Desktop starts itself again (not Setup).
+
+---
+
+## Phase 3 (CI release) — locked
+
+| Topic | Decision |
+| --- | --- |
+| Trigger | Push tag `v1.2.3` (semver with `v` prefix) |
+| Workflow | `.github/workflows/release.yml` |
+| Gate | API + Desktop tests must pass, then build |
+| Artifact | `build-setup.ps1 -UpdateOnly` → `Mostawsef-Setup-{version}.exe` + `latest.json` |
+| Publish | Public GitHub Release on the same tag |
+
+**How you ship a build:** merge to `main` → `git tag v1.2.0` → `git push origin v1.2.0` → wait for Actions → Release appears with Setup + feed.
+
+---
+
+## Phase 4 (notify UI) — locked
+
+| Topic | Decision |
+| --- | --- |
+| When | On portal open (after sign-in) |
+| Who | Any signed-in user |
+| UI | Info banner above the page + **Download update** |
+| Action (MVP) | Opens Setup URL in the browser; user runs Setup manually |
+| Offline | No banner, no error spam |
+| Throttle | At most one feed check every 6 hours (unless forced in tests) |

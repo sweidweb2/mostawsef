@@ -228,6 +228,9 @@
 
   <data name="Connection.Lost" xml:space="preserve"><value>Connection to the server was lost. Retrying...</value></data>
   <data name="Connection.VersionMismatch" xml:space="preserve"><value>This app does not match the server version. Update the app on this PC.</value></data>
+  <data name="Update.Available" xml:space="preserve"><value>Version {0} is available.</value></data>
+  <data name="Update.AvailableWithNotes" xml:space="preserve"><value>Version {0} is available. {1}</value></data>
+  <data name="Update.Download" xml:space="preserve"><value>Download update</value></data>
 
   <data name="Print.Page" xml:space="preserve"><value>Page</value></data>
   <data name="Print.Of" xml:space="preserve"><value>of</value></data>
