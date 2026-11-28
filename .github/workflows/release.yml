@@ -1,11 +1,17 @@
 name: Release
 
-# Merge to main (only when shipping) → tests → update Setup → GitHub Release + latest.json.
-# Version comes from Directory.Build.props <Version>; CI creates tag vX.Y.Z on that commit.
+# Merge to main (only when shipping) → tests → auto patch bump → update Setup → GitHub Release.
+# Version: next patch after the highest v*.*.* tag (or optional workflow_dispatch override).
+# The bump commit uses [skip ci] so it does not start another Release.
 on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Optional semver (e.g. 1.1.0). Empty = auto patch bump.'
+        required: false
+        type: string
 
 concurrency:
   group: release-${{ github.ref }}
@@ -58,28 +64,74 @@ jobs:
         run: choco install innosetup -y --no-progress
         shell: pwsh
 
-      - name: Resolve version from Directory.Build.props
+      - name: Resolve next version
         id: ver
         shell: pwsh
         run: |
-          $props = Get-Content -LiteralPath Directory.Build.props -Raw
-          if ($props -notmatch '<Version>\s*([^<\s]+)\s*</Version>') {
-            throw "Directory.Build.props must set <Version>1.2.3</Version>"
-          }
-          $version = $Matches[1]
-          if ($version -notmatch '^\d+\.\d+\.\d+$') {
-            throw "Version must be semver like 1.2.3 (got: $version)"
-          }
-          $tag = "v$version"
+          $override = '${{ inputs.version }}'.Trim()
+          if ($override) {
+            if ($override -notmatch '^\d+\.\d+\.\d+$') {
+              throw "Version override must be semver like 1.2.3 (got: $override)"
+            }
+            $version = $override
+            Write-Host "Using workflow_dispatch version: $version"
+          } else {
+            git fetch --tags --force origin
+            $tags = @(git tag -l 'v*.*.*' | ForEach-Object {
+              if ($_ -match '^v(\d+)\.(\d+)\.(\d+)$') {
+                [pscustomobject]@{
+                  Major = [int]$Matches[1]
+                  Minor = [int]$Matches[2]
+                  Patch = [int]$Matches[3]
+                  Name  = $_
+                }
+              }
+            } | Sort-Object Major, Minor, Patch)
 
+            if ($tags.Count -eq 0) {
+              $version = '1.0.0'
+              Write-Host "No v*.*.* tags yet; starting at $version"
+            } else {
+              $latest = $tags[-1]
+              $version = '{0}.{1}.{2}' -f $latest.Major, $latest.Minor, ($latest.Patch + 1)
+              Write-Host "Latest tag $($latest.Name) → next $version"
+            }
+          }
+
+          $tag = "v$version"
           $remoteTag = git ls-remote --tags origin "refs/tags/$tag"
           if (-not [string]::IsNullOrWhiteSpace($remoteTag)) {
-            throw "Tag $tag already exists. Bump <Version> in Directory.Build.props on dev before merging to main."
+            throw "Tag $tag already exists. Pick a free version (workflow_dispatch override) or wait for tags to settle."
           }
 
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
           "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          Write-Host "Release version: $version (will create tag $tag)"
+
+      - name: Bump Directory.Build.props and push
+        id: bump
+        shell: pwsh
+        run: |
+          $version = '${{ steps.ver.outputs.version }}'
+          $propsPath = 'Directory.Build.props'
+          $props = Get-Content -LiteralPath $propsPath -Raw
+          if ($props -notmatch '<Version>\s*[^<\s]+\s*</Version>') {
+            throw "Directory.Build.props must contain a <Version>...</Version> element"
+          }
+          $updated = [regex]::Replace($props, '<Version>\s*[^<\s]+\s*</Version>', "<Version>$version</Version>")
+          [System.IO.File]::WriteAllText((Resolve-Path $propsPath), $updated)
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- Directory.Build.props
+          if (git diff --cached --quiet) {
+            Write-Host "Directory.Build.props already at $version"
+          } else {
+            git commit -m "Release $version [skip ci]"
+            git push origin HEAD:main
+          }
+          $sha = git rev-parse HEAD
+          "sha=$sha" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Release commit: $sha ($version)"
 
       - name: Build update Setup
         shell: pwsh
@@ -153,7 +205,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.ver.outputs.tag }}
-          target_commitish: ${{ github.sha }}
+          target_commitish: ${{ steps.bump.outputs.sha }}
           name: Mostawsef ${{ steps.ver.outputs.version }}
           generate_release_notes: true
           fail_on_unmatched_files: true

@@ -1,6 +1,6 @@
 # Release playbook (ship a new Mostawsef version)
 
-**Start here** for day-to-day releases. Deeper detail: [`02-decisions.md`](02-decisions.md) · [`03-data-safety.md`](03-data-safety.md) · [`04-smoke-checklist.md`](04-smoke-checklist.md) · [`Docs/commands.md`](../commands.md)
+**Start here** for day-to-day releases. Concept (book): [`00-concept.md`](00-concept.md) · [`02-decisions.md`](02-decisions.md) · [`03-data-safety.md`](03-data-safety.md) · [`04-smoke-checklist.md`](04-smoke-checklist.md) · [`Docs/commands.md`](../commands.md)
 
 ---
 
@@ -8,12 +8,16 @@
 
 `main` is release-only: merge there only when you intend to ship. CI publishes the Release on that push.
 
-1. On `dev`, bump `<Version>` in `Directory.Build.props` (e.g. `1.0.0` → `1.0.1`) — must be a new semver not already tagged.
-2. Finish work on `dev` → PR / merge to `main` (Tests green on `dev` first).
-3. Confirm Super backup folder is set on clinics that will update soon (major releases: prefer a fresh dump — [`03-data-safety.md`](03-data-safety.md)).
-4. Wait for GitHub Actions **Release** on `main` (API + Desktop tests → `-UpdateOnly` Setup → creates tag `vX.Y.Z` → Release assets).
-5. Confirm the Release has `Mostawsef-Setup-X.Y.Z.exe` and `latest.json`.
-6. Clinic: open Mostawsef → sign in → **Update now** (UAC) → app reopens on the new version.
+1. Finish work on `dev` → PR / merge to `main` (Tests green on `dev` first). No manual version edit.
+2. Confirm Super backup folder is set on clinics that will update soon (major releases: prefer a fresh dump — [`03-data-safety.md`](03-data-safety.md)).
+3. Wait for GitHub Actions **Release** on `main`:
+   - API + Desktop tests
+   - Auto **patch** bump from the latest `v*.*.*` tag (writes `Directory.Build.props`, commit `[skip ci]`)
+   - `-UpdateOnly` Setup → tag `vX.Y.Z` → Release assets
+4. Confirm the Release has `Mostawsef-Setup-X.Y.Z.exe` and `latest.json`.
+5. Clinic: open Mostawsef → sign in → **Update now** (UAC) → app reopens on the new version.
+
+Need a **minor/major** (e.g. `1.1.0`) instead of the next patch? Run **Release** → *Run workflow* on `main` and set the optional version input.
 
 Feed URL (app already uses this):  
 `https://github.com/sweidweb2/mostawsef/releases/latest/download/latest.json`
@@ -55,4 +59,4 @@ After that, day-to-day updates use the in-app path above.
 
 ## If install behavior itself changes
 
-Paths, service name, Postgres rules, or scripts under `packaging/innosetup/` / `scripts/install-*.ps1`: update those first, bump version, merge to `main`. Clinics still only run Setup or **Update now**.
+Paths, service name, Postgres rules, or scripts under `packaging/innosetup/` / `scripts/install-*.ps1`: update those first, then merge to `main`. Clinics still only run Setup or **Update now**.

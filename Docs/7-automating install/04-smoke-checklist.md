@@ -13,9 +13,9 @@ Related: [`01-release-playbook.md`](01-release-playbook.md) · [`03-data-safety.
 
 ## Publish a newer build
 
-- [ ] Bump `<Version>` in `Directory.Build.props` on `dev` (newer than the installed app version on the login screen)
-- [ ] Merge that work to `main` (release-only branch)
-- [ ] GitHub Actions **Release** is green; Release page has `Mostawsef-Setup-X.Y.Z.exe` + `latest.json`
+- [ ] Merge the work to `main` (release-only branch; CI auto patch-bumps)
+- [ ] GitHub Actions **Release** is green; Release page has `Mostawsef-Setup-X.Y.Z.exe` + `latest.json` (X.Y.Z newer than the installed login-screen version)
+
 
 ## In-app update
 

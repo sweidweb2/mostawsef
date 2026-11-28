@@ -241,17 +241,18 @@ Data safety notes (backups before major updates): `Docs/7-automating install/03-
 
 ### Publish a GitHub Release (CI)
 
+Concept (book summary): [`Docs/7-automating install/00-concept.md`](7-automating%20install/00-concept.md).  
 Full ship checklist (backup note, USB, rollback): [`Docs/7-automating install/01-release-playbook.md`](7-automating%20install/01-release-playbook.md).
 
 ```powershell
-# On dev: bump <Version> in Directory.Build.props (e.g. 1.0.1), then merge to main.
+# Merge when you want to ship — no manual version edit.
 git checkout main
 git merge dev
 git push origin main
 ```
 
-GitHub Actions (`.github/workflows/release.yml`) on **push to `main`**: API + Desktop tests → builds an **update** Setup (`-UpdateOnly`) using that `<Version>` → creates tag `vX.Y.Z` → uploads `Mostawsef-Setup-X.Y.Z.exe` and `latest.json`.  
-If the tag already exists, the job fails — bump `<Version>` before merging.  
+GitHub Actions (`.github/workflows/release.yml`) on **push to `main`**: API + Desktop tests → auto **patch** bump (latest `v*.*.*` + 1, writes `Directory.Build.props` with `[skip ci]`) → builds an **update** Setup (`-UpdateOnly`) → creates tag `vX.Y.Z` → uploads `Mostawsef-Setup-X.Y.Z.exe` and `latest.json`.  
+Minor/major: Actions → **Release** → *Run workflow* → set the version input.  
 Feed URL: `https://github.com/sweidweb2/mostawsef/releases/latest/download/latest.json`
 
 Output: `C:\Users\User\Desktop\mostawsef-3ammo\[2] Builds\Mostawsef-Setup-{version}.exe` (older builds are kept; also under `artifacts\installer\`).

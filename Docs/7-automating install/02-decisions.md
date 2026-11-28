@@ -1,7 +1,7 @@
 # Automating install — locked decisions
 
 Pattern A: CI Release + in-app notify + silent update Setup.  
-Day-to-day ship: [`01-release-playbook.md`](01-release-playbook.md) · edge status: [`05-edge-cases.md`](05-edge-cases.md)
+Concept (book): [`00-concept.md`](00-concept.md) · day-to-day: [`01-release-playbook.md`](01-release-playbook.md) · edge status: [`05-edge-cases.md`](05-edge-cases.md)
 
 | Id | Topic | Decision |
 | --- | --- | --- |
@@ -15,7 +15,7 @@ Day-to-day ship: [`01-release-playbook.md`](01-release-playbook.md) · edge stat
 | Silent flags | In-app Update | `/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS` |
 | Relaunch | After silent Setup | Desktop relaunches itself (`--apply-update`); Setup Launch is `skipifsilent` |
 | Failure | Install script | `install-clinic.ps1` exits `1`; log at `C:\Mostawsef\install-clinic.log` |
-| CI | Trigger | Push/merge to `main` → `.github/workflows/release.yml` (tests gate, version from `Directory.Build.props`, tag `vX.Y.Z`, then `-UpdateOnly`) |
+| CI | Trigger | Push/merge to `main` → `.github/workflows/release.yml` (tests gate, auto patch bump + tag `vX.Y.Z`, then `-UpdateOnly`; optional dispatch for minor/major) |
 | Notify UI | When / who | After sign-in; any role; 6-hour throttle; quiet if offline |
 | Install | In-app | Download → sha256 → elevated silent Setup; `update.lock` if reopened mid-update |
 | Data | Schema / backups | Migrations on API start; never wipe Postgres data; prefer dump before major updates |
@@ -48,7 +48,7 @@ https://github.com/sweidweb2/mostawsef/releases/latest/download/latest.json
 | `sha256` | Verify before running Setup |
 | `notesEn` / `notesAr` | Banner text |
 
-**CI uploads every main merge Release:** `Mostawsef-Setup-{version}.exe` + matching `latest.json` (and creates tag `v{version}`).  
+**CI uploads every main merge Release:** `Mostawsef-Setup-{version}.exe` + matching `latest.json` (auto patch from latest tag, updates `Directory.Build.props`, creates tag `v{version}`).  
 **Compare:** feed `version` > installed → notify; else nothing. Offline / bad feed → no crash.
 
 ---
